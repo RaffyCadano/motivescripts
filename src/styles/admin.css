@@ -1,0 +1,32 @@
+/* Scoped to the admin shell so public pages are unchanged. */
+.admin-app {
+  --admin-bg: #f7f9fc;
+  --admin-ink: #07111f;
+  --admin-muted: #667085;
+  --admin-card: #ffffff;
+  --admin-line: #e5eaf0;
+  --admin-hover: #eef3fb;
+  --admin-blue: #0050f0;
+  --admin-bright: #0060ff;
+  --admin-cyan: #00c8ff;
+  --admin-navy: #001030;
+  --admin-sidebar: 15.75rem;
+  --admin-sidebar-collapsed: 4.75rem;
+  --admin-header: 3.75rem;
+  --admin-radius: 0.75rem;
+  background: var(--admin-bg);
+  color: var(--admin-muted);
+  min-height: 100svh;
+}
+
+.admin-app h1,
+.admin-app h2,
+.admin-app h3 {
+  color: var(--admin-ink);
+}
+
+html.admin-nav-open,
+html.admin-nav-open body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
