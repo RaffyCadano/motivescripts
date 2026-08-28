@@ -4,6 +4,7 @@ import { AuthRedirectHandler } from "@/auth/AuthRedirectHandler";
 import { GuestOnly, RequireAuth } from "@/auth/guards";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Layout } from "@/components/Layout";
+import { routerBasename } from "@/lib/appUrl";
 import { AboutPage } from "@/pages/About";
 import { AdminOverview } from "@/pages/admin/AdminOverview";
 import { AdminPlaceholder } from "@/pages/admin/AdminPlaceholder";
@@ -37,7 +38,7 @@ const adminPlaceholderPaths = [
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename()}>
       <AuthProvider>
         <AuthRedirectHandler />
         <Routes>

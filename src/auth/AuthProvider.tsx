@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AuthError, Session, User } from "@supabase/supabase-js";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
+import { appUrl } from "@/lib/appUrl";
 
 export type SignInResult =
   | { ok: true }
@@ -102,8 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const supabase = getSupabase();
         if (!supabase) return { ok: false, reason: "unconfigured" };
 
-        const origin = window.location.origin;
-        const redirectTargets = [`${origin}/auth/callback`, origin];
+        const redirectTargets = [appUrl("/auth/callback"), appUrl("/")];
 
         try {
           let lastError: AuthError | null = null;
