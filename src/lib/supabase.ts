@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
 
-let client: SupabaseClient | null | undefined;
+let client: SupabaseClient<Database> | null | undefined;
 
 function supabaseUrl(): string | undefined {
   return import.meta.env.VITE_SUPABASE_URL?.trim() || undefined;
@@ -18,7 +19,7 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(supabaseUrl() && supabasePublishableKey());
 }
 
-export function getSupabase(): SupabaseClient | null {
+export function getSupabase(): SupabaseClient<Database> | null {
   if (client !== undefined) return client;
 
   const url = supabaseUrl();
@@ -29,7 +30,7 @@ export function getSupabase(): SupabaseClient | null {
     return null;
   }
 
-  client = createClient(url, anonKey, {
+  client = createClient<Database>(url, anonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,

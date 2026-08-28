@@ -1,62 +1,143 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthRedirectHandler } from "@/auth/AuthRedirectHandler";
-import { GuestOnly, RequireAuth } from "@/auth/guards";
+import { GuestOnly, RequireAdmin, RequireClient } from "@/auth/guards";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { LeadsOutlet } from "@/components/admin/leads/LeadsOutlet";
+import { LeadsProvider } from "@/components/admin/leads/LeadsProvider";
+import { ClientLayout } from "@/components/client/ClientLayout";
 import { Layout } from "@/components/Layout";
 import { routerBasename } from "@/lib/appUrl";
 import { AboutPage } from "@/pages/About";
+import { AdminClientDetails } from "@/pages/admin/AdminClientDetails";
+import { AdminClients } from "@/pages/admin/AdminClients";
+import { AdminContractDetails } from "@/pages/admin/AdminContractDetails";
+import { AdminContractNew } from "@/pages/admin/AdminContractNew";
+import { AdminContracts } from "@/pages/admin/AdminContracts";
+import { AdminFiles } from "@/pages/admin/AdminFiles";
+import { AdminLeadDetails } from "@/pages/admin/AdminLeadDetails";
+import { AdminLeads } from "@/pages/admin/AdminLeads";
+import { AdminMessages } from "@/pages/admin/AdminMessages";
 import { AdminOverview } from "@/pages/admin/AdminOverview";
 import { AdminPlaceholder } from "@/pages/admin/AdminPlaceholder";
+import { AdminProjectDetails } from "@/pages/admin/AdminProjectDetails";
+import { AdminProjects } from "@/pages/admin/AdminProjects";
+import { AdminProposalDetails } from "@/pages/admin/AdminProposalDetails";
+import { AdminProposalNew } from "@/pages/admin/AdminProposalNew";
+import { AdminProposals } from "@/pages/admin/AdminProposals";
+import { AdminInvoiceDetails } from "@/pages/admin/AdminInvoiceDetails";
+import { AdminInvoiceNew } from "@/pages/admin/AdminInvoiceNew";
+import { AdminInvoices } from "@/pages/admin/AdminInvoices";
+import { AdminTeam } from "@/pages/admin/AdminTeam";
+import { AdminTeamDetails } from "@/pages/admin/AdminTeamDetails";
+import { AdminTeamInviteDetails } from "@/pages/admin/AdminTeamInviteDetails";
 import { AuthCallbackPage } from "@/pages/AuthCallback";
+import { ClientApprovals } from "@/pages/client/ClientApprovals";
+import { ClientContractDetails } from "@/pages/client/ClientContractDetails";
+import { ClientContracts } from "@/pages/client/ClientContracts";
+import { ClientFeedback } from "@/pages/client/ClientFeedback";
+import { ClientFilesPage } from "@/pages/client/ClientFilesPage";
+import { ClientMessages } from "@/pages/client/ClientMessages";
+import { ClientOverview } from "@/pages/client/ClientOverview";
+import { ClientProject } from "@/pages/client/ClientProject";
+import { ClientProposalDetails } from "@/pages/client/ClientProposalDetails";
+import { ClientProposals } from "@/pages/client/ClientProposals";
+import { ClientInvoiceDetails } from "@/pages/client/ClientInvoiceDetails";
+import { ClientInvoices } from "@/pages/client/ClientInvoices";
+import { ClientPaymentCancelled } from "@/pages/client/ClientPaymentCancelled";
+import { ClientPaymentSuccess } from "@/pages/client/ClientPaymentSuccess";
+import { ClientReview } from "@/pages/client/ClientReview";
+import { ClientSettings } from "@/pages/client/ClientSettings";
 import { CaseStudyPage } from "@/pages/CaseStudy";
 import { ContactPage } from "@/pages/Contact";
 import { ForgotPasswordPage } from "@/pages/ForgotPassword";
 import { HomePage } from "@/pages/Home";
+import { StaffInviteAcceptPage } from "@/pages/StaffInviteAccept";
+import { InviteAcceptPage } from "@/pages/InviteAccept";
 import { LoginPage } from "@/pages/Login";
 import { NotFoundPage } from "@/pages/NotFound";
 import { ProcessPage } from "@/pages/Process";
 import { ServicesPage } from "@/pages/Services";
 import { WorkPage } from "@/pages/Work";
+import { MessagingProvider } from "@/providers/MessagingProvider";
 
-const adminPlaceholderPaths = [
-  "leads",
-  "clients",
-  "projects",
-  "tasks",
-  "files",
-  "proposals",
-  "contracts",
-  "invoices",
-  "payments",
-  "messages",
-  "notifications",
-  "team",
-  "activity",
-  "settings",
-] as const;
+const adminUnavailablePaths = ["tasks", "notifications", "activity", "settings"] as const;
 
 export default function App() {
   return (
     <BrowserRouter basename={routerBasename()}>
       <AuthProvider>
-        <AuthRedirectHandler />
-        <Routes>
-          <Route path="auth/callback" element={<AuthCallbackPage />} />
+        <LeadsProvider>
+          <MessagingProvider>
+          <AuthRedirectHandler />
+          <Routes>
           <Route
             path="admin"
             element={
-              <RequireAuth>
+              <RequireAdmin>
                 <AdminLayout />
-              </RequireAuth>
+              </RequireAdmin>
             }
           >
-            <Route index element={<AdminOverview />} />
-            {adminPlaceholderPaths.map((path) => (
-              <Route key={path} path={path} element={<AdminPlaceholder />} />
-            ))}
+            <Route element={<LeadsOutlet />}>
+              <Route index element={<AdminOverview />} />
+              <Route path="leads" element={<AdminLeads />} />
+              <Route path="leads/:id" element={<AdminLeadDetails />} />
+              <Route path="clients" element={<AdminClients />} />
+              <Route path="clients/:id" element={<AdminClientDetails />} />
+              <Route path="projects" element={<AdminProjects />} />
+              <Route path="projects/:id" element={<AdminProjectDetails />} />
+              <Route path="files" element={<AdminFiles />} />
+              <Route path="messages" element={<AdminMessages />} />
+              <Route path="messages/:conversationId" element={<AdminMessages />} />
+              <Route path="proposals" element={<AdminProposals />} />
+              <Route path="proposals/new" element={<AdminProposalNew />} />
+              <Route path="proposals/:id" element={<AdminProposalDetails />} />
+              <Route path="contracts" element={<AdminContracts />} />
+              <Route path="contracts/new" element={<AdminContractNew />} />
+              <Route path="contracts/:id" element={<AdminContractDetails />} />
+              <Route path="invoices" element={<AdminInvoices />} />
+              <Route path="invoices/new" element={<AdminInvoiceNew />} />
+              <Route path="invoices/:id" element={<AdminInvoiceDetails />} />
+              <Route path="team" element={<AdminTeam />} />
+              <Route path="team/invite/:invitationId" element={<AdminTeamInviteDetails />} />
+              <Route path="team/:id" element={<AdminTeamDetails />} />
+              <Route path="payments" element={<Navigate to="/admin/invoices" replace />} />
+              {adminUnavailablePaths.map((path) => (
+                <Route key={path} path={path} element={<AdminPlaceholder />} />
+              ))}
+            </Route>
+          </Route>
+          <Route
+            path="client"
+            element={
+              <RequireClient>
+                <ClientLayout />
+              </RequireClient>
+            }
+          >
+            <Route index element={<ClientOverview />} />
+            <Route path="project" element={<ClientProject />} />
+            <Route path="project/:projectId" element={<ClientProject />} />
+            <Route path="files" element={<ClientFilesPage />} />
+            <Route path="files/:deliverableId" element={<ClientReview />} />
+            <Route path="feedback" element={<ClientFeedback />} />
+            <Route path="approvals" element={<ClientApprovals />} />
+            <Route path="messages" element={<ClientMessages />} />
+            <Route path="messages/:conversationId" element={<ClientMessages />} />
+            <Route path="proposals" element={<ClientProposals />} />
+            <Route path="proposals/:id" element={<ClientProposalDetails />} />
+            <Route path="contracts" element={<ClientContracts />} />
+            <Route path="contracts/:id" element={<ClientContractDetails />} />
+            <Route path="invoices" element={<ClientInvoices />} />
+            <Route path="invoices/:id/payment-success" element={<ClientPaymentSuccess />} />
+            <Route path="invoices/:id/payment-cancelled" element={<ClientPaymentCancelled />} />
+            <Route path="invoices/:id" element={<ClientInvoiceDetails />} />
+            <Route path="billing" element={<Navigate to="/client/invoices" replace />} />
+            <Route path="settings" element={<ClientSettings />} />
           </Route>
           <Route element={<Layout />}>
+            <Route path="auth/callback" element={<AuthCallbackPage />} />
             <Route index element={<HomePage />} />
             <Route path="services" element={<ServicesPage />} />
             <Route path="work" element={<WorkPage />} />
@@ -64,6 +145,8 @@ export default function App() {
             <Route path="process" element={<ProcessPage />} />
             <Route path="about" element={<AboutPage />} />
             <Route path="start-a-project" element={<ContactPage />} />
+            <Route path="invite/:token" element={<InviteAcceptPage />} />
+            <Route path="staff-invite/:token" element={<StaffInviteAcceptPage />} />
             <Route
               path="login"
               element={
@@ -84,6 +167,8 @@ export default function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
+          </MessagingProvider>
+        </LeadsProvider>
       </AuthProvider>
     </BrowserRouter>
   );

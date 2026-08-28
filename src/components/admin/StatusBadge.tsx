@@ -1,10 +1,13 @@
-import type { LeadStatus, ProjectStage } from "@/data/adminMockData";
+import type { LeadStatus } from "@/data/leads";
 import { cn } from "@/lib/cn";
+
+type ProjectStage = "Design" | "Development" | "Client Review";
 
 const leadStyles: Record<LeadStatus, string> = {
   New: "bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]",
   Contacted: "bg-[var(--admin-bg)] text-[var(--admin-muted)]",
   Qualified: "bg-[rgb(0_200_255_/_0.12)] text-[#0077aa]",
+  Proposal: "bg-[rgb(0_96_255_/_0.1)] text-[var(--admin-bright)]",
   Won: "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]",
   Lost: "bg-[rgb(7_17_31_/_0.05)] text-[var(--admin-muted)]",
 };

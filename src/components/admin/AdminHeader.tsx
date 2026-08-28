@@ -3,8 +3,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Bell, ChevronDown, LogOut, Menu, PanelLeft, Globe } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { userDisplay } from "@/auth/userDisplay";
+import { NotificationPanel } from "@/components/messaging/NotificationPanel";
 import { getAdminPageMeta } from "@/data/adminNav";
 import { cn } from "@/lib/cn";
+import { useMessaging } from "@/providers/MessagingProvider";
 
 type AdminHeaderProps = {
   collapsed: boolean;
@@ -16,26 +18,35 @@ type AdminHeaderProps = {
 export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMobile }: AdminHeaderProps) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const profile = user
-    ? userDisplay(user)
-    : { name: "Account", initials: "A", role: "User" };
+  const { user, profile, signOut } = useAuth();
+  const display = user ? userDisplay(user, profile) : { name: "Account", initials: "A", role: "User" };
   const page = getAdminPageMeta(pathname);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const notesRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
+  const notesId = useId();
+  const { notifications, unreadNotificationCount, loadStatus, markNotificationRead, markAllNotificationsRead } =
+    useMessaging();
 
   useEffect(() => {
     setMenuOpen(false);
+    setNotesOpen(false);
   }, [pathname]);
 
   useEffect(() => {
-    if (!menuOpen) return;
+    if (!menuOpen && !notesOpen) return;
     const onPointer = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+      const target = event.target as Node;
+      if (menuOpen && !menuRef.current?.contains(target)) setMenuOpen(false);
+      if (notesOpen && !notesRef.current?.contains(target)) setNotesOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        setNotesOpen(false);
+      }
     };
     document.addEventListener("mousedown", onPointer);
     window.addEventListener("keydown", onKey);
@@ -43,10 +54,16 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
       document.removeEventListener("mousedown", onPointer);
       window.removeEventListener("keydown", onKey);
     };
-  }, [menuOpen]);
+  }, [menuOpen, notesOpen]);
 
   return (
-    <header className="flex h-[var(--admin-header)] shrink-0 items-center justify-between gap-3 border-b border-[var(--admin-line)] bg-[var(--admin-card)] px-4 lg:px-6">
+    <header
+      className={cn(
+        "fixed top-0 right-0 z-20 flex h-[var(--admin-header)] items-center justify-between gap-3 border-b border-[var(--admin-line)] bg-[var(--admin-card)] px-4 lg:px-6",
+        "left-0 transition-[left] duration-[var(--duration-base)] ease-[var(--ease-out)]",
+        collapsed ? "lg:left-[var(--admin-sidebar-collapsed)]" : "lg:left-[var(--admin-sidebar)]",
+      )}
+    >
       <div className="flex min-w-0 items-center gap-2">
         <button
           type="button"
@@ -75,13 +92,40 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
       </div>
 
       <div className="flex items-center gap-1.5">
-        <button
-          type="button"
-          className="inline-flex size-9 items-center justify-center rounded-lg text-[var(--admin-muted)] transition-colors hover:bg-[var(--admin-bg)] hover:text-[var(--admin-ink)]"
-          aria-label="Notifications"
-        >
-          <Bell size={18} strokeWidth={1.75} aria-hidden="true" />
-        </button>
+        <div className="relative" ref={notesRef}>
+          <button
+            type="button"
+            className="relative inline-flex size-9 items-center justify-center rounded-lg text-[var(--admin-muted)] transition-colors hover:bg-[var(--admin-bg)] hover:text-[var(--admin-ink)]"
+            aria-label={
+              unreadNotificationCount ? `${unreadNotificationCount} unread notifications` : "Notifications"
+            }
+            aria-expanded={notesOpen}
+            aria-controls={notesId}
+            aria-haspopup="dialog"
+            onClick={() => {
+              setNotesOpen((value) => !value);
+              setMenuOpen(false);
+            }}
+          >
+            <Bell size={18} strokeWidth={1.75} aria-hidden="true" />
+            {unreadNotificationCount > 0 ? (
+              <span className="absolute right-2 top-2 size-2 rounded-full bg-[var(--admin-blue)]" aria-hidden="true" />
+            ) : null}
+          </button>
+          <NotificationPanel
+            tone="admin"
+            role="admin"
+            open={notesOpen}
+            id={notesId}
+            notifications={notifications}
+            loading={loadStatus === "loading"}
+            onClose={() => setNotesOpen(false)}
+            onOpen={(item) => {
+              if (!item.readAt) void markNotificationRead(item.id);
+            }}
+            onMarkAllRead={() => void markAllNotificationsRead()}
+          />
+        </div>
 
         <div className="relative" ref={menuRef}>
           <button
@@ -90,16 +134,19 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
             aria-expanded={menuOpen}
             aria-controls={menuId}
             aria-haspopup="menu"
-            onClick={() => setMenuOpen((value) => !value)}
+            onClick={() => {
+              setMenuOpen((value) => !value);
+              setNotesOpen(false);
+            }}
           >
             <span className="inline-flex size-8 items-center justify-center rounded-full bg-[var(--admin-navy)] font-heading text-xs font-semibold text-white">
-              {profile.initials}
+              {display.initials}
             </span>
             <span className="hidden min-w-0 sm:block">
               <span className="block font-heading text-[13px] font-semibold leading-tight text-[var(--admin-ink)]">
-                {profile.name}
+                {display.name}
               </span>
-              <span className="block text-[11px] leading-tight text-[var(--admin-muted)]">{profile.role}</span>
+              <span className="block text-[11px] leading-tight text-[var(--admin-muted)]">{display.role}</span>
             </span>
             <ChevronDown
               size={14}

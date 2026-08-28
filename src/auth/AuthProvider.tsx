@@ -1,7 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AuthError, Session, User } from "@supabase/supabase-js";
+import { loadCurrentProfile, type AppProfile, type ProfileStatus } from "@/auth/loadProfile";
+import { isAgencyRole } from "@/auth/roles";
+import { clearSignedUrlCache } from "@/data/fileStorage";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import { appUrl } from "@/lib/appUrl";
+import { devAuthDetail, publicSignInError } from "@/auth/authErrors";
 
 export type SignInResult =
   | { ok: true }
@@ -10,20 +14,23 @@ export type SignInResult =
 type AuthContextValue = {
   session: Session | null;
   user: User | null;
+  profile: AppProfile | null;
+  profileStatus: ProfileStatus;
   loading: boolean;
   configured: boolean;
-  signInWithEmail: (email: string) => Promise<SignInResult>;
+  signInWithEmail: (email: string, options?: { redirectTo?: string }) => Promise<SignInResult>;
+  refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
-
-function describeAuthError(error: AuthError): string {
-  const parts = [error.message, error.code, error.status != null ? String(error.status) : ""]
-    .filter((part): part is string => Boolean(part && part.trim()))
-    .map((part) => part.trim());
-  return parts.join(" · ") || "Unknown auth error";
+function markStaffActive(profile: AppProfile) {
+  if (!isAgencyRole(profile.role) || !profile.isActive) return;
+  const supabase = getSupabase();
+  if (!supabase) return;
+  void supabase.rpc("touch_staff_last_active");
 }
+
+const AuthContext = createContext<AuthContextValue | null>(null);
 
 function isRedirectError(message: string): boolean {
   const normalized = message.toLowerCase();
@@ -35,8 +42,10 @@ function isRedirectError(message: string): boolean {
   );
 }
 
-function mapSignInError(code?: string, message?: string): SignInResult {
-  const normalized = (message ?? "").toLowerCase();
+function mapSignInError(error: AuthError): SignInResult {
+  const message = error.message ?? "";
+  const code = error.code;
+  const normalized = message.toLowerCase();
   if (
     code === "signup_disabled" ||
     code === "user_not_found" ||
@@ -53,57 +62,98 @@ function mapSignInError(code?: string, message?: string): SignInResult {
     normalized.includes("rate_limit") ||
     normalized.includes("security purposes")
   ) {
-    return { ok: false, reason: "rate_limit", message };
+    return { ok: false, reason: "rate_limit", message: import.meta.env.DEV ? devAuthDetail(error) : publicSignInError("rate_limit") };
   }
-  if (
-    normalized.includes("error sending") ||
-    normalized.includes("smtp") ||
-    normalized.includes("failed to send") ||
-    code === "unexpected_failure"
-  ) {
-    return {
-      ok: false,
-      reason: "error",
-      message: `${message ?? "The email provider rejected this send."} Check Authentication → Emails → SMTP (host smtp.resend.com, port 465, username resend, password = Resend API key, sender email allowed in Resend).`,
-    };
+  if (import.meta.env.DEV) {
+    const detail = devAuthDetail(error);
+    if (
+      normalized.includes("error sending") ||
+      normalized.includes("smtp") ||
+      normalized.includes("failed to send") ||
+      code === "unexpected_failure"
+    ) {
+      return {
+        ok: false,
+        reason: "error",
+        message: `${detail ?? "The email provider rejected this send."} Check Authentication → Emails → SMTP.`,
+      };
+    }
+    return { ok: false, reason: "error", message: detail ?? publicSignInError("error") };
   }
-  return { ok: false, reason: "error", message };
+  return { ok: false, reason: "error", message: publicSignInError("error") };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const configured = isSupabaseConfigured();
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<AppProfile | null>(null);
+  const [profileStatus, setProfileStatus] = useState<ProfileStatus>("idle");
   const [loading, setLoading] = useState(configured);
+  const loadSeq = useRef(0);
 
   useEffect(() => {
     const supabase = getSupabase();
     if (!supabase) {
       setSession(null);
+      setProfile(null);
+      setProfileStatus("idle");
       setLoading(false);
       return;
     }
 
+    const applySession = (nextSession: Session | null) => {
+      const seq = ++loadSeq.current;
+      setSession(nextSession);
+      if (!nextSession) {
+        setProfile(null);
+        setProfileStatus("idle");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setProfileStatus("loading");
+      void loadCurrentProfile().then((result) => {
+        if (seq !== loadSeq.current) return;
+        if (result.status === "ready") {
+          setProfile(result.profile);
+          setProfileStatus("ready");
+          markStaffActive(result.profile);
+        } else {
+          setProfile(null);
+          setProfileStatus(result.status);
+        }
+        setLoading(false);
+      });
+    };
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setLoading(false);
+      window.setTimeout(() => applySession(nextSession), 0);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      loadSeq.current += 1;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
       user: session?.user ?? null,
+      profile,
+      profileStatus,
       loading,
       configured,
-      async signInWithEmail(email: string) {
+      async signInWithEmail(email: string, options?: { redirectTo?: string }) {
         const supabase = getSupabase();
         if (!supabase) return { ok: false, reason: "unconfigured" };
 
-        const redirectTargets = [appUrl("/auth/callback"), appUrl("/")];
+        const redirectTargets = options?.redirectTo
+          ? [options.redirectTo]
+          : [appUrl("/auth/callback"), appUrl("/")];
 
         try {
           let lastError: AuthError | null = null;
@@ -120,23 +170,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!isRedirectError(`${error.message} ${error.code ?? ""}`)) break;
           }
 
-          if (!lastError) return { ok: false, reason: "error", message: "Unknown auth error" };
-          return mapSignInError(lastError.code, describeAuthError(lastError));
-        } catch (caught) {
-          const message = caught instanceof Error ? caught.message : "Unknown auth error";
-          return { ok: false, reason: "error", message };
+          if (!lastError) return { ok: false, reason: "error", message: publicSignInError("error") };
+          return mapSignInError(lastError);
+        } catch {
+          return { ok: false, reason: "error", message: publicSignInError("error") };
+        }
+      },
+      async refreshProfile() {
+        const seq = loadSeq.current;
+        const result = await loadCurrentProfile();
+        if (seq !== loadSeq.current) return;
+        if (result.status === "ready") {
+          setProfile(result.profile);
+          setProfileStatus("ready");
+          markStaffActive(result.profile);
+        } else {
+          setProfile(null);
+          setProfileStatus(result.status);
         }
       },
       async signOut() {
         const supabase = getSupabase();
+        loadSeq.current += 1;
+        setProfile(null);
+        setProfileStatus("idle");
+        clearSignedUrlCache();
         if (!supabase) {
           setSession(null);
+          setLoading(false);
           return;
         }
         await supabase.auth.signOut();
       },
     }),
-    [configured, loading, session],
+    [configured, loading, profile, profileStatus, session],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

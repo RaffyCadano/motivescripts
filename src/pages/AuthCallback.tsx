@@ -2,7 +2,9 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthStatusScreen } from "@/auth/AuthStatusScreen";
 import { completeAuthRedirect } from "@/auth/completeAuthRedirect";
-import { isAdminUser } from "@/auth/roles";
+import { loadCurrentProfile } from "@/auth/loadProfile";
+import { safeInviteNext } from "@/data/invitation";
+import { isAgencyRole } from "@/auth/roles";
 import { getSupabase } from "@/lib/supabase";
 
 export function AuthCallbackPage() {
@@ -15,16 +17,28 @@ export function AuthCallbackPage() {
       return;
     }
 
+    const inviteNext = safeInviteNext(new URLSearchParams(window.location.search).get("next"));
     let active = true;
 
-    void completeAuthRedirect(supabase).then((result) => {
+    void completeAuthRedirect(supabase).then(async (result) => {
       if (!active) return;
       if (!result.ok) {
-        const reason = encodeURIComponent(result.message.slice(0, 180));
-        navigate(`/login?error=link&reason=${reason}`, { replace: true });
+        navigate("/login?error=link", { replace: true });
         return;
       }
-      navigate(isAdminUser(result.session.user) ? "/admin" : "/login?error=denied", { replace: true });
+
+      if (inviteNext) {
+        navigate(inviteNext, { replace: true });
+        return;
+      }
+
+      const profile = await loadCurrentProfile();
+      if (!active) return;
+      if (profile.status === "ready" && isAgencyRole(profile.profile.role)) {
+        navigate("/admin", { replace: true });
+        return;
+      }
+      navigate("/client", { replace: true });
     });
 
     return () => {
@@ -32,5 +46,11 @@ export function AuthCallbackPage() {
     };
   }, [navigate]);
 
-  return <AuthStatusScreen title="Signing you in." body="You’ll land in the dashboard in a moment." />;
+  return (
+    <AuthStatusScreen
+      inSiteLayout
+      title="Signing you in."
+      body="You’ll land in your workspace in a moment."
+    />
+  );
 }

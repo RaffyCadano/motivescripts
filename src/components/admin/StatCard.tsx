@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { CircleAlert, FolderKanban, Inbox, TrendingUp, Wallet } from "lucide-react";
-import type { AdminStat } from "@/data/adminMockData";
+import { CircleAlert, FolderKanban, Inbox, MessageSquare, TrendingUp, Users, Wallet } from "lucide-react";
+import type { AdminStat } from "@/data/admin";
 import { cn } from "@/lib/cn";
 
 const icons = {
@@ -8,6 +8,8 @@ const icons = {
   projects: FolderKanban,
   review: CircleAlert,
   revenue: Wallet,
+  clients: Users,
+  messages: MessageSquare,
 } as const;
 
 type StatCardProps = {
@@ -39,5 +41,5 @@ export function StatCard({ stat }: StatCardProps) {
 }
 
 export function StatCardGrid({ children }: { children: ReactNode }) {
-  return <div className={cn("grid gap-3 sm:grid-cols-2 xl:grid-cols-4")}>{children}</div>;
+  return <div className={cn("grid gap-3 sm:grid-cols-2 xl:grid-cols-5")}>{children}</div>;
 }

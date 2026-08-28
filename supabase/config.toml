@@ -1,0 +1,26 @@
+# Used by the Supabase CLI. Do not put secrets here.
+# Invitation send/resend/revoke verifies the admin JWT inside the function.
+
+[functions.client-invitation]
+verify_jwt = false
+
+[functions.document-email]
+verify_jwt = false
+
+[functions.create-checkout-session]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.invoice-pdf]
+verify_jwt = false
+
+[functions.proposal-pdf]
+verify_jwt = false
+
+[functions.contract-pdf]
+verify_jwt = false
+
+[functions.staff-invitation]
+verify_jwt = false

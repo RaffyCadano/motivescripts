@@ -1,4 +1,5 @@
 import type { EmailOtpType, Session, SupabaseClient } from "@supabase/supabase-js";
+import { publicAuthLinkError } from "@/auth/authErrors";
 
 export type AuthRedirectResult =
   | { ok: true; session: Session }
@@ -48,13 +49,13 @@ async function waitForSession(supabase: SupabaseClient, attempts = 20): Promise<
 async function runAuthRedirect(supabase: SupabaseClient): Promise<AuthRedirectResult> {
   const urlError = redirectErrorMessage();
   if (urlError) {
-    return { ok: false, message: urlError.replace(/\+/g, " ") };
+    return { ok: false, message: publicAuthLinkError() };
   }
 
   const tokens = tokensFromUrl();
   if (tokens) {
     const { data, error } = await supabase.auth.setSession(tokens);
-    if (error) return { ok: false, message: error.message };
+    if (error) return { ok: false, message: publicAuthLinkError() };
     if (data.session) return { ok: true, session: data.session };
   }
 
@@ -65,14 +66,14 @@ async function runAuthRedirect(supabase: SupabaseClient): Promise<AuthRedirectRe
       token_hash: tokenHash,
       type: otpTypeFromUrl(search.get("type")),
     });
-    if (error) return { ok: false, message: error.message };
+    if (error) return { ok: false, message: publicAuthLinkError() };
     if (data.session) return { ok: true, session: data.session };
   }
 
   const code = search.get("code");
   if (code) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) return { ok: false, message: error.message };
+    if (error) return { ok: false, message: publicAuthLinkError() };
     if (data.session) return { ok: true, session: data.session };
   }
 
@@ -81,7 +82,7 @@ async function runAuthRedirect(supabase: SupabaseClient): Promise<AuthRedirectRe
 
   return {
     ok: false,
-    message: "That sign-in link expired or was already used. Request a new one from this same browser.",
+    message: publicAuthLinkError(),
   };
 }
 

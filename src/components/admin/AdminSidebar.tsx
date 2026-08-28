@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { AdminNavItem } from "@/components/admin/AdminNavItem";
 import { BrandMark } from "@/components/BrandMark";
-import { adminNavGroups } from "@/data/adminNav";
+import { filterAdminNavGroups } from "@/data/adminNav";
+import { useAuth } from "@/auth/AuthProvider";
 import { cn } from "@/lib/cn";
 
 type AdminSidebarProps = {
@@ -12,6 +13,8 @@ type AdminSidebarProps = {
 };
 
 export function AdminSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigate }: AdminSidebarProps) {
+  const { profile } = useAuth();
+  const groups = filterAdminNavGroups(profile);
   return (
     <aside
       id="admin-sidebar"
@@ -48,7 +51,7 @@ export function AdminSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigat
       </div>
 
       <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label="Admin sections">
-        {adminNavGroups.map((group) => (
+        {groups.map((group) => (
           <div key={group.label} className="mb-5 last:mb-0">
             <p
               className={cn(

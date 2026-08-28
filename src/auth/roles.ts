@@ -1,20 +1,21 @@
-import type { User } from "@supabase/supabase-js";
+export const APP_ROLES = ["admin", "staff", "client"] as const;
+export type AppRole = (typeof APP_ROLES)[number];
 
 export const ADMIN_ROLE = "admin";
+export const STAFF_ROLE = "staff";
+export const CLIENT_ROLE = "client";
 
-export function getUserRole(user: User | null | undefined): string | null {
-  const role = user?.app_metadata?.role;
-  if (typeof role !== "string") return null;
-  const normalized = role.trim().toLowerCase();
-  return normalized || null;
+export function isAppRole(value: string | null | undefined): value is AppRole {
+  return value === "admin" || value === "staff" || value === "client";
 }
 
-export function isAdminUser(user: User | null | undefined): boolean {
-  return getUserRole(user) === ADMIN_ROLE;
+export function isAgencyRole(value: string | null | undefined): boolean {
+  return value === "admin" || value === "staff";
 }
 
-export function displayRoleLabel(user: User | null | undefined): string {
-  const role = getUserRole(user);
-  if (!role) return "User";
-  return role.charAt(0).toUpperCase() + role.slice(1);
+export function displayRoleLabel(role: string | null | undefined): string {
+  if (role === "admin") return "Admin";
+  if (role === "staff") return "Staff";
+  if (role === "client") return "Client";
+  return "User";
 }

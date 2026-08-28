@@ -1,3 +1,9 @@
+/**
+ * Public marketing case studies for the Work / Case Study pages.
+ * These are labeled demonstration concepts. They are not CRM records and are
+ * never used as Admin/Client fallbacks when Supabase is empty.
+ */
+
 export type Project = {
   slug: string;
   name: string;

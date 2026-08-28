@@ -1,3 +1,6 @@
+import type { AppProfile } from "@/auth/loadProfile";
+import { hasPermission, type StaffPermissionCode } from "@/auth/permissions";
+
 export type AdminIconName =
   | "overview"
   | "leads"
@@ -43,7 +46,6 @@ export const adminNavGroups: AdminNavGroup[] = [
     label: "Projects",
     items: [
       { label: "Projects", href: "/admin/projects", icon: "projects" },
-      { label: "Tasks", href: "/admin/tasks", icon: "tasks" },
       { label: "Files", href: "/admin/files", icon: "files" },
     ],
   },
@@ -56,34 +58,110 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
   {
     label: "Finance",
-    items: [
-      { label: "Invoices", href: "/admin/invoices", icon: "invoices" },
-      { label: "Payments", href: "/admin/payments", icon: "payments" },
-    ],
+    items: [{ label: "Invoices", href: "/admin/invoices", icon: "invoices" }],
   },
   {
     label: "Communication",
-    items: [
-      { label: "Messages", href: "/admin/messages", icon: "messages" },
-      { label: "Notifications", href: "/admin/notifications", icon: "notifications" },
-    ],
+    items: [{ label: "Messages", href: "/admin/messages", icon: "messages" }],
   },
   {
     label: "Operations",
-    items: [
-      { label: "Team", href: "/admin/team", icon: "team" },
-      { label: "Activity", href: "/admin/activity", icon: "activity" },
-    ],
-  },
-  {
-    label: "Settings",
-    items: [{ label: "Settings", href: "/admin/settings", icon: "settings" }],
+    items: [{ label: "Team", href: "/admin/team", icon: "team" }],
   },
 ];
 
 export function getAdminPageMeta(pathname: string) {
+  const unavailable = adminUnavailablePages[pathname];
+  if (unavailable) {
+    return { label: unavailable.label, href: pathname, icon: unavailable.icon };
+  }
   const items = adminNavGroups.flatMap((group) => group.items);
+  if (pathname === "/admin/leads" || pathname.startsWith("/admin/leads/")) {
+    return items.find((item) => item.href === "/admin/leads") ?? items[0];
+  }
+  if (pathname === "/admin/clients" || pathname.startsWith("/admin/clients/")) {
+    return items.find((item) => item.href === "/admin/clients") ?? items[0];
+  }
+  if (pathname === "/admin/messages" || pathname.startsWith("/admin/messages/")) {
+    return items.find((item) => item.href === "/admin/messages") ?? items[0];
+  }
+  if (pathname.startsWith("/admin/projects/")) {
+    return items.find((item) => item.href === "/admin/projects") ?? items[0];
+  }
+  if (pathname === "/admin/proposals" || pathname.startsWith("/admin/proposals/")) {
+    return items.find((item) => item.href === "/admin/proposals") ?? items[0];
+  }
+  if (pathname === "/admin/contracts" || pathname.startsWith("/admin/contracts/")) {
+    return items.find((item) => item.href === "/admin/contracts") ?? items[0];
+  }
+  if (pathname === "/admin/invoices" || pathname.startsWith("/admin/invoices/")) {
+    return items.find((item) => item.href === "/admin/invoices") ?? items[0];
+  }
+  if (pathname === "/admin/team" || pathname.startsWith("/admin/team/")) {
+    return items.find((item) => item.href === "/admin/team") ?? items[0];
+  }
   const exact = items.find((item) => item.href === pathname);
   if (exact) return exact;
   return items.find((item) => item.end && pathname === item.href) ?? items[0];
+}
+
+const navPermission: Record<string, StaffPermissionCode | null> = {
+  "/admin": null,
+  "/admin/leads": "leads.view",
+  "/admin/clients": "clients.view",
+  "/admin/projects": "projects.view",
+  "/admin/tasks": "projects.view",
+  "/admin/files": "files.view",
+  "/admin/proposals": "proposals.view",
+  "/admin/contracts": "contracts.view",
+  "/admin/invoices": "invoices.view",
+  "/admin/payments": "invoices.view",
+  "/admin/messages": "messages.view",
+  "/admin/notifications": null,
+  "/admin/team": "team.view",
+  "/admin/activity": "activity.view",
+  "/admin/settings": null,
+};
+
+export const adminUnavailablePages: Record<
+  string,
+  { label: string; icon: AdminIconName; description: string; hint: string }
+> = {
+  "/admin/tasks": {
+    label: "Tasks",
+    icon: "tasks",
+    description: "A dedicated tasks workspace is not available in this release.",
+    hint: "Open a project to add, assign, and update tasks there.",
+  },
+  "/admin/notifications": {
+    label: "Notifications",
+    icon: "notifications",
+    description: "A dedicated notifications page is not available in this release.",
+    hint: "Unread alerts are in the header bell. Messages live under Messages.",
+  },
+  "/admin/activity": {
+    label: "Activity",
+    icon: "activity",
+    description: "A workspace-wide activity feed is not available in this release.",
+    hint: "Project activity is on each project’s overview.",
+  },
+  "/admin/settings": {
+    label: "Settings",
+    icon: "settings",
+    description: "Workspace settings are not available in this release.",
+    hint: "Team access is managed from Team. Client profile details are in the client portal.",
+  },
+};
+
+export function filterAdminNavGroups(profile: AppProfile | null): AdminNavGroup[] {
+  return adminNavGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        const required = navPermission[item.href];
+        if (!required) return true;
+        return hasPermission(profile, required);
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
 }

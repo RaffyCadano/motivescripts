@@ -1,0 +1,88 @@
+/* Scoped to the client portal so public pages and admin stay unchanged. */
+.client-app,
+.client-theme {
+  --client-bg: #f7f9fc;
+  --client-ink: #07111f;
+  --client-muted: #667085;
+  --client-card: #ffffff;
+  --client-line: #e5eaf0;
+  --client-hover: #eef3fb;
+  --client-blue: #0050f0;
+  --client-bright: #0060ff;
+  --client-cyan: #00c8ff;
+  --client-navy: #001030;
+  --client-sidebar: 16.5rem;
+  --client-sidebar-collapsed: 4.75rem;
+  --client-header: 4rem;
+  --client-radius: 1rem;
+}
+
+.client-app {
+  background: var(--client-bg);
+  color: var(--client-muted);
+  height: 100svh;
+  overflow: hidden;
+}
+
+.client-app h1,
+.client-app h2,
+.client-app h3 {
+  color: var(--client-ink);
+}
+
+html.client-nav-open,
+html.client-nav-open body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.client-app,
+.client-theme {
+  scrollbar-width: thin;
+  scrollbar-color: #b7c2d2 transparent;
+}
+
+.client-app *,
+.client-theme * {
+  scrollbar-width: thin;
+  scrollbar-color: #b7c2d2 transparent;
+}
+
+.client-app ::-webkit-scrollbar,
+.client-theme ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.client-app ::-webkit-scrollbar-corner,
+.client-theme ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.client-app ::-webkit-scrollbar-track,
+.client-theme ::-webkit-scrollbar-track {
+  background: transparent;
+  margin-block: 6px;
+}
+
+.client-app ::-webkit-scrollbar-thumb,
+.client-theme ::-webkit-scrollbar-thumb {
+  background-color: #b7c2d2;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+
+.client-app ::-webkit-scrollbar-thumb:hover,
+.client-theme ::-webkit-scrollbar-thumb:hover {
+  background-color: #7d8ba0;
+}
+
+.client-app ::-webkit-scrollbar-thumb:active,
+.client-theme ::-webkit-scrollbar-thumb:active {
+  background-color: #0050f0;
+}
+
+#client-main {
+  scrollbar-gutter: stable;
+}

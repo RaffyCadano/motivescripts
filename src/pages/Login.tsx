@@ -4,7 +4,7 @@ import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { site } from "@/data/site";
 import { useAuth } from "@/auth/AuthProvider";
-import { isAdminUser } from "@/auth/roles";
+import { publicAuthLinkError, publicSignInError } from "@/auth/authErrors";
 import { cn } from "@/lib/cn";
 
 const welcomeNotes = [
@@ -20,8 +20,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const linkFailed = searchParams.get("error") === "link";
-  const linkReason = searchParams.get("reason");
-  const accessDenied = searchParams.get("error") === "denied" || Boolean(user && !isAdminUser(user));
+  const accessDenied = searchParams.get("error") === "denied";
   const [status, setStatus] = useState<LoginStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -29,7 +28,9 @@ export function LoginPage() {
     if (!configured) {
       return {
         title: "Login isn’t connected yet.",
-        body: "Add your Supabase URL and publishable key to .env, then restart the dev server.",
+        body: import.meta.env.DEV
+          ? "Add your Supabase URL and publishable key to .env, then restart the dev server."
+          : "This site isn’t connected to the database. Contact MotiveScripts.",
       };
     }
     if (status === "sent") {
@@ -40,40 +41,36 @@ export function LoginPage() {
     }
     if (status === "not_found") {
       return {
-        title: "No account for that email.",
-        body: "Try the email address your invoice was sent to, or reach out and we’ll get you sorted.",
+        title: "Check your email.",
+        body: "If that address has access, we sent a sign-in link. It expires after a short time.",
       };
     }
     if (status === "rate_limit") {
       return {
         title: "Too many email attempts.",
-        body:
-          errorMessage ??
-          "Supabase is rate-limiting magic-link emails. Wait about an hour, or use custom SMTP.",
+        body: errorMessage ?? publicSignInError("rate_limit"),
       };
     }
     if (status === "error") {
       return {
         title: "We couldn’t send that link.",
-        body: errorMessage ?? "Try again in a moment, or email us directly.",
+        body: errorMessage ?? publicSignInError("error"),
       };
     }
     if (accessDenied && status === "idle") {
       return {
         title: "This account can’t open the dashboard.",
-        body: "Only admin users can sign in to the staff area. If this is your account, set the admin role in Supabase, then sign out and try again.",
+        body: "Only users with an assigned MotiveScripts role can open the staff or client areas.",
       };
     }
     if (linkFailed && status === "idle") {
       return {
         title: "That sign-in link didn’t work.",
-        body:
-          linkReason ??
-          "It may have expired, already been used, or the redirect URL isn’t allowed in Supabase. Request a new one from this same browser.",
+        body: publicAuthLinkError(),
       };
     }
     return null;
-  }, [accessDenied, configured, errorMessage, linkFailed, linkReason, status]);
+  }, [accessDenied, configured, errorMessage, linkFailed, status]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,7 +87,7 @@ export function LoginPage() {
       return;
     }
     if (result.reason === "not_found") {
-      setStatus("not_found");
+      setStatus("sent");
       return;
     }
     if (result.reason === "rate_limit") {
@@ -138,11 +135,11 @@ export function LoginPage() {
             />
             <div className="relative px-6 py-8 md:px-10 md:py-10">
               <p className="font-heading text-xs font-bold uppercase tracking-[0.16em] text-faint">
-                Client access
+                Account access
               </p>
               <h2 className="mt-3 text-2xl">Sign in with your email.</h2>
               <p className="mt-2 text-sm leading-relaxed text-muted">
-                We’ll send a sign-in link to this address.
+                We’ll send a sign-in link to this address. Staff and clients use the same login.
               </p>
 
               <form className="mt-8" onSubmit={onSubmit}>
@@ -163,22 +160,7 @@ export function LoginPage() {
                 {alert ? (
                   <div className="mt-5 border-l-2 border-cyan pl-4" role="status">
                     <p className="font-heading text-base font-semibold text-ink">{alert.title}</p>
-                    <p className="mt-2 text-sm leading-relaxed text-muted">
-                      {status === "not_found" ? (
-                        <>
-                          Try the email address your invoice was sent to, or{" "}
-                          <a
-                            className="font-medium text-ink underline-offset-2 hover:underline"
-                            href={`mailto:${site.email}`}
-                          >
-                            reach out
-                          </a>{" "}
-                          and we’ll get you sorted.
-                        </>
-                      ) : (
-                        alert.body
-                      )}
-                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-muted">{alert.body}</p>
                   </div>
                 ) : null}
 

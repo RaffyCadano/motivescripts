@@ -9,3 +9,4 @@ dist-ssr
 .vite
 *.tsbuildinfo
 .tmp-screens
+supabase/.temp

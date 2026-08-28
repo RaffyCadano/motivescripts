@@ -4,7 +4,6 @@ import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { PageHero } from "@/components/PageHero";
 import { useAuth } from "@/auth/AuthProvider";
-import { site } from "@/data/site";
 import { cn } from "@/lib/cn";
 
 type ResetStatus = "idle" | "sending" | "sent" | "not_found" | "rate_limit" | "error" | "unconfigured";
@@ -23,12 +22,8 @@ export function ForgotPasswordPage() {
     setErrorMessage(null);
 
     const result = await signInWithEmail(email);
-    if (result.ok) {
+    if (result.ok || result.reason === "not_found") {
       setStatus("sent");
-      return;
-    }
-    if (result.reason === "not_found") {
-      setStatus("not_found");
       return;
     }
     if (result.reason === "rate_limit") {
@@ -43,7 +38,7 @@ export function ForgotPasswordPage() {
     setStatus("error");
   }
 
-  const done = status === "sent" || status === "not_found";
+  const done = status === "sent";
 
   return (
     <main id="main">
@@ -58,21 +53,9 @@ export function ForgotPasswordPage() {
           {done ? (
             <div className="rounded-[var(--radius-lg)] border border-[var(--color-line)] p-8 md:p-10">
               <p className="eyebrow">Sent</p>
-              <h2 className="mt-4 text-2xl">
-                {status === "not_found" ? "No account for that email." : "Check your email."}
-              </h2>
+              <h2 className="mt-4 text-2xl">Check your email.</h2>
               <p className="mt-4 text-muted">
-                {status === "not_found" ? (
-                  <>
-                    Try the address on the account, or email{" "}
-                    <a className="text-cyan underline-offset-2 hover:underline" href={`mailto:${site.email}`}>
-                      {site.email}
-                    </a>
-                    .
-                  </>
-                ) : (
-                  "If that address has access, we sent a sign-in link. It expires after a short time."
-                )}
+                If that address has access, we sent a sign-in link. It expires after a short time.
               </p>
               <p className="mt-4 text-muted">
                 <Link className="font-medium text-ink underline-offset-2 hover:underline" to="/login">
@@ -102,7 +85,9 @@ export function ForgotPasswordPage() {
               </div>
               {status === "unconfigured" ? (
                 <p className="mt-4 text-sm text-muted">
-                  Login isn’t connected yet. Add your Supabase keys to .env and restart the dev server.
+                  {import.meta.env.DEV
+                    ? "Login isn’t connected yet. Add your Supabase keys to .env and restart the dev server."
+                    : "This site isn’t connected to the database. Contact MotiveScripts."}
                 </p>
               ) : null}
               {status === "rate_limit" ? (

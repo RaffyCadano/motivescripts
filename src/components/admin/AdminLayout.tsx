@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { TeamDirectoryProvider } from "@/components/admin/team/useTeamDirectory";
 import { cn } from "@/lib/cn";
 import "@/styles/admin.css";
 
@@ -51,7 +52,8 @@ export function AdminLayout() {
   const dockCollapsed = isLg && collapsed;
 
   return (
-    <div className="admin-app">
+    <TeamDirectoryProvider>
+    <div className="admin-app h-svh overflow-hidden">
       <a className="skip-link" href="#admin-main">
         Skip to content
       </a>
@@ -74,7 +76,7 @@ export function AdminLayout() {
 
       <div
         className={cn(
-          "flex min-h-svh flex-col transition-[padding] duration-[var(--duration-base)] ease-[var(--ease-out)]",
+          "flex h-full min-h-0 flex-col pt-[var(--admin-header)] transition-[padding] duration-[var(--duration-base)] ease-[var(--ease-out)]",
           dockCollapsed ? "lg:pl-[var(--admin-sidebar-collapsed)]" : "lg:pl-[var(--admin-sidebar)]",
         )}
       >
@@ -89,5 +91,6 @@ export function AdminLayout() {
         </main>
       </div>
     </div>
+    </TeamDirectoryProvider>
   );
 }
