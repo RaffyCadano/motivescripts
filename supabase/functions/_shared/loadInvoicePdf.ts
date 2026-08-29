@@ -1,3 +1,4 @@
+import { agencyEmail } from "./documentStatus.ts";
 import { asCents } from "./money.ts";
 import type { InvoicePdfItem, InvoicePdfModel, InvoicePdfPayment } from "./invoicePdf.ts";
 
@@ -215,7 +216,7 @@ export async function loadInvoicePdfModel(
     amount_due_cents: amountDue,
     payments,
     agencyName: "MotiveScripts",
-    agencyEmail: Deno.env.get("SUPPORT_EMAIL")?.trim() || "motivescripts.team@gmail.com",
+    agencyEmail: agencyEmail(),
   };
 }
 

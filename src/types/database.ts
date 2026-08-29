@@ -714,6 +714,10 @@ export type Database = {
         Args: { p_proposal_id: string };
         Returns: string;
       };
+      discard_proposal_draft: {
+        Args: { p_proposal_id: string };
+        Returns: null;
+      };
       send_proposal: {
         Args: { p_proposal_id: string };
         Returns: null;
@@ -731,6 +735,14 @@ export type Database = {
         Returns: null;
       };
       cancel_proposal: {
+        Args: { p_proposal_id: string };
+        Returns: null;
+      };
+      restore_proposal: {
+        Args: { p_proposal_id: string };
+        Returns: null;
+      };
+      delete_proposal: {
         Args: { p_proposal_id: string };
         Returns: null;
       };
@@ -764,6 +776,14 @@ export type Database = {
         Returns: null;
       };
       cancel_contract: {
+        Args: { p_contract_id: string };
+        Returns: null;
+      };
+      restore_contract: {
+        Args: { p_contract_id: string };
+        Returns: null;
+      };
+      delete_contract: {
         Args: { p_contract_id: string };
         Returns: null;
       };
@@ -834,6 +854,10 @@ export type Database = {
       current_staff_context: {
         Args: Record<string, never>;
         Returns: Json;
+      };
+      delete_project: {
+        Args: { p_project_id: string };
+        Returns: null;
       };
       preview_staff_invitation: {
         Args: { p_token: string };

@@ -29,6 +29,19 @@
   color: var(--admin-ink);
 }
 
+html.admin-shell,
+html.admin-shell body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  scrollbar-gutter: auto;
+}
+
+html.admin-shell #root {
+  height: 100%;
+  min-height: 0;
+}
+
 html.admin-nav-open,
 html.admin-nav-open body {
   overflow: hidden;

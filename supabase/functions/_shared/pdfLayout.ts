@@ -1,4 +1,5 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage } from "npm:pdf-lib@1.17.1";
+import { BRAND_LOGO_PNG_BASE64 } from "./brandLogoData.ts";
 
 export const PAGE_W = 612;
 export const PAGE_H = 792;
@@ -44,12 +45,28 @@ export function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
+function bytesFromBase64(value: string): Uint8Array {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
 export async function embedBrandLogo(doc: PDFDocument): Promise<PDFImage | null> {
   try {
-    const bytes = await Deno.readFile(new URL("./brand-icon.png", import.meta.url));
-    return await doc.embedPng(bytes);
+    return await doc.embedPng(bytesFromBase64(BRAND_LOGO_PNG_BASE64));
   } catch {
-    return null;
+    try {
+      const bytes = await Deno.readFile(new URL("./brand-logo.png", import.meta.url));
+      return await doc.embedPng(bytes);
+    } catch {
+      try {
+        const bytes = await Deno.readFile(new URL("./brand-icon.png", import.meta.url));
+        return await doc.embedPng(bytes);
+      } catch {
+        return null;
+      }
+    }
   }
 }
 
@@ -176,7 +193,7 @@ export async function createPdfCtx(input: {
     font,
     bold,
     logo,
-    agencyEmail: input.agencyEmail || "motivescripts.team@gmail.com",
+    agencyEmail: input.agencyEmail || "support@motivescripts.com",
     kind: input.kind,
   };
   drawBrandHeader(ctx, false);
@@ -185,17 +202,24 @@ export async function createPdfCtx(input: {
 
 export function drawBrandHeader(ctx: PdfCtx, continuation: boolean) {
   const { page, font, bold, logo } = ctx;
-  let textX = MARGIN;
+  const lockup = Boolean(logo && logo.width / logo.height > 1.6);
+  let logoHeight = 0;
   if (logo) {
-    const size = 36;
-    page.drawImage(logo, { x: MARGIN, y: ctx.y - size, width: size, height: size });
-    textX = MARGIN + size + 10;
+    logoHeight = lockup ? 32 : 36;
+    const width = Math.min(168, logoHeight * (logo.width / logo.height));
+    page.drawImage(logo, { x: MARGIN, y: ctx.y - logoHeight, width, height: logoHeight });
+    if (!lockup) {
+      drawText(page, "MotiveScripts", MARGIN + width + 12, ctx.y - 14, bold, 16, NAVY);
+    }
+  } else {
+    drawText(page, "MotiveScripts", MARGIN, ctx.y - 14, bold, 16, NAVY);
+    logoHeight = 20;
   }
-  drawText(page, "MotiveScripts", textX, ctx.y - 14, bold, 16, NAVY);
-  drawText(page, ctx.agencyEmail, textX, logo ? ctx.y - 30 : ctx.y - 28, font, 9, MUTED);
   const kindWidth = bold.widthOfTextAtSize(ctx.kind, 14);
   drawText(page, ctx.kind, PAGE_W - MARGIN - kindWidth, ctx.y - 12, bold, 14, BLUE);
-  ctx.y -= logo ? 52 : 44;
+  const emailY = ctx.y - logoHeight - 14;
+  drawText(page, ctx.agencyEmail, MARGIN, emailY, font, 9, MUTED);
+  ctx.y = emailY - 16;
   if (continuation) {
     drawText(page, "Continued", MARGIN, ctx.y, font, 9, MUTED);
     ctx.y -= 16;
@@ -252,11 +276,40 @@ export function drawSection(ctx: PdfCtx, title: string, body: string) {
   ctx.y -= 6;
 }
 
+export function drawNumberedSection(ctx: PdfCtx, title: string, body: string) {
+  const items = body
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (items.length === 0) return;
+  ctx.y -= 6;
+  drawHeading(ctx, title);
+  items.forEach((item, index) => {
+    const prefix = `${index + 1}. `;
+    const prefixWidth = ctx.font.widthOfTextAtSize(prefix, 10);
+    const wrapped = wrapLine(item, ctx.font, 10, PAGE_W - MARGIN * 2 - prefixWidth);
+    wrapped.forEach((line, lineIndex) => {
+      ensureSpace(ctx, 13);
+      drawText(
+        ctx.page,
+        lineIndex === 0 ? `${prefix}${line}` : line,
+        lineIndex === 0 ? MARGIN : MARGIN + prefixWidth,
+        ctx.y,
+        ctx.font,
+        10,
+        INK,
+      );
+      ctx.y -= 13;
+    });
+  });
+  ctx.y -= 6;
+}
+
 export async function finishPdf(ctx: PdfCtx): Promise<Uint8Array> {
   drawFooterBar(ctx.page);
   const pages = ctx.doc.getPages();
   const total = pages.length;
-  pages.forEach((page, index) => {
+  pages.forEach((page: PDFPage, index: number) => {
     drawText(page, "Thank you for your business.", MARGIN, FOOTER_Y, ctx.font, 8, MUTED);
     const label = `Page ${index + 1} of ${total}`;
     const width = ctx.font.widthOfTextAtSize(label, 8);
@@ -286,7 +339,7 @@ export function pdfFail(error: string, req: Request, status = 200): Response {
 }
 
 export function pdfFileResponse(bytes: Uint8Array, filename: string, req: Request): Response {
-  return new Response(bytes, {
+  return new Response(bytes as BodyInit, {
     status: 200,
     headers: {
       ...pdfCorsHeaders(req),

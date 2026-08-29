@@ -1,3 +1,4 @@
+import { adminDangerSolidBtn, adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
 
 type ConfirmDocumentModalProps = {
@@ -5,7 +6,9 @@ type ConfirmDocumentModalProps = {
   title: string;
   description: string;
   actionLabel: string;
+  cancelLabel?: string;
   busy?: boolean;
+  danger?: boolean;
   tone?: "admin" | "client";
   onClose: () => void;
   onConfirm: () => void;
@@ -16,7 +19,9 @@ export function ConfirmDocumentModal({
   title,
   description,
   actionLabel,
+  cancelLabel = "Go back",
   busy,
+  danger = false,
   tone = "admin",
   onClose,
   onConfirm,
@@ -36,7 +41,7 @@ export function ConfirmDocumentModal({
               className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--client-line)] px-4 font-heading text-sm font-semibold"
               onClick={onClose}
             >
-              Cancel
+              {cancelLabel}
             </button>
             <button
               type="button"
@@ -58,15 +63,15 @@ export function ConfirmDocumentModal({
         <button
           type="button"
           disabled={busy}
-          className="inline-flex h-10 items-center justify-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60"
+          className={`${adminGhostBtn} justify-center`}
           onClick={onClose}
         >
-          Cancel
+          {cancelLabel}
         </button>
         <button
           type="button"
           disabled={busy}
-          className="inline-flex h-10 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white disabled:opacity-60"
+          className={`${danger ? adminDangerSolidBtn : adminPrimaryBtn} justify-center`}
           onClick={onConfirm}
         >
           {busy ? "Working…" : actionLabel}

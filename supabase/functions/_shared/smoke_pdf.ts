@@ -58,7 +58,7 @@ const invoiceBytes = await generateInvoicePdf({
     },
   ],
   agencyName: "MotiveScripts",
-  agencyEmail: "motivescripts.team@gmail.com",
+  agencyEmail: "support@motivescripts.com",
 });
 assertPdf(invoiceBytes, "invoice");
 
@@ -100,7 +100,7 @@ for (const statusLabel of proposalStatuses) {
     investment_cents: itemSum,
     acceptedAt: statusLabel === "Accepted" ? "2026-08-20T15:04:00Z" : null,
     acceptedEmail: statusLabel === "Accepted" ? "jane@example.com" : null,
-    agencyEmail: "motivescripts.team@gmail.com",
+    agencyEmail: "support@motivescripts.com",
   });
   assertPdf(bytes, `proposal ${statusLabel}`);
 }
@@ -130,7 +130,7 @@ const sparseProposal = await generateProposalPdf({
   investment_cents: 0,
   acceptedAt: null,
   acceptedEmail: null,
-  agencyEmail: "motivescripts.team@gmail.com",
+  agencyEmail: "support@motivescripts.com",
 });
 assertPdf(sparseProposal, "sparse proposal");
 
@@ -164,7 +164,7 @@ for (const statusLabel of contractStatuses) {
     generalTerms: longClause,
     acceptedAt: statusLabel === "Accepted" ? "2026-08-22T18:30:00Z" : null,
     acceptedEmail: statusLabel === "Accepted" ? "jane@example.com" : null,
-    agencyEmail: "motivescripts.team@gmail.com",
+    agencyEmail: "support@motivescripts.com",
   });
   assertPdf(bytes, `contract ${statusLabel}`);
 }
@@ -196,7 +196,7 @@ const sparseContract = await generateContractPdf({
   generalTerms: "",
   acceptedAt: null,
   acceptedEmail: null,
-  agencyEmail: "motivescripts.team@gmail.com",
+  agencyEmail: "support@motivescripts.com",
 });
 assertPdf(sparseContract, "sparse contract");
 

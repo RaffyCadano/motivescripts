@@ -1,6 +1,7 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useState } from "react";
+import { Archive, CircleOff, FolderKanban, PencilLine, RotateCcw, UserPlus } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
-import { MoreHorizontal } from "lucide-react";
+import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
 import { ClientFollowUpDialog } from "@/components/admin/clients/ClientFollowUpDialog";
 import { ClientFormModal } from "@/components/admin/clients/ClientFormModal";
 import { ClientNoteModal } from "@/components/admin/clients/ClientNoteModal";
@@ -67,6 +68,60 @@ export function AdminClientDetails() {
 
   const statusLabel = client.status === "Active" ? "Active Client" : `${client.status} Client`;
   const portalLinked = portalAccounts.some((account) => account.clientId === client.id && account.role === "client");
+  const canManageClient = hasPermission(profile, "clients.manage");
+  const canManageProjects = hasPermission(profile, "projects.manage");
+  const clientActions: AdminActionsMenuItem[] = [];
+  if (!portalLinked && isActiveAdmin(profile)) {
+    clientActions.push({
+      id: "invite",
+      label: "Invite Client",
+      icon: UserPlus,
+      onSelect: () => setInviteOpen(true),
+    });
+  }
+  if (canManageClient) {
+    clientActions.push({
+      id: "edit",
+      label: "Edit Client",
+      icon: PencilLine,
+      onSelect: () => setEditOpen(true),
+    });
+  }
+  if (canManageProjects) {
+    clientActions.push({
+      id: "create-project",
+      label: "Create Project",
+      icon: FolderKanban,
+      onSelect: () => setProjectOpen(true),
+    });
+  }
+  if (canManageClient) {
+    if (client.status === "Active") {
+      clientActions.push({
+        id: "inactive",
+        label: "Mark Inactive",
+        icon: CircleOff,
+        onSelect: () => setPendingStatus("Inactive"),
+      });
+    } else {
+      clientActions.push({
+        id: "reactivate",
+        label: "Reactivate",
+        icon: RotateCcw,
+        onSelect: () => setPendingStatus("Active"),
+      });
+    }
+    if (client.status !== "Archived") {
+      clientActions.push({
+        id: "archive",
+        label: "Archive Client",
+        icon: Archive,
+        danger: true,
+        separatorBefore: true,
+        onSelect: () => setPendingStatus("Archived"),
+      });
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -85,42 +140,7 @@ export function AdminClientDetails() {
             <p className="mt-1 text-sm text-[var(--admin-muted)]">{statusLabel}</p>
             <ClientHeaderMeta client={client} />
           </div>
-          <div className="flex flex-wrap gap-2">
-            {!portalLinked && isActiveAdmin(profile) ? (
-              <button
-                type="button"
-                className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white"
-                onClick={() => setInviteOpen(true)}
-              >
-                Invite Client
-              </button>
-            ) : null}
-            {hasPermission(profile, "clients.manage") ? (
-            <button
-              type="button"
-              className="inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-              onClick={() => setEditOpen(true)}
-            >
-              Edit Client
-            </button>
-            ) : null}
-            {hasPermission(profile, "projects.manage") ? (
-              <button
-                type="button"
-                className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white"
-                onClick={() => setProjectOpen(true)}
-              >
-                Create Project
-              </button>
-            ) : null}
-            {hasPermission(profile, "clients.manage") ? (
-              <ClientMoreMenu
-                status={client.status}
-                businessName={client.businessName}
-                onRequestStatus={setPendingStatus}
-              />
-            ) : null}
-          </div>
+          <AdminActionsMenu ariaLabel={`Actions for ${client.businessName}`} items={clientActions} />
         </div>
       </div>
 
@@ -209,88 +229,6 @@ export function AdminClientDetails() {
           setPendingStatus(null);
         }}
       />
-    </div>
-  );
-}
-
-function ClientMoreMenu({
-  status,
-  businessName,
-  onRequestStatus,
-}: {
-  status: AgencyClientStatus;
-  businessName: string;
-  onRequestStatus: (status: AgencyClientStatus) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const menuId = useId();
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onPointer);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onPointer);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  const actions =
-    status === "Active"
-      ? [
-          { label: "Mark Inactive", next: "Inactive" as const },
-          { label: "Archive Client", next: "Archived" as const },
-        ]
-      : status === "Inactive"
-        ? [
-            { label: "Reactivate", next: "Active" as const },
-            { label: "Archive Client", next: "Archived" as const },
-          ]
-        : [{ label: "Reactivate", next: "Active" as const }];
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        className="inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-        aria-label={`More actions for ${businessName}`}
-        aria-expanded={open}
-        aria-controls={menuId}
-        aria-haspopup="menu"
-        onClick={() => setOpen((value) => !value)}
-      >
-        More
-        <MoreHorizontal size={16} strokeWidth={1.75} className="ml-2" aria-hidden="true" />
-      </button>
-      {open ? (
-        <div
-          id={menuId}
-          role="menu"
-          className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-xl border border-[var(--admin-line)] bg-white py-1 shadow-[0_12px_32px_rgb(7_17_31_/_0.08)]"
-        >
-          {actions.map((action) => (
-            <button
-              key={action.next}
-              type="button"
-              role="menuitem"
-              className="block w-full px-3 py-2 text-left text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-              onClick={() => {
-                setOpen(false);
-                onRequestStatus(action.next);
-              }}
-            >
-              {action.label}
-            </button>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }

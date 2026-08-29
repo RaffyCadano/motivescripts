@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { Ban, Download, FileSignature, FolderKanban, Mail, PencilLine, RotateCcw, Save, Send, Trash2, Undo2 } from "lucide-react";
+import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
+import { AdminInfoTip } from "@/components/admin/AdminInfoTip";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
@@ -6,23 +9,57 @@ import { LineItemsEditor } from "@/components/documents/LineItemsEditor";
 import { ProposalDocumentView } from "@/components/documents/ProposalDocumentView";
 import { ProposalPresetPanel } from "@/components/documents/ProposalPresetPanel";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
-import { effectiveDocumentStatus, lineItemsTotalCents, type LineItemDraft } from "@/data/documents";
+import { defaultProposalLineItem, defaultProposalValidUntil, effectiveDocumentStatus, lineItemsTotalCents, type LineItemDraft } from "@/data/documents";
+import { applyProposalDraftDefaults } from "@/data/proposalPresets";
 import {
   cancelProposal,
   createContract,
+  deleteProposal,
   createProposalRevision,
+  discardProposalDraft,
   downloadProposalPdf,
   fetchProposalDetail,
   proposalLineDrafts,
   saveProposalDraft,
+  resendProposalEmail,
+  restoreProposal,
   sendProposal,
   type ProposalDetail,
 } from "@/data/documentsRepository";
 import { formatUsdFromCents } from "@/data/money";
 import { AgencyDbError } from "@/lib/dbErrors";
 
+type ProposalForm = {
+  title: string;
+  introduction: string;
+  overview: string;
+  scope: string;
+  deliverablesText: string;
+  timeline: string;
+  paymentTerms: string;
+  terms: string;
+  notes: string;
+  validUntil: string;
+  adminNotes: string;
+};
+
 const fieldClass =
   "mt-1.5 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 py-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)] disabled:bg-[var(--admin-bg)]";
+
+async function saveDraftRevision(
+  revisionId: string,
+  nextForm: ProposalForm,
+  nextItems?: LineItemDraft[],
+) {
+  await saveProposalDraft({
+    revisionId,
+    ...nextForm,
+    validUntil: nextForm.validUntil || null,
+    items: nextItems,
+    replaceItems: nextItems != null,
+    adminNotes: nextForm.adminNotes,
+  });
+}
 
 export function AdminProposalDetails() {
   const { id } = useParams();
@@ -34,7 +71,10 @@ export function AdminProposalDetails() {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
-  const [form, setForm] = useState({
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [form, setForm] = useState<ProposalForm>({
     title: "",
     introduction: "",
     overview: "",
@@ -48,14 +88,17 @@ export function AdminProposalDetails() {
     adminNotes: "",
   });
   const [items, setItems] = useState<LineItemDraft[]>([]);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const loadGen = useRef(0);
 
-  async function load() {
+  async function load(generation?: number) {
     if (!id) return;
     const next = await fetchProposalDetail(id);
+    if (generation != null && generation !== loadGen.current) return;
     setDetail(next);
     if (next) {
-      setForm({
-        title: next.working.title,
+      const body = {
         introduction: next.working.introduction,
         overview: next.working.overview,
         scope: next.working.scope,
@@ -64,23 +107,45 @@ export function AdminProposalDetails() {
         paymentTerms: next.working.payment_terms,
         terms: next.working.terms,
         notes: next.working.notes,
+      };
+      const filled = next.working.status === "draft" ? applyProposalDraftDefaults(body) : body;
+      const nextForm: ProposalForm = {
+        title: next.working.title,
+        ...filled,
         validUntil: next.working.valid_until ?? "",
         adminNotes: next.adminNotes,
+      };
+      const nextItems = proposalLineDrafts(next);
+      setForm(nextForm);
+      setItems(nextItems);
+      if (next.working.status !== "draft") return;
+      if (generation != null && generation !== loadGen.current) return;
+      const formChanged = JSON.stringify(filled) !== JSON.stringify(body);
+      const collapsedDuplicates = nextItems.length < next.items.length;
+      const filledDescriptions = next.items.some((row) => {
+        const draft = nextItems.find((item) => item.name.trim().toLowerCase() === row.name.trim().toLowerCase());
+        return Boolean(draft?.description.trim()) && !row.description.trim();
       });
-      setItems(proposalLineDrafts(next));
+      if (formChanged && !collapsedDuplicates && !filledDescriptions) {
+        await saveDraftRevision(next.working.id, nextForm);
+        return;
+      }
+      if (collapsedDuplicates || filledDescriptions) {
+        await saveDraftRevision(next.working.id, nextForm, nextItems);
+      }
     }
   }
 
   useEffect(() => {
-    let active = true;
+    const generation = ++loadGen.current;
     setLoading(true);
-    void load()
+    void load(generation)
       .catch((error) => notify(error instanceof AgencyDbError ? error.message : "Unable to load this proposal."))
       .finally(() => {
-        if (active) setLoading(false);
+        if (generation === loadGen.current) setLoading(false);
       });
     return () => {
-      active = false;
+      loadGen.current += 1;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -110,12 +175,16 @@ export function AdminProposalDetails() {
 
   async function persist() {
     if (!isDraft) return;
-    await saveProposalDraft({
-      revisionId: current.working.id,
-      ...form,
-      validUntil: form.validUntil || null,
-      items,
-      adminNotes: form.adminNotes,
+    await saveDraftRevision(current.working.id, form, items);
+  }
+
+  function patchDraft(patch: Partial<ProposalForm>) {
+    setForm((currentForm) => {
+      const nextForm = { ...currentForm, ...patch };
+      void saveDraftRevision(current.working.id, nextForm, itemsRef.current).catch((error) => {
+        notify(error instanceof AgencyDbError ? error.message : "Unable to save this proposal.");
+      });
+      return nextForm;
     });
   }
 
@@ -136,7 +205,15 @@ export function AdminProposalDetails() {
   async function onSend() {
     setBusy(true);
     try {
-      await persist();
+      const nextForm = {
+        ...form,
+        title: form.title.trim() || "Website proposal",
+        validUntil: form.validUntil || defaultProposalValidUntil(),
+      };
+      const nextItems = items.some((item) => item.name.trim()) ? items : [defaultProposalLineItem()];
+      setForm(nextForm);
+      setItems(nextItems);
+      await saveDraftRevision(current.working.id, nextForm, nextItems);
       const result = await sendProposal(current.proposal.id);
       notify(result.emailed ? "Proposal sent." : "Proposal sent. The email could not be delivered.");
       setSendOpen(false);
@@ -162,6 +239,140 @@ export function AdminProposalDetails() {
         }))
     : detail.snapshotItems;
 
+  const proposalActions: AdminActionsMenuItem[] = [
+    {
+      id: "pdf",
+      label: pdfBusy ? "Generating PDF..." : "Download PDF",
+      icon: Download,
+      disabled: busy || pdfBusy,
+      onSelect: async () => {
+        setPdfBusy(true);
+        try {
+          await downloadProposalPdf(current.proposal.id);
+        } catch (error) {
+          notify(error instanceof AgencyDbError ? error.message : "Unable to generate the proposal PDF. Please try again.");
+        } finally {
+          setPdfBusy(false);
+        }
+      },
+    },
+  ];
+  if (isDraft) {
+    proposalActions.push(
+      { id: "save", label: busy ? "Saving…" : "Save draft", icon: Save, disabled: busy, onSelect: () => void onSave() },
+      { id: "send", label: "Send Proposal", icon: Send, disabled: busy, onSelect: () => setSendOpen(true) },
+    );
+    if (detail.published) {
+      proposalActions.push({
+        id: "stop-editing",
+        label: "Stop editing",
+        icon: Undo2,
+        disabled: busy,
+        onSelect: () => setDiscardOpen(true),
+      });
+    }
+  } else if (status !== "cancelled") {
+    proposalActions.push({
+      id: "resend",
+      label: "Resend email",
+      icon: Mail,
+      disabled: busy || pdfBusy,
+      onSelect: async () => {
+        setBusy(true);
+        try {
+          await resendProposalEmail(current.proposal.id);
+          notify("Proposal email sent.");
+        } catch (error) {
+          notify(error instanceof AgencyDbError ? error.message : "The email could not be sent.");
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
+  }
+  if (publishedStatus === "accepted" && !project) {
+    proposalActions.push({
+      id: "create-project",
+      label: "Create project",
+      icon: FolderKanban,
+      href: `/admin/clients/${detail.proposal.client_id}`,
+    });
+  }
+  if (publishedStatus === "accepted") {
+    proposalActions.push({
+      id: "create-contract",
+      label: "Create Contract",
+      icon: FileSignature,
+      disabled: busy,
+      onSelect: async () => {
+        setBusy(true);
+        try {
+          const contractId = await createContract({
+            clientId: current.proposal.client_id,
+            projectId: current.proposal.project_id,
+            proposalId: current.proposal.id,
+          });
+          notify("Contract created.");
+          navigate(`/admin/contracts/${contractId}`);
+        } catch (error) {
+          notify(error instanceof AgencyDbError ? error.message : "Unable to create a contract.");
+          setBusy(false);
+        }
+      },
+    });
+  }
+  if (!isDraft && status !== "cancelled") {
+    proposalActions.push({
+      id: "edit",
+      label: "Edit",
+      icon: PencilLine,
+      disabled: busy,
+      onSelect: async () => {
+        setBusy(true);
+        try {
+          await createProposalRevision(current.proposal.id);
+          notify("Editing a copy. The client still sees the last sent version until you send again.");
+          await load();
+        } catch (error) {
+          notify(error instanceof AgencyDbError ? error.message : "Unable to create a revision.");
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
+  }
+  if (status !== "accepted" && status !== "cancelled") {
+    proposalActions.push({
+      id: "cancel",
+      label: "Cancel proposal",
+      icon: Ban,
+      disabled: busy,
+      danger: true,
+      separatorBefore: true,
+      onSelect: () => setCancelOpen(true),
+    });
+  }
+  if (status === "cancelled") {
+    proposalActions.push({
+      id: "restore",
+      label: "Restore",
+      icon: RotateCcw,
+      disabled: busy,
+      onSelect: () => setRestoreOpen(true),
+    });
+  }
+  if (status !== "accepted" && publishedStatus !== "accepted" && !detail.acceptedOnce) {
+    proposalActions.push({
+      id: "delete",
+      label: "Delete proposal",
+      icon: Trash2,
+      disabled: busy,
+      danger: true,
+      separatorBefore: status === "cancelled",
+      onSelect: () => setDeleteOpen(true),
+    });
+  }
+
   return (
     <div className="space-y-6">
       <Link to="/admin/proposals" className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
@@ -178,134 +389,121 @@ export function AdminProposalDetails() {
             {project ? ` · ${project.name}` : ""}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={busy || pdfBusy}
-            className={secondaryBtn}
-            onClick={async () => {
-              setPdfBusy(true);
-              try {
-                await downloadProposalPdf(current.proposal.id);
-              } catch (error) {
-                notify(error instanceof AgencyDbError ? error.message : "Unable to generate the proposal PDF. Please try again.");
-              } finally {
-                setPdfBusy(false);
-              }
-            }}
-          >
-            {pdfBusy ? "Generating PDF..." : "Download PDF"}
-          </button>
-          {isDraft ? (
-            <>
-              <button type="button" disabled={busy} className={secondaryBtn} onClick={() => void onSave()}>
-                {busy ? "Saving…" : "Save draft"}
-              </button>
-              <button type="button" disabled={busy} className={primaryBtn} onClick={() => setSendOpen(true)}>
-                Send Proposal
-              </button>
-            </>
-          ) : null}
-          {publishedStatus === "accepted" && !project ? (
-            <Link
-              to={`/admin/clients/${detail.proposal.client_id}`}
-              className={`${secondaryBtn} hover:bg-[var(--admin-bg)]`}
-            >
-              Create project
-            </Link>
-          ) : null}
-          {publishedStatus === "accepted" ? (
-            <button
-              type="button"
-              disabled={busy}
-              className={primaryBtn}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  const contractId = await createContract({
-                    clientId: current.proposal.client_id,
-                    projectId: current.proposal.project_id,
-                    proposalId: current.proposal.id,
-                  });
-                  notify("Contract created.");
-                  navigate(`/admin/contracts/${contractId}`);
-                } catch (error) {
-                  notify(error instanceof AgencyDbError ? error.message : "Unable to create a contract.");
-                  setBusy(false);
-                }
-              }}
-            >
-              Create Contract
-            </button>
-          ) : null}
-          {!isDraft && status !== "accepted" && status !== "cancelled" ? (
-            <button
-              type="button"
-              disabled={busy}
-              className={secondaryBtn}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  await createProposalRevision(current.proposal.id);
-                  notify("New revision created.");
-                  await load();
-                } catch (error) {
-                  notify(error instanceof AgencyDbError ? error.message : "Unable to create a revision.");
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              New revision
-            </button>
-          ) : null}
-          {status !== "accepted" && status !== "cancelled" ? (
-            <button type="button" disabled={busy} className={secondaryBtn} onClick={() => setCancelOpen(true)}>
-              Cancel
-            </button>
-          ) : null}
-        </div>
+        <AdminActionsMenu ariaLabel="Proposal actions" items={proposalActions} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
         <form className="space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
           <h2 className="font-heading text-sm font-semibold">Proposal content</h2>
-          <Field label="Title" value={form.title} disabled={!isDraft} onChange={(value) => setForm({ ...form, title: value })} />
-          <Area label="Introduction" value={form.introduction} disabled={!isDraft} onChange={(value) => setForm({ ...form, introduction: value })} />
-          <Area label="Project overview" value={form.overview} disabled={!isDraft} onChange={(value) => setForm({ ...form, overview: value })} />
+          <Field
+            label="Title"
+            hint="The heading the client sees at the top of the proposal."
+            value={form.title}
+            disabled={!isDraft}
+            onChange={(value) => setForm({ ...form, title: value })}
+          />
+          <Area
+            label="Introduction"
+            hint="Opening note to the client. Shown as Overview on the proposal."
+            value={form.introduction}
+            disabled={!isDraft}
+            rows={5}
+            onChange={(value) => setForm({ ...form, introduction: value })}
+          />
+          <Area
+            label="Project overview"
+            hint="A short description of the website you plan to build."
+            value={form.overview}
+            disabled={!isDraft}
+            rows={5}
+            onChange={(value) => setForm({ ...form, overview: value })}
+          />
           {isDraft ? (
             <ProposalPresetPanel
               scope={form.scope}
               deliverables={form.deliverablesText}
-              onScopeChange={(scope) => setForm({ ...form, scope })}
-              onDeliverablesChange={(deliverablesText) => setForm({ ...form, deliverablesText })}
+              items={items}
+              onScopeChange={(scope) => patchDraft({ scope })}
+              onDeliverablesChange={(deliverablesText) => patchDraft({ deliverablesText })}
+              onItemsChange={(nextItems) => {
+                itemsRef.current = nextItems;
+                setItems(nextItems);
+              }}
             />
           ) : null}
-          <Area label="Scope of work" value={form.scope} disabled={!isDraft} onChange={(value) => setForm({ ...form, scope: value })} />
-          <Area label="Deliverables" value={form.deliverablesText} disabled={!isDraft} onChange={(value) => setForm({ ...form, deliverablesText: value })} />
-          <Area label="Timeline" value={form.timeline} disabled={!isDraft} onChange={(value) => setForm({ ...form, timeline: value })} />
+          <Area
+            label="Scope of work"
+            hint="What is included in this build. Scope chips write here. The client sees this section."
+            value={form.scope}
+            disabled={!isDraft}
+            onChange={(value) => setForm({ ...form, scope: value })}
+          />
+          <Area
+            label="Deliverables"
+            hint="What you will hand over. Feature chips write here."
+            value={form.deliverablesText}
+            disabled={!isDraft}
+            onChange={(value) => setForm({ ...form, deliverablesText: value })}
+          />
+          <Area
+            label="Timeline"
+            hint="When work happens and what can delay the dates."
+            value={form.timeline}
+            disabled={!isDraft}
+            rows={7}
+            onChange={(value) => setForm({ ...form, timeline: value })}
+          />
           <div>
-            <p className="text-sm font-semibold">Line items</p>
+            <p className="flex items-center gap-1.5 text-sm font-semibold">
+              Line items
+              <AdminInfoTip text="The price list. Quantity × unit price is the investment the client sees. Scope and Features do not add a dollar amount." />
+            </p>
             <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Totals are calculated from quantity × unit price in cents.</p>
             <div className="mt-3">
               <LineItemsEditor items={items} disabled={!isDraft} onChange={setItems} />
             </div>
           </div>
-          <Area label="Payment terms" value={form.paymentTerms} disabled={!isDraft} onChange={(value) => setForm({ ...form, paymentTerms: value })} />
-          <Area label="Terms & conditions" value={form.terms} disabled={!isDraft} onChange={(value) => setForm({ ...form, terms: value })} />
-          <Area label="Notes" value={form.notes} disabled={!isDraft} onChange={(value) => setForm({ ...form, notes: value })} />
-          <label className="block text-sm font-semibold">
-            Valid until
+          <Area
+            label="Payment terms"
+            hint="When and how they pay. This proposal does not charge a card."
+            value={form.paymentTerms}
+            disabled={!isDraft}
+            rows={7}
+            onChange={(value) => setForm({ ...form, paymentTerms: value })}
+          />
+          <Area
+            label="Terms & conditions"
+            hint="The rules of this offer. They agree to this when they accept in the portal."
+            value={form.terms}
+            disabled={!isDraft}
+            rows={10}
+            onChange={(value) => setForm({ ...form, terms: value })}
+          />
+          <Area
+            label="Notes"
+            hint="An extra note on the client-facing proposal. Optional."
+            value={form.notes}
+            disabled={!isDraft}
+            rows={4}
+            onChange={(value) => setForm({ ...form, notes: value })}
+          />
+          <div>
+            <p className="flex items-center gap-1.5 text-sm font-semibold">
+              <label htmlFor="proposal-valid-until">Valid until</label>
+              <AdminInfoTip text="Last day the client can accept this revision. After that it expires." />
+            </p>
             <input
+              id="proposal-valid-until"
               type="date"
               disabled={!isDraft}
               value={form.validUntil}
               onChange={(event) => setForm({ ...form, validUntil: event.target.value })}
               className={fieldClass}
             />
-          </label>
+          </div>
           <Area
             label="Internal notes (not shown to the client)"
+            hint="Staff only. Never shown on the proposal, PDF, or client portal."
             value={form.adminNotes}
             disabled={!isDraft}
             onChange={(value) => setForm({ ...form, adminNotes: value })}
@@ -331,7 +529,9 @@ export function AdminProposalDetails() {
             notes: form.notes,
             validUntil: form.validUntil || null,
             items: previewItems,
-            investmentCents: isDraft ? lineItemsTotalCents(items) : detail.working.investment_cents,
+            investmentCents: isDraft
+              ? lineItemsTotalCents(items.filter((item) => item.name.trim()))
+              : detail.working.investment_cents,
           }}
         />
       </div>
@@ -348,8 +548,9 @@ export function AdminProposalDetails() {
       <ConfirmDocumentModal
         open={cancelOpen}
         busy={busy}
+        danger
         title="Cancel this proposal?"
-        description="The client will no longer be able to accept this revision."
+        description="The client will no longer be able to review or accept it. You can restore it later if this was a mistake."
         actionLabel="Cancel proposal"
         onClose={() => setCancelOpen(false)}
         onConfirm={async () => {
@@ -366,49 +567,137 @@ export function AdminProposalDetails() {
           }
         }}
       />
+      <ConfirmDocumentModal
+        open={restoreOpen}
+        busy={busy}
+        title="Restore this proposal?"
+        description="It will leave Cancelled and go back to draft or sent, depending on where it was before you cancelled it."
+        actionLabel="Restore proposal"
+        onClose={() => setRestoreOpen(false)}
+        onConfirm={async () => {
+          setBusy(true);
+          try {
+            await restoreProposal(current.proposal.id);
+            notify("Proposal restored.");
+            setRestoreOpen(false);
+            await load();
+            await reload();
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "Unable to restore this proposal.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
+      <ConfirmDocumentModal
+        open={deleteOpen}
+        busy={busy}
+        danger
+        title="Delete this proposal?"
+        description="This permanently removes the proposal and its revisions. This cannot be undone."
+        actionLabel="Delete proposal"
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={async () => {
+          setBusy(true);
+          try {
+            await deleteProposal(current.proposal.id);
+            notify("Proposal deleted.");
+            setDeleteOpen(false);
+            await reload();
+            navigate("/admin/proposals");
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "Unable to delete this proposal.");
+            setBusy(false);
+          }
+        }}
+      />
+      <ConfirmDocumentModal
+        open={discardOpen}
+        busy={busy}
+        title="Stop editing this proposal?"
+        description="This draft will be discarded. The client still has the last sent version. You do not need to send again."
+        actionLabel="Stop editing"
+        onClose={() => setDiscardOpen(false)}
+        onConfirm={async () => {
+          setBusy(true);
+          try {
+            await discardProposalDraft(current.proposal.id);
+            notify("Draft discarded. The last sent proposal is still in place.");
+            setDiscardOpen(false);
+            await load();
+            await reload();
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "Unable to discard this draft.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
     </div>
   );
 }
 
 function Field({
   label,
+  hint,
   value,
   disabled,
   onChange,
 }: {
   label: string;
+  hint?: string;
   value: string;
   disabled?: boolean;
   onChange: (value: string) => void;
 }) {
+  const inputId = useId();
   return (
-    <label className="block text-sm font-semibold">
-      {label}
-      <input value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)} className={fieldClass} />
-    </label>
+    <div>
+      <p className="flex items-center gap-1.5 text-sm font-semibold">
+        <label htmlFor={inputId}>{label}</label>
+        {hint ? <AdminInfoTip text={hint} /> : null}
+      </p>
+      <input
+        id={inputId}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className={fieldClass}
+      />
+    </div>
   );
 }
 
 function Area({
   label,
+  hint,
   value,
   disabled,
+  rows = 4,
   onChange,
 }: {
   label: string;
+  hint?: string;
   value: string;
   disabled?: boolean;
+  rows?: number;
   onChange: (value: string) => void;
 }) {
+  const inputId = useId();
   return (
-    <label className="block text-sm font-semibold">
-      {label}
-      <textarea value={value} disabled={disabled} rows={4} onChange={(event) => onChange(event.target.value)} className={fieldClass} />
-    </label>
+    <div>
+      <p className="flex items-center gap-1.5 text-sm font-semibold">
+        <label htmlFor={inputId}>{label}</label>
+        {hint ? <AdminInfoTip text={hint} /> : null}
+      </p>
+      <textarea
+        id={inputId}
+        value={value}
+        disabled={disabled}
+        rows={rows}
+        onChange={(event) => onChange(event.target.value)}
+        className={fieldClass}
+      />
+    </div>
   );
 }
-
-const primaryBtn =
-  "inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white disabled:opacity-60";
-const secondaryBtn =
-  "inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold disabled:opacity-60";

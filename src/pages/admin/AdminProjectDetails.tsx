@@ -1,6 +1,8 @@
-import { useEffect, useId, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
-import { MoreHorizontal } from "lucide-react";
+import { useState } from "react";
+import { Archive, MessageSquare, Pause, PencilLine, RefreshCw, Trash2 } from "lucide-react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { AdminActionsMenu } from "@/components/admin/AdminActionsMenu";
+import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { ProgressBar } from "@/components/admin/ProgressBar";
 import { ConfirmArchiveProjectModal } from "@/components/admin/projects/ConfirmArchiveProjectModal";
 import { ConfirmRemoveMilestoneModal } from "@/components/admin/projects/ConfirmRemoveMilestoneModal";
@@ -48,6 +50,7 @@ function isTabId(value: string | null): value is TabId {
 
 export function AdminProjectDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const match = useAgencyProject(id);
   const {
@@ -55,6 +58,7 @@ export function AdminProjectDetails() {
     updateProject,
     setProjectStatus,
     archiveProject,
+    deleteProject,
     addMilestone,
     updateMilestone,
     setMilestoneStatus,
@@ -70,6 +74,7 @@ export function AdminProjectDetails() {
   const [editOpen, setEditOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [milestoneOpen, setMilestoneOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<AgencyMilestone | null>(null);
   const [removingMilestone, setRemovingMilestone] = useState<AgencyMilestone | null>(null);
@@ -143,35 +148,44 @@ export function AdminProjectDetails() {
               {project.archived ? " · Archived" : ""}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-              onClick={() => setEditOpen(true)}
-            >
-              Edit Project
-            </button>
-            {client ? (
-              <Link
-                to={`/admin/messages?client=${client.id}&project=${project.id}`}
-                className="inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-              >
-                Open conversation
-              </Link>
-            ) : null}
-            <button
-              type="button"
-              className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white"
-              onClick={() => setStatusOpen(true)}
-            >
-              Change Status
-            </button>
-            <ProjectMoreMenu
-              name={project.name}
-              onHold={() => setProjectStatus(project.id, "On Hold")}
-              onArchive={() => setArchiveOpen(true)}
-            />
-          </div>
+          <AdminActionsMenu
+            ariaLabel={`Actions for ${project.name}`}
+            items={[
+              { id: "edit", label: "Edit Project", icon: PencilLine, onSelect: () => setEditOpen(true) },
+              ...(client
+                ? [
+                    {
+                      id: "conversation",
+                      label: "Open conversation",
+                      icon: MessageSquare,
+                      href: `/admin/messages?client=${client.id}&project=${project.id}`,
+                    },
+                  ]
+                : []),
+              { id: "status", label: "Change Status", icon: RefreshCw, onSelect: () => setStatusOpen(true) },
+              {
+                id: "hold",
+                label: "Put On Hold",
+                icon: Pause,
+                onSelect: () => setProjectStatus(project.id, "On Hold"),
+              },
+              {
+                id: "archive",
+                label: "Archive Project",
+                icon: Archive,
+                danger: true,
+                separatorBefore: true,
+                onSelect: () => setArchiveOpen(true),
+              },
+              {
+                id: "delete",
+                label: "Delete project",
+                icon: Trash2,
+                danger: true,
+                onSelect: () => setDeleteOpen(true),
+              },
+            ]}
+          />
         </div>
       </div>
 
@@ -318,6 +332,20 @@ export function AdminProjectDetails() {
           setArchiveOpen(false);
         }}
       />
+      <ConfirmDocumentModal
+        open={deleteOpen}
+        danger
+        title="Delete this project?"
+        description="This permanently removes the project, including its tasks, files, and activity. This cannot be undone. Proposals, contracts, or invoices on this project must be removed first."
+        actionLabel="Delete project"
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={async () => {
+          const deleted = await deleteProject(project.id);
+          if (!deleted) return;
+          setDeleteOpen(false);
+          navigate("/admin/projects");
+        }}
+      />
       <MilestoneFormModal
         open={milestoneOpen}
         milestone={editingMilestone}
@@ -351,83 +379,6 @@ export function AdminProjectDetails() {
           else addTask(project.id, draft);
         }}
       />
-    </div>
-  );
-}
-
-function ProjectMoreMenu({
-  name,
-  onHold,
-  onArchive,
-}: {
-  name: string;
-  onHold: () => void;
-  onArchive: () => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const menuId = useId();
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointer = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onPointer);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onPointer);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  return (
-    <div className="relative" ref={ref}>
-      <button
-        type="button"
-        className="inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-        aria-label={`More actions for ${name}`}
-        aria-expanded={open}
-        aria-controls={menuId}
-        aria-haspopup="menu"
-        onClick={() => setOpen((value) => !value)}
-      >
-        More
-        <MoreHorizontal size={16} strokeWidth={1.75} className="ml-2" aria-hidden="true" />
-      </button>
-      {open ? (
-        <div
-          id={menuId}
-          role="menu"
-          className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-xl border border-[var(--admin-line)] bg-white py-1 shadow-[0_12px_32px_rgb(7_17_31_/_0.08)]"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            className="block w-full px-3 py-2 text-left text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-            onClick={() => {
-              setOpen(false);
-              onHold();
-            }}
-          >
-            Put On Hold
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="block w-full px-3 py-2 text-left text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-            onClick={() => {
-              setOpen(false);
-              onArchive();
-            }}
-          >
-            Archive Project
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import {
   documentErrorMessage,
+  applyProposalLineDefaults,
   draftsFromItems,
   effectiveDocumentStatus,
   itemsFromSnapshot,
@@ -7,6 +8,8 @@ import {
   type LineItemDraft,
   type SnapshotItem,
 } from "@/data/documents";
+import { formatUsdFromCents } from "@/data/money";
+import { sendMessage, startConversation } from "@/data/messagingRepository";
 import { downloadAuthenticatedPdf } from "@/data/pdfDownload";
 import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -63,6 +66,7 @@ export type ProposalDetail = {
   items: ProposalItemRow[];
   snapshotItems: SnapshotItem[];
   adminNotes: string;
+  acceptedOnce: boolean;
 };
 
 export type ContractDetail = {
@@ -70,6 +74,7 @@ export type ContractDetail = {
   working: ContractRevisionRow;
   published: ContractRevisionRow | null;
   adminNotes: string;
+  acceptedOnce: boolean;
 };
 
 function db(): SupabaseClient<Database> {
@@ -204,6 +209,11 @@ export async function fetchProposalDetail(id: string): Promise<ProposalDetail | 
     throwIf(itemError, "load proposal", "Unable to load this proposal.");
   }
   const { data: notes } = await client.from("proposal_admin_notes").select("*").eq("revision_id", working.id).maybeSingle();
+  const { count: acceptedCount } = await client
+    .from("proposal_revisions")
+    .select("id", { count: "exact", head: true })
+    .eq("proposal_id", proposal.id)
+    .eq("status", "accepted");
   return {
     proposal,
     working,
@@ -211,6 +221,7 @@ export async function fetchProposalDetail(id: string): Promise<ProposalDetail | 
     items: ((items ?? []) as ProposalItemRow[]) ?? [],
     snapshotItems: itemsFromSnapshot(published?.snapshot_items ?? working.snapshot_items),
     adminNotes: (notes as ProposalAdminNoteRow | null)?.notes ?? "",
+    acceptedOnce: (acceptedCount ?? 0) > 0,
   };
 }
 
@@ -227,6 +238,26 @@ export async function createProposal(clientId: string, projectId: string | null,
   return id;
 }
 
+const proposalDraftSaves = new Map<string, Promise<void>>();
+
+async function withProposalDraftLock<T>(revisionId: string, work: () => Promise<T>): Promise<T> {
+  const previous = proposalDraftSaves.get(revisionId) ?? Promise.resolve();
+  let release!: () => void;
+  const current = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  proposalDraftSaves.set(
+    revisionId,
+    previous.then(() => current, () => current),
+  );
+  await previous.catch(() => undefined);
+  try {
+    return await work();
+  } finally {
+    release();
+  }
+}
+
 export async function saveProposalDraft(input: {
   revisionId: string;
   title: string;
@@ -239,7 +270,27 @@ export async function saveProposalDraft(input: {
   terms: string;
   notes: string;
   validUntil: string | null;
-  items: LineItemDraft[];
+  items?: LineItemDraft[];
+  replaceItems?: boolean;
+  adminNotes: string;
+}): Promise<void> {
+  return withProposalDraftLock(input.revisionId, () => writeProposalDraft(input));
+}
+
+async function writeProposalDraft(input: {
+  revisionId: string;
+  title: string;
+  introduction: string;
+  overview: string;
+  scope: string;
+  deliverablesText: string;
+  timeline: string;
+  paymentTerms: string;
+  terms: string;
+  notes: string;
+  validUntil: string | null;
+  items?: LineItemDraft[];
+  replaceItems?: boolean;
   adminNotes: string;
 }): Promise<void> {
   const client = db();
@@ -261,22 +312,24 @@ export async function saveProposalDraft(input: {
     .eq("status", "draft");
   throwIf(error, "save proposal", "Unable to save this proposal.");
 
-  const { error: deleteError } = await client.from("proposal_items").delete().eq("revision_id", input.revisionId);
-  throwIf(deleteError, "save proposal", "Unable to save this proposal.");
+  if (input.replaceItems !== false && input.items) {
+    const { error: deleteError } = await client.from("proposal_items").delete().eq("revision_id", input.revisionId);
+    throwIf(deleteError, "save proposal", "Unable to save this proposal.");
 
-  const rows = input.items
-    .map((item, index) => ({
-      revision_id: input.revisionId,
-      name: item.name.trim(),
-      description: item.description.trim(),
-      quantity: Math.max(1, Math.floor(item.quantity) || 1),
-      unit_price_cents: Math.max(0, Math.floor(item.unitPriceCents) || 0),
-      sort_order: index,
-    }))
-    .filter((item) => item.name.length > 0);
-  if (rows.length > 0) {
-    const { error: insertError } = await client.from("proposal_items").insert(rows);
-    throwIf(insertError, "save proposal", "Unable to save this proposal.");
+    const rows = input.items
+      .map((item, index) => ({
+        revision_id: input.revisionId,
+        name: item.name.trim(),
+        description: item.description.trim(),
+        quantity: Math.max(1, Math.floor(item.quantity) || 1),
+        unit_price_cents: Math.max(0, Math.floor(item.unitPriceCents) || 0),
+        sort_order: index,
+      }))
+      .filter((item) => item.name.length > 0);
+    if (rows.length > 0) {
+      const { error: insertError } = await client.from("proposal_items").insert(rows);
+      throwIf(insertError, "save proposal", "Unable to save this proposal.");
+    }
   }
 
   const { error: noteError } = await client.from("proposal_admin_notes").upsert({
@@ -294,6 +347,9 @@ async function invokeDocumentEmail(kind: "proposal" | "contract", id: string): P
     if (message.includes("failed to fetch") || message.includes("network")) {
       throw new AgencyDbError(documentErrorMessage("network"), error);
     }
+    if (message.includes("404") || message.includes("not found") || message.includes("edge function")) {
+      throw new AgencyDbError(documentErrorMessage("email_unavailable"), error);
+    }
     throw new AgencyDbError(documentErrorMessage("email_failed"), error);
   }
   const payload = data as { ok?: boolean; error?: string } | null;
@@ -302,16 +358,77 @@ async function invokeDocumentEmail(kind: "proposal" | "contract", id: string): P
   }
 }
 
+async function postProposalConversation(proposalId: string): Promise<void> {
+  const detail = await fetchProposalDetail(proposalId);
+  if (!detail) return;
+  const validUntil = detail.working.valid_until
+    ? new Date(`${detail.working.valid_until}T00:00:00`).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "";
+  const body = [
+    "A proposal is ready for you to review.",
+    "",
+    `${detail.proposal.proposal_number} — ${detail.working.title.trim() || "Proposal"}`,
+    `Investment ${formatUsdFromCents(detail.working.investment_cents)}`,
+    validUntil ? `Valid until ${validUntil}` : "",
+    "",
+    "Open Proposals in your client portal to review and accept it.",
+  ]
+    .filter((line) => line !== undefined)
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  const client = db();
+  const { data, error } = await client
+    .from("conversations")
+    .select("id, project_id, status, last_message_at")
+    .eq("client_id", detail.proposal.client_id)
+    .order("last_message_at", { ascending: false });
+  throwIf(error, "proposal message", "Unable to post this proposal in Messages.");
+  const rows = data ?? [];
+  const projectId = detail.proposal.project_id;
+  const match =
+    rows.find((row) => projectId && row.project_id === projectId && row.status === "open") ??
+    rows.find((row) => projectId && row.project_id === projectId) ??
+    rows.find((row) => row.status === "open") ??
+    rows[0];
+
+  if (match) {
+    await sendMessage(match.id, body);
+    return;
+  }
+
+  await startConversation({
+    subject: `Proposal ${detail.proposal.proposal_number}`.slice(0, 120),
+    body,
+    projectId,
+    clientId: detail.proposal.client_id,
+  });
+}
+
 export async function sendProposal(proposalId: string): Promise<{ emailed: boolean }> {
   const client = db();
   const { error } = await client.rpc("send_proposal", { p_proposal_id: proposalId });
   throwIf(error, "send proposal", "Unable to send this proposal.");
+  try {
+    await postProposalConversation(proposalId);
+  } catch (caught) {
+    logDbError("proposal message", caught);
+  }
   try {
     await invokeDocumentEmail("proposal", proposalId);
     return { emailed: true };
   } catch {
     return { emailed: false };
   }
+}
+
+export async function resendProposalEmail(proposalId: string): Promise<void> {
+  await invokeDocumentEmail("proposal", proposalId);
 }
 
 export async function markProposalViewed(proposalId: string): Promise<void> {
@@ -338,10 +455,28 @@ export async function cancelProposal(proposalId: string): Promise<void> {
   throwIf(error, "cancel proposal", "Unable to cancel this proposal.");
 }
 
+export async function restoreProposal(proposalId: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("restore_proposal", { p_proposal_id: proposalId });
+  throwIf(error, "restore proposal", "Unable to restore this proposal.");
+}
+
+export async function deleteProposal(proposalId: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("delete_proposal", { p_proposal_id: proposalId });
+  throwIf(error, "delete proposal", "Unable to delete this proposal.");
+}
+
 export async function createProposalRevision(proposalId: string): Promise<void> {
   const client = db();
   const { error } = await client.rpc("create_proposal_revision", { p_proposal_id: proposalId });
   throwIf(error, "revise proposal", "Unable to create a new revision.");
+}
+
+export async function discardProposalDraft(proposalId: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("discard_proposal_draft", { p_proposal_id: proposalId });
+  throwIf(error, "discard draft", "Unable to discard this draft.");
 }
 
 export async function fetchContractSummaries(clientId?: string): Promise<ContractSummary[]> {
@@ -402,11 +537,17 @@ export async function fetchContractDetail(id: string): Promise<ContractDetail | 
     ? list.find((row) => row.id === contract.published_revision_id) ?? null
     : null;
   const { data: notes } = await client.from("contract_admin_notes").select("*").eq("revision_id", working.id).maybeSingle();
+  const { count: acceptedCount } = await client
+    .from("contract_revisions")
+    .select("id", { count: "exact", head: true })
+    .eq("contract_id", contract.id)
+    .eq("status", "accepted");
   return {
     contract,
     working,
     published,
     adminNotes: (notes as ContractAdminNoteRow | null)?.notes ?? "",
+    acceptedOnce: (acceptedCount ?? 0) > 0,
   };
 }
 
@@ -512,6 +653,18 @@ export async function cancelContract(contractId: string): Promise<void> {
   throwIf(error, "cancel contract", "Unable to cancel this contract.");
 }
 
+export async function restoreContract(contractId: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("restore_contract", { p_contract_id: contractId });
+  throwIf(error, "restore contract", "Unable to restore this contract.");
+}
+
+export async function deleteContract(contractId: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("delete_contract", { p_contract_id: contractId });
+  throwIf(error, "delete contract", "Unable to delete this contract.");
+}
+
 export async function createContractRevision(contractId: string): Promise<void> {
   const client = db();
   const { error } = await client.rpc("create_contract_revision", { p_contract_id: contractId });
@@ -519,7 +672,7 @@ export async function createContractRevision(contractId: string): Promise<void> 
 }
 
 export function proposalLineDrafts(detail: ProposalDetail): LineItemDraft[] {
-  if (detail.working.status === "draft") return draftsFromItems(detail.items);
+  if (detail.working.status === "draft") return applyProposalLineDefaults(draftsFromItems(detail.items));
   return draftsFromItems(detail.snapshotItems.length > 0 ? detail.snapshotItems : detail.items);
 }
 

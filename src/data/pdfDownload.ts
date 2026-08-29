@@ -44,6 +44,7 @@ export async function downloadAuthenticatedPdf(input: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(input.body),
+      signal: AbortSignal.timeout(25_000),
     });
   } catch (error) {
     throw new AgencyDbError(input.networkMessage, error);

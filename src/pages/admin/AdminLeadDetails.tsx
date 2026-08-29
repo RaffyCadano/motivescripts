@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { CircleCheck, Mail, RefreshCw, UserPlus, Users } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
+import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
 import { ClientFollowUpDialog } from "@/components/admin/clients/ClientFollowUpDialog";
 import { AddNoteModal } from "@/components/admin/leads/AddNoteModal";
 import { ChangeStatusModal } from "@/components/admin/leads/ChangeStatusModal";
@@ -35,6 +37,29 @@ export function AdminLeadDetails() {
     );
   }
 
+  const leadActions: AdminActionsMenuItem[] = [
+    { id: "contact", label: "Contact Lead", icon: Mail, href: `mailto:${lead.email}` },
+    { id: "status", label: "Change Status", icon: RefreshCw, onSelect: () => setStatusOpen(true) },
+  ];
+  if (lead.convertedClientId) {
+    leadActions.push(
+      { id: "converted", label: "Already converted", icon: CircleCheck, disabled: true },
+      {
+        id: "view-client",
+        label: "View Client",
+        icon: Users,
+        href: `/admin/clients/${lead.convertedClientId}`,
+      },
+    );
+  } else {
+    leadActions.push({
+      id: "convert",
+      label: "Convert to Client",
+      icon: UserPlus,
+      onSelect: () => setConvertOpen(true),
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -51,42 +76,7 @@ export function AdminLeadDetails() {
             </div>
             <p className="mt-1 text-sm text-[var(--admin-muted)]">{lead.name}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={`mailto:${lead.email}`}
-              className="inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-            >
-              Contact Lead
-            </a>
-            <button
-              type="button"
-              className="inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-              onClick={() => setStatusOpen(true)}
-            >
-              Change Status
-            </button>
-            {lead.convertedClientId ? (
-              <>
-                <span className="inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--admin-muted)]">
-                  Already converted
-                </span>
-                <Link
-                  to={`/admin/clients/${lead.convertedClientId}`}
-                  className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white"
-                >
-                  View Client
-                </Link>
-              </>
-            ) : (
-              <button
-                type="button"
-                className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white"
-                onClick={() => setConvertOpen(true)}
-              >
-                Convert to Client
-              </button>
-            )}
-          </div>
+          <AdminActionsMenu ariaLabel={`Actions for ${lead.businessName}`} items={leadActions} />
         </div>
       </div>
 

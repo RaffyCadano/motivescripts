@@ -31,6 +31,12 @@ export function AdminLayout() {
 
   useEffect(() => {
     const root = document.documentElement;
+    root.classList.add("admin-shell");
+    return () => root.classList.remove("admin-shell");
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
     if (mobileOpen) root.classList.add("admin-nav-open");
     else root.classList.remove("admin-nav-open");
 
@@ -76,8 +82,8 @@ export function AdminLayout() {
 
       <div
         className={cn(
-          "flex h-full min-h-0 flex-col pt-[var(--admin-header)] transition-[padding] duration-[var(--duration-base)] ease-[var(--ease-out)]",
-          dockCollapsed ? "lg:pl-[var(--admin-sidebar-collapsed)]" : "lg:pl-[var(--admin-sidebar)]",
+          "relative z-0 flex h-full min-h-0 flex-col pt-[var(--admin-header)] pointer-events-none transition-[margin] duration-[var(--duration-base)] ease-[var(--ease-out)]",
+          dockCollapsed ? "lg:ml-[var(--admin-sidebar-collapsed)]" : "lg:ml-[var(--admin-sidebar)]",
         )}
       >
         <AdminHeader
@@ -86,7 +92,7 @@ export function AdminLayout() {
           onToggleCollapsed={() => setCollapsed((value) => !value)}
           onOpenMobile={() => setMobileOpen(true)}
         />
-        <main id="admin-main" className="min-h-0 flex-1 overflow-auto p-4 md:p-6 lg:px-8 lg:py-7">
+        <main id="admin-main" className="pointer-events-auto min-h-0 flex-1 overflow-auto p-4 md:p-6 lg:px-8 lg:py-7">
           <Outlet />
         </main>
       </div>

@@ -30,6 +30,24 @@ function Block({ title, body, ink, muted }: { title: string; body: string; ink: 
   );
 }
 
+function NumberedBlock({ title, body, ink, muted }: { title: string; body: string; ink: string; muted: string }) {
+  const lines = body
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  if (lines.length === 0) return null;
+  return (
+    <section>
+      <h2 className={`font-heading text-sm font-semibold tracking-tight ${ink}`}>{title}</h2>
+      <ol className={`mt-2 list-decimal space-y-1.5 pl-5 text-sm leading-relaxed ${muted}`}>
+        {lines.map((line, index) => (
+          <li key={`${index}-${line}`}>{line}</li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export function ProposalDocumentView({
   document: doc,
   tone = "admin",
@@ -57,7 +75,7 @@ export function ProposalDocumentView({
           <Block title="Project overview" body={doc.overview} ink={ink} muted={muted} />
         ) : null}
         <Block title="Scope of work" body={doc.scope} ink={ink} muted={muted} />
-        <Block title="Deliverables" body={doc.deliverables} ink={ink} muted={muted} />
+        <NumberedBlock title="Deliverables" body={doc.deliverables} ink={ink} muted={muted} />
         <Block title="Timeline" body={doc.timeline} ink={ink} muted={muted} />
 
         <section>

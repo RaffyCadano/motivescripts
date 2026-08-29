@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, ChevronDown, LogOut, Menu, PanelLeft, Globe } from "lucide-react";
+import { Bell, ChevronDown, Globe, LogOut, Menu, PanelLeft, Settings } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { userDisplay } from "@/auth/userDisplay";
 import { NotificationPanel } from "@/components/messaging/NotificationPanel";
@@ -59,7 +59,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
   return (
     <header
       className={cn(
-        "fixed top-0 right-0 z-20 flex h-[var(--admin-header)] items-center justify-between gap-3 border-b border-[var(--admin-line)] bg-[var(--admin-card)] px-4 lg:px-6",
+        "pointer-events-auto fixed top-0 right-0 z-20 flex h-[var(--admin-header)] items-center justify-between gap-3 border-b border-[var(--admin-line)] bg-[var(--admin-card)] px-4 lg:px-6",
         "left-0 transition-[left] duration-[var(--duration-base)] ease-[var(--ease-out)]",
         collapsed ? "lg:left-[var(--admin-sidebar-collapsed)]" : "lg:left-[var(--admin-sidebar)]",
       )}
@@ -180,6 +180,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
                 className="flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
                 onClick={() => setMenuOpen(false)}
               >
+                <Settings size={15} strokeWidth={1.75} aria-hidden="true" />
                 Settings
               </Link>
               <button

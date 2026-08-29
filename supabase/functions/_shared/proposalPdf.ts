@@ -8,6 +8,7 @@ import {
   PAGE_W,
   brandedPdfFilename,
   createPdfCtx,
+  drawNumberedSection,
   drawSection,
   drawText,
   ensureSpace,
@@ -123,7 +124,7 @@ export async function generateProposalPdf(model: ProposalPdfModel): Promise<Uint
     drawSection(ctx, "Project overview", overview);
   }
   drawSection(ctx, "Scope of work", model.scope);
-  drawSection(ctx, "Deliverables", model.deliverables);
+  drawNumberedSection(ctx, "Deliverables", model.deliverables);
   drawSection(ctx, "Timeline", model.timeline);
 
   ctx.y -= 4;

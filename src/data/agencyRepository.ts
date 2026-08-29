@@ -483,6 +483,24 @@ export async function archiveProjectRecord(id: string): Promise<void> {
   await addActivity(id, "status_changed", "Project archived", "status");
 }
 
+export async function deleteProjectRecord(id: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("delete_project", { p_project_id: id });
+  if (error) {
+    const message = error.message.toUpperCase();
+    if (message.includes("HAS_DOCUMENTS")) {
+      throw new AgencyDbError(
+        "This project has proposals, contracts, or invoices, so it can’t be deleted. Remove those first.",
+        error,
+      );
+    }
+    if (message.includes("NOT_FOUND")) {
+      throw new AgencyDbError("This project could not be found.", error);
+    }
+  }
+  throwIf(error, "delete project", "Unable to delete this project.");
+}
+
 export async function insertMilestone(projectId: string, draft: AgencyMilestoneDraft, position: number): Promise<void> {
   const client = db();
   const { error } = await client.from("milestones").insert({

@@ -64,5 +64,5 @@ export function asInt(value: unknown, fallback = 0): number {
 }
 
 export function agencyEmail(): string {
-  return Deno.env.get("SUPPORT_EMAIL")?.trim() || "motivescripts.team@gmail.com";
+  return "support@motivescripts.com";
 }

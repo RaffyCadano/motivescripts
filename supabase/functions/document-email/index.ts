@@ -192,7 +192,7 @@ Deno.serve(async (req) => {
             .filter((value) => value.includes("@")),
         ),
       ];
-      if (emails.length === 0) return fail("email_failed");
+      if (emails.length === 0) return fail("no_recipient");
       const expires = revision?.valid_until
         ? `Valid until ${new Date(revision.valid_until).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.`
         : "Please review this proposal in your client portal.";
@@ -248,7 +248,7 @@ Deno.serve(async (req) => {
             .filter((value) => value.includes("@")),
         ),
       ];
-      if (emails.length === 0) return fail("email_failed");
+      if (emails.length === 0) return fail("no_recipient");
       const due = invoice.due_date
         ? `Due ${new Date(invoice.due_date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.`
         : "Please review this invoice in your client portal.";
@@ -312,7 +312,7 @@ Deno.serve(async (req) => {
             .filter((value) => value.includes("@")),
         ),
       ];
-      if (emails.length === 0) return fail("email_failed");
+      if (emails.length === 0) return fail("no_recipient");
       const remaining =
         invoice.status === "paid"
           ? "This invoice is paid in full."
@@ -363,7 +363,7 @@ Deno.serve(async (req) => {
           .filter((value) => value.includes("@")),
       ),
     ];
-    if (emails.length === 0) return fail("email_failed");
+    if (emails.length === 0) return fail("no_recipient");
     const expires = revision?.expires_at
       ? `This agreement expires ${new Date(revision.expires_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.`
       : "Please review this agreement in your client portal.";

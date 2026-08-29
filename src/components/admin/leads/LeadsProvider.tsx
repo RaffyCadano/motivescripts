@@ -7,6 +7,7 @@ import {
   addActivity,
   approveClientVersion,
   archiveProjectRecord,
+  deleteProjectRecord,
   archiveVersionRecord,
   convertLeadToClient,
   deleteMilestone,
@@ -87,6 +88,7 @@ type LeadsContextValue = {
   updateProject: (id: string, edits: AgencyProjectDraft) => Promise<void>;
   setProjectStatus: (id: string, status: AgencyProjectStatus) => Promise<void>;
   archiveProject: (id: string) => Promise<void>;
+  deleteProject: (id: string) => Promise<boolean>;
   addMilestone: (projectId: string, draft: AgencyMilestoneDraft) => Promise<void>;
   updateMilestone: (projectId: string, milestoneId: string, draft: AgencyMilestoneDraft) => Promise<void>;
   setMilestoneStatus: (projectId: string, milestoneId: string, status: AgencyMilestoneDraft["status"]) => Promise<void>;
@@ -376,6 +378,10 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       },
       async archiveProject(id) {
         await run(() => archiveProjectRecord(id), "Project archived.");
+      },
+      async deleteProject(id) {
+        const result = await run(() => deleteProjectRecord(id), "Project deleted.");
+        return result !== null;
       },
       async addMilestone(projectId, draft) {
         const project = snapshotRef.current.projects.find((item) => item.id === projectId);

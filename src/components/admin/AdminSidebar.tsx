@@ -18,14 +18,14 @@ export function AdminSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigat
   return (
     <aside
       id="admin-sidebar"
-      inert={inertWhenClosed ? true : undefined}
       aria-hidden={inertWhenClosed ? true : undefined}
       className={cn(
-        "flex h-svh flex-col border-r border-[var(--admin-line)] bg-[var(--admin-card)]",
-        "fixed inset-y-0 left-0 z-40",
+        "pointer-events-auto flex h-svh flex-col border-r border-[var(--admin-line)] bg-[var(--admin-card)]",
+        "fixed inset-y-0 left-0 z-50",
         "transition-transform duration-[var(--duration-base)] ease-[var(--ease-out)] lg:translate-x-0 lg:transition-[width]",
         collapsed ? "lg:w-[var(--admin-sidebar-collapsed)]" : "lg:w-[var(--admin-sidebar)]",
         mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+        !mobileOpen && "max-lg:pointer-events-none",
         "w-[min(var(--admin-sidebar),calc(100vw-2.5rem))]",
       )}
       aria-label="Admin"

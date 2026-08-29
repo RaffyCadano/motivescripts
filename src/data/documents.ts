@@ -1,4 +1,5 @@
 import { formatUsdFromCents } from "@/data/money";
+import { proposalLineDescription } from "@/data/proposalPresets";
 import type { DocumentStatus, ProposalItemRow } from "@/types/database";
 
 export const documentStatuses = [
@@ -33,6 +34,100 @@ export type LineItemDraft = {
 
 export function emptyLineItem(): LineItemDraft {
   return { key: `item-${crypto.randomUUID()}`, name: "", description: "", quantity: 1, unitPriceCents: 0 };
+}
+
+/** Starter website price on new proposal drafts. Change the unit price on the draft if this job is different. */
+export const DEFAULT_PROPOSAL_LINE_PRICE_CENTS = 250_000;
+
+export function defaultProposalLineItem(): LineItemDraft {
+  return {
+    key: `item-${crypto.randomUUID()}`,
+    name: "Website",
+    description: proposalLineDescription("Website"),
+    quantity: 1,
+    unitPriceCents: DEFAULT_PROPOSAL_LINE_PRICE_CENTS,
+  };
+}
+
+export function toggleNamedLineItem(
+  items: LineItemDraft[],
+  name: string,
+  unitPriceCents: number,
+  enabled: boolean,
+): LineItemDraft[] {
+  const label = name.trim();
+  if (!label) return items;
+  const match = (item: LineItemDraft) => item.name.trim().toLowerCase() === label.toLowerCase();
+  if (enabled) {
+    if (items.some(match)) {
+      return items.map((item) =>
+        match(item)
+          ? {
+              ...item,
+              unitPriceCents,
+              description: item.description.trim() || proposalLineDescription(label),
+            }
+          : item,
+      );
+    }
+    const row: LineItemDraft = {
+      key: `item-${crypto.randomUUID()}`,
+      name: label,
+      description: proposalLineDescription(label),
+      quantity: 1,
+      unitPriceCents,
+    };
+    const onlyBlank = items.length === 1 && !items[0].name.trim();
+    return onlyBlank ? [row] : [...items, row];
+  }
+  const next = items.filter((item) => !match(item));
+  return next.length === 0 ? [emptyLineItem()] : next;
+}
+
+function lineItemIdentity(item: LineItemDraft): string {
+  return [
+    item.name.trim().toLowerCase(),
+    item.description.trim().toLowerCase(),
+    item.quantity,
+    item.unitPriceCents,
+  ].join("|");
+}
+
+export function dedupeProposalLineItems(items: LineItemDraft[]): LineItemDraft[] {
+  const seen = new Set<string>();
+  const unique: LineItemDraft[] = [];
+  for (const item of items) {
+    const id = lineItemIdentity(item);
+    if (seen.has(id)) continue;
+    seen.add(id);
+    unique.push(item);
+  }
+  return unique;
+}
+
+export function applyProposalLineDefaults(items: LineItemDraft[]): LineItemDraft[] {
+  const named = items.filter((item) => item.name.trim());
+  if (named.length === 0) return [defaultProposalLineItem()];
+
+  const priced = named.map((item) => {
+    const next = { ...item };
+    if (next.name.trim().toLowerCase() === "website" && next.unitPriceCents === 0) {
+      next.unitPriceCents = DEFAULT_PROPOSAL_LINE_PRICE_CENTS;
+    }
+    if (!next.description.trim()) {
+      next.description = proposalLineDescription(next.name);
+    }
+    return next;
+  });
+
+  const unique = dedupeProposalLineItems(priced);
+  return unique.length > 0 ? unique : [defaultProposalLineItem()];
+}
+
+export function defaultProposalValidUntil(now = new Date()): string {
+  const date = new Date(now);
+  date.setDate(date.getDate() + 30);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export function itemsFromSnapshot(value: unknown): SnapshotItem[] {
@@ -138,15 +233,25 @@ export function documentErrorMessage(code: string): string {
     case "EXPIRED":
       return "This document has expired and can no longer be accepted.";
     case "INVALID_STATUS":
-      return "That action isn’t available for the current status.";
+      return "This proposal can’t be sent in its current status. Save a draft, then send it again.";
     case "NOT_FOUND":
       return "This document could not be found.";
     case "CLIENT_NOT_FOUND":
       return "That client record could not be found.";
     case "DRAFT_EXISTS":
       return "A draft revision is already in progress.";
+    case "HAS_INVOICES":
+      return "This document has invoices, so it can’t be deleted. Cancel or remove those invoices first.";
+    case "HAS_CONTRACTS":
+      return "This proposal has a contract, so it can’t be deleted. Delete or cancel that contract first.";
+    case "HAS_ACCEPTED":
+      return "This document was accepted, so it can’t be deleted.";
     case "email_failed":
-      return "The document was saved, but the email could not be sent.";
+      return "The proposal email could not be sent. Check the client’s email address and try again.";
+    case "no_recipient":
+      return "This client has no email address. Add one on the client record, then resend.";
+    case "email_unavailable":
+      return "Proposal email isn’t available yet. Deploy the document-email function.";
     case "missing_site_url":
       return "Email isn’t configured yet. Set PUBLIC_SITE_URL on the Edge Function.";
     case "not_allowed":
@@ -169,6 +274,9 @@ export function rpcErrorCode(message: string): string {
   if (upper.includes("NOT_FOUND")) return "NOT_FOUND";
   if (upper.includes("CLIENT_NOT_FOUND")) return "CLIENT_NOT_FOUND";
   if (upper.includes("DRAFT_EXISTS")) return "DRAFT_EXISTS";
+  if (upper.includes("HAS_INVOICES")) return "HAS_INVOICES";
+  if (upper.includes("HAS_CONTRACTS")) return "HAS_CONTRACTS";
+  if (upper.includes("HAS_ACCEPTED")) return "HAS_ACCEPTED";
   if (message.toLowerCase().includes("failed to fetch") || message.toLowerCase().includes("network")) {
     return "network";
   }

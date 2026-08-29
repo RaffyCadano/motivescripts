@@ -5,6 +5,13 @@ import { InvoiceDocumentView } from "@/components/invoices/InvoiceDocumentView";
 import { InvoiceDraftForm, type InvoiceDraftFormValue } from "@/components/invoices/InvoiceDraftForm";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { RecordPaymentModal } from "@/components/invoices/RecordPaymentModal";
+import {
+  adminBlueBtn,
+  adminDangerBtn,
+  adminGhostBtn,
+  adminPrimaryBtn,
+  adminSoftBtn,
+} from "@/components/admin/adminActionStyles";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { fetchContractSummaries } from "@/data/documentsRepository";
 import {
@@ -205,7 +212,7 @@ export function AdminInvoiceDetails() {
           <button
             type="button"
             disabled={busy || pdfBusy}
-            className={secondaryBtn}
+            className={adminSoftBtn}
             onClick={async () => {
               setPdfBusy(true);
               try {
@@ -224,7 +231,7 @@ export function AdminInvoiceDetails() {
               <button
                 type="button"
                 disabled={busy}
-                className={secondaryBtn}
+                className={adminGhostBtn}
                 onClick={async () => {
                   setBusy(true);
                   try {
@@ -241,7 +248,7 @@ export function AdminInvoiceDetails() {
               >
                 {busy ? "Saving…" : "Save Draft"}
               </button>
-              <button type="button" disabled={busy} className={primaryBtn} onClick={() => setSendOpen(true)}>
+              <button type="button" disabled={busy} className={adminPrimaryBtn} onClick={() => setSendOpen(true)}>
                 Send Invoice
               </button>
             </>
@@ -249,7 +256,7 @@ export function AdminInvoiceDetails() {
             <button
               type="button"
               disabled={busy || pdfBusy}
-              className={secondaryBtn}
+              className={adminBlueBtn}
               onClick={async () => {
                 setBusy(true);
                 try {
@@ -266,13 +273,13 @@ export function AdminInvoiceDetails() {
             </button>
           ) : null}
           {canRecordInvoicePayment(current.effectiveStatus) ? (
-            <button type="button" disabled={busy} className={primaryBtn} onClick={() => setPayOpen(true)}>
+            <button type="button" disabled={busy} className={adminPrimaryBtn} onClick={() => setPayOpen(true)}>
               Record Payment
             </button>
           ) : null}
           {canCancelInvoice(current.effectiveStatus, hasPayments) ? (
-            <button type="button" disabled={busy} className={secondaryBtn} onClick={() => setCancelOpen(true)}>
-              Cancel
+            <button type="button" disabled={busy} className={adminDangerBtn} onClick={() => setCancelOpen(true)}>
+              Cancel invoice
             </button>
           ) : null}
         </div>
@@ -445,6 +452,7 @@ export function AdminInvoiceDetails() {
       <ConfirmDocumentModal
         open={cancelOpen}
         busy={busy}
+        danger
         title="Cancel this invoice?"
         description="The client will no longer see it in the portal. Paid invoices and invoices with payments cannot be cancelled."
         actionLabel="Cancel invoice"
@@ -518,8 +526,3 @@ export function AdminInvoiceDetails() {
     </div>
   );
 }
-
-const primaryBtn =
-  "inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white disabled:opacity-60";
-const secondaryBtn =
-  "inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold disabled:opacity-60";

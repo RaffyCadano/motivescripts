@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Ban, CopyPlus, Download, Receipt, RotateCcw, Save, Send, Trash2 } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { ContractDocumentView } from "@/components/documents/ContractDocumentView";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
@@ -8,6 +10,8 @@ import { effectiveDocumentStatus } from "@/data/documents";
 import {
   cancelContract,
   createContractRevision,
+  deleteContract,
+  restoreContract,
   downloadContractPdf,
   fetchContractDetail,
   saveContractDraft,
@@ -21,6 +25,7 @@ const fieldClass =
 
 export function AdminContractDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { clients, projects, notify, reload } = useLeads();
   const [detail, setDetail] = useState<ContractDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +33,8 @@ export function AdminContractDetails() {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [form, setForm] = useState({
     title: "",
     parties: "",
@@ -124,6 +131,108 @@ export function AdminContractDetails() {
   };
   const current = detail;
 
+  const contractActions: AdminActionsMenuItem[] = [
+    {
+      id: "pdf",
+      label: pdfBusy ? "Generating PDF..." : "Download PDF",
+      icon: Download,
+      disabled: busy || pdfBusy,
+      onSelect: async () => {
+        setPdfBusy(true);
+        try {
+          await downloadContractPdf(current.contract.id);
+        } catch (error) {
+          notify(error instanceof AgencyDbError ? error.message : "Unable to generate the contract PDF. Please try again.");
+        } finally {
+          setPdfBusy(false);
+        }
+      },
+    },
+  ];
+  if (isDraft) {
+    contractActions.push(
+      {
+        id: "save",
+        label: busy ? "Saving…" : "Save draft",
+        icon: Save,
+        disabled: busy,
+        onSelect: async () => {
+          setBusy(true);
+          try {
+            await persist();
+            notify("Contract saved.");
+            await load();
+            await reload();
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "Unable to save this contract.");
+          } finally {
+            setBusy(false);
+          }
+        },
+      },
+      { id: "send", label: "Send Contract", icon: Send, disabled: busy, onSelect: () => setSendOpen(true) },
+    );
+  }
+  if (!isDraft && status !== "accepted" && status !== "cancelled") {
+    contractActions.push({
+      id: "revision",
+      label: "New revision",
+      icon: CopyPlus,
+      disabled: busy,
+      onSelect: async () => {
+        setBusy(true);
+        try {
+          await createContractRevision(current.contract.id);
+          notify("New revision created.");
+          await load();
+        } catch (error) {
+          notify(error instanceof AgencyDbError ? error.message : "Unable to create a revision.");
+        } finally {
+          setBusy(false);
+        }
+      },
+    });
+  }
+  if (publishedStatus === "accepted") {
+    contractActions.push({
+      id: "create-invoice",
+      label: "Create Invoice",
+      icon: Receipt,
+      href: `/admin/invoices/new?client=${detail.contract.client_id}&contract=${detail.contract.id}${detail.contract.project_id ? `&project=${detail.contract.project_id}` : ""}`,
+    });
+  }
+  if (status !== "accepted" && status !== "cancelled") {
+    contractActions.push({
+      id: "cancel",
+      label: "Cancel contract",
+      icon: Ban,
+      disabled: busy,
+      danger: true,
+      separatorBefore: true,
+      onSelect: () => setCancelOpen(true),
+    });
+  }
+  if (status === "cancelled") {
+    contractActions.push({
+      id: "restore",
+      label: "Restore",
+      icon: RotateCcw,
+      disabled: busy,
+      onSelect: () => setRestoreOpen(true),
+    });
+  }
+  if (status !== "accepted" && publishedStatus !== "accepted" && !detail.acceptedOnce) {
+    contractActions.push({
+      id: "delete",
+      label: "Delete contract",
+      icon: Trash2,
+      disabled: busy,
+      danger: true,
+      separatorBefore: status === "cancelled",
+      onSelect: () => setDeleteOpen(true),
+    });
+  }
+
   async function persist() {
     if (!isDraft) return;
     await saveContractDraft({
@@ -159,89 +268,10 @@ export function AdminContractDetails() {
             ) : null}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={busy || pdfBusy}
-            className={secondaryBtn}
-            onClick={async () => {
-              setPdfBusy(true);
-              try {
-                await downloadContractPdf(current.contract.id);
-              } catch (error) {
-                notify(error instanceof AgencyDbError ? error.message : "Unable to generate the contract PDF. Please try again.");
-              } finally {
-                setPdfBusy(false);
-              }
-            }}
-          >
-            {pdfBusy ? "Generating PDF..." : "Download PDF"}
-          </button>
-          {isDraft ? (
-            <>
-              <button
-                type="button"
-                disabled={busy}
-                className={secondaryBtn}
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    await persist();
-                    notify("Contract saved.");
-                    await load();
-                    await reload();
-                  } catch (error) {
-                    notify(error instanceof AgencyDbError ? error.message : "Unable to save this contract.");
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                Save draft
-              </button>
-              <button type="button" disabled={busy} className={primaryBtn} onClick={() => setSendOpen(true)}>
-                Send Contract
-              </button>
-            </>
-          ) : null}
-          {!isDraft && status !== "accepted" && status !== "cancelled" ? (
-            <button
-              type="button"
-              disabled={busy}
-              className={secondaryBtn}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  await createContractRevision(current.contract.id);
-                  notify("New revision created.");
-                  await load();
-                } catch (error) {
-                  notify(error instanceof AgencyDbError ? error.message : "Unable to create a revision.");
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              New revision
-            </button>
-          ) : null}
-          {publishedStatus === "accepted" ? (
-            <Link
-              to={`/admin/invoices/new?client=${detail.contract.client_id}&contract=${detail.contract.id}${detail.contract.project_id ? `&project=${detail.contract.project_id}` : ""}`}
-              className={`${secondaryBtn} hover:bg-[var(--admin-bg)]`}
-            >
-              Create Invoice
-            </Link>
-          ) : null}
-          {status !== "accepted" && status !== "cancelled" ? (
-            <button type="button" disabled={busy} className={secondaryBtn} onClick={() => setCancelOpen(true)}>
-              Cancel
-            </button>
-          ) : null}
-        </div>
+        <AdminActionsMenu ariaLabel="Contract actions" items={contractActions} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
         <form className="space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
           <p className="text-[12px] text-[var(--admin-muted)]">
             Starting copy is a template for workflow only. Edit it before sending. This is not legal advice.
@@ -304,8 +334,9 @@ export function AdminContractDetails() {
       <ConfirmDocumentModal
         open={cancelOpen}
         busy={busy}
+        danger
         title="Cancel this contract?"
-        description="The client will no longer be able to accept this revision."
+        description="The client will no longer be able to review or accept it. You can restore it later if this was a mistake."
         actionLabel="Cancel contract"
         onClose={() => setCancelOpen(false)}
         onConfirm={async () => {
@@ -318,6 +349,50 @@ export function AdminContractDetails() {
           } catch (error) {
             notify(error instanceof AgencyDbError ? error.message : "Unable to cancel this contract.");
           } finally {
+            setBusy(false);
+          }
+        }}
+      />
+      <ConfirmDocumentModal
+        open={restoreOpen}
+        busy={busy}
+        title="Restore this contract?"
+        description="It will leave Cancelled and go back to draft or sent, depending on where it was before you cancelled it."
+        actionLabel="Restore contract"
+        onClose={() => setRestoreOpen(false)}
+        onConfirm={async () => {
+          setBusy(true);
+          try {
+            await restoreContract(current.contract.id);
+            notify("Contract restored.");
+            setRestoreOpen(false);
+            await load();
+            await reload();
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "Unable to restore this contract.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
+      <ConfirmDocumentModal
+        open={deleteOpen}
+        busy={busy}
+        danger
+        title="Delete this contract?"
+        description="This permanently removes the contract and its revisions. This cannot be undone."
+        actionLabel="Delete contract"
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={async () => {
+          setBusy(true);
+          try {
+            await deleteContract(current.contract.id);
+            notify("Contract deleted.");
+            setDeleteOpen(false);
+            await reload();
+            navigate("/admin/contracts");
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "Unable to delete this contract.");
             setBusy(false);
           }
         }}
@@ -343,8 +418,3 @@ function Area(props: { label: string; value: string; disabled?: boolean; onChang
     </label>
   );
 }
-
-const primaryBtn =
-  "inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white disabled:opacity-60";
-const secondaryBtn =
-  "inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold disabled:opacity-60";
