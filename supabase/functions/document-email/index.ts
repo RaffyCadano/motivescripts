@@ -18,7 +18,7 @@ function siteUrl(): string {
 }
 
 function resendFrom(): string {
-  return Deno.env.get("RESEND_FROM") ?? "MotiveScripts <motivescripts.team@gmail.com>";
+  return Deno.env.get("RESEND_FROM") ?? "MotiveScripts <no-reply@motivescripts.com>";
 }
 
 function escapeHtml(value: string): string {
@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
   if (!origin) return fail("missing_site_url");
   const apiKey = Deno.env.get("RESEND_API_KEY") ?? "";
   if (!apiKey) return fail("email_failed");
-  const supportEmail = Deno.env.get("SUPPORT_EMAIL") ?? "motivescripts.team@gmail.com";
+  const supportEmail = Deno.env.get("SUPPORT_EMAIL") ?? "support@motivescripts.com";
 
   try {
     if (body.kind === "proposal") {

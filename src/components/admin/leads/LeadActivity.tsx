@@ -6,7 +6,7 @@ type LeadActivityProps = {
 
 export function LeadActivity({ lead }: LeadActivityProps) {
   return (
-    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+    <section className="h-auto self-start rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
       <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Activity</h2>
       {lead.activity.length === 0 ? (
         <p className="mt-4 text-sm text-[var(--admin-muted)]">No activity yet.</p>

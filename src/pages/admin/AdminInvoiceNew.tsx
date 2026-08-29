@@ -4,6 +4,7 @@ import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModa
 import { InvoiceDocumentView } from "@/components/invoices/InvoiceDocumentView";
 import { InvoiceDraftForm, type InvoiceDraftFormValue } from "@/components/invoices/InvoiceDraftForm";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { documentMailRecipientCopy, documentMailRecipients } from "@/data/documents";
 import { fetchContractSummaries } from "@/data/documentsRepository";
 import {
   emptyLineItem,
@@ -15,10 +16,12 @@ import {
   type LineItemDraft,
 } from "@/data/invoices";
 import { createInvoice, saveInvoiceDraft, sendInvoice } from "@/data/invoicesRepository";
+import { invoiceNotesFromSettings } from "@/data/settings";
+import { fetchAgencySettings } from "@/data/settingsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 export function AdminInvoiceNew() {
-  const { clients, projects, notify } = useLeads();
+  const { clients, projects, notify, portalAccounts } = useLeads();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const presetClient = searchParams.get("client") ?? "";
@@ -40,6 +43,24 @@ export function AdminInvoiceNew() {
     notes: "",
     adminNotes: "",
   });
+
+  useEffect(() => {
+    let active = true;
+    void fetchAgencySettings()
+      .then((row) => {
+        if (!active) return;
+        setForm((current) => ({
+          ...current,
+          dueDate: isoCalendarDatePlusDays(row.defaultInvoiceDueDays),
+          currency: row.currency || current.currency,
+          notes: invoiceNotesFromSettings(row) || current.notes,
+        }));
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     void fetchContractSummaries().then((rows) => {
@@ -69,6 +90,10 @@ export function AdminInvoiceNew() {
     [accepted, form.clientId],
   );
   const client = clients.find((item) => item.id === form.clientId);
+  const mailRecipients = documentMailRecipients(
+    client?.email,
+    portalAccounts.filter((account) => account.clientId === form.clientId).map((account) => account.email),
+  );
   const project = projects.find((item) => item.id === form.projectId);
   const contract = clientContracts.find((item) => item.id === form.contractId);
   const totals = invoiceDraftTotalCents(items, form.taxCents, form.discountCents);
@@ -186,7 +211,7 @@ export function AdminInvoiceNew() {
         open={sendOpen}
         busy={busy}
         title="Send this invoice to the client?"
-        description="They’ll see this invoice in the Client Portal. Email is attempted after send; a delivery failure will not undo the invoice."
+        description={`${documentMailRecipientCopy(mailRecipients, { companyName: client?.businessName, action: "send" })} They’ll see this invoice in the Client Portal. Email is attempted after send; a delivery failure will not undo the invoice.`}
         actionLabel="Send Invoice"
         onClose={() => setSendOpen(false)}
         onConfirm={() => {

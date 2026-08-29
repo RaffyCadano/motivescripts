@@ -271,6 +271,24 @@ export async function cancelInvoice(invoiceId: string): Promise<void> {
   throwIf(error, "cancel invoice", "Unable to cancel this invoice.");
 }
 
+export async function restoreInvoice(invoiceId: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("restore_invoice", { p_invoice_id: invoiceId });
+  throwIf(error, "restore invoice", "Unable to restore this invoice.");
+}
+
+export async function reopenInvoiceDraft(invoiceId: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("reopen_invoice_draft", { p_invoice_id: invoiceId });
+  throwIf(error, "reopen invoice", "Unable to edit this invoice.");
+}
+
+export async function deleteInvoice(invoiceId: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("delete_invoice", { p_invoice_id: invoiceId });
+  throwIf(error, "delete invoice", "Unable to delete this invoice.");
+}
+
 export async function recordInvoicePayment(input: {
   invoiceId: string;
   amountCents: number;

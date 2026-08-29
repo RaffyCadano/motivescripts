@@ -127,18 +127,30 @@ export type ProposalDraftFields = {
   notes: string;
 };
 
-export function applyProposalDraftDefaults(fields: ProposalDraftFields): ProposalDraftFields {
+export function applyProposalDraftDefaults(
+  fields: ProposalDraftFields,
+  overrides?: Partial<ProposalDraftFields>,
+): ProposalDraftFields {
+  const defaults = {
+    ...PROPOSAL_DRAFT_DEFAULTS,
+    introduction: overrides?.introduction?.trim() || PROPOSAL_DRAFT_DEFAULTS.introduction,
+    overview: overrides?.overview?.trim() || PROPOSAL_DRAFT_DEFAULTS.overview,
+    scope: overrides?.scope?.trim() || PROPOSAL_DRAFT_DEFAULTS.scope,
+    deliverablesText: overrides?.deliverablesText?.trim() || PROPOSAL_DRAFT_DEFAULTS.deliverablesText,
+    timeline: overrides?.timeline?.trim() || PROPOSAL_DRAFT_DEFAULTS.timeline,
+    paymentTerms: overrides?.paymentTerms?.trim() || PROPOSAL_DRAFT_DEFAULTS.paymentTerms,
+    terms: overrides?.terms?.trim() || PROPOSAL_DRAFT_DEFAULTS.terms,
+    notes: overrides?.notes?.trim() || PROPOSAL_DRAFT_DEFAULTS.notes,
+  };
   return {
-    introduction: fields.introduction.trim() || PROPOSAL_DRAFT_DEFAULTS.introduction,
-    overview: fields.overview.trim() || PROPOSAL_DRAFT_DEFAULTS.overview,
-    scope: isEmptyScopeDraft(fields.scope) ? PROPOSAL_DRAFT_DEFAULTS.scope : fields.scope,
-    deliverablesText: fields.deliverablesText.trim() || PROPOSAL_DRAFT_DEFAULTS.deliverablesText,
-    timeline: fields.timeline.trim() || PROPOSAL_DRAFT_DEFAULTS.timeline,
-    paymentTerms: isEmptyPaymentTermsDraft(fields.paymentTerms)
-      ? PROPOSAL_DRAFT_DEFAULTS.paymentTerms
-      : fields.paymentTerms,
-    terms: fields.terms.trim() || PROPOSAL_DRAFT_DEFAULTS.terms,
-    notes: fields.notes.trim() || PROPOSAL_DRAFT_DEFAULTS.notes,
+    introduction: fields.introduction.trim() || defaults.introduction,
+    overview: fields.overview.trim() || defaults.overview,
+    scope: isEmptyScopeDraft(fields.scope) ? defaults.scope : fields.scope,
+    deliverablesText: fields.deliverablesText.trim() || defaults.deliverablesText,
+    timeline: fields.timeline.trim() || defaults.timeline,
+    paymentTerms: isEmptyPaymentTermsDraft(fields.paymentTerms) ? defaults.paymentTerms : fields.paymentTerms,
+    terms: fields.terms.trim() || defaults.terms,
+    notes: fields.notes.trim() || defaults.notes,
   };
 }
 

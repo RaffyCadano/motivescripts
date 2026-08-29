@@ -41,7 +41,7 @@ export function InvoiceDocumentView({
       <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className={`font-heading text-xs font-bold uppercase tracking-[0.16em] ${muted}`}>{site.name}</p>
-          <p className={`mt-2 text-sm ${muted}`}>{site.email}</p>
+          <p className={`mt-2 text-sm ${muted}`}>{site.supportEmail}</p>
         </div>
         <div className="sm:text-right">
           <p className={`text-[12px] font-semibold uppercase tracking-[0.12em] ${muted}`}>Invoice</p>

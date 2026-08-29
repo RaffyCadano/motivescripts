@@ -108,6 +108,9 @@ export function ClientContractDetails() {
           number: detail.contract.contract_number,
           revisionNumber: revision.revision_number,
           companyName: clients[0]?.businessName ?? "your company",
+          contactName: clients[0]?.contactName,
+          acceptedAt: revision.accepted_at,
+          acceptedEmail: revision.accepted_email,
           revision,
         }}
       />

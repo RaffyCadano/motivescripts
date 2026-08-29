@@ -20,6 +20,7 @@ import { AdminLeads } from "@/pages/admin/AdminLeads";
 import { AdminMessages } from "@/pages/admin/AdminMessages";
 import { AdminOverview } from "@/pages/admin/AdminOverview";
 import { AdminPlaceholder } from "@/pages/admin/AdminPlaceholder";
+import { AdminSettings } from "@/pages/admin/AdminSettings";
 import { AdminProjectDetails } from "@/pages/admin/AdminProjectDetails";
 import { AdminProjects } from "@/pages/admin/AdminProjects";
 import { AdminProposalDetails } from "@/pages/admin/AdminProposalDetails";
@@ -61,7 +62,7 @@ import { ServicesPage } from "@/pages/Services";
 import { WorkPage } from "@/pages/Work";
 import { MessagingProvider } from "@/providers/MessagingProvider";
 
-const adminUnavailablePaths = ["tasks", "notifications", "activity", "settings"] as const;
+const adminUnavailablePaths = ["tasks", "notifications", "activity"] as const;
 
 export default function App() {
   return (
@@ -102,6 +103,7 @@ export default function App() {
               <Route path="team" element={<AdminTeam />} />
               <Route path="team/invite/:invitationId" element={<AdminTeamInviteDetails />} />
               <Route path="team/:id" element={<AdminTeamDetails />} />
+              <Route path="settings" element={<AdminSettings />} />
               <Route path="payments" element={<Navigate to="/admin/invoices" replace />} />
               {adminUnavailablePaths.map((path) => (
                 <Route key={path} path={path} element={<AdminPlaceholder />} />

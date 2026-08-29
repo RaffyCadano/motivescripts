@@ -51,7 +51,7 @@ function isIndustry(value: string): value is (typeof INDUSTRIES)[number] {
 }
 
 function resendFrom(): string {
-  return Deno.env.get("RESEND_FROM") ?? "MotiveScripts <motivescripts.team@gmail.com>";
+  return Deno.env.get("RESEND_FROM") ?? "MotiveScripts <no-reply@motivescripts.com>";
 }
 
 function escapeHtml(value: string): string {
@@ -123,7 +123,7 @@ async function notifyAgency(input: {
   details: string;
 }) {
   const apiKey = Deno.env.get("RESEND_API_KEY") ?? "";
-  const to = (Deno.env.get("SUPPORT_EMAIL") ?? "").trim();
+  const to = (Deno.env.get("SUPPORT_EMAIL") ?? "contact-us@motivescripts.com").trim();
   if (!apiKey || !to) return;
   const origin = siteUrl();
   const adminUrl = origin ? `${origin}/admin/leads` : "";

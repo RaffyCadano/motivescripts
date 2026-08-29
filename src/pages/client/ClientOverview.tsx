@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ClientActionCard } from "@/components/client/ClientActionCard";
 import { ClientActivity } from "@/components/client/ClientActivity";
@@ -12,12 +12,26 @@ import { currentVersion, versionLabel } from "@/data/files";
 import { formatProjectDate } from "@/data/agencyProjects";
 import { awaitingReview, canClientReview } from "@/data/review";
 import { greetingForHour } from "@/data/clientPortal";
+import { fetchClientPortalWelcome } from "@/data/settingsRepository";
 import { clientTasksFromProject, timelineStagesFromProject } from "@/data/clientProjectProgress";
 import { useMessaging } from "@/providers/MessagingProvider";
 
 export function ClientOverview() {
   const identity = usePortalIdentity();
   const greeting = useMemo(() => greetingForHour(new Date().getHours(), identity.firstName), [identity.firstName]);
+  const [welcome, setWelcome] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    void fetchClientPortalWelcome()
+      .then((message) => {
+        if (active) setWelcome(message.trim());
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
   const { project, files } = usePortalSession();
   const { unreadMessageCount, conversations } = useMessaging();
   const waiting = awaitingReview(files.filter((item) => item.status !== "Archived"));
@@ -36,7 +50,9 @@ export function ClientOverview() {
     <div className="w-full space-y-6">
       <header>
         <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight md:text-3xl">{greeting}</h1>
-        <p className="mt-1 text-sm text-[var(--client-muted)]">Here’s the latest on your project.</p>
+        <p className="mt-1 text-sm text-[var(--client-muted)]">
+          {welcome || "Here’s the latest on your project."}
+        </p>
       </header>
 
       <ClientProjectCard />

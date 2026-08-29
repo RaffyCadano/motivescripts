@@ -40,7 +40,7 @@ function AccountDeactivated() {
 }
 
 function SessionLoading() {
-  return <AuthStatusScreen title="Checking your session." body="One moment." />;
+  return <AuthStatusScreen loading title="Checking your session." body="One moment." />;
 }
 
 export function RequireAdmin({ children }: { children: ReactNode }) {

@@ -1,7 +1,12 @@
 export const site = {
   name: "MotiveScripts",
   tagline: "Digital experiences for growing businesses.",
-  email: "motivescripts.team@gmail.com",
+  /** Public marketing and contact pages. */
+  email: "contact-us@motivescripts.com",
+  /** Shown on PDFs and in-app document headers. */
+  supportEmail: "support@motivescripts.com",
+  /** Supabase Auth magic-link sender. Set this in the Auth SMTP / sender settings. */
+  authFromEmail: "no-reply@motivescripts.com",
   nav: [
     { label: "Services", href: "/services" },
     { label: "Work", href: "/work" },

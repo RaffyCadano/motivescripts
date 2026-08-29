@@ -527,6 +527,40 @@ export type StaffInvitationPreviewRow = {
   role_label: string | null;
 };
 
+export type AgencySettingsRow = {
+  id: number;
+  agency_name: string;
+  business_email: string;
+  phone: string;
+  website: string;
+  address: string;
+  timezone: string;
+  currency: string;
+  logo_url: string;
+  primary_color: string;
+  secondary_color: string;
+  support_email: string;
+  email_from_name: string;
+  email_from_address: string;
+  email_reply_to: string;
+  default_proposal_valid_days: number;
+  default_proposal_introduction: string;
+  default_proposal_overview: string;
+  default_proposal_scope: string;
+  default_proposal_deliverables: string;
+  default_proposal_timeline: string;
+  default_proposal_payment_terms: string;
+  default_proposal_terms: string;
+  default_proposal_notes: string;
+  default_contract_terms: string;
+  default_invoice_due_days: number;
+  default_invoice_payment_terms: string;
+  default_invoice_notes: string;
+  client_portal_welcome_message: string;
+  updated_at: string;
+  updated_by: string | null;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -633,6 +667,7 @@ export type Database = {
       staff_templates: Table<StaffTemplateRow>;
       staff_permission_catalog: Table<StaffPermissionCatalogRow>;
       staff_template_permissions: Table<StaffTemplatePermissionRow>;
+      agency_settings: Table<AgencySettingsRow>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -821,6 +856,18 @@ export type Database = {
         Args: { p_invoice_id: string };
         Returns: null;
       };
+      restore_invoice: {
+        Args: { p_invoice_id: string };
+        Returns: null;
+      };
+      reopen_invoice_draft: {
+        Args: { p_invoice_id: string };
+        Returns: null;
+      };
+      delete_invoice: {
+        Args: { p_invoice_id: string };
+        Returns: null;
+      };
       mark_invoice_viewed: {
         Args: { p_invoice_id: string };
         Returns: null;
@@ -905,6 +952,22 @@ export type Database = {
       staff_can_access_client: {
         Args: { p_client_id: string; p_perm: string };
         Returns: boolean;
+      };
+      get_agency_settings: {
+        Args: Record<string, never>;
+        Returns: AgencySettingsRow;
+      };
+      update_agency_settings: {
+        Args: { p_patch: Json };
+        Returns: AgencySettingsRow;
+      };
+      get_client_portal_welcome: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
+      update_own_profile: {
+        Args: { p_full_name?: string | null; p_job_title?: string | null };
+        Returns: null;
       };
     };
     Enums: Record<string, never>;

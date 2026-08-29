@@ -124,10 +124,34 @@ export function applyProposalLineDefaults(items: LineItemDraft[]): LineItemDraft
   return unique.length > 0 ? unique : [defaultProposalLineItem()];
 }
 
-export function defaultProposalValidUntil(now = new Date()): string {
+export const DEFAULT_CONTRACT_VALID_DAYS = 30;
+
+export function defaultProposalValidUntil(now = new Date(), days = 30): string {
   const date = new Date(now);
-  date.setDate(date.getDate() + 30);
+  const span = Number.isFinite(days) ? Math.min(365, Math.max(1, Math.floor(days))) : 30;
+  date.setDate(date.getDate() + span);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+/** YYYY-MM-DD for date inputs. Postgres date columns and ISO timestamps both work. */
+export function calendarDateValue(value: string | null | undefined): string {
+  if (!value) return "";
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(value.trim());
+  return match?.[1] ?? "";
+}
+
+export function calendarDateOrNull(value: string | null | undefined): string | null {
+  return calendarDateValue(value) || null;
+}
+
+export function formatCalendarDate(value: string | null | undefined): string {
+  const day = calendarDateValue(value);
+  if (!day) return "";
+  return new Date(`${day}T00:00:00`).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export function itemsFromSnapshot(value: unknown): SnapshotItem[] {
@@ -191,7 +215,7 @@ export function effectiveDocumentStatus(
 ): DocumentStatus {
   if (status === "sent" || status === "viewed") {
     if (expiry) {
-      const day = expiry.slice(0, 10);
+      const day = calendarDateValue(expiry);
       const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
       if (day < today) return "expired";
     }
@@ -292,4 +316,30 @@ export function rpcErrorCode(message: string): string {
 
 export function investmentSummary(cents: number): string {
   return formatUsdFromCents(cents);
+}
+
+/** Matches document-email: portal profile emails plus the client record email. */
+export function documentMailRecipients(clientEmail?: string | null, portalEmails: Array<string | null | undefined> = []): string[] {
+  return [
+    ...new Set(
+      [...portalEmails, clientEmail]
+        .map((value) => (value ?? "").trim().toLowerCase())
+        .filter((value) => value.includes("@")),
+    ),
+  ];
+}
+
+export function documentMailRecipientCopy(
+  recipients: string[],
+  options?: { companyName?: string; action?: "send" | "resend" },
+): string {
+  const company = options?.companyName?.trim();
+  const verb = options?.action === "resend" ? "This email will be sent again to" : "This email will go to";
+  if (recipients.length === 0) {
+    return company
+      ? `No email is on file for ${company}. Add a client email or portal account before sending.`
+      : "No email is on file for this client. Add a client email or portal account before sending.";
+  }
+  const list = recipients.join(", ");
+  return company ? `${verb} ${list} (${company}).` : `${verb} ${list}.`;
 }

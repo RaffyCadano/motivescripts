@@ -2,11 +2,20 @@ import { useEffect, useState } from "react";
 import { Ban, CopyPlus, Download, Receipt, RotateCcw, Save, Send, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
+import { AdminInfoTip } from "@/components/admin/AdminInfoTip";
+import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { ContractDocumentView } from "@/components/documents/ContractDocumentView";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
-import { useLeads } from "@/components/admin/leads/LeadsProvider";
-import { effectiveDocumentStatus } from "@/data/documents";
+import {
+  calendarDateOrNull,
+  calendarDateValue,
+  DEFAULT_CONTRACT_VALID_DAYS,
+  defaultProposalValidUntil,
+  documentMailRecipientCopy,
+  documentMailRecipients,
+  effectiveDocumentStatus,
+} from "@/data/documents";
 import {
   cancelContract,
   createContractRevision,
@@ -26,7 +35,7 @@ const fieldClass =
 export function AdminContractDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { clients, projects, notify, reload } = useLeads();
+  const { clients, projects, notify, reload, portalAccounts } = useLeads();
   const [detail, setDetail] = useState<ContractDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -71,8 +80,10 @@ export function AdminContractDetails() {
         revisionsPolicy: next.working.revisions_policy,
         termination: next.working.termination,
         generalTerms: next.working.general_terms,
-        effectiveDate: next.working.effective_date ?? "",
-        expiresAt: next.working.expires_at ?? "",
+        effectiveDate: calendarDateValue(next.working.effective_date),
+        expiresAt:
+          calendarDateValue(next.working.expires_at) ||
+          (next.working.status === "draft" ? defaultProposalValidUntil(undefined, DEFAULT_CONTRACT_VALID_DAYS) : ""),
         adminNotes: next.adminNotes,
       });
     }
@@ -108,6 +119,12 @@ export function AdminContractDetails() {
 
   const client = clients.find((item) => item.id === detail.contract.client_id);
   const project = projects.find((item) => item.id === detail.contract.project_id);
+  const mailRecipients = documentMailRecipients(
+    client?.email,
+    portalAccounts
+      .filter((account) => account.clientId === detail.contract.client_id)
+      .map((account) => account.email),
+  );
   const isDraft = detail.working.status === "draft";
   const status = effectiveDocumentStatus(detail.working.status, detail.working.expires_at);
   const publishedStatus = detail.published
@@ -126,8 +143,8 @@ export function AdminContractDetails() {
     revisions_policy: form.revisionsPolicy,
     termination: form.termination,
     general_terms: form.generalTerms,
-    effective_date: form.effectiveDate || null,
-    expires_at: form.expiresAt || null,
+    effective_date: calendarDateOrNull(form.effectiveDate),
+    expires_at: calendarDateOrNull(form.expiresAt),
   };
   const current = detail;
 
@@ -238,8 +255,8 @@ export function AdminContractDetails() {
     await saveContractDraft({
       revisionId: current.working.id,
       ...form,
-      effectiveDate: form.effectiveDate || null,
-      expiresAt: form.expiresAt || null,
+      effectiveDate: calendarDateOrNull(form.effectiveDate),
+      expiresAt: calendarDateOrNull(form.expiresAt) || defaultProposalValidUntil(undefined, DEFAULT_CONTRACT_VALID_DAYS),
     });
   }
 
@@ -288,14 +305,35 @@ export function AdminContractDetails() {
           <Area label="Revisions" value={form.revisionsPolicy} disabled={!isDraft} onChange={(value) => setForm({ ...form, revisionsPolicy: value })} />
           <Area label="Termination" value={form.termination} disabled={!isDraft} onChange={(value) => setForm({ ...form, termination: value })} />
           <Area label="General terms" value={form.generalTerms} disabled={!isDraft} onChange={(value) => setForm({ ...form, generalTerms: value })} />
-          <label className="block text-sm font-semibold">
-            Effective date
-            <input type="date" disabled={!isDraft} value={form.effectiveDate} onChange={(event) => setForm({ ...form, effectiveDate: event.target.value })} className={fieldClass} />
-          </label>
-          <label className="block text-sm font-semibold">
-            Expires
-            <input type="date" disabled={!isDraft} value={form.expiresAt} onChange={(event) => setForm({ ...form, expiresAt: event.target.value })} className={fieldClass} />
-          </label>
+          <div>
+            <p className="flex items-center gap-1.5 text-sm font-semibold">
+              <label htmlFor="contract-effective-date">Effective date</label>
+              <AdminInfoTip text="The calendar day this agreement starts. Saved as that day, not a timestamp." />
+            </p>
+            <input
+              id="contract-effective-date"
+              type="date"
+              disabled={!isDraft}
+              value={form.effectiveDate}
+              onChange={(event) => setForm({ ...form, effectiveDate: event.target.value })}
+              className={fieldClass}
+            />
+          </div>
+          <div>
+            <p className="flex items-center gap-1.5 text-sm font-semibold">
+              <label htmlFor="contract-valid-until">Valid until</label>
+              <AdminInfoTip text="Last day the client can accept this revision. Defaults to 30 days. After that it expires. This is not the end of the project." />
+            </p>
+            <input
+              id="contract-valid-until"
+              type="date"
+              disabled={!isDraft}
+              min={form.effectiveDate || undefined}
+              value={form.expiresAt}
+              onChange={(event) => setForm({ ...form, expiresAt: event.target.value })}
+              className={fieldClass}
+            />
+          </div>
           <Area label="Internal notes (not shown to the client)" value={form.adminNotes} disabled={!isDraft} onChange={(value) => setForm({ ...form, adminNotes: value })} />
         </form>
         <ContractDocumentView
@@ -303,6 +341,9 @@ export function AdminContractDetails() {
             number: detail.contract.contract_number,
             revisionNumber: detail.working.revision_number,
             companyName: client?.businessName ?? "Client",
+            contactName: client?.contactName,
+            acceptedAt: detail.working.accepted_at,
+            acceptedEmail: detail.working.accepted_email,
             revision: preview,
           }}
         />
@@ -312,7 +353,7 @@ export function AdminContractDetails() {
         open={sendOpen}
         busy={busy}
         title="Send this contract to the client?"
-        description="They’ll review this revision in the client portal and can accept it electronically. This is not a qualified digital signature."
+        description={`${documentMailRecipientCopy(mailRecipients, { companyName: client?.businessName, action: "send" })} They’ll review this revision in the client portal and can accept it electronically. This is not a qualified digital signature.`}
         actionLabel="Send Contract"
         onClose={() => setSendOpen(false)}
         onConfirm={async () => {

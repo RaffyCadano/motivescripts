@@ -72,7 +72,7 @@ export async function generateContractPdf(model: ContractPdfModel): Promise<Uint
   ctx.y -= 16;
   drawText(ctx.page, `Date  ${formatInvoiceDate(model.issueDate)}`, MARGIN, ctx.y, font, 10, MUTED);
   if (model.expiresAt) {
-    const until = `Expires  ${formatInvoiceDate(model.expiresAt)}`;
+    const until = `Valid until  ${formatInvoiceDate(model.expiresAt)}`;
     drawText(ctx.page, until, PAGE_W - MARGIN - font.widthOfTextAtSize(until, 10), ctx.y, font, 10, MUTED);
   }
   ctx.y -= 18;
@@ -133,27 +133,58 @@ export async function generateContractPdf(model: ContractPdfModel): Promise<Uint
   drawSection(ctx, "Termination", model.termination);
   drawSection(ctx, "General terms", model.generalTerms);
 
-  if (model.acceptedAt || model.acceptedEmail) {
-    ctx.y -= 4;
-    ensureSpace(ctx, 52);
-    drawText(ctx.page, "ACCEPTANCE", MARGIN, ctx.y, bold, 8, MUTED);
-    ctx.y -= 14;
-    if (model.acceptedAt) {
-      drawText(ctx.page, `Accepted ${formatTimestamp(model.acceptedAt)}`, MARGIN, ctx.y, font, 10, INK);
-      ctx.y -= 13;
+  ctx.y -= 4;
+  ensureSpace(ctx, 118);
+  drawText(ctx.page, "SIGNATURES", MARGIN, ctx.y, bold, 8, MUTED);
+  ctx.y -= 14;
+  drawBody(
+    ctx,
+    "The Client signs this agreement by accepting it while signed in to the MotiveScripts portal. That records their agreement to these terms. It is not a qualified digital signature and is not a DocuSign, Adobe Sign, or similar e-signature.",
+    8,
+    MUTED,
+    11,
+  );
+  ctx.y -= 10;
+
+  const gap = 24;
+  const colW = (PAGE_W - MARGIN * 2 - gap) / 2;
+  const rightX = MARGIN + colW + gap;
+  ensureSpace(ctx, 78);
+
+  function drawSignatureColumn(x: number, heading: string, name: string, detail: string, status: string) {
+    drawText(ctx.page, heading, x, ctx.y, bold, 8, MUTED);
+    ctx.page.drawLine({
+      start: { x, y: ctx.y - 28 },
+      end: { x: x + colW, y: ctx.y - 28 },
+      thickness: 0.75,
+      color: INK,
+    });
+    if (status) {
+      drawText(ctx.page, status, x, ctx.y - 24, bold, 9, INK);
     }
-    if (model.acceptedEmail) {
-      drawText(ctx.page, model.acceptedEmail, MARGIN, ctx.y, font, 10, MUTED);
-      ctx.y -= 13;
+    drawText(ctx.page, name, x, ctx.y - 42, font, 10, INK);
+    if (detail) {
+      drawText(ctx.page, detail, x, ctx.y - 55, font, 9, MUTED);
     }
-    drawBody(
-      ctx,
-      "Recorded as authenticated portal acceptance. This is not a qualified digital signature and is not a DocuSign, Adobe Sign, or similar e-signature.",
-      8,
-      MUTED,
-      11,
-    );
   }
+
+  const clientAccepted = Boolean(model.acceptedAt || model.acceptedEmail);
+  const clientDetail = [
+    model.contactName && model.contactName !== model.companyName ? model.contactName : null,
+    clientAccepted ? model.acceptedEmail : null,
+    clientAccepted && model.acceptedAt ? formatTimestamp(model.acceptedAt) : null,
+  ]
+    .filter(Boolean)
+    .join("  ·  ");
+  drawSignatureColumn(
+    MARGIN,
+    "CLIENT",
+    model.companyName,
+    clientDetail || "Signed in the client portal",
+    clientAccepted ? "Accepted in portal" : "",
+  );
+  drawSignatureColumn(rightX, "AGENCY", "MotiveScripts", "Authorized representative", "");
+  ctx.y -= 68;
 
   return await finishPdf(ctx);
 }

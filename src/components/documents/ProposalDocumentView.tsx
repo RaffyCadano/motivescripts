@@ -64,6 +64,7 @@ export function ProposalDocumentView({
   return (
     <article className={`${radius} border ${line} ${card} p-5 md:p-8 ${ink}`}>
       <p className={`font-heading text-xs font-bold uppercase tracking-[0.16em] ${muted}`}>{site.name}</p>
+      <p className={`mt-1 text-sm ${muted}`}>{site.supportEmail}</p>
       <p className={`mt-2 text-sm ${muted}`}>
         {doc.number} · Revision {doc.revisionNumber}
       </p>

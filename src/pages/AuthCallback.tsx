@@ -49,6 +49,7 @@ export function AuthCallbackPage() {
   return (
     <AuthStatusScreen
       inSiteLayout
+      loading
       title="Signing you in."
       body="You’ll land in your workspace in a moment."
     />

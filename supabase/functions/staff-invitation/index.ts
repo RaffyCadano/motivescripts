@@ -58,7 +58,7 @@ function siteUrl(): string {
 }
 
 function resendFrom(): string {
-  return Deno.env.get("RESEND_FROM") ?? "MotiveScripts <motivescripts.team@gmail.com>";
+  return Deno.env.get("RESEND_FROM") ?? "MotiveScripts <no-reply@motivescripts.com>";
 }
 
 function escapeHtml(value: string): string {
@@ -374,7 +374,7 @@ async function sendResendEmail(input: {
 }) {
   const apiKey = Deno.env.get("RESEND_API_KEY") ?? "";
   if (!apiKey) throw new Error("email_failed");
-  const supportEmail = Deno.env.get("SUPPORT_EMAIL") ?? "motivescripts.team@gmail.com";
+  const supportEmail = Deno.env.get("SUPPORT_EMAIL") ?? "support@motivescripts.com";
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {

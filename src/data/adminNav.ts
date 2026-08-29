@@ -66,7 +66,10 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
   {
     label: "Operations",
-    items: [{ label: "Team", href: "/admin/team", icon: "team" }],
+    items: [
+      { label: "Team", href: "/admin/team", icon: "team" },
+      { label: "Settings", href: "/admin/settings", icon: "settings" },
+    ],
   },
 ];
 
@@ -99,6 +102,9 @@ export function getAdminPageMeta(pathname: string) {
   }
   if (pathname === "/admin/team" || pathname.startsWith("/admin/team/")) {
     return items.find((item) => item.href === "/admin/team") ?? items[0];
+  }
+  if (pathname === "/admin/settings" || pathname.startsWith("/admin/settings/")) {
+    return items.find((item) => item.href === "/admin/settings") ?? items[0];
   }
   const exact = items.find((item) => item.href === pathname);
   if (exact) return exact;
@@ -144,12 +150,6 @@ export const adminUnavailablePages: Record<
     icon: "activity",
     description: "A workspace-wide activity feed is not available in this release.",
     hint: "Project activity is on each project’s overview.",
-  },
-  "/admin/settings": {
-    label: "Settings",
-    icon: "settings",
-    description: "Workspace settings are not available in this release.",
-    hint: "Team access is managed from Team. Client profile details are in the client portal.",
   },
 };
 

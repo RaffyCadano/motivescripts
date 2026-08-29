@@ -1,6 +1,7 @@
 import {
   documentErrorMessage,
   applyProposalLineDefaults,
+  calendarDateOrNull,
   draftsFromItems,
   effectiveDocumentStatus,
   itemsFromSnapshot,
@@ -604,8 +605,8 @@ export async function saveContractDraft(input: {
       revisions_policy: input.revisionsPolicy.trim(),
       termination: input.termination.trim(),
       general_terms: input.generalTerms.trim(),
-      effective_date: input.effectiveDate,
-      expires_at: input.expiresAt,
+      effective_date: calendarDateOrNull(input.effectiveDate),
+      expires_at: calendarDateOrNull(input.expiresAt),
     })
     .eq("id", input.revisionId)
     .eq("status", "draft");

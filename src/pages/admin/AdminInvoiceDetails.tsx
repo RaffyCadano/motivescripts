@@ -1,22 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Ban, Download, Mail, PencilLine, RotateCcw, Save, Send, Trash2 } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { InvoiceDocumentView } from "@/components/invoices/InvoiceDocumentView";
 import { InvoiceDraftForm, type InvoiceDraftFormValue } from "@/components/invoices/InvoiceDraftForm";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { RecordPaymentModal } from "@/components/invoices/RecordPaymentModal";
-import {
-  adminBlueBtn,
-  adminDangerBtn,
-  adminGhostBtn,
-  adminPrimaryBtn,
-  adminSoftBtn,
-} from "@/components/admin/adminActionStyles";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { documentMailRecipientCopy, documentMailRecipients } from "@/data/documents";
 import { fetchContractSummaries } from "@/data/documentsRepository";
 import {
   canCancelInvoice,
+  canDeleteInvoice,
+  canEditSentInvoice,
   canRecordInvoicePayment,
+  canRestoreInvoice,
   emptyLineItem,
   formatInvoiceDate,
   invoiceDraftTotalCents,
@@ -30,11 +29,14 @@ import {
 } from "@/data/invoices";
 import {
   cancelInvoice,
+  deleteInvoice,
   downloadInvoicePdf,
   fetchInvoiceDetail,
   invoiceLineDrafts,
   recordInvoicePayment,
+  reopenInvoiceDraft,
   resendInvoiceEmail,
+  restoreInvoice,
   reverseInvoicePayment,
   saveInvoiceDraft,
   sendInvoice,
@@ -46,14 +48,20 @@ import { AgencyDbError } from "@/lib/dbErrors";
 
 export function AdminInvoiceDetails() {
   const { id } = useParams();
-  const { clients, projects, notify, reload } = useLeads();
+  const navigate = useNavigate();
+  const { clients, projects, notify, reload, portalAccounts } = useLeads();
   const [detail, setDetail] = useState<InvoiceDetail | null>(null);
   const [accepted, setAccepted] = useState<{ id: string; number: string; clientId: string; projectId: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
+  const [resendOpen, setResendOpen] = useState(false);
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [reverseId, setReverseId] = useState<string | null>(null);
   const [items, setItems] = useState<LineItemDraft[]>([emptyLineItem()]);
@@ -103,6 +111,7 @@ export function AdminInvoiceDetails() {
 
   useEffect(() => {
     let active = true;
+    setEditing(false);
     setLoading(true);
     void load()
       .catch((error) => notify(error instanceof AgencyDbError ? error.message : "Unable to load this invoice."))
@@ -116,6 +125,12 @@ export function AdminInvoiceDetails() {
   }, [id]);
 
   const client = clients.find((item) => item.id === detail?.invoice.client_id);
+  const mailRecipients = documentMailRecipients(
+    client?.email,
+    portalAccounts
+      .filter((account) => account.clientId === detail?.invoice.client_id)
+      .map((account) => account.email),
+  );
   const project = projects.find((item) => item.id === (form.projectId || detail?.invoice.project_id));
   const clientContracts = useMemo(
     () => accepted.filter((row) => row.clientId === (detail?.invoice.client_id ?? "")),
@@ -140,7 +155,7 @@ export function AdminInvoiceDetails() {
   const current = detail;
   const isDraft = current.invoice.status === "draft";
   const hasPayments = invoiceHasActivePayments(current.payments);
-  const locked = !isDraft || hasPayments;
+  const locked = hasPayments || !isDraft || !editing;
   const totals = isDraft
     ? invoiceDraftTotalCents(items, form.taxCents, form.discountCents)
     : {
@@ -191,6 +206,121 @@ export function AdminInvoiceDetails() {
     });
   }
 
+  function scrollToInvoiceForm() {
+    document.getElementById("invoice-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  const invoiceActions: AdminActionsMenuItem[] = [
+    {
+      id: "pdf",
+      label: pdfBusy ? "Generating PDF..." : "Download PDF",
+      icon: Download,
+      disabled: busy || pdfBusy,
+      onSelect: async () => {
+        setPdfBusy(true);
+        try {
+          await downloadInvoicePdf(current.invoice.id);
+        } catch (error) {
+          notify(error instanceof AgencyDbError ? error.message : "Unable to generate invoice PDF. Please try again.");
+        } finally {
+          setPdfBusy(false);
+        }
+      },
+    },
+  ];
+  if (isDraft) {
+    if (editing) {
+      invoiceActions.push({
+        id: "save",
+        label: busy ? "Saving…" : "Save draft",
+        icon: Save,
+        disabled: busy,
+        onSelect: async () => {
+          setBusy(true);
+          try {
+            await persist();
+            notify("Invoice saved.");
+            setEditing(false);
+            await load();
+            await reload();
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "Unable to save this invoice.");
+          } finally {
+            setBusy(false);
+          }
+        },
+      });
+    } else {
+      invoiceActions.push({
+        id: "edit-draft",
+        label: "Edit",
+        icon: PencilLine,
+        disabled: busy,
+        onSelect: () => {
+          setEditing(true);
+          scrollToInvoiceForm();
+        },
+      });
+    }
+    invoiceActions.push({ id: "send", label: "Send Invoice", icon: Send, disabled: busy, onSelect: () => setSendOpen(true) });
+  } else if (current.invoice.status !== "cancelled") {
+    invoiceActions.push({
+      id: "resend",
+      label: "Resend email",
+      icon: Mail,
+      disabled: busy || pdfBusy,
+      onSelect: () => setResendOpen(true),
+    });
+  }
+  if (canEditSentInvoice(current.effectiveStatus, hasPayments)) {
+    invoiceActions.push({
+      id: "edit",
+      label: "Edit",
+      icon: PencilLine,
+      disabled: busy,
+      onSelect: () => setEditOpen(true),
+    });
+  }
+  if (canRestoreInvoice(current.effectiveStatus, hasPayments)) {
+    invoiceActions.push({
+      id: "restore",
+      label: "Restore",
+      icon: RotateCcw,
+      disabled: busy,
+      onSelect: () => setRestoreOpen(true),
+    });
+  }
+  if (canRecordInvoicePayment(current.effectiveStatus)) {
+    invoiceActions.push({
+      id: "pay",
+      label: "Record Payment",
+      disabled: busy,
+      onSelect: () => setPayOpen(true),
+    });
+  }
+  if (canCancelInvoice(current.effectiveStatus, hasPayments)) {
+    invoiceActions.push({
+      id: "cancel",
+      label: "Cancel invoice",
+      icon: Ban,
+      disabled: busy,
+      danger: true,
+      separatorBefore: true,
+      onSelect: () => setCancelOpen(true),
+    });
+  }
+  if (canDeleteInvoice(current.effectiveStatus, current.payments.length, current.invoice.amount_paid_cents)) {
+    invoiceActions.push({
+      id: "delete",
+      label: "Delete invoice",
+      icon: Trash2,
+      disabled: busy,
+      danger: true,
+      separatorBefore: !canCancelInvoice(current.effectiveStatus, hasPayments),
+      onSelect: () => setDeleteOpen(true),
+    });
+  }
+
   return (
     <div className="space-y-6">
       <Link to="/admin/invoices" className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
@@ -208,81 +338,7 @@ export function AdminInvoiceDetails() {
             {contract ? ` · ${contract.number}` : ""}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            disabled={busy || pdfBusy}
-            className={adminSoftBtn}
-            onClick={async () => {
-              setPdfBusy(true);
-              try {
-                await downloadInvoicePdf(current.invoice.id);
-              } catch (error) {
-                notify(error instanceof AgencyDbError ? error.message : "Unable to generate invoice PDF. Please try again.");
-              } finally {
-                setPdfBusy(false);
-              }
-            }}
-          >
-            {pdfBusy ? "Generating PDF..." : "Download PDF"}
-          </button>
-          {isDraft ? (
-            <>
-              <button
-                type="button"
-                disabled={busy}
-                className={adminGhostBtn}
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    await persist();
-                    notify("Invoice saved.");
-                    await load();
-                    await reload();
-                  } catch (error) {
-                    notify(error instanceof AgencyDbError ? error.message : "Unable to save this invoice.");
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                {busy ? "Saving…" : "Save Draft"}
-              </button>
-              <button type="button" disabled={busy} className={adminPrimaryBtn} onClick={() => setSendOpen(true)}>
-                Send Invoice
-              </button>
-            </>
-          ) : current.invoice.status !== "cancelled" ? (
-            <button
-              type="button"
-              disabled={busy || pdfBusy}
-              className={adminBlueBtn}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  await resendInvoiceEmail(current.invoice.id);
-                  notify("Invoice email sent.");
-                } catch (error) {
-                  notify(error instanceof AgencyDbError ? error.message : "The email could not be sent.");
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              Resend email
-            </button>
-          ) : null}
-          {canRecordInvoicePayment(current.effectiveStatus) ? (
-            <button type="button" disabled={busy} className={adminPrimaryBtn} onClick={() => setPayOpen(true)}>
-              Record Payment
-            </button>
-          ) : null}
-          {canCancelInvoice(current.effectiveStatus, hasPayments) ? (
-            <button type="button" disabled={busy} className={adminDangerBtn} onClick={() => setCancelOpen(true)}>
-              Cancel invoice
-            </button>
-          ) : null}
-        </div>
+        <AdminActionsMenu ariaLabel="Invoice actions" items={invoiceActions} />
       </div>
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -307,7 +363,10 @@ export function AdminInvoiceDetails() {
       ) : null}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-        <form className="space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+        <form
+          id="invoice-form"
+          className="space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5"
+        >
           <h2 className="font-heading text-sm font-semibold">Invoice information</h2>
           <InvoiceDraftForm
             value={form}
@@ -425,7 +484,7 @@ export function AdminInvoiceDetails() {
         open={sendOpen}
         busy={busy}
         title="Send this invoice to the client?"
-        description="They’ll see this exact invoice in the Client Portal. Email is attempted after send; a delivery failure will not undo the invoice."
+        description={`${documentMailRecipientCopy(mailRecipients, { companyName: client?.businessName, action: "send" })} They’ll see this exact invoice in the Client Portal. Email is attempted after send; a delivery failure will not undo the invoice.`}
         actionLabel="Send Invoice"
         onClose={() => setSendOpen(false)}
         onConfirm={async () => {
@@ -450,6 +509,71 @@ export function AdminInvoiceDetails() {
         }}
       />
       <ConfirmDocumentModal
+        open={resendOpen}
+        busy={busy}
+        title="Resend this invoice email?"
+        description={`${documentMailRecipientCopy(mailRecipients, { companyName: client?.businessName, action: "resend" })} They’ll receive another copy of this invoice.`}
+        actionLabel="Resend email"
+        onClose={() => setResendOpen(false)}
+        onConfirm={async () => {
+          setBusy(true);
+          try {
+            await resendInvoiceEmail(current.invoice.id);
+            notify("Invoice email sent.");
+            setResendOpen(false);
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "The email could not be sent.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
+      <ConfirmDocumentModal
+        open={restoreOpen}
+        busy={busy}
+        title="Restore this invoice?"
+        description="It will leave Cancelled and go back to draft or sent, depending on where it was before you cancelled it."
+        actionLabel="Restore invoice"
+        onClose={() => setRestoreOpen(false)}
+        onConfirm={async () => {
+          setBusy(true);
+          try {
+            await restoreInvoice(current.invoice.id);
+            notify("Invoice restored.");
+            setRestoreOpen(false);
+            await load();
+            await reload();
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "Unable to restore this invoice.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
+      <ConfirmDocumentModal
+        open={editOpen}
+        busy={busy}
+        title="Edit this invoice?"
+        description="It will become a draft again. Line items and totals can be changed. The client will not see it until you send it."
+        actionLabel="Edit invoice"
+        onClose={() => setEditOpen(false)}
+        onConfirm={async () => {
+          setBusy(true);
+          try {
+            await reopenInvoiceDraft(current.invoice.id);
+            notify("Invoice is a draft again. You can edit and send it.");
+            setEditOpen(false);
+            setEditing(true);
+            await load();
+            await reload();
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "Unable to edit this invoice.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
+      <ConfirmDocumentModal
         open={cancelOpen}
         busy={busy}
         danger
@@ -468,6 +592,28 @@ export function AdminInvoiceDetails() {
           } catch (error) {
             notify(error instanceof AgencyDbError ? error.message : "Unable to cancel this invoice.");
           } finally {
+            setBusy(false);
+          }
+        }}
+      />
+      <ConfirmDocumentModal
+        open={deleteOpen}
+        busy={busy}
+        danger
+        title="Delete this invoice?"
+        description="This permanently removes the invoice. Invoices with payments cannot be deleted. This cannot be undone."
+        actionLabel="Delete invoice"
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={async () => {
+          setBusy(true);
+          try {
+            await deleteInvoice(current.invoice.id);
+            notify("Invoice deleted.");
+            setDeleteOpen(false);
+            await reload();
+            navigate("/admin/invoices");
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "Unable to delete this invoice.");
             setBusy(false);
           }
         }}

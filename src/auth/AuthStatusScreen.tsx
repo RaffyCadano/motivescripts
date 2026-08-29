@@ -4,6 +4,7 @@ import { site } from "@/data/site";
 type AuthStatusScreenProps = {
   title: string;
   body: string;
+  loading?: boolean;
   showSetupHints?: boolean;
   showLoginLink?: boolean;
   actionLabel?: string;
@@ -14,6 +15,7 @@ type AuthStatusScreenProps = {
 export function AuthStatusScreen({
   title,
   body,
+  loading = false,
   showSetupHints = false,
   showLoginLink = false,
   actionLabel,
@@ -29,12 +31,23 @@ export function AuthStatusScreen({
           : "flex min-h-svh items-center justify-center bg-white px-6"
       }
     >
-      <div className="w-full max-w-md rounded-[1.25rem] border border-[var(--color-line-strong)] bg-[linear-gradient(180deg,#f4f8ff,#ffffff)] p-8">
+      <div
+        className={`w-full max-w-md rounded-[1.25rem] border border-[var(--color-line-strong)] bg-[linear-gradient(180deg,#f4f8ff,#ffffff)] p-8${loading ? " text-center" : ""}`}
+        aria-busy={loading}
+        aria-live={loading ? "polite" : undefined}
+      >
         <p className="font-heading text-xs font-bold uppercase tracking-[0.16em] text-faint">
           {site.name}
         </p>
-        <h1 className="mt-3 text-2xl">{title}</h1>
-        <p className="mt-3 text-sm leading-relaxed text-muted">{body}</p>
+        {loading ? (
+          <div
+            className="mx-auto mt-6 size-8 animate-spin rounded-full border-2 border-[rgb(0_80_240_/_0.16)] border-t-[var(--color-blue)]"
+            role="status"
+            aria-label={title}
+          />
+        ) : null}
+        <h1 className={loading ? "sr-only" : "mt-3 text-2xl"}>{title}</h1>
+        <p className={`text-sm leading-relaxed text-muted ${loading ? "mt-5" : "mt-3"}`}>{body}</p>
         {showSetupHints && import.meta.env.DEV ? (
           <ol className="mt-6 list-decimal space-y-2 pl-5 text-sm leading-relaxed text-muted-strong">
             <li>Create a project at supabase.com.</li>

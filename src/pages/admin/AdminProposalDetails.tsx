@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Ban, Download, FileSignature, FolderKanban, Mail, PencilLine, RotateCcw, Save, Send, Trash2, Undo2 } from "lucide-react";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
+import { adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { AdminInfoTip } from "@/components/admin/AdminInfoTip";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
@@ -9,8 +10,18 @@ import { LineItemsEditor } from "@/components/documents/LineItemsEditor";
 import { ProposalDocumentView } from "@/components/documents/ProposalDocumentView";
 import { ProposalPresetPanel } from "@/components/documents/ProposalPresetPanel";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
-import { defaultProposalLineItem, defaultProposalValidUntil, effectiveDocumentStatus, lineItemsTotalCents, type LineItemDraft } from "@/data/documents";
+import {
+  defaultProposalLineItem,
+  defaultProposalValidUntil,
+  documentMailRecipientCopy,
+  documentMailRecipients,
+  effectiveDocumentStatus,
+  lineItemsTotalCents,
+  type LineItemDraft,
+} from "@/data/documents";
 import { applyProposalDraftDefaults } from "@/data/proposalPresets";
+import { proposalDraftOverrides, type AgencySettings } from "@/data/settings";
+import { fetchAgencySettings } from "@/data/settingsRepository";
 import {
   cancelProposal,
   createContract,
@@ -64,12 +75,13 @@ async function saveDraftRevision(
 export function AdminProposalDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { clients, projects, notify, reload } = useLeads();
+  const { clients, projects, notify, reload, portalAccounts } = useLeads();
   const [detail, setDetail] = useState<ProposalDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
+  const [resendOpen, setResendOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [discardOpen, setDiscardOpen] = useState(false);
@@ -91,10 +103,15 @@ export function AdminProposalDetails() {
   const itemsRef = useRef(items);
   itemsRef.current = items;
   const loadGen = useRef(0);
+  const settingsRef = useRef<AgencySettings | null>(null);
 
   async function load(generation?: number) {
     if (!id) return;
-    const next = await fetchProposalDetail(id);
+    const [next, settings] = await Promise.all([
+      fetchProposalDetail(id),
+      fetchAgencySettings().catch(() => settingsRef.current),
+    ]);
+    if (settings) settingsRef.current = settings;
     if (generation != null && generation !== loadGen.current) return;
     setDetail(next);
     if (next) {
@@ -108,7 +125,10 @@ export function AdminProposalDetails() {
         terms: next.working.terms,
         notes: next.working.notes,
       };
-      const filled = next.working.status === "draft" ? applyProposalDraftDefaults(body) : body;
+      const filled =
+        next.working.status === "draft"
+          ? applyProposalDraftDefaults(body, proposalDraftOverrides(settingsRef.current))
+          : body;
       const nextForm: ProposalForm = {
         title: next.working.title,
         ...filled,
@@ -166,6 +186,12 @@ export function AdminProposalDetails() {
 
   const client = clients.find((item) => item.id === detail.proposal.client_id);
   const project = projects.find((item) => item.id === detail.proposal.project_id);
+  const mailRecipients = documentMailRecipients(
+    client?.email,
+    portalAccounts
+      .filter((account) => account.clientId === detail.proposal.client_id)
+      .map((account) => account.email),
+  );
   const isDraft = detail.working.status === "draft";
   const status = effectiveDocumentStatus(detail.working.status, detail.working.valid_until);
   const publishedStatus = detail.published
@@ -208,7 +234,7 @@ export function AdminProposalDetails() {
       const nextForm = {
         ...form,
         title: form.title.trim() || "Website proposal",
-        validUntil: form.validUntil || defaultProposalValidUntil(),
+        validUntil: form.validUntil || defaultProposalValidUntil(undefined, settingsRef.current?.defaultProposalValidDays ?? 30),
       };
       const nextItems = items.some((item) => item.name.trim()) ? items : [defaultProposalLineItem()];
       setForm(nextForm);
@@ -277,17 +303,7 @@ export function AdminProposalDetails() {
       label: "Resend email",
       icon: Mail,
       disabled: busy || pdfBusy,
-      onSelect: async () => {
-        setBusy(true);
-        try {
-          await resendProposalEmail(current.proposal.id);
-          notify("Proposal email sent.");
-        } catch (error) {
-          notify(error instanceof AgencyDbError ? error.message : "The email could not be sent.");
-        } finally {
-          setBusy(false);
-        }
-      },
+      onSelect: () => setResendOpen(true),
     });
   }
   if (publishedStatus === "accepted" && !project) {
@@ -511,6 +527,13 @@ export function AdminProposalDetails() {
           <p className="text-sm text-[var(--admin-muted)]">
             Calculated investment {formatUsdFromCents(isDraft ? lineItemsTotalCents(items) : detail.working.investment_cents)}
           </p>
+          {isDraft ? (
+            <div className="flex justify-end border-t border-[var(--admin-line)] pt-4">
+              <button type="button" disabled={busy} className={adminPrimaryBtn} onClick={() => void onSave()}>
+                {busy ? "Saving…" : "Save draft"}
+              </button>
+            </div>
+          ) : null}
         </form>
 
         <ProposalDocumentView
@@ -540,10 +563,30 @@ export function AdminProposalDetails() {
         open={sendOpen}
         busy={busy}
         title="Send this proposal to the client?"
-        description="They’ll be able to review the exact version you’re sending. After it’s sent, this revision can’t be silently edited."
+        description={`${documentMailRecipientCopy(mailRecipients, { companyName: client?.businessName, action: "send" })} They’ll be able to review the exact version you’re sending. After it’s sent, this revision can’t be silently edited.`}
         actionLabel="Send Proposal"
         onClose={() => setSendOpen(false)}
         onConfirm={() => void onSend()}
+      />
+      <ConfirmDocumentModal
+        open={resendOpen}
+        busy={busy}
+        title="Resend this proposal email?"
+        description={`${documentMailRecipientCopy(mailRecipients, { companyName: client?.businessName, action: "resend" })} They’ll receive another copy of the last sent proposal.`}
+        actionLabel="Resend email"
+        onClose={() => setResendOpen(false)}
+        onConfirm={async () => {
+          setBusy(true);
+          try {
+            await resendProposalEmail(current.proposal.id);
+            notify("Proposal email sent.");
+            setResendOpen(false);
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "The email could not be sent.");
+          } finally {
+            setBusy(false);
+          }
+        }}
       />
       <ConfirmDocumentModal
         open={cancelOpen}

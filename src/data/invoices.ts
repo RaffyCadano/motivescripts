@@ -82,6 +82,24 @@ export function canCancelInvoice(status: EffectiveInvoiceStatus, hasPayments: bo
   return status === "draft" || status === "sent" || status === "viewed" || status === "overdue";
 }
 
+export function canRestoreInvoice(status: EffectiveInvoiceStatus, hasPayments: boolean): boolean {
+  return status === "cancelled" && !hasPayments;
+}
+
+export function canEditSentInvoice(status: EffectiveInvoiceStatus, hasPayments: boolean): boolean {
+  if (hasPayments) return false;
+  return status === "cancelled" || status === "sent" || status === "viewed" || status === "overdue";
+}
+
+export function canDeleteInvoice(
+  status: EffectiveInvoiceStatus,
+  paymentCount: number,
+  amountPaidCents: number,
+): boolean {
+  if (paymentCount > 0 || amountPaidCents > 0) return false;
+  return status !== "paid" && status !== "partially_paid";
+}
+
 export function invoiceDraftTotalCents(items: LineItemDraft[], taxCents: number, discountCents: number): {
   subtotal: number;
   tax: number;
@@ -187,7 +205,7 @@ export function invoiceErrorMessage(code: string): string {
     case "PAYMENT_INVALID":
       return "Enter a valid payment amount and method.";
     case "HAS_PAYMENTS":
-      return "This invoice has payments recorded, so it can’t be cancelled.";
+      return "This invoice has payments recorded, so that action isn’t available.";
     case "not_payable":
       return "This invoice isn’t available for online payment.";
     case "invalid_amount":
