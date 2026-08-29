@@ -172,7 +172,13 @@ export function rpcErrorCode(message: string): string {
   if (message.toLowerCase().includes("failed to fetch") || message.toLowerCase().includes("network")) {
     return "network";
   }
-  if (message.toLowerCase().includes("row-level security") || message.includes("42501")) return "not_allowed";
+  if (
+    message.toLowerCase().includes("row-level security") ||
+    message.includes("42501") ||
+    message.toLowerCase().includes("not allowed")
+  ) {
+    return "not_allowed";
+  }
   return "error";
 }
 

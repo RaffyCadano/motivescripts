@@ -4,6 +4,7 @@ import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModa
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
 import { LineItemsEditor } from "@/components/documents/LineItemsEditor";
 import { ProposalDocumentView } from "@/components/documents/ProposalDocumentView";
+import { ProposalPresetPanel } from "@/components/documents/ProposalPresetPanel";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { effectiveDocumentStatus, lineItemsTotalCents, type LineItemDraft } from "@/data/documents";
 import {
@@ -272,6 +273,14 @@ export function AdminProposalDetails() {
           <Field label="Title" value={form.title} disabled={!isDraft} onChange={(value) => setForm({ ...form, title: value })} />
           <Area label="Introduction" value={form.introduction} disabled={!isDraft} onChange={(value) => setForm({ ...form, introduction: value })} />
           <Area label="Project overview" value={form.overview} disabled={!isDraft} onChange={(value) => setForm({ ...form, overview: value })} />
+          {isDraft ? (
+            <ProposalPresetPanel
+              scope={form.scope}
+              deliverables={form.deliverablesText}
+              onScopeChange={(scope) => setForm({ ...form, scope })}
+              onDeliverablesChange={(deliverablesText) => setForm({ ...form, deliverablesText })}
+            />
+          ) : null}
           <Area label="Scope of work" value={form.scope} disabled={!isDraft} onChange={(value) => setForm({ ...form, scope: value })} />
           <Area label="Deliverables" value={form.deliverablesText} disabled={!isDraft} onChange={(value) => setForm({ ...form, deliverablesText: value })} />
           <Area label="Timeline" value={form.timeline} disabled={!isDraft} onChange={(value) => setForm({ ...form, timeline: value })} />
