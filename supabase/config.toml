@@ -24,3 +24,6 @@ verify_jwt = false
 
 [functions.staff-invitation]
 verify_jwt = false
+
+[functions.public-lead]
+verify_jwt = false

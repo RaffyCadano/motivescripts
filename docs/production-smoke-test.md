@@ -153,6 +153,7 @@ Use a project that did **not** apply `supabase/dev-seed/seed_demo_data.sql`.
 | --- | --- | --- |
 | 71 | Admin lists | Leads, clients, projects, files, messages, proposals, contracts, invoices, team show real empty states. Counts are 0. No ABC Landscaping / Harbor & Pine / Smith Auto / BrightPath rows. |
 | 72 | Linked client, no work | Portal loads for that client. Timeline, files, messages, proposals, contracts, invoices empty — not demo records. |
+| 73 | Start a Project | `/start-a-project` creates a `leads` row (source Start a Project). Does not open mailto on success. Failure offers mailto. |
 
 ## After the run
 

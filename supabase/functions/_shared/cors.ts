@@ -13,10 +13,8 @@ export function configuredSiteOrigin(): string | null {
 export function allowOrigin(req: Request): string {
   const configured = configuredSiteOrigin();
   const origin = req.headers.get("Origin") ?? "";
+  if (origin && LOCAL_ORIGIN.test(origin)) return origin;
   if (origin && configured && origin === configured) return origin;
-  if (origin && LOCAL_ORIGIN.test(origin) && (!configured || LOCAL_ORIGIN.test(configured))) {
-    return origin;
-  }
   if (configured) return configured;
   return "null";
 }

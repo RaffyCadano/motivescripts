@@ -9,7 +9,7 @@ Runtime TypeScript does not ship mock/demo CRM records. An empty database shows 
 ## Setup
 
 1. Copy `.env.example` to `.env` and set `VITE_SUPABASE_URL` plus `VITE_SUPABASE_PUBLISHABLE_KEY` (or `VITE_SUPABASE_ANON_KEY`).
-2. Apply the SQL in `supabase/migrations/` to the same Supabase project (see [docs/database.md](docs/database.md)). Client invitations need the `client-invitation` Edge Function. Staff invitations need `staff-invitation`. Proposal, contract, invoice, and payment-receipt email use `document-email`. Invoice PDFs use `invoice-pdf`. Proposal and contract PDFs use `proposal-pdf` and `contract-pdf`. Stripe Checkout uses `create-checkout-session` and `stripe-webhook`. Secrets are listed in [docs/client-invitations.md](docs/client-invitations.md), [docs/team-management.md](docs/team-management.md), [docs/invoices-payments.md](docs/invoices-payments.md), [docs/invoice-pdf.md](docs/invoice-pdf.md), [docs/proposal-contract-pdf.md](docs/proposal-contract-pdf.md), and [docs/stripe-payments.md](docs/stripe-payments.md).
+2. Apply the SQL in `supabase/migrations/` to the same Supabase project (see [docs/database.md](docs/database.md)). Client invitations need the `client-invitation` Edge Function. Staff invitations need `staff-invitation`. Start a Project needs `public-lead`. Proposal, contract, invoice, and payment-receipt email use `document-email`. Invoice PDFs use `invoice-pdf`. Proposal and contract PDFs use `proposal-pdf` and `contract-pdf`. Stripe Checkout uses `create-checkout-session` and `stripe-webhook`. Secrets are listed in [docs/client-invitations.md](docs/client-invitations.md), [docs/team-management.md](docs/team-management.md), [docs/invoices-payments.md](docs/invoices-payments.md), [docs/invoice-pdf.md](docs/invoice-pdf.md), [docs/proposal-contract-pdf.md](docs/proposal-contract-pdf.md), and [docs/stripe-payments.md](docs/stripe-payments.md).
 3. Install and run:
 
 ```bash
@@ -41,4 +41,4 @@ Until Auth, RLS, Storage, Resend, Stripe webhooks, and the smoke plan have been 
 
 ## What is still frontend-only
 
-Public marketing pages, Start a Project (`mailto:`), and non-Stripe processors (PayPal, GCash, and similar). Invoices and manual payments: [docs/invoices-payments.md](docs/invoices-payments.md). Invoice PDFs: [docs/invoice-pdf.md](docs/invoice-pdf.md). Proposal and contract PDFs: [docs/proposal-contract-pdf.md](docs/proposal-contract-pdf.md). Stripe Checkout: [docs/stripe-payments.md](docs/stripe-payments.md).
+Public marketing pages and non-Stripe processors (PayPal, GCash, and similar). Start a Project writes a lead through `public-lead`. Invoices and manual payments: [docs/invoices-payments.md](docs/invoices-payments.md). Invoice PDFs: [docs/invoice-pdf.md](docs/invoice-pdf.md). Proposal and contract PDFs: [docs/proposal-contract-pdf.md](docs/proposal-contract-pdf.md). Stripe Checkout: [docs/stripe-payments.md](docs/stripe-payments.md).

@@ -21,7 +21,7 @@ Related: [production-smoke-test.md](./production-smoke-test.md).
 
 ## EDGE FUNCTIONS
 
-Deploy after secrets are set. `verify_jwt = false` in `supabase/config.toml` is expected; each function still authenticates (user JWT or Stripe signature).
+Deploy after secrets are set. `verify_jwt = false` in `supabase/config.toml` is expected; each function still authenticates (user JWT, Stripe signature, or origin + service role for `public-lead`).
 
 - [ ] `client-invitation`
 - [ ] `staff-invitation`
@@ -31,6 +31,7 @@ Deploy after secrets are set. `verify_jwt = false` in `supabase/config.toml` is 
 - [ ] `contract-pdf`
 - [ ] `create-checkout-session`
 - [ ] `stripe-webhook`
+- [ ] `public-lead`
 
 Redeploy PDF/email functions whenever `staff_can_access_client` or CORS helpers change.
 
@@ -41,6 +42,7 @@ Redeploy PDF/email functions whenever `staff_can_access_client` or CORS helpers 
 - [ ] `PUBLIC_SITE_URL` is the production HTTPS origin (no trailing slash required; functions strip it)
 - [ ] `SUPPORT_EMAIL` set if used
 - [ ] Invitation email tested (client + staff)
+- [ ] Start a Project form creates a `leads` row (source `Start a Project`) and optionally emails `SUPPORT_EMAIL`
 - [ ] Proposal / contract / invoice email tested
 - [ ] Payment receipt email tested (Stripe webhook path)
 - [ ] Email failure does not roll back invitations incorrectly or mark invoices paid
@@ -111,7 +113,7 @@ Never put Edge secrets in `VITE_` variables.
 
 1. Apply SQL migrations (including Phase 21).
 2. Set / confirm Edge secrets.
-3. Deploy all eight functions.
+3. Deploy all nine functions.
 4. Configure Auth redirect URLs and Stripe webhook for the production origin.
 5. Deploy the Vite `dist/` to the host.
 6. Run [production-smoke-test.md](./production-smoke-test.md).

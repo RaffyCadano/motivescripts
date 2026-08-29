@@ -220,7 +220,7 @@ Edge Function: anonymous and client JWTs cannot send or revoke. Admins can.
 - Invitation emails require Edge Function secrets and a verified Resend sender.
 - Magic-link delivery still depends on Auth SMTP.
 - Multiple portal users per client are allowed by `profiles.client_id`, but there is no team-management UI.
-- Start a Project remains `mailto:`.
+- Start a Project creates a `leads` row through `public-lead` (not anonymous INSERT). `mailto:` is a fallback if the function fails.
 - Proposals, contracts, invoices, and Stripe are documented separately (Phases 15–17). Team management: [team-management.md](./team-management.md).
 
 ## Production

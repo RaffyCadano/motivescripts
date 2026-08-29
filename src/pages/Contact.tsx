@@ -2,40 +2,46 @@ import { useState, type FormEvent } from "react";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { PageHero } from "@/components/PageHero";
+import { leadIndustries } from "@/data/leads";
+import { inquiryMailtoHref, submitPublicLead, type PublicLeadDraft } from "@/data/publicLead";
 import { site } from "@/data/site";
 import { cn } from "@/lib/cn";
 
-const industries = [
-  "Home services",
-  "Contractor",
-  "Landscaping",
-  "Tree service",
-  "Cleaning",
-  "Restaurant",
-  "Salon / barber",
-  "Auto",
-  "Professional services",
-  "Other",
-];
+function draftFromForm(form: HTMLFormElement): PublicLeadDraft {
+  const data = new FormData(form);
+  return {
+    name: String(data.get("name") ?? ""),
+    business: String(data.get("business") ?? ""),
+    email: String(data.get("email") ?? ""),
+    phone: String(data.get("phone") ?? ""),
+    industry: String(data.get("industry") ?? ""),
+    goal: String(data.get("goal") ?? ""),
+  };
+}
 
 export function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mailtoHref, setMailtoHref] = useState<string | null>(null);
 
-  function onSubmit(event: FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const body = [
-      `Name: ${data.get("name") ?? ""}`,
-      `Business: ${data.get("business") ?? ""}`,
-      `Email: ${data.get("email") ?? ""}`,
-      `Phone: ${data.get("phone") || "—"}`,
-      `Industry: ${data.get("industry") ?? ""}`,
-      "",
-      String(data.get("goal") ?? ""),
-    ].join("\n");
-    const href = `mailto:${site.email}?subject=${encodeURIComponent(`Project inquiry — ${data.get("business") ?? "New project"}`)}&body=${encodeURIComponent(body)}`;
-    window.location.href = href;
-    setSubmitted(true);
+    if (sending) return;
+    const form = event.currentTarget;
+    const draft = draftFromForm(form);
+    const fallback = inquiryMailtoHref(draft);
+    setError(null);
+    setSending(true);
+    const result = await submitPublicLead(draft);
+    setSending(false);
+    if (result.ok) {
+      setMailtoHref(null);
+      setSubmitted(true);
+      return;
+    }
+    setMailtoHref(fallback);
+    setError("We couldn’t save that just now. Please email us instead, or try again.");
   }
 
   return (
@@ -81,7 +87,7 @@ export function ContactPage() {
                   <option value="" disabled>
                     Select one
                   </option>
-                  {industries.map((industry) => (
+                  {leadIndustries.map((industry) => (
                     <option key={industry} value={industry}>
                       {industry}
                     </option>
@@ -102,9 +108,19 @@ export function ContactPage() {
                 />
               </div>
             </div>
+            {error ? (
+              <p className="mt-5 text-sm text-muted" role="alert">
+                {error}{" "}
+                {mailtoHref ? (
+                  <a className="font-medium text-ink underline-offset-2 hover:underline" href={mailtoHref}>
+                    Open email
+                  </a>
+                ) : null}
+              </p>
+            ) : null}
             <div className="mt-7">
-              <Button type="submit" size="lg">
-                Start a Project
+              <Button type="submit" size="lg" disabled={sending}>
+                {sending ? "Sending…" : "Start a Project"}
               </Button>
             </div>
           </form>

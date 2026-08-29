@@ -2,7 +2,7 @@
 
 Supabase PostgreSQL is the source of truth for agency business data. Admin, Client, and Staff pages load through `LeadsProvider` → `src/data/agencyRepository.ts`. Runtime TypeScript no longer contains mock/demo business records. An empty database shows real empty states (counts of 0, “No … yet”), not fallback rows.
 
-The public site, Admin shell, Client Portal layout, magic-link auth, and Start a Project `mailto:` form are unchanged. Public **Work** case studies in `src/data/projects.ts` are labeled marketing concepts; they are not CRM records.
+The public site, Admin shell, Client Portal layout, and magic-link auth are unchanged. **Start a Project** (`/start-a-project`) submits through the `public-lead` Edge Function (service-role insert, source `Start a Project`). Email to `SUPPORT_EMAIL` is a backup notification. `mailto:` is only used if the function is unavailable. Public **Work** case studies in `src/data/projects.ts` are labeled marketing concepts; they are not CRM records.
 
 ## Environment
 
@@ -226,7 +226,6 @@ Anonymous: public pages `/`, `/services`, `/work`, `/process`, `/about`, `/start
 
 ## Still frontend-only
 
-- Public website and Start a Project (`mailto:`)
 - PayPal / GCash / other processors (not Stripe)
 
 Stripe Checkout is Phase 17 (see [stripe-payments.md](./stripe-payments.md)). Invoice PDFs are Phase 18 (see [invoice-pdf.md](./invoice-pdf.md)). Proposal and contract PDFs are Phase 19 (see [proposal-contract-pdf.md](./proposal-contract-pdf.md)). Client invitations are live after Phase 14 (see [client-invitations.md](./client-invitations.md)). Messaging and in-app notifications are live after Phase 13 (see [messaging.md](./messaging.md)). Proposals and contracts are live after Phase 15 (see [proposals-contracts.md](./proposals-contracts.md)). Invoices and manual payment records are live after Phase 16 (see [invoices-payments.md](./invoices-payments.md)). Team management is Phase 20 (see [team-management.md](./team-management.md)). Production hardening is Phase 21 (see [production-launch-checklist.md](./production-launch-checklist.md)). Do not re-run the Phase 10 seed file after Phase 12.
