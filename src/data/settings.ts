@@ -170,6 +170,14 @@ export function validateAgencySettings(settings: AgencySettingsPatch): string | 
   return null;
 }
 
+export type WorkspacePurgeScope = "projects" | "clients" | "agency";
+
+export const WORKSPACE_PURGE_CONFIRMATION: Record<WorkspacePurgeScope, string> = {
+  projects: "DELETE PROJECTS",
+  clients: "DELETE CLIENTS",
+  agency: "DELETE AGENCY",
+};
+
 export function stripeProcessorLabel(): { processor: string; status: string; detail: string } {
   return {
     processor: "Stripe",

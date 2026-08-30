@@ -56,7 +56,6 @@ import { ClientReview } from "@/pages/client/ClientReview";
 import { ClientSettings } from "@/pages/client/ClientSettings";
 import { CaseStudyPage } from "@/pages/CaseStudy";
 import { ContactPage } from "@/pages/Contact";
-import { ForgotPasswordPage } from "@/pages/ForgotPassword";
 import { HomePage } from "@/pages/Home";
 import { StaffInviteAcceptPage } from "@/pages/StaffInviteAccept";
 import { InviteAcceptPage } from "@/pages/InviteAccept";
@@ -186,14 +185,6 @@ export default function App() {
               element={
                 <GuestOnly>
                   <LoginPage />
-                </GuestOnly>
-              }
-            />
-            <Route
-              path="forgot-password"
-              element={
-                <GuestOnly>
-                  <ForgotPasswordPage />
                 </GuestOnly>
               }
             />

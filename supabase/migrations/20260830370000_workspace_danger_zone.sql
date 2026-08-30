@@ -1,0 +1,194 @@
+-- Admin Danger Zone: purge operational workspace records.
+-- Single-invoice delete still never removes payment rows.
+-- Payment rows may be removed only from purge_workspace after an exact confirmation phrase.
+
+create or replace function public.workspace_purge_active()
+returns boolean
+language sql
+stable
+as $$
+  select coalesce(current_setting('app.workspace_purge', true), '') = '1';
+$$;
+
+create or replace function public.guard_payments()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if tg_op = 'DELETE' then
+    if public.workspace_purge_active() then
+      return old;
+    end if;
+    raise exception 'Not allowed' using errcode = '42501';
+  end if;
+  if tg_op = 'INSERT' and not public.document_rpc_active() then
+    raise exception 'Not allowed' using errcode = '42501';
+  end if;
+  if tg_op = 'UPDATE' then
+    if not public.document_rpc_active() then
+      raise exception 'Not allowed' using errcode = '42501';
+    end if;
+    if new.amount_cents is distinct from old.amount_cents
+      or new.invoice_id is distinct from old.invoice_id
+      or new.payment_date is distinct from old.payment_date
+      or new.payment_method is distinct from old.payment_method
+      or new.recorded_by is distinct from old.recorded_by
+      or new.provider is distinct from old.provider
+      or (old.stripe_payment_intent_id is not null
+          and new.stripe_payment_intent_id is distinct from old.stripe_payment_intent_id)
+      or (old.stripe_checkout_session_id is not null
+          and new.stripe_checkout_session_id is distinct from old.stripe_checkout_session_id)
+    then
+      raise exception 'Not allowed' using errcode = '42501';
+    end if;
+  end if;
+  return coalesce(new, old);
+end;
+$$;
+
+create or replace function public.purge_workspace(p_scope text, p_confirmation text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  expected text;
+  project_count integer;
+  client_count integer;
+  lead_count integer;
+begin
+  if not public.is_admin() then
+    raise exception 'Not allowed' using errcode = '42501';
+  end if;
+
+  if p_scope not in ('projects', 'clients', 'agency') then
+    raise exception 'INVALID_SCOPE' using errcode = 'P0001';
+  end if;
+
+  expected := case p_scope
+    when 'projects' then 'DELETE PROJECTS'
+    when 'clients' then 'DELETE CLIENTS'
+    when 'agency' then 'DELETE AGENCY'
+  end;
+
+  if trim(coalesce(p_confirmation, '')) is distinct from expected then
+    raise exception 'CONFIRMATION_REQUIRED' using errcode = 'P0001';
+  end if;
+
+  perform set_config('app.document_rpc', '1', true);
+  perform set_config('app.workspace_purge', '1', true);
+
+  select count(*) into project_count from public.projects;
+  select count(*) into client_count from public.clients;
+  select count(*) into lead_count from public.leads;
+
+  begin
+    delete from storage.objects
+    where bucket_id = 'project-files'
+      and (
+        name like 'projects/%'
+        or name in (
+          select storage_path
+          from public.file_versions
+          where storage_path is not null
+        )
+      );
+  exception
+    when others then
+      null;
+  end;
+
+  if p_scope = 'projects' then
+    delete from public.notifications
+    where project_id is not null or deliverable_id is not null;
+    delete from public.feedback;
+    delete from public.approvals;
+    delete from public.file_versions;
+    delete from public.deliverables;
+    delete from public.tasks;
+    delete from public.milestones;
+    delete from public.activity;
+    update public.conversations set project_id = null where project_id is not null;
+    update public.invoices set project_id = null where project_id is not null;
+    update public.contracts set project_id = null where project_id is not null;
+    update public.proposals set project_id = null where project_id is not null;
+    delete from public.projects;
+
+    return jsonb_build_object(
+      'scope', p_scope,
+      'projects', project_count,
+      'clients', 0,
+      'leads', 0
+    );
+  end if;
+
+  delete from public.notifications
+  where conversation_id is not null
+     or message_id is not null
+     or project_id is not null
+     or deliverable_id is not null
+     or proposal_id is not null
+     or contract_id is not null
+     or invoice_id is not null;
+  delete from public.messages;
+  delete from public.conversations;
+  delete from public.client_invitations;
+  update public.stripe_processed_events
+    set invoice_id = null,
+        payment_id = null
+    where invoice_id is not null or payment_id is not null;
+  delete from public.stripe_checkout_sessions;
+  delete from public.client_stripe_customers;
+  delete from public.payments;
+  delete from public.invoices;
+  update public.contracts
+    set working_revision_id = null,
+        published_revision_id = null;
+  delete from public.contract_revisions;
+  delete from public.contracts;
+  update public.proposals
+    set working_revision_id = null,
+        published_revision_id = null;
+  delete from public.proposal_revisions;
+  delete from public.proposals;
+  delete from public.feedback;
+  delete from public.approvals;
+  delete from public.file_versions;
+  delete from public.deliverables;
+  delete from public.tasks;
+  delete from public.milestones;
+  delete from public.activity;
+  update public.leads
+    set client_id = null,
+        converted_at = null
+    where client_id is not null;
+  update public.profiles
+    set client_id = null
+    where client_id is not null and role = 'client';
+  delete from public.projects;
+  delete from public.clients;
+
+  if p_scope = 'agency' then
+    delete from public.leads;
+    delete from public.document_number_counters;
+    delete from public.notifications;
+  end if;
+
+  return jsonb_build_object(
+    'scope', p_scope,
+    'projects', project_count,
+    'clients', client_count,
+    'leads', case when p_scope = 'agency' then lead_count else 0 end
+  );
+end;
+$$;
+
+comment on function public.purge_workspace(text, text) is
+  'Admin-only workspace wipe. Requires an exact confirmation phrase. Does not delete team accounts, Settings, or Auth users.';
+
+revoke all on function public.workspace_purge_active() from public, anon, authenticated;
+revoke all on function public.purge_workspace(text, text) from public, anon;
+grant execute on function public.purge_workspace(text, text) to authenticated;

@@ -49,7 +49,7 @@ export function AdminContractDetails() {
   const [form, setForm] = useState<ContractDraftFormValue>(emptyContractDraft);
   const [baseline, setBaseline] = useState(formKey(emptyContractDraft()));
   const [allowLeave, setAllowLeave] = useState(false);
-  const dirty = !allowLeave && formKey(form) !== baseline;
+  const dirty = !allowLeave && !loading && formKey(form) !== baseline;
   const blocker = useUnsavedNavigation(dirty);
 
   async function load() {

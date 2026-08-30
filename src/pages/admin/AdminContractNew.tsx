@@ -35,22 +35,23 @@ function formKey(value: ContractDraftFormValue) {
 }
 
 export function AdminContractNew() {
-  const { clients, projects, notify, portalAccounts, reload } = useLeads();
+  const { clients, projects, notify, portalAccounts } = useLeads();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const presetClient = searchParams.get("client") ?? "";
   const presetProject = searchParams.get("project") ?? "";
   const presetProposal = searchParams.get("proposal") ?? "";
-  const lockedClient = clients.some((client) => client.id === presetClient);
-  const [clientId, setClientId] = useState(lockedClient ? presetClient : "");
+  const lockedClient = Boolean(presetClient) && (clients.length === 0 || clients.some((client) => client.id === presetClient));
+  const [clientId, setClientId] = useState(presetClient);
   const [projectId, setProjectId] = useState(presetProject);
   const [proposalId, setProposalId] = useState(presetProposal);
   const [accepted, setAccepted] = useState<{ id: string; number: string; clientId: string; projectId: string | null }[]>([]);
   const [form, setForm] = useState<ContractDraftFormValue>(emptyContractDraft);
   const [baseline, setBaseline] = useState(formKey(emptyContractDraft()));
+  const [edited, setEdited] = useState(false);
   const [busy, setBusy] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
-  const dirty = formKey(form) !== baseline;
+  const dirty = edited && formKey(form) !== baseline;
   const blocker = useUnsavedNavigation(dirty);
 
   useEffect(() => {
@@ -72,19 +73,21 @@ export function AdminContractNew() {
     setProjectId((current) => current || match.projectId || "");
   }, [accepted, presetProposal]);
 
-  const companyName = clients.find((item) => item.id === clientId)?.businessName ?? "";
-
   useEffect(() => {
+    if (edited) return;
     let active = true;
-    void seedDraft(clientId, companyName, proposalId).then((next) => {
-      if (!active) return;
-      setForm(next);
-      setBaseline(formKey(next));
-    });
+    const companyName = clients.find((item) => item.id === clientId)?.businessName ?? "";
+    void seedDraft(clientId, companyName, proposalId)
+      .then((next) => {
+        if (!active) return;
+        setForm(next);
+        setBaseline(formKey(next));
+      })
+      .catch(() => undefined);
     return () => {
       active = false;
     };
-  }, [clientId, companyName, proposalId]);
+  }, [clientId, clients, edited, proposalId]);
 
   const clientProjects = projects.filter((project) => project.clientId === clientId && !project.archived);
   const clientProposals = useMemo(
@@ -131,7 +134,6 @@ export function AdminContractNew() {
         return;
       }
       notify("Contract saved as a draft.");
-      await reload();
       navigate(`/admin/contracts/${id}`);
     } catch (error) {
       notify(error instanceof AgencyDbError ? error.message : "Unable to save this contract.");
@@ -219,7 +221,14 @@ export function AdminContractNew() {
                 ))}
               </select>
             </label>
-            <ContractDraftForm value={form} disabled={busy || !clientId} onChange={setForm} />
+            <ContractDraftForm
+              value={form}
+              disabled={busy || !clientId}
+              onChange={(next) => {
+                setEdited(true);
+                setForm(next);
+              }}
+            />
           </form>
           <ContractDocumentView
             document={{
@@ -266,7 +275,6 @@ export function AdminContractNew() {
             const result = await sendContract(id);
             notify(result.emailed ? "Contract sent." : "Contract sent. The email could not be delivered.");
             setSendOpen(false);
-            await reload();
             navigate(`/admin/contracts/${id}`);
           } catch (error) {
             notify(error instanceof AgencyDbError ? error.message : "Unable to send this contract.");
@@ -290,7 +298,6 @@ export function AdminContractNew() {
               return;
             }
             notify("Contract saved as a draft.");
-            await reload();
             blocker.proceed?.();
           } catch (error) {
             notify(error instanceof AgencyDbError ? error.message : "Unable to save this contract.");

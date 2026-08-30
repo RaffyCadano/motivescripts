@@ -1,10 +1,14 @@
-import { useEffect } from "react";
-import { useBlocker } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
+import { routerBasename } from "@/lib/appUrl";
+
+type PendingLeave = { href: string };
 
 export function useUnsavedNavigation(dirty: boolean) {
-  const blocker = useBlocker(dirty);
+  const navigate = useNavigate();
+  const [pending, setPending] = useState<PendingLeave | null>(null);
 
   useEffect(() => {
     if (!dirty) return;
@@ -16,7 +20,44 @@ export function useUnsavedNavigation(dirty: boolean) {
     return () => window.removeEventListener("beforeunload", onLeave);
   }, [dirty]);
 
-  return blocker;
+  useEffect(() => {
+    if (!dirty) {
+      setPending(null);
+      return;
+    }
+    const onClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+      const target = (event.target as HTMLElement | null)?.closest("a[href]");
+      if (!target || target.getAttribute("target") === "_blank" || target.getAttribute("download")) return;
+      const href = target.href;
+      if (!href) return;
+      const next = new URL(href, window.location.href);
+      if (next.origin !== window.location.origin) return;
+      if (next.pathname === window.location.pathname && next.search === window.location.search) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setPending({ href: `${next.pathname}${next.search}${next.hash}` });
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [dirty]);
+
+  return {
+    state: pending ? ("blocked" as const) : ("unblocked" as const),
+    reset() {
+      setPending(null);
+    },
+    proceed() {
+      if (!pending) return;
+      const href = pending.href;
+      setPending(null);
+      const base = routerBasename();
+      const path = base !== "/" && href.startsWith(base) ? href.slice(base.length) || "/" : href;
+      navigate(path);
+    },
+  };
 }
 
 export function UnsavedChangesDialog({

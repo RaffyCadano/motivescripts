@@ -1,8 +1,8 @@
-import type { AgencySettings, AgencySettingsPatch } from "@/data/settings";
+import type { AgencySettings, AgencySettingsPatch, WorkspacePurgeScope } from "@/data/settings";
 import { clampSettingDays } from "@/data/settings";
 import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase } from "@/lib/supabase";
-import type { AgencySettingsRow, Json } from "@/types/database";
+import type { AgencySettingsRow, Database, Json } from "@/types/database";
 
 function requireClient() {
   const client = getSupabase();
@@ -24,6 +24,7 @@ function settingsUnavailable(error: unknown): boolean {
     message.includes("update_agency_settings") ||
     message.includes("update_own_profile") ||
     message.includes("get_client_portal_welcome") ||
+    message.includes("purge_workspace") ||
     message.includes("agency_settings") ||
     message.toLowerCase().includes("could not find the function")
   );
@@ -141,6 +142,100 @@ export async function fetchClientPortalWelcome(): Promise<string> {
   const { data, error } = await client.rpc("get_client_portal_welcome");
   if (error) fail("load portal welcome", error, "Unable to load the portal welcome message.");
   return typeof data === "string" ? data : "";
+}
+
+const WORKSPACE_EXPORT_TABLES = [
+  "leads",
+  "clients",
+  "client_staff_data",
+  "projects",
+  "milestones",
+  "tasks",
+  "deliverables",
+  "file_versions",
+  "feedback",
+  "approvals",
+  "activity",
+  "proposals",
+  "proposal_revisions",
+  "proposal_items",
+  "proposal_admin_notes",
+  "contracts",
+  "contract_revisions",
+  "contract_admin_notes",
+  "invoices",
+  "invoice_items",
+  "invoice_admin_notes",
+  "payments",
+  "conversations",
+  "messages",
+  "stripe_checkout_sessions",
+] as const satisfies ReadonlyArray<keyof Database["public"]["Tables"]>;
+
+async function selectAll(table: (typeof WORKSPACE_EXPORT_TABLES)[number]): Promise<unknown[]> {
+  const client = requireClient();
+  const pageSize = 1000;
+  const rows: unknown[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await client.from(table).select("*").range(from, from + pageSize - 1);
+    if (error) fail(`export ${table}`, error, "Unable to download workspace data.");
+    const chunk = data ?? [];
+    rows.push(...chunk);
+    if (chunk.length < pageSize) break;
+  }
+  return rows;
+}
+
+function downloadJsonFile(filename: string, payload: unknown) {
+  const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], { type: "application/json" });
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
+export async function downloadWorkspaceExport(): Promise<void> {
+  const client = requireClient();
+  const settings = await fetchAgencySettings();
+  const tables = Object.fromEntries(
+    await Promise.all(WORKSPACE_EXPORT_TABLES.map(async (table) => [table, await selectAll(table)])),
+  );
+  const { data: portalAccounts, error: portalError } = await client
+    .from("profiles")
+    .select("id, email, full_name, role, client_id")
+    .eq("role", "client");
+  if (portalError) fail("export portal accounts", portalError, "Unable to download workspace data.");
+
+  const day = new Date().toISOString().slice(0, 10);
+  downloadJsonFile(`motivescripts-workspace-${day}.json`, {
+    exportedAt: new Date().toISOString(),
+    note: "JSON record export. Project file binaries in Storage are not included. Invitation tokens are not included.",
+    settings,
+    portalAccounts: portalAccounts ?? [],
+    ...tables,
+  });
+}
+
+export async function purgeWorkspace(scope: WorkspacePurgeScope, confirmation: string): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.rpc("purge_workspace", {
+    p_scope: scope,
+    p_confirmation: confirmation,
+  });
+  if (error) {
+    const message =
+      error && typeof error === "object" && "message" in error && typeof error.message === "string"
+        ? error.message
+        : "";
+    if (message.includes("CONFIRMATION_REQUIRED")) {
+      throw new AgencyDbError("Type the confirmation phrase exactly to continue.", error);
+    }
+    fail("purge workspace", error, "Unable to complete this workspace action.");
+  }
 }
 
 export async function updateOwnProfile(input: { fullName?: string; jobTitle?: string }): Promise<void> {

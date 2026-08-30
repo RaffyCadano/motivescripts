@@ -50,6 +50,20 @@ function templateLabel(templates: StaffTemplateRow[], key: string): string {
   return templates.find((item) => item.key === key)?.label ?? key;
 }
 
+function adminStaffFallback(profile: { id: string; created_at: string }): StaffProfileRow {
+  return {
+    user_id: profile.id,
+    job_title: "",
+    template_key: "admin",
+    is_active: true,
+    deactivated_at: null,
+    last_active_at: null,
+    created_at: profile.created_at,
+    updated_at: profile.created_at,
+    created_by: null,
+  };
+}
+
 function mapMember(
   profile: { id: string; email: string | null; full_name: string; role: string; created_at: string },
   staff: StaffProfileRow,
@@ -185,7 +199,7 @@ export async function fetchTeamDirectory(): Promise<TeamDirectory> {
 
   const members = profileRows
     .map((profile) => {
-      const staff = staffById.get(profile.id);
+      const staff = staffById.get(profile.id) ?? (profile.role === "admin" ? adminStaffFallback(profile) : null);
       if (!staff) return null;
       return mapMember(
         profile,

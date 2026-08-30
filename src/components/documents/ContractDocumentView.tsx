@@ -80,7 +80,7 @@ function SignatureParty({
 }
 
 function Block({ title, body, ink, muted }: { title: string; body: string; ink: string; muted: string }) {
-  if (!body.trim()) return null;
+  if (!body?.trim()) return null;
   return (
     <section>
       <h2 className={`font-heading text-sm font-semibold tracking-tight ${ink}`}>{title}</h2>

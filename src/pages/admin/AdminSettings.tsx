@@ -3,23 +3,33 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAdmin } from "@/auth/permissions";
 import { AdminInfoTip } from "@/components/admin/AdminInfoTip";
-import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
+import { AdminDialog } from "@/components/admin/leads/AdminDialog";
+import { adminDangerBtn, adminDangerSolidBtn, adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { BrandMark } from "@/components/BrandMark";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import {
   SETTINGS_CURRENCIES,
   SETTINGS_TIMEZONES,
+  WORKSPACE_PURGE_CONFIRMATION,
   isSettingsSectionId,
   settingsNavGroups,
   stripeProcessorLabel,
   validateAgencySettings,
   type AgencySettings,
   type SettingsSectionId,
+  type WorkspacePurgeScope,
 } from "@/data/settings";
-import { fetchAgencySettings, saveAgencySettings, updateOwnProfile } from "@/data/settingsRepository";
+import {
+  downloadWorkspaceExport,
+  fetchAgencySettings,
+  purgeWorkspace,
+  saveAgencySettings,
+  updateOwnProfile,
+} from "@/data/settingsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
+import { useMessaging } from "@/providers/MessagingProvider";
 
 const fieldClass =
   "mt-1.5 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 py-2 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)] disabled:bg-[var(--admin-bg)]";
@@ -31,7 +41,8 @@ function snapshotOf(settings: AgencySettings) {
 
 export function AdminSettings() {
   const { profile, session, signOut, refreshProfile } = useAuth();
-  const { notify } = useLeads();
+  const { notify, reload } = useLeads();
+  const messaging = useMessaging();
   const navigate = useNavigate();
   const canEditAgency = isActiveAdmin(profile);
   const stripe = stripeProcessorLabel();
@@ -46,6 +57,10 @@ export function AdminSettings() {
   const [fullName, setFullName] = useState(profile?.fullName ?? "");
   const [jobTitle, setJobTitle] = useState(profile?.jobTitle ?? "");
   const [profileBusy, setProfileBusy] = useState(false);
+  const [purgeScope, setPurgeScope] = useState<WorkspacePurgeScope | null>(null);
+  const [purgeTyped, setPurgeTyped] = useState("");
+  const [purgeBusy, setPurgeBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
 
   useEffect(() => {
     setFullName(profile?.fullName ?? "");
@@ -157,6 +172,46 @@ export function AdminSettings() {
   }
 
   const readOnly = !canEditAgency || busy || !settings;
+
+  async function runExport() {
+    if (!canEditAgency || exportBusy || purgeBusy) return;
+    setExportBusy(true);
+    try {
+      await downloadWorkspaceExport();
+      notify("Workspace data downloaded.");
+    } catch (error) {
+      notify(error instanceof AgencyDbError ? error.message : "Unable to download workspace data.");
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
+  async function runPurge(scope: WorkspacePurgeScope) {
+    if (!canEditAgency || purgeBusy) return;
+    if (purgeTyped.trim() !== WORKSPACE_PURGE_CONFIRMATION[scope]) {
+      notify("Type the confirmation phrase exactly to continue.");
+      return;
+    }
+    setPurgeBusy(true);
+    try {
+      await purgeWorkspace(scope, WORKSPACE_PURGE_CONFIRMATION[scope]);
+      setPurgeScope(null);
+      setPurgeTyped("");
+      notify(
+        scope === "projects"
+          ? "All projects were deleted."
+          : scope === "clients"
+            ? "All clients were deleted."
+            : "Workspace records were deleted.",
+      );
+      navigate("/admin");
+      await Promise.all([reload(), messaging.reload()]);
+    } catch (error) {
+      notify(error instanceof AgencyDbError ? error.message : "Unable to complete this workspace action.");
+    } finally {
+      setPurgeBusy(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -574,17 +629,121 @@ export function AdminSettings() {
           {section === "danger" ? (
             <Card
               title="Danger Zone"
-              description="Destructive workspace actions are disabled."
+              description="These actions permanently remove workspace records. Team accounts and Settings are not deleted."
               danger
             >
-              <p className="text-sm text-[var(--admin-muted)]">
-                Delete entire agency, delete all clients, and delete all projects are not available. There is no
-                backend workflow for those actions in this release.
-              </p>
+              {!canEditAgency ? (
+                <p className="text-sm text-[var(--admin-muted)]">Only administrators can run these actions.</p>
+              ) : (
+                <div className="divide-y divide-[var(--admin-line)]">
+                  {dangerActions.map((action) => (
+                    <div key={action.scope} className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="max-w-xl">
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{action.title}</h3>
+                          <AdminInfoTip label={`More about ${action.title}`} text={action.tip} wide />
+                        </div>
+                        <p className="mt-1 text-sm text-[var(--admin-muted)]">{action.description}</p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={busy || purgeBusy || exportBusy}
+                        className={`${adminDangerBtn} shrink-0 justify-center`}
+                        onClick={() => {
+                          setPurgeTyped("");
+                          setPurgeScope(action.scope);
+                        }}
+                      >
+                        {action.button}
+                      </button>
+                    </div>
+                  ))}
+                  <div className="flex flex-col gap-3 py-4 last:pb-0 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="max-w-xl">
+                      <div className="flex items-center gap-1.5">
+                        <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Download workspace data</h3>
+                        <AdminInfoTip
+                          label="More about Download workspace data"
+                          text="Downloads a JSON backup of leads, clients, projects, documents, invoices, payments, and messages. Project file binaries and invitation tokens are not included. Download this before deleting."
+                          wide
+                        />
+                      </div>
+                      <p className="mt-1 text-sm text-[var(--admin-muted)]">
+                        Save a JSON copy of workspace records before you delete anything.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={busy || purgeBusy || exportBusy}
+                      className={`${adminGhostBtn} shrink-0 justify-center`}
+                      onClick={() => void runExport()}
+                    >
+                      {exportBusy ? "Preparing…" : "Download all data"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </Card>
           ) : null}
         </div>
       </div>
+
+      <AdminDialog
+        open={purgeScope !== null}
+        busy={purgeBusy}
+        title={purgeScope ? dangerActions.find((action) => action.scope === purgeScope)?.title ?? "Confirm" : "Confirm"}
+        description={purgeScope ? dangerActions.find((action) => action.scope === purgeScope)?.confirm : undefined}
+        onClose={() => {
+          if (!purgeBusy) {
+            setPurgeScope(null);
+            setPurgeTyped("");
+          }
+        }}
+      >
+        {purgeScope ? (
+          <div className="space-y-4">
+            <button
+              type="button"
+              disabled={purgeBusy || exportBusy}
+              className={`${adminGhostBtn} w-full justify-center`}
+              onClick={() => void runExport()}
+            >
+              {exportBusy ? "Preparing…" : "Download all data first"}
+            </button>
+            <label className="block text-sm font-semibold text-[var(--admin-ink)]">
+              Type {WORKSPACE_PURGE_CONFIRMATION[purgeScope]} to confirm
+              <input
+                autoComplete="off"
+                disabled={purgeBusy}
+                className={fieldClass}
+                value={purgeTyped}
+                onChange={(event) => setPurgeTyped(event.target.value)}
+              />
+            </label>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={purgeBusy}
+                className={`${adminGhostBtn} justify-center`}
+                onClick={() => {
+                  setPurgeScope(null);
+                  setPurgeTyped("");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={purgeBusy || purgeTyped.trim() !== WORKSPACE_PURGE_CONFIRMATION[purgeScope]}
+                className={`${adminDangerSolidBtn} justify-center`}
+                onClick={() => void runPurge(purgeScope)}
+              >
+                {purgeBusy ? "Deleting…" : "Delete permanently"}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </AdminDialog>
 
       <ConfirmDocumentModal
         open={pendingSection !== null}
@@ -607,6 +766,43 @@ export function AdminSettings() {
     </div>
   );
 }
+
+const dangerActions: {
+  scope: WorkspacePurgeScope;
+  title: string;
+  button: string;
+  description: string;
+  tip: string;
+  confirm: string;
+}[] = [
+  {
+    scope: "projects",
+    title: "Delete all projects",
+    button: "Delete all projects",
+    description: "Permanently removes every project and its files, tasks, and activity.",
+    tip: "Deletes projects, files, tasks, milestones, and project activity. Clients, leads, proposals, contracts, and invoices stay. Documents keep their client and lose the project link.",
+    confirm:
+      "This permanently deletes every project and its files. Proposals, contracts, and invoices are kept and unlinked from those projects.",
+  },
+  {
+    scope: "clients",
+    title: "Delete all clients",
+    button: "Delete all clients",
+    description: "Permanently removes every client, the records they own, and their portal Auth accounts.",
+    tip: "Deletes every client plus their projects, files, messages, proposals, contracts, invoices, and payment records in this workspace. Client portal Auth accounts are deleted. Leads, team members, and Settings stay. Stripe charges are not refunded.",
+    confirm:
+      "This permanently deletes every client, their documents, invoices, and payment records in MotiveScripts, and their client portal Auth accounts. Invoice-level delete still never removes payments; this workspace wipe is the exception. Team accounts stay.",
+  },
+  {
+    scope: "agency",
+    title: "Delete entire agency",
+    button: "Delete entire agency",
+    description: "Permanently wipes workspace records and client portal Auth accounts. Team accounts and Settings stay.",
+    tip: "Deletes leads, clients, projects, files, messages, proposals, contracts, invoices, payment records, and client portal Auth accounts. Team accounts and Settings stay. Document numbers reset. Stripe Dashboard history is not refunded or removed.",
+    confirm:
+      "This permanently deletes all workspace records, including invoices, payment records, and client portal Auth accounts. Team accounts and Settings are kept. Stripe Dashboard history is not refunded or removed.",
+  },
+];
 
 function sectionNeedsSettings(section: SettingsSectionId) {
   return ["agency", "branding", "documents", "portal", "email", "invoices"].includes(section);

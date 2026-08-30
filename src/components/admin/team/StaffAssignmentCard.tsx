@@ -38,6 +38,7 @@ export function StaffAssignmentCard({
     return members.filter((member) => {
       if (!member.isActive) return false;
       if (assignedUserIds.includes(member.id)) return false;
+      if (member.role === "admin") return true;
       if (kind === "project" && entityClientId) {
         const clientIds = new Set(member.clientAssignments.map((item) => item.entityId));
         if (clientIds.size > 0 && !clientIds.has(entityClientId)) return false;
@@ -51,8 +52,14 @@ export function StaffAssignmentCard({
     setBusy(true);
     setError(null);
     try {
+      const member = members.find((item) => item.id === userId);
       if (kind === "client") await assignStaffToClient(entityId, userId, label);
-      else await assignStaffToProject(entityId, userId, label);
+      else {
+        if (entityClientId && member?.role === "admin") {
+          await assignStaffToClient(entityClientId, userId, label);
+        }
+        await assignStaffToProject(entityId, userId, label);
+      }
       setUserId("");
       setLabel("");
       onChanged();

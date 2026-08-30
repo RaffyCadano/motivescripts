@@ -5,7 +5,12 @@ import { InvoiceDocumentView } from "@/components/invoices/InvoiceDocumentView";
 import { InvoiceDraftForm, type InvoiceDraftFormValue } from "@/components/invoices/InvoiceDraftForm";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { documentMailRecipientCopy, documentMailRecipients } from "@/data/documents";
-import { fetchContractSummaries } from "@/data/documentsRepository";
+import {
+  fetchContractDetail,
+  fetchContractSummaries,
+  fetchProposalDetail,
+  proposalLineDrafts,
+} from "@/data/documentsRepository";
 import {
   emptyLineItem,
   invoiceDraftTotalCents,
@@ -29,6 +34,9 @@ export function AdminInvoiceNew() {
   const presetContract = searchParams.get("contract") ?? "";
   const [accepted, setAccepted] = useState<{ id: string; number: string; clientId: string; projectId: string | null }[]>([]);
   const [items, setItems] = useState<LineItemDraft[]>([emptyLineItem()]);
+  const [linkedProposalId, setLinkedProposalId] = useState<string | null>(null);
+  const [seededContractNumber, setSeededContractNumber] = useState("");
+  const [contractSeedReady, setContractSeedReady] = useState(!presetContract);
   const [busy, setBusy] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
   const [form, setForm] = useState<InvoiceDraftFormValue>({
@@ -53,7 +61,7 @@ export function AdminInvoiceNew() {
           ...current,
           dueDate: isoCalendarDatePlusDays(row.defaultInvoiceDueDays),
           currency: row.currency || current.currency,
-          notes: invoiceNotesFromSettings(row) || current.notes,
+          notes: mergeInvoiceNotes(invoiceNotesFromSettings(row), current.notes),
         }));
       })
       .catch(() => undefined);
@@ -84,6 +92,33 @@ export function AdminInvoiceNew() {
     }));
   }, [accepted, presetContract]);
 
+  useEffect(() => {
+    if (!presetContract) return;
+    let active = true;
+    void seedInvoiceFromContract(presetContract)
+      .then((seed) => {
+        if (!active || !seed) return;
+        setLinkedProposalId(seed.proposalId);
+        setSeededContractNumber(seed.contractNumber);
+        setItems(seed.items);
+        setForm((current) => ({
+          ...current,
+          clientId: seed.clientId || current.clientId,
+          projectId: current.projectId || seed.projectId || "",
+          contractId: seed.contractId || current.contractId,
+          notes: mergeInvoiceNotes(current.notes, seed.notes),
+          adminNotes: seed.adminNotes || current.adminNotes,
+        }));
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setContractSeedReady(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [presetContract]);
+
   const clientProjects = projects.filter((project) => project.clientId === form.clientId && !project.archived);
   const clientContracts = useMemo(
     () => accepted.filter((row) => row.clientId === form.clientId),
@@ -95,6 +130,13 @@ export function AdminInvoiceNew() {
     portalAccounts.filter((account) => account.clientId === form.clientId).map((account) => account.email),
   );
   const project = projects.find((item) => item.id === form.projectId);
+  const contractOptions = useMemo(() => {
+    const rows = clientContracts.map((item) => ({ id: item.id, label: item.number }));
+    if (form.contractId && !rows.some((row) => row.id === form.contractId)) {
+      rows.unshift({ id: form.contractId, label: seededContractNumber || "Selected contract" });
+    }
+    return rows;
+  }, [clientContracts, form.contractId, seededContractNumber]);
   const contract = clientContracts.find((item) => item.id === form.contractId);
   const totals = invoiceDraftTotalCents(items, form.taxCents, form.discountCents);
   const previewItems = items
@@ -127,6 +169,7 @@ export function AdminInvoiceNew() {
         clientId: form.clientId,
         projectId: form.projectId || null,
         contractId: form.contractId || null,
+        proposalId: linkedProposalId,
       });
       await saveInvoiceDraft({
         invoiceId,
@@ -138,7 +181,7 @@ export function AdminInvoiceNew() {
         notes: form.notes,
         projectId: form.projectId || null,
         contractId: form.contractId || null,
-        proposalId: null,
+        proposalId: linkedProposalId,
         adminNotes: form.adminNotes,
         items,
       });
@@ -165,10 +208,10 @@ export function AdminInvoiceNew() {
         <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">New invoice</h1>
         {clients.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            <button type="button" disabled={busy} className={secondaryBtn} onClick={() => void persistNew(false)}>
+            <button type="button" disabled={busy || !contractSeedReady} className={secondaryBtn} onClick={() => void persistNew(false)}>
               {busy ? "Saving…" : "Save Draft"}
             </button>
-            <button type="button" disabled={busy} className={primaryBtn} onClick={() => setSendOpen(true)}>
+            <button type="button" disabled={busy || !contractSeedReady} className={primaryBtn} onClick={() => setSendOpen(true)}>
               Send Invoice
             </button>
           </div>
@@ -183,9 +226,11 @@ export function AdminInvoiceNew() {
                 value={form}
                 items={items}
                 disabled={busy}
+                lockClient={Boolean(presetClient || presetContract)}
+                lockContract={Boolean(presetContract)}
                 clients={clients.map((item) => ({ id: item.id, label: item.businessName }))}
                 projects={clientProjects.map((item) => ({ id: item.id, label: item.name }))}
-                contracts={clientContracts.map((item) => ({ id: item.id, label: item.number }))}
+                contracts={contractOptions}
                 onChange={setForm}
                 onItemsChange={setItems}
               />
@@ -200,7 +245,7 @@ export function AdminInvoiceNew() {
                 contactName: client?.contactName,
                 email: client?.email,
                 projectName: project?.name,
-                contractNumber: contract?.number,
+                contractNumber: contract?.number || seededContractNumber || undefined,
                 notes: form.notes,
                 items: invoiceItemsFromSnapshot(previewItems),
                 subtotalCents: totals.subtotal,
@@ -227,6 +272,66 @@ export function AdminInvoiceNew() {
       />
     </div>
   );
+}
+
+function mergeInvoiceNotes(left: string, right: string): string {
+  const first = left.trim();
+  const second = right.trim();
+  if (!second) return first;
+  if (!first) return second;
+  if (first.includes(second)) return first;
+  if (second.includes(first)) return second;
+  return `${first}\n\n${second}`;
+}
+
+function centsFromMoneyText(text: string): number {
+  const match = text.replace(/,/g, "").match(/\$\s*(\d+(?:\.\d{1,2})?)/);
+  if (!match) return 0;
+  const dollars = Number(match[1]);
+  return Number.isFinite(dollars) ? Math.round(dollars * 100) : 0;
+}
+
+async function seedInvoiceFromContract(contractId: string): Promise<{
+  clientId: string;
+  projectId: string;
+  contractId: string;
+  contractNumber: string;
+  proposalId: string | null;
+  items: LineItemDraft[];
+  notes: string;
+  adminNotes: string;
+} | null> {
+  const detail = await fetchContractDetail(contractId);
+  if (!detail) return null;
+  const revision = detail.published ?? detail.working;
+  const proposalId = detail.contract.proposal_id;
+  let items: LineItemDraft[] = [];
+  let investmentCents = 0;
+  if (proposalId) {
+    const proposal = await fetchProposalDetail(proposalId).catch(() => null);
+    const source = proposal?.published ?? proposal?.working;
+    investmentCents = source?.investment_cents ?? 0;
+    if (proposal) items = proposalLineDrafts(proposal).filter((item) => item.name.trim());
+  }
+  if (items.length === 0) {
+    items = [
+      {
+        ...emptyLineItem(),
+        name: revision.title.trim() || "Website",
+        unitPriceCents: investmentCents || centsFromMoneyText(revision.compensation),
+      },
+    ];
+  }
+  return {
+    clientId: detail.contract.client_id,
+    projectId: detail.contract.project_id ?? "",
+    contractId: detail.contract.id,
+    contractNumber: detail.contract.contract_number,
+    proposalId,
+    items,
+    notes: revision.payment_terms.trim(),
+    adminNotes: `Copied from contract ${detail.contract.contract_number}.`,
+  };
 }
 
 const primaryBtn =

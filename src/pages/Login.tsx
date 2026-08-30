@@ -1,10 +1,10 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { site } from "@/data/site";
 import { useAuth } from "@/auth/AuthProvider";
-import { publicAuthLinkError, publicSignInError } from "@/auth/authErrors";
+import { publicAuthLinkError, publicSignInError, publicSignInNotFound } from "@/auth/authErrors";
 import { cn } from "@/lib/cn";
 
 const welcomeNotes = [
@@ -40,10 +40,7 @@ export function LoginPage() {
       };
     }
     if (status === "not_found") {
-      return {
-        title: "Check your email.",
-        body: "If that address has access, we sent a sign-in link. It expires after a short time.",
-      };
+      return publicSignInNotFound();
     }
     if (status === "rate_limit") {
       return {
@@ -87,7 +84,7 @@ export function LoginPage() {
       return;
     }
     if (result.reason === "not_found") {
-      setStatus("sent");
+      setStatus("not_found");
       return;
     }
     if (result.reason === "rate_limit") {
@@ -158,7 +155,13 @@ export function LoginPage() {
                 />
 
                 {alert ? (
-                  <div className="mt-5 border-l-2 border-cyan pl-4" role="status">
+                  <div
+                    className={cn(
+                      "mt-5 border-l-2 pl-4",
+                      status === "not_found" ? "border-[var(--color-line-strong)]" : "border-cyan",
+                    )}
+                    role="status"
+                  >
                     <p className="font-heading text-base font-semibold text-ink">{alert.title}</p>
                     <p className="mt-2 text-sm leading-relaxed text-muted">{alert.body}</p>
                   </div>
@@ -184,18 +187,6 @@ export function LoginPage() {
                     Sign out
                   </button>
                 ) : null}
-
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm">
-                  <Link
-                    className="font-heading font-semibold text-ink underline-offset-2 transition-colors hover:text-blue hover:underline"
-                    to="/forgot-password"
-                  >
-                    Forgot password?
-                  </Link>
-                  <Link className="text-muted transition-colors hover:text-ink" to="/start-a-project">
-                    Start a project
-                  </Link>
-                </div>
               </form>
 
               <p className="mt-8 border-t border-[var(--color-line)] pt-5 text-sm leading-relaxed text-muted">

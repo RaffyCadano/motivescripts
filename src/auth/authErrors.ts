@@ -5,6 +5,13 @@ export function publicAuthLinkError(): string {
   return LINK_FAILED;
 }
 
+export function publicSignInNotFound(): { title: string; body: string } {
+  return {
+    title: "This email doesn’t have access.",
+    body: "We don’t have a MotiveScripts account for that address. Use the email you were invited with, or ask your contact to send an invite.",
+  };
+}
+
 export function publicSignInError(reason: "rate_limit" | "error"): string {
   if (reason === "rate_limit") {
     return "Too many email attempts. Wait a while, then try again.";

@@ -28,6 +28,8 @@ export function InvoiceDraftForm({
   contracts,
   showClient = true,
   showAdminNotes = true,
+  lockClient = false,
+  lockContract = false,
   disabled,
   onChange,
   onItemsChange,
@@ -39,6 +41,8 @@ export function InvoiceDraftForm({
   contracts: Option[];
   showClient?: boolean;
   showAdminNotes?: boolean;
+  lockClient?: boolean;
+  lockContract?: boolean;
   disabled?: boolean;
   onChange: (value: InvoiceDraftFormValue) => void;
   onItemsChange: (items: LineItemDraft[]) => void;
@@ -53,7 +57,7 @@ export function InvoiceDraftForm({
           Client
           <select
             required
-            disabled={disabled}
+            disabled={disabled || lockClient}
             value={value.clientId}
             onChange={(event) =>
               onChange({ ...value, clientId: event.target.value, projectId: "", contractId: "" })
@@ -88,7 +92,7 @@ export function InvoiceDraftForm({
       <label className="block text-sm font-semibold">
         Contract <span className="font-medium text-[var(--admin-muted)]">(optional, accepted only)</span>
         <select
-          disabled={disabled}
+          disabled={disabled || lockContract}
           value={value.contractId}
           onChange={(event) => onChange({ ...value, contractId: event.target.value })}
           className={fieldClass}

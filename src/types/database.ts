@@ -974,6 +974,10 @@ export type Database = {
         Args: { p_full_name?: string | null; p_job_title?: string | null };
         Returns: null;
       };
+      purge_workspace: {
+        Args: { p_scope: string; p_confirmation: string };
+        Returns: Json;
+      };
       update_my_task_status: {
         Args: { p_task_id: string; p_status: string };
         Returns: null;
