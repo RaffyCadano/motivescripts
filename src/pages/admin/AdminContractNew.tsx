@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { adminPrimaryBtn, adminGhostBtn } from "@/components/admin/adminActionStyles";
+import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { ContractDocumentView } from "@/components/documents/ContractDocumentView";
@@ -159,13 +160,14 @@ export function AdminContractNew() {
           </div>
         ) : null}
       </div>
+      {clients.length === 0 ? (
+        <NeedClientEmpty document="contract" />
+      ) : (
+        <div className="space-y-4">
       <p className="max-w-xl text-sm text-[var(--admin-muted)]">
         Nothing is saved until you click Save draft or Keep changes. Prefer an accepted proposal so the scope and
         investment stay connected.
       </p>
-      {clients.length === 0 ? (
-        <p className="text-sm text-[var(--admin-muted)]">Add a client before creating a contract.</p>
-      ) : (
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <form className="space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
             <label className="block text-sm font-semibold">
@@ -254,6 +256,7 @@ export function AdminContractNew() {
               },
             }}
           />
+        </div>
         </div>
       )}
       <ConfirmDocumentModal

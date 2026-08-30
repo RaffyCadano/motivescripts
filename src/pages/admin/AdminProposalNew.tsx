@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { createProposal } from "@/data/documentsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
@@ -33,12 +34,13 @@ export function AdminProposalNew() {
         Proposals
       </Link>
       <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">New proposal</h1>
-      <p className="max-w-xl text-sm text-[var(--admin-muted)]">
-        Creates a draft for this client. You’ll set the scope, investment, and terms before sending it.
-      </p>
       {clients.length === 0 ? (
-        <p className="text-sm text-[var(--admin-muted)]">Add a client before creating a proposal.</p>
+        <NeedClientEmpty document="proposal" />
       ) : (
+        <div className="space-y-4">
+        <p className="max-w-xl text-sm text-[var(--admin-muted)]">
+          Creates a draft for this client. You’ll set the scope, investment, and terms before sending it.
+        </p>
         <form
           className="w-full max-w-lg space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6"
           onSubmit={onSubmit}
@@ -84,6 +86,7 @@ export function AdminProposalNew() {
             {busy ? "Creating…" : "Create draft"}
           </button>
         </form>
+        </div>
       )}
     </div>
   );

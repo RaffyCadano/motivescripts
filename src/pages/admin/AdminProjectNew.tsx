@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import {
   projectStatuses,
@@ -59,12 +60,13 @@ export function AdminProjectNew() {
         Projects
       </Link>
       <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">New project</h1>
-      <p className="max-w-xl text-sm text-[var(--admin-muted)]">
-        Create a project record. Progress is tracked from tasks after you add them.
-      </p>
       {clients.length === 0 ? (
-        <p className="text-sm text-[var(--admin-muted)]">Add a client before creating a project.</p>
+        <NeedClientEmpty document="project" />
       ) : (
+        <div className="space-y-4">
+        <p className="max-w-xl text-sm text-[var(--admin-muted)]">
+          Create a project record. Progress is tracked from tasks after you add them.
+        </p>
         <form
           className="w-full max-w-lg space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6"
           onSubmit={onSubmit}
@@ -157,6 +159,7 @@ export function AdminProjectNew() {
             {busy ? "Creating…" : "Create project"}
           </button>
         </form>
+        </div>
       )}
     </div>
   );

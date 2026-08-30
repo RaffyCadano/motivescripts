@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { InvoiceDocumentView } from "@/components/invoices/InvoiceDocumentView";
 import { InvoiceDraftForm, type InvoiceDraftFormValue } from "@/components/invoices/InvoiceDraftForm";
+import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { documentMailRecipientCopy, documentMailRecipients } from "@/data/documents";
 import {
@@ -218,7 +219,7 @@ export function AdminInvoiceNew() {
         ) : null}
       </div>
       {clients.length === 0 ? (
-        <p className="text-sm text-[var(--admin-muted)]">Add a client before creating an invoice.</p>
+        <NeedClientEmpty document="invoice" />
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <form className="space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
