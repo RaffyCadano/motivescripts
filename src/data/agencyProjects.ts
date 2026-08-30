@@ -27,7 +27,7 @@ export type AgencyProjectStatus = (typeof projectStatuses)[number];
 export const milestoneStatuses = ["Not Started", "In Progress", "Completed", "On Hold"] as const;
 export type AgencyMilestoneStatus = (typeof milestoneStatuses)[number];
 
-export const taskStatuses = ["Todo", "In Progress", "Completed", "Blocked"] as const;
+export const taskStatuses = ["Todo", "In Progress", "In Review", "Completed", "Blocked"] as const;
 export type AgencyTaskStatus = (typeof taskStatuses)[number];
 
 export const taskPriorities = ["Low", "Medium", "High", "Urgent"] as const;
@@ -54,6 +54,7 @@ export type AgencyTask = {
   status: AgencyTaskStatus;
   priority: AgencyTaskPriority;
   assignee: string;
+  assignedTo: string;
   dueDate: string;
   createdAt: string;
   completedAt: string | null;
@@ -117,8 +118,14 @@ export type AgencyTaskDraft = {
   status: AgencyTaskStatus;
   priority: AgencyTaskPriority;
   assignee: string;
+  assignedTo: string;
   dueDate: string;
 };
+
+export function taskStatusLabel(status: AgencyTaskStatus): string {
+  if (status === "Todo") return "To Do";
+  return status;
+}
 
 export function calculateProjectProgress(project: Pick<AgencyProject, "tasks">): number {
   if (project.tasks.length === 0) return 0;

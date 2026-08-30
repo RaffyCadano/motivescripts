@@ -432,6 +432,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
               status: draft.status,
               priority: draft.priority,
               assignee: draft.assignee,
+              assignedTo: draft.assignedTo,
               dueDate: draft.dueDate,
               createdAt: new Date().toISOString(),
               completedAt: draft.status === "Completed" ? new Date().toISOString() : null,
@@ -459,6 +460,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
                     status: draft.status,
                     priority: draft.priority,
                     assignee: draft.assignee,
+                    assignedTo: draft.assignedTo,
                     dueDate: draft.dueDate,
                     completedAt,
                   }

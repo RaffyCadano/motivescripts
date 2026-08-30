@@ -20,18 +20,25 @@ const emptyDraft: AgencyTaskDraft = {
   status: "Todo",
   priority: "Medium",
   assignee: "",
+  assignedTo: "",
   dueDate: "",
+};
+
+export type TaskAssigneeOption = {
+  id: string;
+  name: string;
 };
 
 type TaskFormModalProps = {
   open: boolean;
   task?: AgencyTask | null;
   milestones: AgencyMilestone[];
+  assignees?: TaskAssigneeOption[];
   onClose: () => void;
   onSubmit: (draft: AgencyTaskDraft) => void;
 };
 
-export function TaskFormModal({ open, task, milestones, onClose, onSubmit }: TaskFormModalProps) {
+export function TaskFormModal({ open, task, milestones, assignees = [], onClose, onSubmit }: TaskFormModalProps) {
   const [draft, setDraft] = useState<AgencyTaskDraft>(emptyDraft);
 
   useEffect(() => {
@@ -44,6 +51,7 @@ export function TaskFormModal({ open, task, milestones, onClose, onSubmit }: Tas
         status: task.status,
         priority: task.priority,
         assignee: task.assignee,
+        assignedTo: task.assignedTo,
         dueDate: task.dueDate,
       });
       return;
@@ -132,13 +140,34 @@ export function TaskFormModal({ open, task, milestones, onClose, onSubmit }: Tas
             </select>
           </label>
           <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-            Assignee
-            <input
-              value={draft.assignee}
-              onChange={(event) => setDraft((current) => ({ ...current, assignee: event.target.value }))}
-              className={fieldClass}
-              placeholder="Optional"
-            />
+            Assigned to
+            {assignees.length > 0 ? (
+              <select
+                className={fieldClass}
+                value={draft.assignedTo}
+                onChange={(event) => {
+                  const assignedTo = event.target.value;
+                  const name = assignees.find((item) => item.id === assignedTo)?.name ?? "";
+                  setDraft((current) => ({ ...current, assignedTo, assignee: name }));
+                }}
+              >
+                <option value="">Unassigned</option>
+                {assignees.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {person.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={draft.assignee}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, assignee: event.target.value, assignedTo: "" }))
+                }
+                className={fieldClass}
+                placeholder="Optional"
+              />
+            )}
           </label>
           <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
             Due date

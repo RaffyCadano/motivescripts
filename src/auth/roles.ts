@@ -19,3 +19,22 @@ export function displayRoleLabel(role: string | null | undefined): string {
   if (role === "client") return "Client";
   return "User";
 }
+
+export function agencyHomePath(
+  profile: { role?: string | null; templateKey?: string | null } | null | undefined,
+): string {
+  if (!profile) return "/login";
+  if (profile.role === "client") return "/client";
+  if (profile.role === "admin") return "/admin";
+  if (
+    profile.role === "staff" &&
+    (profile.templateKey === "developer" ||
+      profile.templateKey === "designer" ||
+      profile.templateKey === "content_writer" ||
+      profile.templateKey === "team_member")
+  ) {
+    return "/team/dashboard";
+  }
+  if (isAgencyRole(profile.role)) return "/admin";
+  return "/login";
+}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Archive, MessageSquare, Pause, PencilLine, RefreshCw, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AdminActionsMenu } from "@/components/admin/AdminActionsMenu";
@@ -19,6 +19,7 @@ import { ProjectStatusModal } from "@/components/admin/projects/ProjectStatusMod
 import { ProjectTasksPanel } from "@/components/admin/projects/ProjectTasksPanel";
 import { TaskFormModal } from "@/components/admin/projects/TaskFormModal";
 import { useAgencyProject, useLeads } from "@/components/admin/leads/LeadsProvider";
+import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import {
   calculateProjectProgress,
   currentMilestone,
@@ -68,6 +69,7 @@ export function AdminProjectDetails() {
     updateTask,
     toggleTaskComplete,
   } = useLeads();
+  const { data: teamData } = useTeamDirectory();
   const tabParam = searchParams.get("tab");
   const tab: TabId = isTabId(tabParam) ? tabParam : "overview";
   const selectedFileId = searchParams.get("file");
@@ -80,6 +82,20 @@ export function AdminProjectDetails() {
   const [removingMilestone, setRemovingMilestone] = useState<AgencyMilestone | null>(null);
   const [taskOpen, setTaskOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<AgencyTask | null>(null);
+  const projectId = match?.project.id ?? "";
+  const assignees = useMemo(() => {
+    const members = teamData?.members ?? [];
+    return members
+      .filter((member) => member.isActive)
+      .slice()
+      .sort((a, b) => {
+        const aOn = a.projectAssignments.some((item) => item.entityId === projectId) ? 0 : 1;
+        const bOn = b.projectAssignments.some((item) => item.entityId === projectId) ? 0 : 1;
+        if (aOn !== bOn) return aOn - bOn;
+        return (a.fullName || a.email).localeCompare(b.fullName || b.email);
+      })
+      .map((member) => ({ id: member.id, name: member.fullName || member.email }));
+  }, [projectId, teamData?.members]);
 
   function setTab(next: TabId) {
     const nextParams = new URLSearchParams(searchParams);
@@ -370,6 +386,7 @@ export function AdminProjectDetails() {
         open={taskOpen}
         task={editingTask}
         milestones={project.milestones}
+        assignees={assignees}
         onClose={() => {
           setTaskOpen(false);
           setEditingTask(null);

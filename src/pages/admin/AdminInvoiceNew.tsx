@@ -32,7 +32,7 @@ export function AdminInvoiceNew() {
   const [busy, setBusy] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
   const [form, setForm] = useState<InvoiceDraftFormValue>({
-    clientId: presetClient || clients[0]?.id || "",
+    clientId: presetClient,
     projectId: presetProject,
     contractId: presetContract,
     issueDate: isoCalendarDate(),
@@ -108,7 +108,11 @@ export function AdminInvoiceNew() {
     }));
 
   async function persistNew(send: boolean) {
-    if (!form.clientId || busy) return;
+    if (busy) return;
+    if (!form.clientId) {
+      notify("Select a client first.");
+      return;
+    }
     if (send) {
       const blocked = invoiceSendBlockedReason(items, form.taxCents, form.discountCents, form.issueDate, form.dueDate);
       if (blocked) {
@@ -157,11 +161,9 @@ export function AdminInvoiceNew() {
       <Link to="/admin/invoices" className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
         Invoices
       </Link>
-      <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">New invoice</h1>
-      {clients.length === 0 ? (
-        <p className="text-sm text-[var(--admin-muted)]">Add a client before creating an invoice.</p>
-      ) : (
-        <>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">New invoice</h1>
+        {clients.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             <button type="button" disabled={busy} className={secondaryBtn} onClick={() => void persistNew(false)}>
               {busy ? "Saving…" : "Save Draft"}
@@ -170,7 +172,12 @@ export function AdminInvoiceNew() {
               Send Invoice
             </button>
           </div>
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+        ) : null}
+      </div>
+      {clients.length === 0 ? (
+        <p className="text-sm text-[var(--admin-muted)]">Add a client before creating an invoice.</p>
+      ) : (
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <form className="space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
               <InvoiceDraftForm
                 value={form}
@@ -189,7 +196,7 @@ export function AdminInvoiceNew() {
                 issueDate: form.issueDate,
                 dueDate: form.dueDate,
                 currency: form.currency,
-                companyName: client?.businessName ?? "Client",
+                companyName: client?.businessName || "—",
                 contactName: client?.contactName,
                 email: client?.email,
                 projectName: project?.name,
@@ -205,7 +212,6 @@ export function AdminInvoiceNew() {
               }}
             />
           </div>
-        </>
       )}
       <ConfirmDocumentModal
         open={sendOpen}

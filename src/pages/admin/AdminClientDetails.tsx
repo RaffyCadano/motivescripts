@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Archive, CircleOff, FolderKanban, PencilLine, RotateCcw, UserPlus } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
-import { ClientFollowUpDialog } from "@/components/admin/clients/ClientFollowUpDialog";
 import { ClientFormModal } from "@/components/admin/clients/ClientFormModal";
 import { ClientNoteModal } from "@/components/admin/clients/ClientNoteModal";
-import { ProjectFormModal } from "@/components/admin/projects/ProjectFormModal";
 import {
   ClientActivitySection,
   ClientBusinessSection,
@@ -26,29 +24,38 @@ import { ConfirmClientStatusModal } from "@/components/admin/clients/ConfirmClie
 import { useAgencyClient, useLeads } from "@/components/admin/leads/LeadsProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission, isActiveAdmin } from "@/auth/permissions";
-import type { AgencyClientEdits, AgencyClientStatus } from "@/data/agencyClients";
+import type { AgencyClientStatus } from "@/data/agencyClients";
+import { cn } from "@/lib/cn";
 
 const tabs = [
-  { href: "#overview", label: "Overview" },
-  { href: "#projects", label: "Projects" },
-  { href: "#agreements", label: "Agreements" },
-  { href: "#files", label: "Files" },
-  { href: "#invoices", label: "Invoices" },
-  { href: "#messages", label: "Messages" },
-  { href: "#activity", label: "Activity" },
+  { id: "overview", label: "Overview" },
+  { id: "projects", label: "Projects" },
+  { id: "agreements", label: "Agreements" },
+  { id: "files", label: "Files" },
+  { id: "invoices", label: "Invoices" },
+  { id: "messages", label: "Messages" },
+  { id: "activity", label: "Activity" },
 ] as const;
+
+type ClientTab = (typeof tabs)[number]["id"];
+
+function isClientTab(value: string): value is ClientTab {
+  return tabs.some((tab) => tab.id === value);
+}
 
 export function AdminClientDetails() {
   const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const client = useAgencyClient(id);
-  const { clients, updateClient, addClientNote, addProject, setClientStatus, portalAccounts } = useLeads();
+  const hash = location.hash.replace(/^#/, "");
+  const tab: ClientTab = isClientTab(hash) ? hash : "overview";
+  const { updateClient, addClientNote, setClientStatus, portalAccounts } = useLeads();
   const { profile } = useAuth();
   const team = useTeamDirectory();
   const [editOpen, setEditOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
-  const [projectOpen, setProjectOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
   const [pendingStatus, setPendingStatus] = useState<AgencyClientStatus | null>(null);
 
   if (!client) {
@@ -76,7 +83,12 @@ export function AdminClientDetails() {
       id: "invite",
       label: "Invite Client",
       icon: UserPlus,
-      onSelect: () => setInviteOpen(true),
+      onSelect: () => {
+        setInviteOpen(true);
+        if (tab !== "overview") {
+          navigate({ pathname: location.pathname, hash: "overview" }, { replace: true });
+        }
+      },
     });
   }
   if (canManageClient) {
@@ -92,7 +104,7 @@ export function AdminClientDetails() {
       id: "create-project",
       label: "Create Project",
       icon: FolderKanban,
-      onSelect: () => setProjectOpen(true),
+      href: `/admin/projects/new?client=${client.id}`,
     });
   }
   if (canManageClient) {
@@ -145,81 +157,74 @@ export function AdminClientDetails() {
       </div>
 
       <nav aria-label="Client sections" className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
-        {tabs.map((tab) => (
-          <a
-            key={tab.href}
-            href={tab.href}
-            className="shrink-0 rounded-full bg-white px-3 py-1.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)] hover:bg-[var(--admin-hover)]"
-          >
-            {tab.label}
-          </a>
-        ))}
+        {tabs.map((item) => {
+          const active = item.id === tab;
+          return (
+            <Link
+              key={item.id}
+              to={{ pathname: location.pathname, hash: item.id }}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1.5 font-heading text-[12px] font-semibold",
+                active
+                  ? "bg-[var(--admin-navy)] text-white"
+                  : "bg-white text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)] hover:bg-[var(--admin-hover)]",
+              )}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
       </nav>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
-        <div className="space-y-6">
-          <ClientContactSection client={client} />
-          {team.data ? (
-            <StaffAssignmentCard
-              kind="client"
-              entityId={client.id}
-              members={team.data.members}
-              assignedUserIds={team.data.members
-                .filter((member) => member.clientAssignments.some((item) => item.entityId === client.id))
-                .map((member) => member.id)}
-              assignedLabels={Object.fromEntries(
-                team.data.members.flatMap((member) =>
-                  member.clientAssignments
-                    .filter((item) => item.entityId === client.id)
-                    .map((item) => [member.id, item.label]),
-                ),
-              )}
-              onChanged={() => void team.reload()}
+      <div className="space-y-6">
+        {tab === "overview" ? (
+          <>
+            <ClientContactSection client={client} />
+            {team.data ? (
+              <StaffAssignmentCard
+                kind="client"
+                entityId={client.id}
+                members={team.data.members}
+                assignedUserIds={team.data.members
+                  .filter((member) => member.clientAssignments.some((item) => item.entityId === client.id))
+                  .map((member) => member.id)}
+                assignedLabels={Object.fromEntries(
+                  team.data.members.flatMap((member) =>
+                    member.clientAssignments
+                      .filter((item) => item.entityId === client.id)
+                      .map((item) => [member.id, item.label]),
+                  ),
+                )}
+                onChanged={() => void team.reload()}
+              />
+            ) : null}
+            <ClientPortalAccountSection
+              client={client}
+              inviteOpen={inviteOpen}
+              onInviteOpenChange={setInviteOpen}
             />
-          ) : null}
-          <ClientPortalAccountSection
-            client={client}
-            inviteOpen={inviteOpen}
-            onInviteOpenChange={setInviteOpen}
-          />
-          <ClientBusinessSection client={client} onEdit={() => setEditOpen(true)} />
-          <ClientProjectsSection client={client} onCreateProject={() => setProjectOpen(true)} />
-          <ClientDocumentsSection client={client} />
-          <ClientFilesSection client={client} />
-          <ClientInvoicesSection client={client} />
-          <ClientMessagesSection client={client} />
-          <ClientNotesSection client={client} onAddNote={() => setNoteOpen(true)} />
-        </div>
-        <ClientActivitySection items={client.activity} />
+            <ClientBusinessSection client={client} onEdit={() => setEditOpen(true)} />
+            <ClientNotesSection client={client} onAddNote={() => setNoteOpen(true)} />
+          </>
+        ) : null}
+        {tab === "projects" ? (
+          <ClientProjectsSection client={client} createHref={`/admin/projects/new?client=${client.id}`} />
+        ) : null}
+        {tab === "agreements" ? <ClientDocumentsSection client={client} /> : null}
+        {tab === "files" ? <ClientFilesSection client={client} /> : null}
+        {tab === "invoices" ? <ClientInvoicesSection client={client} /> : null}
+        {tab === "messages" ? <ClientMessagesSection client={client} /> : null}
+        {tab === "activity" ? <ClientActivitySection items={client.activity} /> : null}
       </div>
 
       <ClientFormModal
-        mode="edit"
         open={editOpen}
         client={client}
         onClose={() => setEditOpen(false)}
-        onSubmit={(values) => updateClient(client.id, values as AgencyClientEdits)}
+        onSubmit={(values) => updateClient(client.id, values)}
       />
       <ClientNoteModal open={noteOpen} onClose={() => setNoteOpen(false)} onSave={(body) => addClientNote(client.id, body)} />
-      <ProjectFormModal
-        mode="add"
-        open={projectOpen}
-        clients={clients}
-        lockClientId={client.id}
-        onClose={() => setProjectOpen(false)}
-        onSubmit={async (draft) => {
-          const projectId = await addProject({ ...draft, clientId: client.id });
-          if (projectId) setCreatedProjectId(projectId);
-        }}
-      />
-      <ClientFollowUpDialog
-        open={Boolean(createdProjectId)}
-        title="Open this project?"
-        description="The project uses the same workspace as Project Management."
-        to={createdProjectId ? `/admin/projects/${createdProjectId}` : "/admin/clients"}
-        actionLabel="View Project"
-        onClose={() => setCreatedProjectId(null)}
-      />
       <ConfirmClientStatusModal
         client={pendingStatus ? client : null}
         nextStatus={pendingStatus}

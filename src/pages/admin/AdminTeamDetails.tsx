@@ -106,6 +106,9 @@ export function AdminTeamDetails() {
             <p className="mt-1 text-sm text-[var(--admin-muted)]">
               {member.email} · {member.templateLabel} · {member.isActive ? "Active" : "Inactive"}
             </p>
+            <p className="mt-1 text-sm text-[var(--admin-muted)]">
+              {member.activeTaskCount} active tasks · {member.completedTaskCount} completed · {member.projectAssignments.length} projects
+            </p>
           </div>
           {canManage ? (
             <div className="flex flex-wrap gap-2">

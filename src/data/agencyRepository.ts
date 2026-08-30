@@ -576,7 +576,8 @@ export async function insertTask(projectId: string, draft: AgencyTaskDraft): Pro
     description: draft.description.trim(),
     status: draft.status,
     priority: draft.priority,
-    assignee: draft.assignee,
+    assignee: draft.assignee.trim(),
+    assigned_to: emptyToNull(draft.assignedTo),
     due_date: emptyToNull(draft.dueDate),
     completed_at: draft.status === "Completed" ? now : null,
   });
@@ -594,7 +595,8 @@ export async function updateTaskRecord(projectId: string, taskId: string, draft:
       milestone_id: emptyToNull(draft.milestoneId),
       status: draft.status,
       priority: draft.priority,
-      assignee: draft.assignee,
+      assignee: draft.assignee.trim(),
+      assigned_to: emptyToNull(draft.assignedTo),
       due_date: emptyToNull(draft.dueDate),
       completed_at: completedAt,
     })

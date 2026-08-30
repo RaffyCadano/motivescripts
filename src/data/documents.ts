@@ -1,5 +1,6 @@
 import { formatUsdFromCents } from "@/data/money";
 import { proposalLineDescription } from "@/data/proposalPresets";
+import { site } from "@/data/site";
 import type { DocumentStatus, ProposalItemRow } from "@/types/database";
 
 export const documentStatuses = [
@@ -342,4 +343,30 @@ export function documentMailRecipientCopy(
   }
   const list = recipients.join(", ");
   return company ? `${verb} ${list} (${company}).` : `${verb} ${list}.`;
+}
+
+/** Starting copy for a new contract. Matches `website_contract_template` in SQL. Not persisted until Save draft. */
+export function websiteContractTemplate(companyName: string) {
+  const company = companyName.trim() || "the Client";
+  return {
+    title: "Website Development Agreement",
+    parties: `This agreement is between ${site.name} (“Agency”) and ${company} (“Client”). This document is a working agreement for the project described below. It is not legal advice and may need review for a specific jurisdiction.`,
+    scope:
+      "The Agency will design and develop the website described in the related proposal, including the pages and features listed in that proposal’s scope of work.",
+    responsibilities:
+      "Agency: plan, design, and implement the agreed website, and communicate progress through the MotiveScripts portal.\nClient: provide content, feedback, and timely approvals so work can move forward.",
+    timeline:
+      "The schedule in the related proposal applies unless both parties agree to an update in writing (including a message in the client portal).",
+    compensation: "Compensation matches the investment in the related proposal. Invoices and payment collection are handled separately.",
+    paymentTerms: "Payment terms match the related proposal unless this agreement states otherwise.",
+    confidentiality:
+      "Each party will treat non-public business information shared for this project as confidential and use it only to complete the work.",
+    intellectualProperty:
+      "Upon full payment for the agreed work, the Client receives ownership of the final approved website deliverables created uniquely for the Client, excluding Agency tools, frameworks, and prior materials.",
+    revisionsPolicy: "Revision rounds follow the related proposal. Work outside the agreed scope may require an updated proposal.",
+    termination:
+      "Either party may end this agreement with written notice if the other party materially fails to meet its responsibilities after a reasonable chance to remedy.",
+    generalTerms:
+      "This agreement is a software workflow record of the business terms the Client reviewed in the MotiveScripts portal. It is not a substitute for counsel. Electronic acceptance here records the authenticated user’s agreement; it is not a qualified digital signature under every jurisdiction’s e-sign rules.",
+  };
 }

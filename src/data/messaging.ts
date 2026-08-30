@@ -126,12 +126,26 @@ export function formatMessageTime(iso: string): string {
 
 export function notificationHref(item: AppNotification, role: "admin" | "staff" | "client"): string {
   const agency = role === "admin" || role === "staff";
+  const staff = role === "staff";
   switch (item.type) {
     case "new_message":
+      if (staff) {
+        return item.conversationId ? `/team/messages/${item.conversationId}` : "/team/messages";
+      }
       if (agency) {
         return item.conversationId ? `/admin/messages/${item.conversationId}` : "/admin/messages";
       }
       return item.conversationId ? `/client/messages/${item.conversationId}` : "/client/messages";
+    case "task_assigned":
+    case "task_status_changed":
+      if (staff) return "/team/tasks";
+      return item.projectId ? `/admin/projects/${item.projectId}` : "/admin/projects";
+    case "project_assigned":
+    case "milestone_updated":
+      if (agency) {
+        return item.projectId ? `/admin/projects/${item.projectId}` : staff ? "/team/projects" : "/admin/projects";
+      }
+      return item.projectId ? `/client/project/${item.projectId}` : "/client/project";
     case "feedback_received":
     case "changes_requested":
     case "version_approved":

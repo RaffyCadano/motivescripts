@@ -1,7 +1,30 @@
 import type { InvitationPreviewState } from "@/data/invitation";
 import type { StaffInvitationStatus } from "@/types/database";
 
-export type StaffTemplateKey = "admin" | "staff" | "project_manager" | "sales" | "accounting";
+export const STAFF_TEMPLATE_KEYS = [
+  "admin",
+  "staff",
+  "project_manager",
+  "sales",
+  "accounting",
+  "developer",
+  "designer",
+  "content_writer",
+  "team_member",
+] as const;
+
+export type StaffTemplateKey = (typeof STAFF_TEMPLATE_KEYS)[number];
+
+const PRODUCTION_TEAM_TEMPLATES = new Set<string>([
+  "developer",
+  "designer",
+  "content_writer",
+  "team_member",
+]);
+
+export function isProductionTeamTemplate(templateKey: string | null | undefined): boolean {
+  return PRODUCTION_TEAM_TEMPLATES.has(templateKey ?? "");
+}
 
 export type TeamMemberStatus = "active" | "inactive" | "pending";
 
@@ -27,6 +50,8 @@ export type TeamMember = {
   permissions: string[];
   clientAssignments: TeamAssignment[];
   projectAssignments: TeamAssignment[];
+  activeTaskCount: number;
+  completedTaskCount: number;
 };
 
 export type TeamInvitation = {
@@ -60,13 +85,7 @@ export type StaffTemplateOption = {
 };
 
 export function isStaffTemplateKey(value: string): value is StaffTemplateKey {
-  return (
-    value === "admin" ||
-    value === "staff" ||
-    value === "project_manager" ||
-    value === "sales" ||
-    value === "accounting"
-  );
+  return (STAFF_TEMPLATE_KEYS as readonly string[]).includes(value);
 }
 
 export function teamStatusLabel(row: TeamListRow): string {

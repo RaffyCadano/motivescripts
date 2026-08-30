@@ -4,7 +4,7 @@ import { AuthStatusScreen } from "@/auth/AuthStatusScreen";
 import { completeAuthRedirect } from "@/auth/completeAuthRedirect";
 import { loadCurrentProfile } from "@/auth/loadProfile";
 import { safeInviteNext } from "@/data/invitation";
-import { isAgencyRole } from "@/auth/roles";
+import { agencyHomePath, isAgencyRole } from "@/auth/roles";
 import { getSupabase } from "@/lib/supabase";
 
 export function AuthCallbackPage() {
@@ -35,7 +35,7 @@ export function AuthCallbackPage() {
       const profile = await loadCurrentProfile();
       if (!active) return;
       if (profile.status === "ready" && isAgencyRole(profile.profile.role)) {
-        navigate("/admin", { replace: true });
+        navigate(agencyHomePath(profile.profile), { replace: true });
         return;
       }
       navigate("/client", { replace: true });

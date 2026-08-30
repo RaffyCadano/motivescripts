@@ -140,17 +140,21 @@ export function ClientNotesSection({ client, onAddNote }: { client: AgencyClient
 }
 
 export function ClientActivitySection({ items }: { items: AgencyActivityItem[] }) {
+  const recent = [...items]
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    .slice(0, 5);
+
   return (
     <section
       id="activity"
-      className="scroll-mt-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5"
+      className="h-auto scroll-mt-4 self-start rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5"
     >
       <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Activity</h2>
-      {items.length === 0 ? (
+      {recent.length === 0 ? (
         <p className="mt-4 text-sm text-[var(--admin-muted)]">No activity yet</p>
       ) : (
         <ol className="mt-5 space-y-0">
-          {items.map((item, index) => {
+          {recent.map((item, index) => {
             const Icon = activityIcons[item.icon];
             return (
               <li key={item.id} className="flex gap-3">
@@ -158,7 +162,7 @@ export function ClientActivitySection({ items }: { items: AgencyActivityItem[] }
                   <span className="mt-0.5 inline-flex size-6 items-center justify-center rounded-full bg-[var(--admin-hover)] text-[var(--admin-blue)]">
                     <Icon size={12} strokeWidth={2.2} aria-hidden="true" />
                   </span>
-                  {index < items.length - 1 ? (
+                  {index < recent.length - 1 ? (
                     <span className="w-px flex-1 bg-[var(--admin-line)]" aria-hidden="true" />
                   ) : null}
                 </div>
@@ -179,10 +183,10 @@ export function ClientActivitySection({ items }: { items: AgencyActivityItem[] }
 
 export function ClientProjectsSection({
   client,
-  onCreateProject,
+  createHref,
 }: {
   client: AgencyClient;
-  onCreateProject: () => void;
+  createHref: string;
 }) {
   const projects = useClientProjects(client.id);
   return (
@@ -193,26 +197,24 @@ export function ClientProjectsSection({
       <div className="flex items-start justify-between gap-3">
         <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Projects</h2>
         {projects.length > 0 ? (
-          <button
-            type="button"
+          <Link
+            to={createHref}
             className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-            onClick={onCreateProject}
           >
             Create Project
-          </button>
+          </Link>
         ) : null}
       </div>
       {projects.length === 0 ? (
         <div className="mt-4">
           <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No projects yet</p>
           <p className="mt-1 text-sm text-[var(--admin-muted)]">Create a project to begin working with this client.</p>
-          <button
-            type="button"
+          <Link
+            to={createHref}
             className="mt-4 inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--admin-bright)]"
-            onClick={onCreateProject}
           >
             Create Project
-          </button>
+          </Link>
         </div>
       ) : (
         <ul className="mt-4 space-y-3">

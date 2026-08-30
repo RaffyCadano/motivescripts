@@ -33,10 +33,16 @@ export function AdminProposalNew() {
         Proposals
       </Link>
       <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">New proposal</h1>
+      <p className="max-w-xl text-sm text-[var(--admin-muted)]">
+        Creates a draft for this client. You’ll set the scope, investment, and terms before sending it.
+      </p>
       {clients.length === 0 ? (
         <p className="text-sm text-[var(--admin-muted)]">Add a client before creating a proposal.</p>
       ) : (
-        <form className="max-w-lg space-y-4" onSubmit={onSubmit}>
+        <form
+          className="w-full max-w-lg space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6"
+          onSubmit={onSubmit}
+        >
           <label className="block text-sm font-semibold">
             Client
             <select

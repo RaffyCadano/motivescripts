@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { useAuth } from "@/auth/AuthProvider";
-import { isAgencyRole } from "@/auth/roles";
+import { agencyHomePath, isAgencyRole } from "@/auth/roles";
+import { loadCurrentProfile } from "@/auth/loadProfile";
 import { site } from "@/data/site";
 import {
   invitationErrorMessage,
@@ -184,8 +185,10 @@ export function StaffInviteAcceptPage() {
     try {
       await acceptStaffInvitation(token);
       await refreshProfile();
+      const next = await loadCurrentProfile();
+      const dest = next.status === "ready" ? agencyHomePath(next.profile) : "/admin";
       setScreen("success");
-      window.setTimeout(() => navigate("/admin", { replace: true }), 700);
+      window.setTimeout(() => navigate(dest, { replace: true }), 700);
     } catch (error) {
       const message = error instanceof AgencyDbError ? error.message : invitationErrorMessage("error");
       if (message === invitationErrorMessage("EMAIL_MISMATCH")) {

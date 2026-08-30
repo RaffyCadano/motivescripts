@@ -1,26 +1,18 @@
 import { useMemo, useState } from "react";
-import { ClientFollowUpDialog } from "@/components/admin/clients/ClientFollowUpDialog";
+import { Link } from "react-router-dom";
 import { ProjectFilters } from "@/components/admin/projects/ProjectFilters";
-import { ProjectFormModal } from "@/components/admin/projects/ProjectFormModal";
 import { ProjectSummary } from "@/components/admin/projects/ProjectSummary";
 import { ProjectTable } from "@/components/admin/projects/ProjectTable";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import type { AgencyClient } from "@/data/agencyClients";
-import {
-  filterProjects,
-  type AgencyProjectDraft,
-  type AgencyProjectStatus,
-  type AgencyProjectType,
-} from "@/data/agencyProjects";
+import { filterProjects, type AgencyProjectStatus, type AgencyProjectType } from "@/data/agencyProjects";
 
 export function AdminProjects() {
-  const { projects, clients, addProject } = useLeads();
+  const { projects, clients } = useLeads();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<AgencyProjectStatus | "All">("All");
   const [clientId, setClientId] = useState<string | "All">("All");
   const [type, setType] = useState<AgencyProjectType | "All">("All");
-  const [addOpen, setAddOpen] = useState(false);
-  const [createdId, setCreatedId] = useState<string | null>(null);
 
   const clientsById = useMemo(() => {
     const map = new Map<string, AgencyClient>();
@@ -42,13 +34,12 @@ export function AdminProjects() {
           <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">Projects</h1>
           <p className="mt-1 text-sm text-[var(--admin-muted)]">Manage active client work from planning to launch.</p>
         </div>
-        <button
-          type="button"
+        <Link
+          to="/admin/projects/new"
           className="inline-flex h-10 shrink-0 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--admin-bright)]"
-          onClick={() => setAddOpen(true)}
         >
           + New Project
-        </button>
+        </Link>
       </div>
 
       <ProjectSummary />
@@ -75,24 +66,6 @@ export function AdminProjects() {
         <ProjectTable projects={visible} clientsById={clientsById} />
       )}
 
-      <ProjectFormModal
-        mode="add"
-        open={addOpen}
-        clients={clients}
-        onClose={() => setAddOpen(false)}
-        onSubmit={async (draft: AgencyProjectDraft) => {
-          const id = await addProject(draft);
-          if (id) setCreatedId(id);
-        }}
-      />
-      <ClientFollowUpDialog
-        open={Boolean(createdId)}
-        title="Open this project?"
-        description="The project was saved."
-        to={createdId ? `/admin/projects/${createdId}` : "/admin/projects"}
-        actionLabel="View Project"
-        onClose={() => setCreatedId(null)}
-      />
     </div>
   );
 }

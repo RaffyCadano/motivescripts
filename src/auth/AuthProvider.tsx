@@ -113,18 +113,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setLoading(true);
       setProfileStatus("loading");
-      void loadCurrentProfile().then((result) => {
-        if (seq !== loadSeq.current) return;
-        if (result.status === "ready") {
-          setProfile(result.profile);
-          setProfileStatus("ready");
-          markStaffActive(result.profile);
-        } else {
+      void loadCurrentProfile(nextSession.user.id)
+        .then((result) => {
+          if (seq !== loadSeq.current) return;
+          if (result.status === "ready") {
+            setProfile(result.profile);
+            setProfileStatus("ready");
+            markStaffActive(result.profile);
+          } else {
+            setProfile(null);
+            setProfileStatus(result.status);
+          }
+        })
+        .catch(() => {
+          if (seq !== loadSeq.current) return;
           setProfile(null);
-          setProfileStatus(result.status);
-        }
-        setLoading(false);
-      });
+          setProfileStatus("error");
+        })
+        .finally(() => {
+          if (seq === loadSeq.current) setLoading(false);
+        });
     };
 
     const {
@@ -132,6 +140,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       window.setTimeout(() => applySession(nextSession), 0);
     });
+
+    // The client only emits INITIAL_SESSION to the first subscriber. Strict Mode and
+    // HMR remount this provider, so read the stored session on every mount.
+    void supabase.auth
+      .getSession()
+      .then(({ data }) => applySession(data.session))
+      .catch(() => applySession(null));
 
     return () => {
       loadSeq.current += 1;

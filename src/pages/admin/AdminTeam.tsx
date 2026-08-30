@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission, isActiveAdmin } from "@/auth/permissions";
-import { InviteTeamDialog } from "@/components/admin/team/InviteTeamDialog";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import {
   formatTeamDate,
@@ -14,16 +13,15 @@ import {
   type TeamListRow,
 } from "@/data/team";
 
-type RoleFilter = "All" | "admin" | "staff" | "project_manager" | "sales" | "accounting";
+type RoleFilter = "All" | string;
 type StatusFilter = "All" | "active" | "inactive" | "pending";
 
 export function AdminTeam() {
   const { profile } = useAuth();
-  const { data, status, error, reload } = useTeamDirectory();
+  const { data, status, error } = useTeamDirectory();
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<RoleFilter>("All");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
-  const [inviteOpen, setInviteOpen] = useState(false);
   const canInvite = isActiveAdmin(profile);
   const canView = hasPermission(profile, "team.view");
 
@@ -80,13 +78,12 @@ export function AdminTeam() {
           <p className="mt-1 text-sm text-[var(--admin-muted)]">Invite staff, assign roles, and control workspace access.</p>
         </div>
         {canInvite ? (
-          <button
-            type="button"
+          <Link
+            to="/admin/team/new"
             className="inline-flex h-10 shrink-0 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--admin-bright)]"
-            onClick={() => setInviteOpen(true)}
           >
             Invite Team Member
-          </button>
+          </Link>
         ) : null}
       </div>
 
@@ -117,11 +114,11 @@ export function AdminTeam() {
           className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
         >
           <option value="All">All roles</option>
-          <option value="admin">Admin</option>
-          <option value="staff">Staff</option>
-          <option value="project_manager">Project Manager</option>
-          <option value="sales">Sales</option>
-          <option value="accounting">Accounting</option>
+          {(data?.catalog.templates ?? []).map((item) => (
+            <option key={item.key} value={item.key}>
+              {item.label}
+            </option>
+          ))}
         </select>
         <select
           value={statusFilter}
@@ -160,6 +157,7 @@ export function AdminTeam() {
                   <th className="px-5 py-3 font-semibold">Role</th>
                   <th className="px-5 py-3 font-semibold">Job title</th>
                   <th className="px-5 py-3 font-semibold">Status</th>
+                  <th className="px-5 py-3 font-semibold">Workload</th>
                   <th className="px-5 py-3 font-semibold">Assigned projects</th>
                   <th className="px-5 py-3 font-semibold">Last activity</th>
                   <th className="px-5 py-3 font-semibold">Actions</th>
@@ -173,6 +171,11 @@ export function AdminTeam() {
                     <td className="px-5 py-3.5">{teamRowRole(row)}</td>
                     <td className="px-5 py-3.5">{teamRowTitle(row) || "—"}</td>
                     <td className="px-5 py-3.5">{teamStatusLabel(row)}</td>
+                    <td className="px-5 py-3.5">
+                      {row.kind === "member"
+                        ? `${row.member.activeTaskCount} active · ${row.member.projectAssignments.length} projects`
+                        : "—"}
+                    </td>
                     <td className="px-5 py-3.5">
                       {row.kind === "member"
                         ? row.member.projectAssignments.length
@@ -211,6 +214,11 @@ export function AdminTeam() {
                 </div>
                 <p className="mt-3 text-sm text-[var(--admin-ink)]">{teamRowRole(row)}</p>
                 <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{teamRowTitle(row) || "No job title"}</p>
+                {row.kind === "member" ? (
+                  <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
+                    {row.member.activeTaskCount} active tasks · {row.member.projectAssignments.length} projects
+                  </p>
+                ) : null}
                 <Link
                   to={row.kind === "member" ? `/admin/team/${row.member.id}` : `/admin/team/invite/${row.invitation.id}`}
                   className="mt-4 inline-flex h-9 items-center rounded-lg bg-[var(--admin-blue)] px-3 font-heading text-[12px] font-semibold text-white"
@@ -223,15 +231,6 @@ export function AdminTeam() {
         </>
       )}
 
-      {data ? (
-        <InviteTeamDialog
-          open={inviteOpen}
-          templates={data.catalog.templates}
-          permissions={data.catalog.permissions}
-          onClose={() => setInviteOpen(false)}
-          onSent={() => void reload()}
-        />
-      ) : null}
     </div>
   );
 }

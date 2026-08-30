@@ -3,7 +3,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AuthStatusScreen } from "@/auth/AuthStatusScreen";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAgency } from "@/auth/permissions";
-import { isAgencyRole } from "@/auth/roles";
+import { agencyHomePath, isAgencyRole } from "@/auth/roles";
 
 function AccountNotConfigured() {
   const { signOut } = useAuth();
@@ -121,7 +121,7 @@ export function RequireClient({ children }: { children: ReactNode }) {
   }
 
   if (isAgencyRole(profile.role)) {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to={agencyHomePath(profile)} replace />;
   }
 
   if (profile.role !== "client" || !profile.clientId) {
@@ -138,7 +138,7 @@ export function GuestOnly({ children }: { children: ReactNode }) {
     return <SessionLoading />;
   }
 
-  if (isAgencyRole(profile?.role)) return <Navigate to="/admin" replace />;
+  if (isAgencyRole(profile?.role)) return <Navigate to={agencyHomePath(profile)} replace />;
   if (session) return <Navigate to="/client" replace />;
   return children;
 }

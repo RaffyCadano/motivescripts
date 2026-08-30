@@ -49,17 +49,21 @@ function mapProfile(row: ProfileRow, context: StaffContext | null): AppProfile |
   };
 }
 
-export async function loadCurrentProfile(): Promise<ProfileLoadResult> {
+export async function loadCurrentProfile(userId?: string): Promise<ProfileLoadResult> {
   const supabase = getSupabase();
   if (!supabase) return { status: "error" };
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) return { status: "missing" };
+  let id = userId?.trim() || "";
+  if (!id) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    id = sessionData.session?.user.id ?? "";
+  }
+  if (!id) return { status: "missing" };
 
   const { data, error } = await supabase
     .from("profiles")
     .select("id, email, full_name, role, client_id, created_at, updated_at")
-    .eq("id", userData.user.id)
+    .eq("id", id)
     .maybeSingle();
 
   if (error) return { status: "error" };

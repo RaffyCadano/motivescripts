@@ -59,6 +59,7 @@ function mapMember(
   clients: Map<string, string>,
   projects: Map<string, string>,
   templates: StaffTemplateRow[],
+  taskCounts: Map<string, { active: number; completed: number }>,
 ): TeamMember | null {
   if (profile.role !== "admin" && profile.role !== "staff") return null;
   if (!isStaffTemplateKey(staff.template_key)) return null;
@@ -92,6 +93,8 @@ function mapMember(
         userId: row.user_id,
         label: row.label,
       })),
+    activeTaskCount: taskCounts.get(profile.id)?.active ?? 0,
+    completedTaskCount: taskCounts.get(profile.id)?.completed ?? 0,
   };
 }
 
@@ -125,6 +128,7 @@ export async function fetchTeamDirectory(): Promise<TeamDirectory> {
     templatePermsRes,
     clientsRes,
     projectsRes,
+    tasksRes,
   ] = await Promise.all([
     client.from("profiles").select("id, email, full_name, role, created_at").in("role", ["admin", "staff"]),
     client.from("staff_profiles").select("*"),
@@ -139,6 +143,7 @@ export async function fetchTeamDirectory(): Promise<TeamDirectory> {
     client.from("staff_template_permissions").select("*"),
     client.from("clients").select("id, business_name"),
     client.from("projects").select("id, name"),
+    client.from("tasks").select("assigned_to, status"),
   ]);
 
   if (profilesRes.error) fail("load team", profilesRes.error, "Unable to load the team.");
@@ -169,11 +174,30 @@ export async function fetchTeamDirectory(): Promise<TeamDirectory> {
     role: string;
     created_at: string;
   }[];
+  const taskCounts = new Map<string, { active: number; completed: number }>();
+  for (const row of tasksRes.data ?? []) {
+    if (!row.assigned_to) continue;
+    const current = taskCounts.get(row.assigned_to) ?? { active: 0, completed: 0 };
+    if (row.status === "Completed") current.completed += 1;
+    else current.active += 1;
+    taskCounts.set(row.assigned_to, current);
+  }
+
   const members = profileRows
     .map((profile) => {
       const staff = staffById.get(profile.id);
       if (!staff) return null;
-      return mapMember(profile, staff, grants, clientAssignments, projectAssignments, clients, projects, templates);
+      return mapMember(
+        profile,
+        staff,
+        grants,
+        clientAssignments,
+        projectAssignments,
+        clients,
+        projects,
+        templates,
+        taskCounts,
+      );
     })
     .filter((item): item is TeamMember => Boolean(item));
 
@@ -198,6 +222,25 @@ export async function fetchTeamDirectory(): Promise<TeamDirectory> {
   };
 
   return { members, invitations, catalog };
+}
+
+export async function fetchMyProjectAssignmentIds(userId: string): Promise<string[]> {
+  const client = requireClient();
+  const { data, error } = await client
+    .from("project_staff_assignments")
+    .select("project_id")
+    .eq("user_id", userId);
+  if (error) fail("load assignments", error, "Unable to load your projects.");
+  return (data ?? []).map((row) => row.project_id);
+}
+
+export async function updateMyTaskStatus(taskId: string, status: string): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.rpc("update_my_task_status", {
+    p_task_id: taskId,
+    p_status: status,
+  });
+  if (error) fail("update task", error, "Unable to update this task.");
 }
 
 export async function fetchMemberActivity(userId: string): Promise<{ id: string; message: string; createdAt: string }[]> {
@@ -324,7 +367,7 @@ type StaffInviteBody = {
   invitationId?: string;
 };
 
-async function invokeStaffInvitation(body: StaffInviteBody): Promise<void> {
+async function invokeStaffInvitation(body: StaffInviteBody): Promise<string | undefined> {
   const client = requireClient();
   const { data, error } = await client.functions.invoke("staff-invitation", { body });
 
@@ -348,10 +391,11 @@ async function invokeStaffInvitation(body: StaffInviteBody): Promise<void> {
     throw new AgencyDbError(staffInvitationErrorMessage(code), error);
   }
 
-  const payload = data as { ok?: boolean; error?: string } | null;
+  const payload = data as { ok?: boolean; error?: string; invitationId?: string } | null;
   if (!payload?.ok) {
     throw new AgencyDbError(staffInvitationErrorMessage(payload?.error ?? "error"));
   }
+  return payload.invitationId;
 }
 
 export async function sendStaffInvitation(input: {
@@ -361,8 +405,8 @@ export async function sendStaffInvitation(input: {
   templateKey: StaffTemplateKey;
   permissionCodes?: string[];
   action?: "send" | "resend";
-}): Promise<void> {
-  await invokeStaffInvitation({
+}): Promise<string | undefined> {
+  return invokeStaffInvitation({
     action: input.action ?? "send",
     email: normalizeInviteEmail(input.email),
     fullName: input.fullName.trim(),

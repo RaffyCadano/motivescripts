@@ -104,6 +104,7 @@ export type TaskRow = {
   status: string;
   priority: string;
   assignee: string;
+  assigned_to: string | null;
   position: number;
   due_date: string | null;
   completed_at: string | null;
@@ -227,7 +228,11 @@ export type NotificationType =
   | "payment_recorded"
   | "payment_received"
   | "invoice_paid"
-  | "invoice_overdue";
+  | "invoice_overdue"
+  | "task_assigned"
+  | "task_status_changed"
+  | "project_assigned"
+  | "milestone_updated";
 
 export type NotificationRow = {
   id: string;
@@ -967,6 +972,10 @@ export type Database = {
       };
       update_own_profile: {
         Args: { p_full_name?: string | null; p_job_title?: string | null };
+        Returns: null;
+      };
+      update_my_task_status: {
+        Args: { p_task_id: string; p_status: string };
         Returns: null;
       };
     };

@@ -1,27 +1,20 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { ClientFilters } from "@/components/admin/clients/ClientFilters";
-import { ClientFollowUpDialog } from "@/components/admin/clients/ClientFollowUpDialog";
-import { ClientFormModal } from "@/components/admin/clients/ClientFormModal";
 import { ClientSummary } from "@/components/admin/clients/ClientSummary";
 import { ClientTable } from "@/components/admin/clients/ClientTable";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission } from "@/auth/permissions";
-import {
-  filterAgencyClients,
-  type AgencyClientDraft,
-  type AgencyClientStatus,
-} from "@/data/agencyClients";
+import { filterAgencyClients, type AgencyClientStatus } from "@/data/agencyClients";
 import type { LeadIndustry } from "@/data/leads";
 
 export function AdminClients() {
-  const { clients, addClient } = useLeads();
+  const { clients } = useLeads();
   const { profile } = useAuth();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<AgencyClientStatus | "All">("All");
   const [industry, setIndustry] = useState<LeadIndustry | "All">("All");
-  const [addOpen, setAddOpen] = useState(false);
-  const [createdId, setCreatedId] = useState<string | null>(null);
 
   const visible = useMemo(
     () => filterAgencyClients(clients, query, status, industry),
@@ -37,13 +30,12 @@ export function AdminClients() {
           <p className="mt-1 text-sm text-[var(--admin-muted)]">Manage your clients and their ongoing projects.</p>
         </div>
         {hasPermission(profile, "clients.manage") ? (
-        <button
-          type="button"
-          className="inline-flex h-10 shrink-0 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--admin-bright)]"
-          onClick={() => setAddOpen(true)}
-        >
-          + Add Client
-        </button>
+          <Link
+            to="/admin/clients/new"
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--admin-bright)]"
+          >
+            + Add Client
+          </Link>
         ) : null}
       </div>
 
@@ -58,10 +50,7 @@ export function AdminClients() {
       />
 
       {clients.length === 0 ? (
-        <Empty
-          title="No clients yet"
-          body="Convert a lead or add your first client."
-        />
+        <Empty title="No clients yet" body="Convert a lead or add your first client." />
       ) : visible.length === 0 ? (
         <Empty
           title="No clients match your search."
@@ -70,24 +59,6 @@ export function AdminClients() {
       ) : (
         <ClientTable clients={visible} />
       )}
-
-      <ClientFormModal
-        mode="add"
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onSubmit={async (values) => {
-          const client = await addClient(values as AgencyClientDraft);
-          if (client) setCreatedId(client.id);
-        }}
-      />
-      <ClientFollowUpDialog
-        open={Boolean(createdId)}
-        title="Open this client?"
-        description="The client was added. You can open the new profile now."
-        to={createdId ? `/admin/clients/${createdId}` : "/admin/clients"}
-        actionLabel="View Client"
-        onClose={() => setCreatedId(null)}
-      />
     </div>
   );
 }

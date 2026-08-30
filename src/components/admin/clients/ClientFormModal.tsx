@@ -3,7 +3,6 @@ import { AdminDialog } from "@/components/admin/leads/AdminDialog";
 import {
   clientStatuses,
   type AgencyClient,
-  type AgencyClientDraft,
   type AgencyClientEdits,
   type AgencyClientStatus,
 } from "@/data/agencyClients";
@@ -24,19 +23,18 @@ const fieldClass =
   "mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]";
 
 type ClientFormModalProps = {
-  mode: "add" | "edit";
   open: boolean;
   client?: AgencyClient | null;
   onClose: () => void;
-  onSubmit: (values: AgencyClientDraft | AgencyClientEdits) => void;
+  onSubmit: (values: AgencyClientEdits) => void;
 };
 
-export function ClientFormModal({ mode, open, client, onClose, onSubmit }: ClientFormModalProps) {
+export function ClientFormModal({ open, client, onClose, onSubmit }: ClientFormModalProps) {
   const [draft, setDraft] = useState<AgencyClientEdits>(emptyDraft);
 
   useEffect(() => {
     if (!open) return;
-    if (mode === "edit" && client) {
+    if (client) {
       setDraft({
         contactName: client.contactName,
         businessName: client.businessName,
@@ -50,35 +48,19 @@ export function ClientFormModal({ mode, open, client, onClose, onSubmit }: Clien
       return;
     }
     setDraft(emptyDraft);
-  }, [client, mode, open]);
+  }, [client, open]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (mode === "add") {
-      onSubmit({
-        contactName: draft.contactName,
-        businessName: draft.businessName,
-        email: draft.email,
-        phone: draft.phone,
-        industry: draft.industry,
-        website: draft.website,
-        location: draft.location,
-      });
-    } else {
-      onSubmit(draft);
-    }
+    onSubmit(draft);
     onClose();
   }
 
   return (
     <AdminDialog
       open={open}
-      title={mode === "add" ? "Add Client" : "Edit Client"}
-      description={
-        mode === "add"
-          ? "Create a client record. It is saved to the agency database."
-          : "Update this client’s contact and business details."
-      }
+      title="Edit Client"
+      description="Update this client’s contact and business details."
       onClose={onClose}
     >
       <form className="space-y-3" onSubmit={handleSubmit}>
@@ -135,27 +117,23 @@ export function ClientFormModal({ mode, open, client, onClose, onSubmit }: Clien
           value={draft.location}
           onChange={(value) => setDraft((current) => ({ ...current, location: value }))}
         />
-        {mode === "edit" ? (
-          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-            Status
-            <select
-              required
-              className={fieldClass}
-              value={draft.status}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, status: event.target.value as AgencyClientStatus }))
-              }
-            >
-              {clientStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : (
-          <p className="text-[12px] text-[var(--admin-muted)]">New clients start with status Active.</p>
-        )}
+        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+          Status
+          <select
+            required
+            className={fieldClass}
+            value={draft.status}
+            onChange={(event) =>
+              setDraft((current) => ({ ...current, status: event.target.value as AgencyClientStatus }))
+            }
+          >
+            {clientStatuses.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="flex justify-end gap-2 pt-2">
           <button
             type="button"
@@ -168,7 +146,7 @@ export function ClientFormModal({ mode, open, client, onClose, onSubmit }: Clien
             type="submit"
             className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--admin-bright)]"
           >
-            {mode === "add" ? "Add Client" : "Save changes"}
+            Save changes
           </button>
         </div>
       </form>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AddLeadModal } from "@/components/admin/leads/AddLeadModal";
+import { Link } from "react-router-dom";
 import { LeadFilters } from "@/components/admin/leads/LeadFilters";
 import { LeadSummary } from "@/components/admin/leads/LeadSummary";
 import { LeadTable } from "@/components/admin/leads/LeadTable";
@@ -9,12 +9,11 @@ import { hasPermission } from "@/auth/permissions";
 import { filterLeads, type LeadIndustry, type LeadStatus } from "@/data/leads";
 
 export function AdminLeads() {
-  const { leads, addLead } = useLeads();
+  const { leads } = useLeads();
   const { profile } = useAuth();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<LeadStatus | "All">("All");
   const [industry, setIndustry] = useState<LeadIndustry | "All">("All");
-  const [addOpen, setAddOpen] = useState(false);
 
   const visible = useMemo(() => filterLeads(leads, query, status, industry), [industry, leads, query, status]);
   const searching = query.trim().length > 0 || status !== "All" || industry !== "All";
@@ -27,13 +26,12 @@ export function AdminLeads() {
           <p className="mt-1 text-sm text-[var(--admin-muted)]">Manage project inquiries and potential clients.</p>
         </div>
         {hasPermission(profile, "leads.manage") ? (
-        <button
-          type="button"
-          className="inline-flex h-10 shrink-0 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--admin-bright)]"
-          onClick={() => setAddOpen(true)}
-        >
-          + Add Lead
-        </button>
+          <Link
+            to="/admin/leads/new"
+            className="inline-flex h-10 shrink-0 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--admin-bright)]"
+          >
+            + Add Lead
+          </Link>
         ) : null}
       </div>
 
@@ -57,8 +55,6 @@ export function AdminLeads() {
       ) : (
         <LeadTable leads={visible} />
       )}
-
-      <AddLeadModal open={addOpen} onClose={() => setAddOpen(false)} onSubmit={addLead} />
     </div>
   );
 }

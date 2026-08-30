@@ -3,7 +3,17 @@ import { corsHeadersForRequest } from "../_shared/cors.ts";
 
 const INVITE_TTL_DAYS = 7;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const TEMPLATE_KEYS = new Set(["admin", "staff", "project_manager", "sales", "accounting"]);
+const TEMPLATE_KEYS = new Set([
+  "admin",
+  "staff",
+  "project_manager",
+  "sales",
+  "accounting",
+  "developer",
+  "designer",
+  "content_writer",
+  "team_member",
+]);
 const PERMISSION_PATTERN = /^[a-z]+\.[a-z]+$/;
 
 type Action = "send" | "resend" | "revoke";

@@ -3,6 +3,7 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthRedirectHandler } from "@/auth/AuthRedirectHandler";
 import { GuestOnly, RequireAdmin, RequireClient } from "@/auth/guards";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { TeamLayout } from "@/components/team/TeamLayout";
 import { LeadsOutlet } from "@/components/admin/leads/LeadsOutlet";
 import { LeadsProvider } from "@/components/admin/leads/LeadsProvider";
 import { ClientLayout } from "@/components/client/ClientLayout";
@@ -10,18 +11,21 @@ import { Layout } from "@/components/Layout";
 import { routerBasename } from "@/lib/appUrl";
 import { AboutPage } from "@/pages/About";
 import { AdminClientDetails } from "@/pages/admin/AdminClientDetails";
+import { AdminClientNew } from "@/pages/admin/AdminClientNew";
 import { AdminClients } from "@/pages/admin/AdminClients";
 import { AdminContractDetails } from "@/pages/admin/AdminContractDetails";
 import { AdminContractNew } from "@/pages/admin/AdminContractNew";
 import { AdminContracts } from "@/pages/admin/AdminContracts";
 import { AdminFiles } from "@/pages/admin/AdminFiles";
 import { AdminLeadDetails } from "@/pages/admin/AdminLeadDetails";
+import { AdminLeadNew } from "@/pages/admin/AdminLeadNew";
 import { AdminLeads } from "@/pages/admin/AdminLeads";
 import { AdminMessages } from "@/pages/admin/AdminMessages";
 import { AdminOverview } from "@/pages/admin/AdminOverview";
 import { AdminPlaceholder } from "@/pages/admin/AdminPlaceholder";
 import { AdminSettings } from "@/pages/admin/AdminSettings";
 import { AdminProjectDetails } from "@/pages/admin/AdminProjectDetails";
+import { AdminProjectNew } from "@/pages/admin/AdminProjectNew";
 import { AdminProjects } from "@/pages/admin/AdminProjects";
 import { AdminProposalDetails } from "@/pages/admin/AdminProposalDetails";
 import { AdminProposalNew } from "@/pages/admin/AdminProposalNew";
@@ -32,6 +36,7 @@ import { AdminInvoices } from "@/pages/admin/AdminInvoices";
 import { AdminTeam } from "@/pages/admin/AdminTeam";
 import { AdminTeamDetails } from "@/pages/admin/AdminTeamDetails";
 import { AdminTeamInviteDetails } from "@/pages/admin/AdminTeamInviteDetails";
+import { AdminTeamInviteNew } from "@/pages/admin/AdminTeamInviteNew";
 import { AuthCallbackPage } from "@/pages/AuthCallback";
 import { ClientApprovals } from "@/pages/client/ClientApprovals";
 import { ClientContractDetails } from "@/pages/client/ClientContractDetails";
@@ -60,6 +65,12 @@ import { NotFoundPage } from "@/pages/NotFound";
 import { ProcessPage } from "@/pages/Process";
 import { ServicesPage } from "@/pages/Services";
 import { WorkPage } from "@/pages/Work";
+import { TeamDashboard } from "@/pages/team/TeamDashboard";
+import { TeamFiles } from "@/pages/team/TeamFiles";
+import { TeamMessages } from "@/pages/team/TeamMessages";
+import { TeamProfile } from "@/pages/team/TeamProfile";
+import { TeamProjects } from "@/pages/team/TeamProjects";
+import { TeamTasks } from "@/pages/team/TeamTasks";
 import { MessagingProvider } from "@/providers/MessagingProvider";
 
 const adminUnavailablePaths = ["tasks", "notifications", "activity"] as const;
@@ -83,10 +94,13 @@ export default function App() {
             <Route element={<LeadsOutlet />}>
               <Route index element={<AdminOverview />} />
               <Route path="leads" element={<AdminLeads />} />
+              <Route path="leads/new" element={<AdminLeadNew />} />
               <Route path="leads/:id" element={<AdminLeadDetails />} />
               <Route path="clients" element={<AdminClients />} />
+              <Route path="clients/new" element={<AdminClientNew />} />
               <Route path="clients/:id" element={<AdminClientDetails />} />
               <Route path="projects" element={<AdminProjects />} />
+              <Route path="projects/new" element={<AdminProjectNew />} />
               <Route path="projects/:id" element={<AdminProjectDetails />} />
               <Route path="files" element={<AdminFiles />} />
               <Route path="messages" element={<AdminMessages />} />
@@ -101,6 +115,7 @@ export default function App() {
               <Route path="invoices/new" element={<AdminInvoiceNew />} />
               <Route path="invoices/:id" element={<AdminInvoiceDetails />} />
               <Route path="team" element={<AdminTeam />} />
+              <Route path="team/new" element={<AdminTeamInviteNew />} />
               <Route path="team/invite/:invitationId" element={<AdminTeamInviteDetails />} />
               <Route path="team/:id" element={<AdminTeamDetails />} />
               <Route path="settings" element={<AdminSettings />} />
@@ -109,6 +124,23 @@ export default function App() {
                 <Route key={path} path={path} element={<AdminPlaceholder />} />
               ))}
             </Route>
+          </Route>
+          <Route
+            path="team"
+            element={
+              <RequireAdmin>
+                <TeamLayout />
+              </RequireAdmin>
+            }
+          >
+            <Route index element={<Navigate to="/team/dashboard" replace />} />
+            <Route path="dashboard" element={<TeamDashboard />} />
+            <Route path="tasks" element={<TeamTasks />} />
+            <Route path="projects" element={<TeamProjects />} />
+            <Route path="messages" element={<TeamMessages />} />
+            <Route path="messages/:conversationId" element={<TeamMessages />} />
+            <Route path="files" element={<TeamFiles />} />
+            <Route path="profile" element={<TeamProfile />} />
           </Route>
           <Route
             path="client"

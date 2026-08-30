@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { Ban, CopyPlus, Download, Receipt, RotateCcw, Save, Send, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
-import { AdminInfoTip } from "@/components/admin/AdminInfoTip";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { ContractDocumentView } from "@/components/documents/ContractDocumentView";
+import { ContractDraftForm, emptyContractDraft, type ContractDraftFormValue } from "@/components/documents/ContractDraftForm";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
+import { UnsavedChangesDialog, useUnsavedNavigation } from "@/components/documents/UnsavedChangesDialog";
 import {
   calendarDateOrNull,
   calendarDateValue,
@@ -29,8 +30,9 @@ import {
 } from "@/data/documentsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 
-const fieldClass =
-  "mt-1.5 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 py-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)] disabled:bg-[var(--admin-bg)]";
+function formKey(value: ContractDraftFormValue) {
+  return JSON.stringify(value);
+}
 
 export function AdminContractDetails() {
   const { id } = useParams();
@@ -44,30 +46,18 @@ export function AdminContractDetails() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [form, setForm] = useState({
-    title: "",
-    parties: "",
-    scope: "",
-    responsibilities: "",
-    timeline: "",
-    compensation: "",
-    paymentTerms: "",
-    confidentiality: "",
-    intellectualProperty: "",
-    revisionsPolicy: "",
-    termination: "",
-    generalTerms: "",
-    effectiveDate: "",
-    expiresAt: "",
-    adminNotes: "",
-  });
+  const [form, setForm] = useState<ContractDraftFormValue>(emptyContractDraft);
+  const [baseline, setBaseline] = useState(formKey(emptyContractDraft()));
+  const [allowLeave, setAllowLeave] = useState(false);
+  const dirty = !allowLeave && formKey(form) !== baseline;
+  const blocker = useUnsavedNavigation(dirty);
 
   async function load() {
     if (!id) return;
     const next = await fetchContractDetail(id);
     setDetail(next);
     if (next) {
-      setForm({
+      const nextForm: ContractDraftFormValue = {
         title: next.working.title,
         parties: next.working.parties,
         scope: next.working.scope,
@@ -85,7 +75,9 @@ export function AdminContractDetails() {
           calendarDateValue(next.working.expires_at) ||
           (next.working.status === "draft" ? defaultProposalValidUntil(undefined, DEFAULT_CONTRACT_VALID_DAYS) : ""),
         adminNotes: next.adminNotes,
-      });
+      };
+      setForm(nextForm);
+      setBaseline(formKey(nextForm));
     }
   }
 
@@ -290,51 +282,7 @@ export function AdminContractDetails() {
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
         <form className="space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-          <p className="text-[12px] text-[var(--admin-muted)]">
-            Starting copy is a template for workflow only. Edit it before sending. This is not legal advice.
-          </p>
-          <Field label="Title" value={form.title} disabled={!isDraft} onChange={(value) => setForm({ ...form, title: value })} />
-          <Area label="Parties" value={form.parties} disabled={!isDraft} onChange={(value) => setForm({ ...form, parties: value })} />
-          <Area label="Scope" value={form.scope} disabled={!isDraft} onChange={(value) => setForm({ ...form, scope: value })} />
-          <Area label="Responsibilities" value={form.responsibilities} disabled={!isDraft} onChange={(value) => setForm({ ...form, responsibilities: value })} />
-          <Area label="Timeline" value={form.timeline} disabled={!isDraft} onChange={(value) => setForm({ ...form, timeline: value })} />
-          <Area label="Compensation" value={form.compensation} disabled={!isDraft} onChange={(value) => setForm({ ...form, compensation: value })} />
-          <Area label="Payment terms" value={form.paymentTerms} disabled={!isDraft} onChange={(value) => setForm({ ...form, paymentTerms: value })} />
-          <Area label="Confidentiality" value={form.confidentiality} disabled={!isDraft} onChange={(value) => setForm({ ...form, confidentiality: value })} />
-          <Area label="Intellectual property" value={form.intellectualProperty} disabled={!isDraft} onChange={(value) => setForm({ ...form, intellectualProperty: value })} />
-          <Area label="Revisions" value={form.revisionsPolicy} disabled={!isDraft} onChange={(value) => setForm({ ...form, revisionsPolicy: value })} />
-          <Area label="Termination" value={form.termination} disabled={!isDraft} onChange={(value) => setForm({ ...form, termination: value })} />
-          <Area label="General terms" value={form.generalTerms} disabled={!isDraft} onChange={(value) => setForm({ ...form, generalTerms: value })} />
-          <div>
-            <p className="flex items-center gap-1.5 text-sm font-semibold">
-              <label htmlFor="contract-effective-date">Effective date</label>
-              <AdminInfoTip text="The calendar day this agreement starts. Saved as that day, not a timestamp." />
-            </p>
-            <input
-              id="contract-effective-date"
-              type="date"
-              disabled={!isDraft}
-              value={form.effectiveDate}
-              onChange={(event) => setForm({ ...form, effectiveDate: event.target.value })}
-              className={fieldClass}
-            />
-          </div>
-          <div>
-            <p className="flex items-center gap-1.5 text-sm font-semibold">
-              <label htmlFor="contract-valid-until">Valid until</label>
-              <AdminInfoTip text="Last day the client can accept this revision. Defaults to 30 days. After that it expires. This is not the end of the project." />
-            </p>
-            <input
-              id="contract-valid-until"
-              type="date"
-              disabled={!isDraft}
-              min={form.effectiveDate || undefined}
-              value={form.expiresAt}
-              onChange={(event) => setForm({ ...form, expiresAt: event.target.value })}
-              className={fieldClass}
-            />
-          </div>
-          <Area label="Internal notes (not shown to the client)" value={form.adminNotes} disabled={!isDraft} onChange={(value) => setForm({ ...form, adminNotes: value })} />
+          <ContractDraftForm value={form} disabled={!isDraft} onChange={setForm} />
         </form>
         <ContractDocumentView
           document={{
@@ -430,6 +378,7 @@ export function AdminContractDetails() {
             await deleteContract(current.contract.id);
             notify("Contract deleted.");
             setDeleteOpen(false);
+            setAllowLeave(true);
             await reload();
             navigate("/admin/contracts");
           } catch (error) {
@@ -438,24 +387,26 @@ export function AdminContractDetails() {
           }
         }}
       />
+      <UnsavedChangesDialog
+        open={blocker.state === "blocked"}
+        busy={busy}
+        description="You have unsaved contract edits. Keep your changes, keep editing, or leave without saving."
+        onKeepEditing={() => blocker.reset?.()}
+        onDiscard={() => blocker.proceed?.()}
+        onKeepChanges={async () => {
+          if (busy) return;
+          setBusy(true);
+          try {
+            await persist();
+            setBaseline(formKey(form));
+            notify("Contract saved.");
+            blocker.proceed?.();
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "Unable to save this contract.");
+            setBusy(false);
+          }
+        }}
+      />
     </div>
-  );
-}
-
-function Field(props: { label: string; value: string; disabled?: boolean; onChange: (value: string) => void }) {
-  return (
-    <label className="block text-sm font-semibold">
-      {props.label}
-      <input value={props.value} disabled={props.disabled} onChange={(event) => props.onChange(event.target.value)} className={fieldClass} />
-    </label>
-  );
-}
-
-function Area(props: { label: string; value: string; disabled?: boolean; onChange: (value: string) => void }) {
-  return (
-    <label className="block text-sm font-semibold">
-      {props.label}
-      <textarea value={props.value} disabled={props.disabled} rows={4} onChange={(event) => props.onChange(event.target.value)} className={fieldClass} />
-    </label>
   );
 }

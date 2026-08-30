@@ -1,27 +1,26 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, CheckSquare, ChevronDown, Globe, LogOut, Menu, PanelLeft, Settings } from "lucide-react";
+import { Bell, ChevronDown, Globe, LayoutDashboard, LogOut, Menu, PanelLeft, UserRound } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
-import { isActiveAdmin } from "@/auth/permissions";
 import { userDisplay } from "@/auth/userDisplay";
 import { NotificationPanel } from "@/components/messaging/NotificationPanel";
-import { getAdminPageMeta } from "@/data/adminNav";
+import { canOpenAdminWorkspace, getTeamPageMeta } from "@/data/teamNav";
 import { cn } from "@/lib/cn";
 import { useMessaging } from "@/providers/MessagingProvider";
 
-type AdminHeaderProps = {
+type TeamHeaderProps = {
   collapsed: boolean;
   mobileOpen: boolean;
   onToggleCollapsed: () => void;
   onOpenMobile: () => void;
 };
 
-export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMobile }: AdminHeaderProps) {
+export function TeamHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMobile }: TeamHeaderProps) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   const display = user ? userDisplay(user, profile) : { name: "Account", initials: "A", role: "User" };
-  const page = getAdminPageMeta(pathname);
+  const page = getTeamPageMeta(pathname);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -30,6 +29,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
   const notesId = useId();
   const { notifications, unreadNotificationCount, loadStatus, markNotificationRead, markAllNotificationsRead } =
     useMessaging();
+  const showAdmin = canOpenAdminWorkspace(profile);
 
   useEffect(() => {
     setMenuOpen(false);
@@ -70,7 +70,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
           type="button"
           className="inline-flex size-9 items-center justify-center rounded-lg text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] lg:hidden"
           aria-label="Open menu"
-          aria-controls="admin-sidebar"
+          aria-controls="team-sidebar"
           aria-expanded={mobileOpen}
           onClick={onOpenMobile}
         >
@@ -85,7 +85,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
           <PanelLeft size={18} strokeWidth={1.75} aria-hidden="true" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-medium text-[var(--admin-muted)]">Admin</p>
+          <p className="truncate text-[11px] font-medium text-[var(--admin-muted)]">Team</p>
           <p className="truncate font-heading text-base font-semibold tracking-tight text-[var(--admin-ink)]">
             {page.label}
           </p>
@@ -115,7 +115,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
           </button>
           <NotificationPanel
             tone="admin"
-            role="admin"
+            role="staff"
             open={notesOpen}
             id={notesId}
             notifications={notifications}
@@ -166,15 +166,24 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
               role="menu"
               className="absolute right-0 z-50 mt-1.5 w-48 overflow-hidden rounded-xl border border-[var(--admin-line)] bg-[var(--admin-card)] py-1 shadow-[0_12px_32px_rgb(7_17_31_/_0.08)]"
             >
-              {profile?.role === "staff" ? (
+              <Link
+                role="menuitem"
+                to="/team/profile"
+                className="flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                onClick={() => setMenuOpen(false)}
+              >
+                <UserRound size={15} strokeWidth={1.75} aria-hidden="true" />
+                Profile
+              </Link>
+              {showAdmin ? (
                 <Link
                   role="menuitem"
-                  to="/team/dashboard"
+                  to="/admin"
                   className="flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
                   onClick={() => setMenuOpen(false)}
                 >
-                  <CheckSquare size={15} strokeWidth={1.75} aria-hidden="true" />
-                  My work
+                  <LayoutDashboard size={15} strokeWidth={1.75} aria-hidden="true" />
+                  Admin
                 </Link>
               ) : null}
               <Link
@@ -186,17 +195,6 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
                 <Globe size={15} strokeWidth={1.75} aria-hidden="true" />
                 View website
               </Link>
-              {isActiveAdmin(profile) ? (
-                <Link
-                  role="menuitem"
-                  to="/admin/settings"
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <Settings size={15} strokeWidth={1.75} aria-hidden="true" />
-                  Settings
-                </Link>
-              ) : null}
               <button
                 type="button"
                 role="menuitem"

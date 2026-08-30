@@ -33,7 +33,7 @@ export function userDisplay(user: User, profile?: AppProfile | null): UserDispla
   return {
     name,
     initials: initialsFromName(name),
-    role: displayRoleLabel(profile?.role),
+    role: profile?.jobTitle.trim() || displayRoleLabel(profile?.role),
     email,
   };
 }

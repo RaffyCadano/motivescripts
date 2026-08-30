@@ -24,7 +24,6 @@ import { proposalDraftOverrides, type AgencySettings } from "@/data/settings";
 import { fetchAgencySettings } from "@/data/settingsRepository";
 import {
   cancelProposal,
-  createContract,
   deleteProposal,
   createProposalRevision,
   discardProposalDraft,
@@ -319,22 +318,7 @@ export function AdminProposalDetails() {
       id: "create-contract",
       label: "Create Contract",
       icon: FileSignature,
-      disabled: busy,
-      onSelect: async () => {
-        setBusy(true);
-        try {
-          const contractId = await createContract({
-            clientId: current.proposal.client_id,
-            projectId: current.proposal.project_id,
-            proposalId: current.proposal.id,
-          });
-          notify("Contract created.");
-          navigate(`/admin/contracts/${contractId}`);
-        } catch (error) {
-          notify(error instanceof AgencyDbError ? error.message : "Unable to create a contract.");
-          setBusy(false);
-        }
-      },
+      href: `/admin/contracts/new?client=${current.proposal.client_id}&proposal=${current.proposal.id}${current.proposal.project_id ? `&project=${current.proposal.project_id}` : ""}`,
     });
   }
   if (!isDraft && status !== "cancelled") {
