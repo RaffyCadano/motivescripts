@@ -4,15 +4,19 @@ import { ClientActionCard } from "@/components/client/ClientActionCard";
 import { ClientActivity } from "@/components/client/ClientActivity";
 import { ClientDocumentAttention } from "@/components/client/ClientDocumentAttention";
 import { ClientFiles } from "@/components/client/ClientFiles";
+import { ClientPreProjectDashboard } from "@/components/client/ClientPreProjectDashboard";
 import { ClientProjectCard } from "@/components/client/ClientProjectCard";
+import { ClientStatusBadge } from "@/components/client/ClientStatusBadge";
 import { ClientTasks } from "@/components/client/ClientTasks";
 import { ClientTimeline } from "@/components/client/ClientTimeline";
+import { usePortalOnboarding } from "@/components/client/usePortalOnboarding";
 import { usePortalIdentity, usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { currentVersion, versionLabel } from "@/data/files";
 import { formatProjectDate } from "@/data/agencyProjects";
 import { awaitingReview, canClientReview } from "@/data/review";
 import { greetingForHour } from "@/data/clientPortal";
 import { fetchClientPortalWelcome } from "@/data/settingsRepository";
+import { isProductionProject } from "@/data/preProject";
 import { clientTasksFromProject, timelineStagesFromProject } from "@/data/clientProjectProgress";
 import { useMessaging } from "@/providers/MessagingProvider";
 
@@ -20,6 +24,9 @@ export function ClientOverview() {
   const identity = usePortalIdentity();
   const greeting = useMemo(() => greetingForHour(new Date().getHours(), identity.firstName), [identity.firstName]);
   const [welcome, setWelcome] = useState("");
+  const { project, files } = usePortalSession();
+  const onboarding = usePortalOnboarding();
+  const { unreadMessageCount, conversations } = useMessaging();
 
   useEffect(() => {
     let active = true;
@@ -32,8 +39,7 @@ export function ClientOverview() {
       active = false;
     };
   }, []);
-  const { project, files } = usePortalSession();
-  const { unreadMessageCount, conversations } = useMessaging();
+
   const waiting = awaitingReview(files.filter((item) => item.status !== "Archived"));
   const first = waiting[0];
   const current = first ? currentVersion(first) : null;
@@ -45,33 +51,61 @@ export function ClientOverview() {
     time: formatProjectDate(item.createdAt),
     icon: (item.icon === "review" ? "approval" : item.icon === "file" ? "upload" : "status") as "upload" | "approval" | "update" | "status",
   }));
+  const showOnboarding =
+    !isProductionProject(project?.status) && onboarding.steps.some((step) => step.state === "current");
+
+  if (!project) {
+    return (
+      <div className="w-full space-y-6">
+        <header>
+          <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight md:text-3xl">{greeting}</h1>
+          <p className="mt-1 text-sm text-[var(--client-muted)]">
+            {onboarding.flags.hasScope
+              ? "Thanks — we’ll use your answers to prepare your project and proposal."
+              : "Start by telling us what you need on the website."}
+          </p>
+        </header>
+        {onboarding.loading ? (
+          <div className="h-72 animate-pulse rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)]" />
+        ) : (
+          <ClientPreProjectDashboard
+            firstName={identity.firstName}
+            phaseLabel={onboarding.phaseLabel}
+            phaseTone={onboarding.phaseTone}
+            steps={onboarding.steps}
+            projectName={null}
+            hasProject={false}
+          />
+        )}
+        <MessagesLine unread={unreadMessageCount} latestSubject={conversations[0]?.subject} />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-6">
-      <header>
-        <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight md:text-3xl">{greeting}</h1>
-        <p className="mt-1 text-sm text-[var(--client-muted)]">
-          {welcome || "Here’s the latest on your project."}
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight md:text-3xl">{greeting}</h1>
+          <p className="mt-1 text-sm text-[var(--client-muted)]">{welcome || "Here’s the latest on your project."}</p>
+        </div>
+        <ClientStatusBadge label={onboarding.phaseLabel} tone={onboarding.phaseTone} />
       </header>
+
+      {showOnboarding && !onboarding.loading ? (
+        <ClientPreProjectDashboard
+          firstName={identity.firstName}
+          phaseLabel={onboarding.phaseLabel}
+          phaseTone={onboarding.phaseTone}
+          steps={onboarding.steps}
+          projectName={onboarding.flags.projectName}
+          hasProject
+        />
+      ) : null}
 
       <ClientProjectCard />
       <ClientDocumentAttention />
-      {unreadMessageCount > 0 ? (
-        <p className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] px-4 py-3 text-sm text-[var(--client-ink)]">
-          You have {unreadMessageCount} unread message{unreadMessageCount === 1 ? "" : "s"}.{" "}
-          <Link to="/client/messages" className="font-heading font-semibold text-[var(--client-blue)] hover:underline">
-            Open messages
-          </Link>
-        </p>
-      ) : conversations.length > 0 ? (
-        <p className="text-sm text-[var(--client-muted)]">
-          Latest conversation: {conversations[0]?.subject}.{" "}
-          <Link to="/client/messages" className="font-heading font-semibold text-[var(--client-blue)] hover:underline">
-            View messages
-          </Link>
-        </p>
-      ) : null}
+      <MessagesLine unread={unreadMessageCount} latestSubject={conversations[0]?.subject} />
       {stages.length > 0 ? <ClientTimeline stages={stages} /> : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(16rem,0.85fr)]">
@@ -98,4 +132,28 @@ export function ClientOverview() {
       </div>
     </div>
   );
+}
+
+function MessagesLine({ unread, latestSubject }: { unread: number; latestSubject?: string }) {
+  if (unread > 0) {
+    return (
+      <p className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] px-4 py-3 text-sm text-[var(--client-ink)]">
+        You have {unread} unread message{unread === 1 ? "" : "s"}.{" "}
+        <Link to="/client/messages" className="font-heading font-semibold text-[var(--client-blue)] hover:underline">
+          Open messages
+        </Link>
+      </p>
+    );
+  }
+  if (latestSubject) {
+    return (
+      <p className="text-sm text-[var(--client-muted)]">
+        Latest conversation: {latestSubject}.{" "}
+        <Link to="/client/messages" className="font-heading font-semibold text-[var(--client-blue)] hover:underline">
+          View messages
+        </Link>
+      </p>
+    );
+  }
+  return null;
 }

@@ -107,7 +107,7 @@ export function ClientLayout() {
                   ? "Loading messages…"
                   : pathname.includes("files") || pathname.includes("feedback") || pathname.includes("approvals")
                     ? "Loading files…"
-                    : "Loading project…"
+                    : "Loading portal…"
               }
               onRetry={() => void reload()}
             />

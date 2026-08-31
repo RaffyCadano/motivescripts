@@ -25,6 +25,7 @@ import { AdminOverview } from "@/pages/admin/AdminOverview";
 import { AdminPlaceholder } from "@/pages/admin/AdminPlaceholder";
 import { AdminSettings } from "@/pages/admin/AdminSettings";
 import { AdminProjectDetails } from "@/pages/admin/AdminProjectDetails";
+import { AdminProjectEdit } from "@/pages/admin/AdminProjectEdit";
 import { AdminProjectNew } from "@/pages/admin/AdminProjectNew";
 import { AdminProjects } from "@/pages/admin/AdminProjects";
 import { AdminProposalDetails } from "@/pages/admin/AdminProposalDetails";
@@ -46,6 +47,7 @@ import { ClientFilesPage } from "@/pages/client/ClientFilesPage";
 import { ClientMessages } from "@/pages/client/ClientMessages";
 import { ClientOverview } from "@/pages/client/ClientOverview";
 import { ClientProject } from "@/pages/client/ClientProject";
+import { ClientScope } from "@/pages/client/ClientScope";
 import { ClientProposalDetails } from "@/pages/client/ClientProposalDetails";
 import { ClientProposals } from "@/pages/client/ClientProposals";
 import { ClientInvoiceDetails } from "@/pages/client/ClientInvoiceDetails";
@@ -100,6 +102,7 @@ export default function App() {
               <Route path="clients/:id" element={<AdminClientDetails />} />
               <Route path="projects" element={<AdminProjects />} />
               <Route path="projects/new" element={<AdminProjectNew />} />
+              <Route path="projects/:id/edit" element={<AdminProjectEdit />} />
               <Route path="projects/:id" element={<AdminProjectDetails />} />
               <Route path="files" element={<AdminFiles />} />
               <Route path="messages" element={<AdminMessages />} />
@@ -150,6 +153,7 @@ export default function App() {
             }
           >
             <Route index element={<ClientOverview />} />
+            <Route path="scope" element={<ClientScope />} />
             <Route path="project" element={<ClientProject />} />
             <Route path="project/:projectId" element={<ClientProject />} />
             <Route path="files" element={<ClientFilesPage />} />

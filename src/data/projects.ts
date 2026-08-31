@@ -12,7 +12,7 @@ export type Project = {
   summary: string;
   concept: true;
   accent: string;
-  preview: "trees" | "landscape" | "cleaning" | "auto";
+  preview: "trees" | "landscape" | "cleaning" | "auto" | "electric";
   challenge: string;
   approach: string[];
   outcome: string;
@@ -21,7 +21,7 @@ export type Project = {
 export const projects: Project[] = [
   {
     slug: "koala-trees",
-    name: "Koala Trees Services",
+    name: "Live Oak Tree Co.",
     industry: "Tree Services",
     services: "Website Design / Development",
     summary:
@@ -98,6 +98,26 @@ export const projects: Project[] = [
     ],
     outcome:
       "A compact auto-service site built for phone use and quick scheduling. Shown here as a concept example.",
+  },
+  {
+    slug: "redline-electric",
+    name: "Redline Electric",
+    industry: "Electrical",
+    services: "Website Design / Development",
+    summary:
+      "A direct site for a residential electrician — emergency calls, scheduled work, and a clear way to request a visit.",
+    concept: true,
+    accent: "#d4a000",
+    preview: "electric",
+    challenge:
+      "Electricians get two kinds of visitors: someone with a dead panel tonight, and someone planning a charger or remodel. The site has to serve both without burying the phone number.",
+    approach: [
+      "Put emergency contact and hours on the first screen.",
+      "Separate same-day repairs from planned work like panels and EV chargers.",
+      "Keep the layout bold and easy to scan on a phone at night.",
+    ],
+    outcome:
+      "A high-contrast electrician website built around calling and booking a visit. Shown here as a concept example.",
   },
 ];
 

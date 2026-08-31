@@ -22,6 +22,23 @@ function AccountNotConfigured() {
   );
 }
 
+function InvitationNotFinished() {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  return (
+    <AuthStatusScreen
+      title="Finish your invitation first."
+      body="Your portal isn’t ready until you accept the invitation. Open the email from MotiveScripts and continue from that link. The login page can’t complete this step."
+      actionLabel="Sign out"
+      showLoginLink
+      onAction={() => {
+        void signOut().then(() => navigate("/login", { replace: true }));
+      }}
+    />
+  );
+}
+
 function AccountDeactivated() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
@@ -122,6 +139,10 @@ export function RequireClient({ children }: { children: ReactNode }) {
 
   if (isAgencyRole(profile.role)) {
     return <Navigate to={agencyHomePath(profile)} replace />;
+  }
+
+  if (profile.role === "client" && !profile.clientId) {
+    return <InvitationNotFinished />;
   }
 
   if (profile.role !== "client" || !profile.clientId) {

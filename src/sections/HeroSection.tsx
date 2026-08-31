@@ -4,8 +4,8 @@ import { HeroVisual } from "@/components/HeroVisual";
 
 export function HeroSection() {
   return (
-    <section className="relative pb-20 pt-10 md:pb-28 md:pt-16 lg:pt-20">
-      <div className="container-wide relative grid items-center gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16">
+    <section className="relative pb-16 pt-10 sm:pb-20 sm:pt-14 md:pb-40 md:pt-28 lg:pb-44 lg:pt-36">
+      <div className="container-wide relative grid items-center gap-8 md:gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16">
         <AnimateIn>
           <h1 className="max-w-[14ch] text-[2.35rem] sm:text-[3.15rem] lg:text-[4.05rem]">
             Websites built for businesses <span className="gradient-text">ready to grow.</span>

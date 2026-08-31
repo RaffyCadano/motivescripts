@@ -11,7 +11,6 @@ import { ProjectActivityPanel } from "@/components/admin/projects/ProjectSupport
 import { ProjectApprovalsPanel } from "@/components/admin/projects/ProjectApprovalsPanel";
 import { ProjectFeedbackPanel } from "@/components/admin/projects/ProjectFeedbackPanel";
 import { ProjectFilesPanel } from "@/components/admin/projects/ProjectFilesPanel";
-import { ProjectFormModal } from "@/components/admin/projects/ProjectFormModal";
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
 import { ProjectOverview } from "@/components/admin/projects/ProjectOverview";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
@@ -55,8 +54,6 @@ export function AdminProjectDetails() {
   const [searchParams, setSearchParams] = useSearchParams();
   const match = useAgencyProject(id);
   const {
-    clients,
-    updateProject,
     setProjectStatus,
     archiveProject,
     deleteProject,
@@ -73,7 +70,6 @@ export function AdminProjectDetails() {
   const tabParam = searchParams.get("tab");
   const tab: TabId = isTabId(tabParam) ? tabParam : "overview";
   const selectedFileId = searchParams.get("file");
-  const [editOpen, setEditOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -167,7 +163,7 @@ export function AdminProjectDetails() {
           <AdminActionsMenu
             ariaLabel={`Actions for ${project.name}`}
             items={[
-              { id: "edit", label: "Edit Project", icon: PencilLine, onSelect: () => setEditOpen(true) },
+              { id: "edit", label: "Edit Project", icon: PencilLine, href: `/admin/projects/${project.id}/edit` },
               ...(client
                 ? [
                     {
@@ -324,14 +320,6 @@ export function AdminProjectDetails() {
         </aside>
       </div>
 
-      <ProjectFormModal
-        mode="edit"
-        open={editOpen}
-        clients={clients}
-        project={project}
-        onClose={() => setEditOpen(false)}
-        onSubmit={(draft) => updateProject(project.id, draft)}
-      />
       <ProjectStatusModal
         project={statusOpen ? project : null}
         onClose={() => setStatusOpen(false)}

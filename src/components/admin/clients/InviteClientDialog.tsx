@@ -65,7 +65,7 @@ export function InviteClientDialog({
       description={
         mode === "resend"
           ? `Send a new invitation email for ${client.businessName}. The previous pending link will stop working.`
-          : `Invite this person to the client portal for ${client.businessName}. They’ll receive a secure email link.`
+          : `Invite this person to the client portal for ${client.businessName}. They’ll receive a secure email link. After they accept, they fill out the scope form before you create a project.`
       }
       onClose={onClose}
     >

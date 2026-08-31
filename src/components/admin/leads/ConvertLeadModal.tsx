@@ -18,7 +18,7 @@ export function ConvertLeadModal({ lead, onClose, onConfirm }: ConvertLeadModalP
       description={
         alreadyConverted
           ? "This lead already has a client record. A second client will not be created."
-          : "This will create a client record using the lead’s contact and business information."
+          : "This will create a client record using the lead’s contact and business information. Invite them next so they can fill out the scope form before you create a project."
       }
       onClose={onClose}
     >

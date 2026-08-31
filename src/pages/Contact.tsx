@@ -131,12 +131,14 @@ export function ContactPage() {
         <aside className="h-fit rounded-[var(--radius-lg)] border border-[var(--color-line)] p-6">
           <h2 className="text-lg">Prefer email?</h2>
           <p className="mt-3 text-sm text-muted">
-            Send a note to{" "}
-            <a className="text-cyan" href={`mailto:${site.email}`}>
-              {site.email}
-            </a>
-            . Include the business name, the type of work, and what you want the website to do.
+            Send a note with the business name, the type of work, and what you want the website to do.
           </p>
+          <a
+            className="mt-4 inline-block whitespace-nowrap text-sm text-cyan"
+            href={`mailto:${site.email}`}
+          >
+            {site.email}
+          </a>
         </aside>
         </AnimateIn>
       </div>

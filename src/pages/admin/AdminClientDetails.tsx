@@ -15,6 +15,8 @@ import {
   ClientProjectsSection,
 } from "@/components/admin/clients/ClientProfileSections";
 import { ClientPortalAccountSection } from "@/components/admin/clients/ClientPortalAccountSection";
+import { ClientPreProjectStatus } from "@/components/admin/clients/ClientPreProjectStatus";
+import { ClientScopeBriefSection } from "@/components/admin/clients/ClientScopeBriefSection";
 import { ClientDocumentsSection } from "@/components/admin/clients/ClientDocumentsSection";
 import { ClientInvoicesSection } from "@/components/admin/clients/ClientInvoicesSection";
 import { StaffAssignmentCard } from "@/components/admin/team/StaffAssignmentCard";
@@ -199,11 +201,13 @@ export function AdminClientDetails() {
                 onChanged={() => void team.reload()}
               />
             ) : null}
+            <ClientPreProjectStatus client={client} />
             <ClientPortalAccountSection
               client={client}
               inviteOpen={inviteOpen}
               onInviteOpenChange={setInviteOpen}
             />
+            <ClientScopeBriefSection client={client} />
             <ClientBusinessSection client={client} onEdit={() => setEditOpen(true)} />
             <ClientNotesSection client={client} onAddNote={() => setNoteOpen(true)} />
           </>

@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { BrandMark } from "@/components/BrandMark";
 import { ClientNavItem } from "@/components/client/ClientNavItem";
-import { clientMainNav, clientSettingsNav } from "@/data/clientNav";
-import { usePortalIdentity } from "@/components/admin/leads/LeadsProvider";
+import { clientMainNavFor, clientSettingsNav } from "@/data/clientNav";
+import { usePortalIdentity, usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { cn } from "@/lib/cn";
 
 type ClientSidebarProps = {
@@ -14,6 +14,9 @@ type ClientSidebarProps = {
 
 export function ClientSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigate }: ClientSidebarProps) {
   const identity = usePortalIdentity();
+  const { project } = usePortalSession();
+  const mainNav = clientMainNavFor(Boolean(project));
+  const portalLabel = project ? "Client Portal" : "Pre-Project";
   return (
     <aside
       id="client-sidebar"
@@ -44,14 +47,14 @@ export function ClientSidebar({ collapsed, mobileOpen, inertWhenClosed, onNaviga
           <BrandMark className="h-7 w-auto" decorative />
           <span className={cn("min-w-0", collapsed && "lg:hidden")}>
             <span className="block font-heading text-sm font-extrabold tracking-tight">MotiveScripts</span>
-            <span className="block text-[11px] font-medium text-[var(--client-muted)]">Client Portal</span>
+            <span className="block text-[11px] font-medium text-[var(--client-muted)]">{portalLabel}</span>
           </span>
         </Link>
       </div>
 
-      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label="Project">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label={project ? "Project" : "Pre-project"}>
         <div className="flex flex-col gap-0.5">
-          {clientMainNav.map((item) => (
+          {mainNav.map((item) => (
             <ClientNavItem key={item.href} item={item} collapsed={collapsed} onNavigate={onNavigate} />
           ))}
         </div>
@@ -77,7 +80,7 @@ export function ClientSidebar({ collapsed, mobileOpen, inertWhenClosed, onNaviga
             <p className="truncate font-heading text-[13px] font-semibold text-[var(--client-ink)]">
               {identity.businessName}
             </p>
-            <p className="truncate text-[11px] text-[var(--client-muted)]">Client</p>
+            <p className="truncate text-[11px] text-[var(--client-muted)]">{project ? "Client" : "Pre-Project"}</p>
           </div>
         </div>
       </div>

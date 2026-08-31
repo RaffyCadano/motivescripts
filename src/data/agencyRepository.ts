@@ -410,7 +410,7 @@ export async function updateClientFields(
 }
 
 const defaultMilestones = [
-  { name: "Discovery", description: "Scope, goals, and content gathering." },
+  { name: "Discovery", description: "Kickoff and collect logo, photos, and written content after they accept." },
   { name: "Design", description: "Layout, visual system, and page structure." },
   { name: "Development", description: "Build, integrate, and refine the site." },
   { name: "Client Review", description: "Client feedback, revisions, and approval." },

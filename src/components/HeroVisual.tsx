@@ -13,7 +13,7 @@ export function HeroVisual() {
 
       <div className="geo-drift pointer-events-none absolute bottom-16 left-[2%] z-[1] h-px w-24 bg-[linear-gradient(90deg,transparent,#00C8FF)] md:w-32" />
 
-      <div className="relative z-10 px-7 pt-12 md:px-10 md:pt-14">
+      <div className="relative z-10 px-3 pt-2 sm:px-7 sm:pt-8 md:px-10 md:pt-14">
         <BrowserFrame url="yoursite.com" className="shadow-[var(--shadow-card),var(--shadow-glow)]">
           <MiniPage>
             <HeroSiteMock />

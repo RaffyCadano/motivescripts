@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BadgeCheck,
+  ClipboardList,
   FileSignature,
   FileText,
   Files,
@@ -15,6 +16,7 @@ import type { ClientIconName } from "@/data/clientNav";
 
 export const clientIcons: Record<ClientIconName, LucideIcon> = {
   overview: Home,
+  scope: ClipboardList,
   project: FolderKanban,
   files: Files,
   feedback: MessageSquareQuote,

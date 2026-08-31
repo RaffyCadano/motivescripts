@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
@@ -8,10 +8,15 @@ import {
   type AgencyProjectStatus,
   type AgencyProjectType,
 } from "@/data/agencyProjects";
+import { projectDescriptionFromBrief, suggestedProjectName } from "@/data/scopeBriefs";
+import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 const inputClass =
   "mt-1.5 h-10 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm font-normal outline-none focus:border-[rgb(0_80_240_/_0.45)]";
+
+const defaultProjectDescription =
+  "Design and develop a professional website for this business, including the agreed pages, a mobile-friendly layout, and a clear way for visitors to get in touch.";
 
 export function AdminProjectNew() {
   const { clients, addProject, notify } = useLeads();
@@ -23,10 +28,44 @@ export function AdminProjectNew() {
   const [clientId, setClientId] = useState(lockedClient ? presetClient : (clients[0]?.id ?? ""));
   const [type, setType] = useState<AgencyProjectType>("Website");
   const [status, setStatus] = useState<AgencyProjectStatus>("Planning");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(defaultProjectDescription);
+  const [fromBrief, setFromBrief] = useState(false);
   const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 10));
   const [targetLaunchDate, setTargetLaunchDate] = useState("");
   const [busy, setBusy] = useState(false);
+  const nameTouched = useRef(false);
+  const descriptionTouched = useRef(false);
+
+  useEffect(() => {
+    if (!clientId) return;
+    let active = true;
+    void fetchClientScopeBrief(clientId)
+      .then((brief) => {
+        if (!active) return;
+        const client = clients.find((item) => item.id === clientId);
+        if (!nameTouched.current && client) {
+          setName(suggestedProjectName(client.businessName));
+        }
+        if (!descriptionTouched.current) {
+          if (brief) {
+            setDescription(projectDescriptionFromBrief(brief));
+            setFromBrief(true);
+          } else {
+            setDescription(defaultProjectDescription);
+            setFromBrief(false);
+          }
+        }
+      })
+      .catch(() => {
+        if (active && !descriptionTouched.current) {
+          setDescription(defaultProjectDescription);
+          setFromBrief(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [clientId, clients]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -73,7 +112,15 @@ export function AdminProjectNew() {
         >
           <label className="block text-sm font-semibold">
             Project name
-            <input required value={name} onChange={(event) => setName(event.target.value)} className={inputClass} />
+            <input
+              required
+              value={name}
+              onChange={(event) => {
+                nameTouched.current = true;
+                setName(event.target.value);
+              }}
+              className={inputClass}
+            />
           </label>
           <label className="block text-sm font-semibold">
             Client
@@ -81,7 +128,11 @@ export function AdminProjectNew() {
               required
               disabled={lockedClient}
               value={clientId}
-              onChange={(event) => setClientId(event.target.value)}
+              onChange={(event) => {
+                nameTouched.current = false;
+                descriptionTouched.current = false;
+                setClientId(event.target.value);
+              }}
               className={inputClass}
             >
               {clients.map((client) => (
@@ -129,9 +180,18 @@ export function AdminProjectNew() {
               required
               rows={3}
               value={description}
-              onChange={(event) => setDescription(event.target.value)}
+              onChange={(event) => {
+                descriptionTouched.current = true;
+                setFromBrief(false);
+                setDescription(event.target.value);
+              }}
               className="mt-1.5 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 py-2 text-sm font-normal outline-none focus:border-[rgb(0_80_240_/_0.45)]"
             />
+            {fromBrief ? (
+              <span className="mt-1.5 block text-[12px] font-normal text-[var(--admin-muted)]">
+                Filled from their scope form. Edit anything that needs to change.
+              </span>
+            ) : null}
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm font-semibold">

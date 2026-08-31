@@ -532,6 +532,16 @@ export type StaffInvitationPreviewRow = {
   role_label: string | null;
 };
 
+export type ClientScopeBriefRow = {
+  id: string;
+  client_id: string;
+  selected_pages: string[];
+  goal: string;
+  submitted_at: string;
+  updated_at: string;
+  updated_by: string | null;
+};
+
 export type AgencySettingsRow = {
   id: number;
   agency_name: string;
@@ -673,6 +683,10 @@ export type Database = {
       staff_permission_catalog: Table<StaffPermissionCatalogRow>;
       staff_template_permissions: Table<StaffTemplatePermissionRow>;
       agency_settings: Table<AgencySettingsRow>;
+      client_scope_briefs: Table<
+        ClientScopeBriefRow,
+        Partial<ClientScopeBriefRow> & { client_id: string; selected_pages: string[]; goal: string }
+      >;
     };
     Views: Record<string, never>;
     Functions: {

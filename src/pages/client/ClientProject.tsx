@@ -1,8 +1,12 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ClientActionCard } from "@/components/client/ClientActionCard";
 import { ClientProjectCard } from "@/components/client/ClientProjectCard";
+import { ClientScopePrompt } from "@/components/client/ClientScopePrompt";
 import { ClientTimeline } from "@/components/client/ClientTimeline";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
+import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
+import type { ClientScopeBrief } from "@/data/scopeBriefs";
 import { currentMilestone } from "@/data/agencyProjects";
 import { timelineStagesFromProject } from "@/data/clientProjectProgress";
 import { currentVersion, versionLabel } from "@/data/files";
@@ -11,9 +15,23 @@ import { awaitingReview, canClientReview } from "@/data/review";
 export function ClientProject() {
   const { projectId } = useParams();
   const session = usePortalSession();
+  const [brief, setBrief] = useState<ClientScopeBrief | null>(null);
   const project = projectId
     ? (session.projects.find((item) => item.id === projectId) ?? null)
     : session.project;
+
+  useEffect(() => {
+    if (!session.client?.id || project) return;
+    let active = true;
+    void fetchClientScopeBrief(session.client.id)
+      .then((row) => {
+        if (active) setBrief(row);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [session.client?.id, project]);
   const files = project ? session.files.filter((item) => item.projectId === project.id) : [];
   const waiting = awaitingReview(files.filter((item) => item.status !== "Archived"));
   const first = waiting[0];
@@ -37,11 +55,12 @@ export function ClientProject() {
       <header>
         <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight md:text-3xl">My Project</h1>
         <p className="mt-1 text-sm text-[var(--client-muted)]">
-          {project?.name ?? "Your website"}
+          {project?.name ?? (brief ? "Your project will appear here after we set it up." : "Tell us what you need first.")}
           {milestone ? ` · Current milestone: ${milestone.name}` : ""}
         </p>
       </header>
 
+      <ClientScopePrompt brief={brief} hasProject={Boolean(project)} />
       <ClientProjectCard project={project} />
       {project ? (
         <p>
@@ -55,20 +74,22 @@ export function ClientProject() {
       ) : null}
       {stages.length > 0 ? <ClientTimeline stages={stages} /> : null}
 
-      <ClientActionCard
-        action={
-          first && current
-            ? {
-                id: first.id,
-                title: `${first.name} ${versionLabel(current.versionNumber)} is ready for review.`,
-                body: "Review the current version and approve it or request changes.",
-                fileId: first.id,
-                reviewHref: `/client/files/${first.id}`,
-                canApprove: canClientReview(first),
-              }
-            : null
-        }
-      />
+      {project ? (
+        <ClientActionCard
+          action={
+            first && current
+              ? {
+                  id: first.id,
+                  title: `${first.name} ${versionLabel(current.versionNumber)} is ready for review.`,
+                  body: "Review the current version and approve it or request changes.",
+                  fileId: first.id,
+                  reviewHref: `/client/files/${first.id}`,
+                  canApprove: canClientReview(first),
+                }
+              : null
+          }
+        />
+      ) : null}
 
       {waiting.length > 1 ? (
         <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">

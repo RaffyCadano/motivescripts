@@ -208,7 +208,9 @@ export function ClientProjectsSection({
       {projects.length === 0 ? (
         <div className="mt-4">
           <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No projects yet</p>
-          <p className="mt-1 text-sm text-[var(--admin-muted)]">Create a project to begin working with this client.</p>
+          <p className="mt-1 text-sm text-[var(--admin-muted)]">
+            Create a project after the scope form is in, or start one now if you already know the brief.
+          </p>
           <Link
             to={createHref}
             className="mt-4 inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--admin-bright)]"
