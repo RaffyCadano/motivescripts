@@ -8,9 +8,7 @@ export function ClientPaymentCancelled() {
         Back to invoice
       </Link>
       <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight">Payment cancelled</h1>
-      <p className="text-sm text-[var(--client-muted)]">
-        No charge was completed. You can return to the invoice and try Pay Online again when you’re ready.
-      </p>
+      <p className="text-sm text-[var(--client-muted)]">Payment was cancelled. Your invoice has not been paid.</p>
       {id ? (
         <Link
           to={`/client/invoices/${id}`}

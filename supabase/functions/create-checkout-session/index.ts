@@ -1,17 +1,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.7.0";
-import { corsHeadersForRequest } from "../_shared/cors.ts";
+import { corsHeadersForRequest, publicSiteBaseUrl } from "../_shared/cors.ts";
 
 const STRIPE_MIN_CENTS = 50;
 
 type RequestBody = {
   invoiceId?: string;
-  amountCents?: number;
 };
-
-function siteUrl(): string {
-  return (Deno.env.get("PUBLIC_SITE_URL") ?? Deno.env.get("SITE_URL") ?? "").replace(/\/$/, "");
-}
 
 Deno.serve(async (req) => {
   const corsHeaders = corsHeadersForRequest(req);
@@ -70,31 +65,23 @@ Deno.serve(async (req) => {
     return fail("not_allowed", 403);
   }
 
-  const { data: invoice } = await admin
-    .from("invoices")
-    .select("id, client_id, invoice_number, status, currency, amount_due_cents, amount_paid_cents, total_cents")
-    .eq("id", invoiceId)
-    .maybeSingle();
+  let invoice = (
+    await admin
+      .from("invoices")
+      .select(
+        "id, client_id, project_id, invoice_number, status, currency, amount_due_cents, amount_paid_cents, total_cents",
+      )
+      .eq("id", invoiceId)
+      .maybeSingle()
+  ).data;
   if (!invoice || invoice.client_id !== profile.client_id) {
     return fail("not_allowed", 403);
   }
   if (invoice.status === "draft" || invoice.status === "cancelled" || invoice.status === "paid") {
     return fail("not_payable");
   }
-  const due = Number(invoice.amount_due_cents ?? 0);
-  if (due <= 0) return fail("not_payable");
 
-  let charge = due;
-  if (body.amountCents != null) {
-    const requested = Math.floor(Number(body.amountCents));
-    if (!Number.isFinite(requested) || requested <= 0 || requested > due) {
-      return fail("invalid_amount");
-    }
-    charge = requested;
-  }
-  if (charge < STRIPE_MIN_CENTS) return fail("amount_too_small");
-
-  const origin = siteUrl();
+  const origin = publicSiteBaseUrl(req);
   if (!origin) return fail("missing_site_url");
 
   const { data: clientRow } = await admin
@@ -106,6 +93,44 @@ Deno.serve(async (req) => {
   const stripe = new Stripe(stripeSecret, {
     httpClient: Stripe.createFetchHttpClient(),
   });
+
+  const { data: openSessions } = await admin
+    .from("stripe_checkout_sessions")
+    .select("stripe_checkout_session_id")
+    .eq("invoice_id", invoice.id)
+    .eq("status", "open");
+  for (const row of openSessions ?? []) {
+    try {
+      await stripe.checkout.sessions.expire(row.stripe_checkout_session_id);
+    } catch {
+      /* already complete or expired */
+    }
+  }
+  if ((openSessions ?? []).length > 0) {
+    await admin
+      .from("stripe_checkout_sessions")
+      .update({ status: "cancelled" })
+      .eq("invoice_id", invoice.id)
+      .eq("status", "open");
+  }
+
+  const { data: fresh } = await admin
+    .from("invoices")
+    .select(
+      "id, client_id, project_id, invoice_number, status, currency, amount_due_cents, amount_paid_cents, total_cents",
+    )
+    .eq("id", invoiceId)
+    .maybeSingle();
+  if (!fresh || fresh.client_id !== profile.client_id) {
+    return fail("not_allowed", 403);
+  }
+  if (fresh.status === "draft" || fresh.status === "cancelled" || fresh.status === "paid") {
+    return fail("not_payable");
+  }
+  const charge = Number(fresh.amount_due_cents ?? 0);
+  if (charge <= 0) return fail("not_payable");
+  if (charge < STRIPE_MIN_CENTS) return fail("amount_too_small");
+  invoice = fresh;
 
   let customerId: string | undefined;
   const { data: mapping } = await admin
@@ -157,6 +182,8 @@ Deno.serve(async (req) => {
       metadata: {
         invoice_id: invoice.id,
         client_id: profile.client_id,
+        project_id: invoice.project_id ?? "",
+        invoice_number: invoice.invoice_number,
         user_id: user.id,
         amount_cents: String(charge),
       },
@@ -164,6 +191,8 @@ Deno.serve(async (req) => {
         metadata: {
           invoice_id: invoice.id,
           client_id: profile.client_id,
+          project_id: invoice.project_id ?? "",
+          invoice_number: invoice.invoice_number,
         },
       },
       success_url: `${origin}/client/invoices/${invoice.id}/payment-success?session_id={CHECKOUT_SESSION_ID}`,

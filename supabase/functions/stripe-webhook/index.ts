@@ -106,7 +106,12 @@ Deno.serve(async (req) => {
     .select("invoice_id, client_id, amount_cents")
     .eq("stripe_checkout_session_id", session.id)
     .maybeSingle();
-  if (!stored || stored.invoice_id !== invoiceId) {
+  const metadataClientId = session.metadata?.client_id;
+  if (
+    !stored ||
+    stored.invoice_id !== invoiceId ||
+    (metadataClientId && metadataClientId !== stored.client_id)
+  ) {
     console.error("stripe-webhook session not found or invoice mismatch");
     return json({ ok: false, error: "invalid_session" }, 400);
   }

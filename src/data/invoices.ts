@@ -235,7 +235,7 @@ export function adminInvoiceStatusLabel(status: EffectiveInvoiceStatus): string 
     case "partially_paid":
       return "Partially paid";
     case "paid":
-      return "Paid";
+      return "Paid ✓";
     case "overdue":
       return "Overdue";
     case "cancelled":
@@ -244,7 +244,8 @@ export function adminInvoiceStatusLabel(status: EffectiveInvoiceStatus): string 
 }
 
 export function clientInvoiceStatusLabel(status: EffectiveInvoiceStatus): string {
-  if (status === "sent" || status === "viewed") return "Awaiting payment";
+  if (status === "sent" || status === "viewed") return "Unpaid";
+  if (status === "paid") return "Paid ✓";
   return adminInvoiceStatusLabel(status);
 }
 
@@ -304,7 +305,11 @@ export function invoiceErrorMessage(code: string): string {
     case "email_unavailable":
       return "Invoice email isn’t available yet. Deploy the document-email function.";
     case "missing_site_url":
-      return "Email isn’t configured yet. Set PUBLIC_SITE_URL on the Edge Function.";
+      return "The site URL isn’t configured yet. Set PUBLIC_SITE_URL on the Edge Function.";
+    case "checkout_unavailable":
+      return "Online payment isn’t available yet. Deploy the create-checkout-session function.";
+    case "server_error":
+      return "Online payment isn’t configured yet. Set the Stripe test secrets on the Edge Function, then try again.";
     case "not_allowed":
       return "You don’t have permission to do that.";
     case "pdf_failed":

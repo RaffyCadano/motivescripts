@@ -82,7 +82,7 @@ export function ClientInvoices() {
                           to={`/client/invoices/${row.id}`}
                           className="font-heading text-[12px] font-semibold text-[var(--client-blue)] hover:underline"
                         >
-                          Pay Online
+                          Pay Invoice
                         </Link>
                       ) : (
                         <Link
@@ -115,7 +115,7 @@ export function ClientInvoices() {
                   </Link>
                   {canPayInvoiceOnline(row.effectiveStatus, row.amountDueCents) ? (
                     <Link to={`/client/invoices/${row.id}`} className="inline-flex font-heading text-sm font-semibold text-[var(--client-blue)]">
-                      Pay Online
+                      Pay Invoice
                     </Link>
                   ) : null}
                 </div>

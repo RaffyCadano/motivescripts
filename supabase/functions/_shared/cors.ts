@@ -10,6 +10,13 @@ export function configuredSiteOrigin(): string | null {
   }
 }
 
+/** Full public site base, including a GitHub Pages path such as /motivescripts. */
+export function publicSiteBaseUrl(req?: Request): string {
+  const origin = req?.headers.get("Origin") ?? "";
+  if (origin && LOCAL_ORIGIN.test(origin)) return origin.replace(/\/$/, "");
+  return (Deno.env.get("PUBLIC_SITE_URL") ?? Deno.env.get("SITE_URL") ?? "").trim().replace(/\/$/, "");
+}
+
 export function allowOrigin(req: Request): string {
   const configured = configuredSiteOrigin();
   const origin = req.headers.get("Origin") ?? "";

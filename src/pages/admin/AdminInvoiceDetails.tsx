@@ -601,7 +601,13 @@ export function AdminInvoiceDetails() {
                     <td className="py-3 pr-4">{paymentStatusLabel(payment.reversed_at)}</td>
                     <td className="py-3 pr-4">{payment.reference || "—"}</td>
                     <td className="py-3 pr-4 font-mono text-[12px]">
-                      {payment.stripe_payment_intent_id || "—"}
+                      {payment.stripe_payment_intent_id || payment.stripe_checkout_session_id ? (
+                        <span className="block max-w-[14rem] truncate" title={[payment.stripe_payment_intent_id, payment.stripe_checkout_session_id].filter(Boolean).join(" · ")}>
+                          {payment.stripe_payment_intent_id || payment.stripe_checkout_session_id}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
                     </td>
                     <td className="py-3 pr-4">{payment.notes || "—"}</td>
                     <td className="py-3 pr-4">{payment.recorded_by_label || "—"}</td>

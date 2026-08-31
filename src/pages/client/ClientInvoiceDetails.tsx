@@ -9,10 +9,9 @@ import {
   formatInvoiceDate,
   paymentMethodLabel,
   paymentStatusLabel,
-  STRIPE_MIN_CHARGE_CENTS,
 } from "@/data/invoices";
 import { fetchInvoiceDetail, downloadInvoicePdf, markInvoiceViewed, type InvoiceDetail } from "@/data/invoicesRepository";
-import { centsInputValue, formatMoneyFromCents, parseDollarsToCents } from "@/data/money";
+import { formatMoneyFromCents } from "@/data/money";
 import { createCheckoutSession } from "@/data/stripePaymentsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 
@@ -25,7 +24,6 @@ export function ClientInvoiceDetails() {
   const [error, setError] = useState<string | null>(null);
   const [payBusy, setPayBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
-  const [payAmount, setPayAmount] = useState(0);
 
   async function load() {
     if (!id) return;
@@ -35,7 +33,6 @@ export function ClientInvoiceDetails() {
       setContractNumber(null);
       return;
     }
-    setPayAmount(next.invoice.amount_due_cents);
     if (next.invoice.contract_id) {
       const contracts = await fetchClientContractSummaries().catch(() => []);
       setContractNumber(contracts.find((row) => row.id === next.invoice.contract_id)?.number ?? null);
@@ -147,36 +144,25 @@ export function ClientInvoiceDetails() {
 
       {payable ? (
         <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5">
-          <h2 className="font-heading text-sm font-semibold">Pay online</h2>
+          <h2 className="font-heading text-sm font-semibold">Pay Invoice</h2>
           <p className="mt-2 text-sm text-[var(--client-muted)]">
-            Amount due {money(detail.invoice.amount_due_cents)}. Payment method: Online via Stripe. Card details are entered on
-            Stripe’s checkout page — MotiveScripts never sees your card number.
+            {detail.invoice.amount_paid_cents > 0 ? (
+              <>
+                Paid {money(detail.invoice.amount_paid_cents)}. Remaining {money(detail.invoice.amount_due_cents)}.
+              </>
+            ) : (
+              <>Amount due: {money(detail.invoice.amount_due_cents)}</>
+            )}{" "}
+            Card details are entered on Stripe’s checkout page — MotiveScripts never sees your card number.
           </p>
-          <label className="mt-4 block text-sm font-semibold">
-            Amount to pay
-            <input
-              inputMode="decimal"
-              value={centsInputValue(payAmount)}
-              onChange={(event) => {
-                const cents = parseDollarsToCents(event.target.value);
-                if (cents == null) return;
-                setPayAmount(cents);
-              }}
-              className="mt-1.5 h-10 w-full max-w-xs rounded-lg border border-[var(--client-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-            />
-          </label>
           <button
             type="button"
-            disabled={
-              payBusy ||
-              payAmount > detail.invoice.amount_due_cents ||
-              payAmount < STRIPE_MIN_CHARGE_CENTS
-            }
+            disabled={payBusy}
             className="mt-4 inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-5 font-heading text-sm font-semibold text-white disabled:opacity-60"
             onClick={async () => {
               setPayBusy(true);
               try {
-                const url = await createCheckoutSession(detail.invoice.id, payAmount);
+                const url = await createCheckoutSession(detail.invoice.id);
                 window.location.assign(url);
               } catch (caught) {
                 notify(caught instanceof AgencyDbError ? caught.message : "Unable to start online payment.");
@@ -184,13 +170,15 @@ export function ClientInvoiceDetails() {
               }
             }}
           >
-            {payBusy ? "Redirecting…" : "Pay Online"}
+            {payBusy ? "Redirecting…" : "Pay Invoice"}
           </button>
-          {payAmount > detail.invoice.amount_due_cents ? (
-            <p className="mt-2 text-[12px] text-[var(--client-muted)]">Amount cannot exceed the amount due.</p>
-          ) : payAmount > 0 && payAmount < STRIPE_MIN_CHARGE_CENTS ? (
-            <p className="mt-2 text-[12px] text-[var(--client-muted)]">Online payments must be at least $0.50.</p>
-          ) : null}
+        </section>
+      ) : detail.effectiveStatus === "paid" ? (
+        <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5">
+          <h2 className="font-heading text-sm font-semibold">Paid ✓</h2>
+          <p className="mt-2 text-sm text-[var(--client-muted)]">
+            {money(0)} due. Paid {money(detail.invoice.amount_paid_cents)}.
+          </p>
         </section>
       ) : null}
 
