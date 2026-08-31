@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
-import { adminStatusLabel, awaitingResponse, type DocumentStatus } from "@/data/documents";
+import { adminStatusLabel, awaitingResponse, contractWorkflowLabel, type DocumentStatus } from "@/data/documents";
 import { fetchContractSummaries, type ContractSummary } from "@/data/documentsRepository";
 import { formatClientDate } from "@/data/agencyClients";
 import { AgencyDbError } from "@/lib/dbErrors";
@@ -169,7 +169,16 @@ export function AdminContracts() {
                     <td className="px-5 py-3.5">{projects.find((item) => item.id === row.projectId)?.name ?? "—"}</td>
                     <td className="px-5 py-3.5">{row.title || "Agreement"}</td>
                     <td className="px-5 py-3.5">
-                      <DocumentStatusBadge status={row.effectiveStatus} />
+                      <div>
+                        <DocumentStatusBadge status={row.effectiveStatus} />
+                        <p className="mt-1 text-[11px] text-[var(--admin-muted)]">
+                          {contractWorkflowLabel({
+                            status: row.effectiveStatus,
+                            agencySigned: row.agencySigned,
+                            signedCopyUploaded: Boolean(row.signedCopy),
+                          })}
+                        </p>
+                      </div>
                     </td>
                     <td className="px-5 py-3.5 text-[var(--admin-muted)]">{formatClientDate(row.createdAt)}</td>
                     <td className="px-5 py-3.5">
@@ -192,6 +201,13 @@ export function AdminContracts() {
                   </div>
                   <DocumentStatusBadge status={row.effectiveStatus} />
                 </div>
+                <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
+                  {contractWorkflowLabel({
+                    status: row.effectiveStatus,
+                    agencySigned: row.agencySigned,
+                    signedCopyUploaded: Boolean(row.signedCopy),
+                  })}
+                </p>
                 <Link to={`/admin/contracts/${row.id}`} className="mt-3 inline-flex font-heading text-[12px] font-semibold text-[var(--admin-blue)]">
                   View
                 </Link>

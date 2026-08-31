@@ -3,7 +3,6 @@ import { Archive, MessageSquare, Pause, PencilLine, RefreshCw, Trash2 } from "lu
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AdminActionsMenu } from "@/components/admin/AdminActionsMenu";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
-import { ProgressBar } from "@/components/admin/ProgressBar";
 import { ConfirmArchiveProjectModal } from "@/components/admin/projects/ConfirmArchiveProjectModal";
 import { ConfirmRemoveMilestoneModal } from "@/components/admin/projects/ConfirmRemoveMilestoneModal";
 import { MilestoneFormModal } from "@/components/admin/projects/MilestoneFormModal";
@@ -20,11 +19,7 @@ import { TaskFormModal } from "@/components/admin/projects/TaskFormModal";
 import { useAgencyProject, useLeads } from "@/components/admin/leads/LeadsProvider";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import {
-  calculateProjectProgress,
-  currentMilestone,
   formatProjectDay,
-  milestoneTaskCounts,
-  taskCounts,
   type AgencyMilestone,
   type AgencyMilestoneDraft,
   type AgencyProjectStatus,
@@ -125,10 +120,6 @@ export function AdminProjectDetails() {
   }
 
   const { project, client } = match;
-  const progress = calculateProjectProgress(project);
-  const counts = taskCounts(project);
-  const milestone = currentMilestone(project);
-  const milestoneCounts = milestone ? milestoneTaskCounts(project, milestone.id) : null;
 
   return (
     <div className="space-y-6">
@@ -154,9 +145,6 @@ export function AdminProjectDetails() {
             </div>
             <p className="mt-1 text-sm text-[var(--admin-muted)]">
               {project.type}
-              <span aria-hidden="true"> · </span>
-              Progress {progress}%
-              {counts.total > 0 ? ` · ${counts.completed} of ${counts.total} tasks` : ""}
               {project.archived ? " · Archived" : ""}
             </p>
           </div>
@@ -263,31 +251,6 @@ export function AdminProjectDetails() {
         </div>
 
         <aside className="space-y-4">
-          <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-            <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Progress</h2>
-            <p className="mt-3 font-heading text-3xl font-semibold text-[var(--admin-ink)]">{progress}%</p>
-            <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
-              {counts.total === 0 ? "Add tasks to start tracking project progress." : `${counts.completed} of ${counts.total} tasks completed`}
-            </p>
-            <div className="mt-3">
-              <ProgressBar value={progress} />
-            </div>
-          </section>
-          <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-            <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Current milestone</h2>
-            {milestone ? (
-              <>
-                <p className="mt-3 font-heading text-sm font-semibold text-[var(--admin-ink)]">{milestone.name}</p>
-                <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
-                  {milestoneCounts && milestoneCounts.total > 0
-                    ? `${milestoneCounts.completed} of ${milestoneCounts.total} tasks completed`
-                    : "No tasks yet"}
-                </p>
-              </>
-            ) : (
-              <p className="mt-3 text-sm text-[var(--admin-muted)]">No milestones yet</p>
-            )}
-          </section>
           <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
             <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Details</h2>
             <dl className="mt-4 space-y-3 text-sm">

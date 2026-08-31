@@ -270,11 +270,16 @@ export function projectDescriptionFromBrief(brief: ClientScopeBrief): string {
   return lines.join("\n");
 }
 
-export function proposalScopeFromBrief(brief: ClientScopeBrief): string {
+export function requestedScopeFromBrief(brief: ClientScopeBrief): { pages: string[]; features: string[] } {
   const pages = [...SCOPE_PACKAGE_INCLUDED, ...brief.selectedPages.filter((item) => item !== "Other")];
-  if (brief.otherPages) pages.push(brief.otherPages);
+  if (brief.otherPages.trim()) pages.push(brief.otherPages.trim());
   const features = brief.features.filter((item) => item !== "Other");
-  if (brief.otherFeatures) features.push(brief.otherFeatures);
+  if (brief.otherFeatures.trim()) features.push(brief.otherFeatures.trim());
+  return { pages, features };
+}
+
+export function proposalScopeFromBrief(brief: ClientScopeBrief): string {
+  const { pages, features } = requestedScopeFromBrief(brief);
   return [...pages, ...features].join("\n");
 }
 

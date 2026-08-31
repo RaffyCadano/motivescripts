@@ -9,6 +9,10 @@ export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 export const MAX_FILE_SIZE_LABEL = "50 MB";
 export const SIGNED_URL_TTL_SECONDS = 10 * 60;
 
+export const signedCopyUploadExtensions = ["pdf", "png", "jpg", "jpeg", "webp"] as const;
+
+export const signedCopyFileInputAccept = signedCopyUploadExtensions.map((ext) => `.${ext}`).join(",");
+
 export const allowedUploadExtensions = [
   "pdf",
   "doc",
@@ -58,6 +62,17 @@ export function fileExtension(fileName: string): string {
   return parts.pop()?.toLowerCase() ?? "";
 }
 
+export function validateSignedCopyFile(file: File | null | undefined): UploadValidationError | null {
+  const base = validateUploadFile(file);
+  if (base) return base;
+  const ext = fileExtension(file?.name ?? "");
+  const allowed = (signedCopyUploadExtensions as readonly string[]).includes(ext);
+  if (!allowed) {
+    return { code: "type", message: "Upload a PDF or image of the signed contract." };
+  }
+  return null;
+}
+
 export function validateUploadFile(file: File | null | undefined): UploadValidationError | null {
   if (!file || !file.name.trim()) {
     return { code: "missing", message: "Choose a file to upload." };
@@ -82,6 +97,12 @@ export function storageFileName(originalName: string): string {
   const ext = fileExtension(originalName);
   const safeExt = allowedUploadExtensions.includes(ext as (typeof allowedUploadExtensions)[number]) ? ext : "bin";
   return `file.${safeExt}`;
+}
+
+export function contractSignedCopyStoragePath(contractId: string, originalName: string): string {
+  const ext = fileExtension(originalName);
+  const safeExt = (signedCopyUploadExtensions as readonly string[]).includes(ext) ? ext : "pdf";
+  return ["contracts", contractId, "signed-copy", `${crypto.randomUUID()}.${safeExt}`].join("/");
 }
 
 export function projectFileStoragePath(input: {

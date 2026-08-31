@@ -224,6 +224,64 @@ export function effectiveDocumentStatus(
   return status;
 }
 
+export type ContractSignedCopy = {
+  storagePath: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  uploadedAt: string;
+};
+
+export function contractSignedCopyFromRow(row: {
+  client_signed_copy_path: string | null;
+  client_signed_copy_file_name: string;
+  client_signed_copy_mime_type: string;
+  client_signed_copy_size: number;
+  client_signed_copy_uploaded_at: string | null;
+}): ContractSignedCopy | null {
+  if (!row.client_signed_copy_path || !row.client_signed_copy_uploaded_at) return null;
+  return {
+    storagePath: row.client_signed_copy_path,
+    fileName: row.client_signed_copy_file_name.trim() || "Signed contract",
+    mimeType: row.client_signed_copy_mime_type,
+    size: row.client_signed_copy_size,
+    uploadedAt: row.client_signed_copy_uploaded_at,
+  };
+}
+
+export function contractIsAgencySigned(revision: { agency_signed_at?: string | null } | null | undefined): boolean {
+  return Boolean(revision?.agency_signed_at);
+}
+
+/** Display-only workflow label. Does not change stored revision status. */
+export function contractWorkflowLabel(input: {
+  status: DocumentStatus;
+  agencySigned: boolean;
+  signedCopyUploaded: boolean;
+}): string {
+  if (input.status === "draft") {
+    return input.agencySigned ? "Agency Signed" : "Agency Signature Required";
+  }
+  if (input.status === "sent" || input.status === "viewed") return "Sent to Client";
+  if (input.status === "accepted") {
+    return input.signedCopyUploaded ? "Signed Document Uploaded" : "Client Accepted";
+  }
+  return adminStatusLabel(input.status);
+}
+
+export function formatDocumentTimestamp(value: string | null | undefined): string {
+  if (!value) return "";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function adminStatusLabel(status: DocumentStatus): string {
   switch (status) {
     case "draft":
@@ -279,6 +337,8 @@ export function documentErrorMessage(code: string): string {
       return "Proposal email isn’t available yet. Deploy the document-email function.";
     case "missing_site_url":
       return "Email isn’t configured yet. Set PUBLIC_SITE_URL on the Edge Function.";
+    case "AGENCY_SIGNATURE_REQUIRED":
+      return "Agency signature required before sending.";
     case "not_allowed":
       return "You don’t have permission to do that.";
     case "proposal_pdf_failed":
@@ -302,6 +362,7 @@ export function rpcErrorCode(message: string): string {
   if (upper.includes("HAS_INVOICES")) return "HAS_INVOICES";
   if (upper.includes("HAS_CONTRACTS")) return "HAS_CONTRACTS";
   if (upper.includes("HAS_ACCEPTED")) return "HAS_ACCEPTED";
+  if (upper.includes("AGENCY_SIGNATURE_REQUIRED")) return "AGENCY_SIGNATURE_REQUIRED";
   if (message.toLowerCase().includes("failed to fetch") || message.toLowerCase().includes("network")) {
     return "network";
   }

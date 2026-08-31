@@ -82,7 +82,7 @@ export function ClientProposalDetails() {
         Proposals
       </Link>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight">{detail.proposal.proposal_number}</h1>
+        <p className="font-heading text-sm font-semibold tracking-tight">{detail.proposal.proposal_number}</p>
         <DocumentStatusBadge status={status} audience="client" />
         <button
           type="button"

@@ -343,6 +343,12 @@ export type ContractRow = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  client_signed_copy_path: string | null;
+  client_signed_copy_file_name: string;
+  client_signed_copy_mime_type: string;
+  client_signed_copy_size: number;
+  client_signed_copy_uploaded_at: string | null;
+  client_signed_copy_uploaded_by: string | null;
 };
 
 export type ContractRevisionRow = {
@@ -376,6 +382,10 @@ export type ContractRevisionRow = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  agency_signed_at: string | null;
+  agency_signed_by: string | null;
+  agency_signed_name: string;
+  agency_signed_email: string;
 };
 
 export type ContractAdminNoteRow = {
@@ -826,6 +836,20 @@ export type Database = {
       send_contract: {
         Args: { p_contract_id: string };
         Returns: null;
+      };
+      sign_contract: {
+        Args: { p_contract_id: string };
+        Returns: null;
+      };
+      register_contract_signed_copy: {
+        Args: {
+          p_contract_id: string;
+          p_storage_path: string;
+          p_file_name: string;
+          p_mime_type: string;
+          p_file_size: number;
+        };
+        Returns: string | null;
       };
       mark_contract_viewed: {
         Args: { p_contract_id: string };

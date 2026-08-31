@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { ChevronDown, type LucideIcon } from "lucide-react";
+import { ChevronDown, MoreHorizontal, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export type AdminActionsMenuItem = {
@@ -18,11 +18,13 @@ export function AdminActionsMenu({
   ariaLabel,
   disabled,
   items,
+  iconOnly = false,
 }: {
   label?: string;
   ariaLabel?: string;
   disabled?: boolean;
   items: AdminActionsMenuItem[];
+  iconOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -78,7 +80,11 @@ export function AdminActionsMenu({
     <div className="relative" ref={ref}>
       <button
         type="button"
-        className="inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60"
+        className={
+          iconOnly
+            ? "inline-flex h-10 w-10 items-center justify-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60"
+            : "inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60"
+        }
         aria-label={ariaLabel ?? label}
         aria-expanded={open}
         aria-controls={menuId}
@@ -86,8 +92,14 @@ export function AdminActionsMenu({
         disabled={disabled}
         onClick={() => setOpen((value) => !value)}
       >
-        {label}
-        <ChevronDown size={16} strokeWidth={1.75} className="ml-2" aria-hidden="true" />
+        {iconOnly ? (
+          <MoreHorizontal size={18} strokeWidth={1.75} aria-hidden="true" />
+        ) : (
+          <>
+            {label}
+            <ChevronDown size={16} strokeWidth={1.75} className="ml-2" aria-hidden="true" />
+          </>
+        )}
       </button>
       {open ? (
         <div

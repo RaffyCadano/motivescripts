@@ -1,7 +1,9 @@
 import {
   PROJECT_FILES_BUCKET,
   SIGNED_URL_TTL_SECONDS,
+  contractSignedCopyStoragePath,
   projectFileStoragePath,
+  validateSignedCopyFile,
   validateUploadFile,
 } from "@/data/fileUploadConfig";
 import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
@@ -22,6 +24,23 @@ function storage() {
 function fail(context: string, error: unknown, fallback: string): never {
   logDbError(context, error);
   throw new AgencyDbError(friendlyDbError(error, fallback), error);
+}
+
+export async function uploadContractSignedCopy(input: {
+  contractId: string;
+  file: File;
+}): Promise<string> {
+  const invalid = validateSignedCopyFile(input.file);
+  if (invalid) throw new AgencyDbError(invalid.message);
+
+  const path = contractSignedCopyStoragePath(input.contractId, input.file.name);
+  const { error } = await storage().upload(path, input.file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: input.file.type || "application/octet-stream",
+  });
+  if (error) fail("upload signed copy", error, "Unable to upload this file. Please try again.");
+  return path;
 }
 
 export async function uploadProjectFile(input: {

@@ -33,6 +33,17 @@ export type AdminFunnelItem = {
   done: boolean;
 };
 
+export type AdminWorkflowAction = {
+  title: string;
+  body: string;
+  currentStepId: string;
+  primaryKind: "link" | "start_project" | "none";
+  primaryLabel: string | null;
+  primaryHref: string | null;
+  secondaryLabel: string | null;
+  secondaryHref: string | null;
+};
+
 const productionStatuses = new Set<AgencyProjectStatus>(["In Development", "Client Review", "Completed"]);
 
 export function isProductionProject(status: AgencyProjectStatus | null | undefined): boolean {
@@ -285,8 +296,163 @@ export function deriveAdminFunnel(input: {
   ];
 }
 
+export function adminFunnelCurrentId(items: AdminFunnelItem[]): string {
+  return items.find((item) => !item.done)?.id ?? items[items.length - 1]?.id ?? "invited";
+}
+
+export function adminClientWorkflowAction(input: {
+  clientId: string;
+  portalInvited: boolean;
+  hasScope: boolean;
+  hasProject: boolean;
+  proposalAccepted: boolean;
+  contractAccepted: boolean;
+  invoicePaid: boolean;
+  projectStarted: boolean;
+  projectId: string | null;
+  projectStatus: AgencyProjectStatus | null;
+  acceptedProposalId: string | null;
+  acceptedContractId: string | null;
+}): AdminWorkflowAction {
+  const projectHref = input.projectId ? `/admin/projects/${input.projectId}` : null;
+  const createProject = `/admin/projects/new?client=${input.clientId}`;
+  const createProposal = `/admin/proposals/new?client=${input.clientId}${input.projectId ? `&project=${input.projectId}` : ""}`;
+  const createContract = `/admin/contracts/new?client=${input.clientId}${input.projectId ? `&project=${input.projectId}` : ""}${input.acceptedProposalId ? `&proposal=${input.acceptedProposalId}` : ""}`;
+  const createInvoice = `/admin/invoices/new?client=${input.clientId}${input.projectId ? `&project=${input.projectId}` : ""}${input.acceptedContractId ? `&contract=${input.acceptedContractId}` : ""}`;
+
+  if (input.projectStarted && projectHref) {
+    return {
+      title: "Project in production",
+      body: "This project is underway. Open the project workspace to manage tasks, files, and reviews.",
+      currentStepId: "started",
+      primaryKind: "link",
+      primaryLabel: "Open Project",
+      primaryHref: projectHref,
+      secondaryLabel: null,
+      secondaryHref: null,
+    };
+  }
+
+  if (input.invoicePaid && !input.projectStarted && input.projectId) {
+    return {
+      title: "Payment received — ready to start production",
+      body: "The invoice is paid. Start production when you are ready. This sets the project to In Development.",
+      currentStepId: "started",
+      primaryKind: "start_project",
+      primaryLabel: "Start Project",
+      primaryHref: null,
+      secondaryLabel: "Open Project",
+      secondaryHref: projectHref,
+    };
+  }
+
+  if (input.contractAccepted && !input.invoicePaid) {
+    return {
+      title: "Contract signed — ready for invoice/payment",
+      body: "Create an invoice so the client can pay and production can begin.",
+      currentStepId: "invoice",
+      primaryKind: "link",
+      primaryLabel: "Create Invoice",
+      primaryHref: createInvoice,
+      secondaryLabel: projectHref ? "Open Project" : null,
+      secondaryHref: projectHref,
+    };
+  }
+
+  if (input.proposalAccepted && !input.contractAccepted) {
+    return {
+      title: "Proposal accepted — ready for contract",
+      body: "The client accepted the proposal. Create the contract next.",
+      currentStepId: "contract",
+      primaryKind: "link",
+      primaryLabel: "Create Contract",
+      primaryHref: createContract,
+      secondaryLabel: projectHref ? "Open Project" : null,
+      secondaryHref: projectHref,
+    };
+  }
+
+  if (input.hasProject && !input.proposalAccepted) {
+    return {
+      title: "Project created — ready for proposal",
+      body: "The project record is in place. Create a proposal from the submitted requirements.",
+      currentStepId: "proposal",
+      primaryKind: "link",
+      primaryLabel: "Create Proposal",
+      primaryHref: createProposal,
+      secondaryLabel: projectHref ? "Open Project" : null,
+      secondaryHref: projectHref,
+    };
+  }
+
+  if (input.hasScope && !input.hasProject) {
+    return {
+      title: "Ready for Project Setup",
+      body: "The client has submitted their website requirements. Review the scope below, then create the project.",
+      currentStepId: "project",
+      primaryKind: "link",
+      primaryLabel: "Create Project",
+      primaryHref: createProject,
+      secondaryLabel: null,
+      secondaryHref: null,
+    };
+  }
+
+  if (!input.portalInvited) {
+    return {
+      title: "Invite this client",
+      body: "Send a portal invitation so they can complete the Website Scope. You can still create a project if you already have the brief.",
+      currentStepId: "invited",
+      primaryKind: "none",
+      primaryLabel: null,
+      primaryHref: null,
+      secondaryLabel: "Create Project",
+      secondaryHref: createProject,
+    };
+  }
+
+  return {
+    title: "Waiting for Website Scope",
+    body: "No scope has been submitted yet. You can still create a project if you already have the project brief.",
+    currentStepId: "scope",
+    primaryKind: "none",
+    primaryLabel: null,
+    primaryHref: null,
+    secondaryLabel: "Create Project",
+    secondaryHref: createProject,
+  };
+}
+
 export function adminEngagementLabel(hasProject: boolean, projectStarted: boolean): string {
   if (projectStarted) return "Active project";
   if (hasProject) return "Project created";
   return "Pre-Project";
+}
+
+export function projectWorkspaceFunnel(input: {
+  hasScope: boolean;
+  proposalAccepted: boolean;
+  contractAccepted: boolean;
+  invoicePaid: boolean;
+  projectStarted: boolean;
+}): AdminFunnelItem[] {
+  return deriveAdminFunnel({
+    portalInvited: true,
+    hasScope: input.hasScope,
+    hasProject: true,
+    proposalAccepted: input.proposalAccepted,
+    contractAccepted: input.contractAccepted,
+    invoicePaid: input.invoicePaid,
+    projectStarted: input.projectStarted,
+  }).filter((item) => item.id !== "invited");
+}
+
+export function projectWorkspaceStepLabel(item: AdminFunnelItem): string {
+  if (item.id === "scope") return item.done ? "Scope Submitted" : "Scope";
+  if (item.id === "project") return "Project";
+  if (item.id === "proposal") return "Proposal";
+  if (item.id === "contract") return "Contract";
+  if (item.id === "invoice") return "Invoice";
+  if (item.id === "started") return "Production";
+  return item.label;
 }

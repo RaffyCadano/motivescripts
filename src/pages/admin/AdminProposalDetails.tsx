@@ -1,14 +1,29 @@
-import { useEffect, useId, useRef, useState } from "react";
-import { Ban, Download, FileSignature, FolderKanban, Mail, PencilLine, RotateCcw, Save, Send, Trash2, Undo2 } from "lucide-react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import {
+  Ban,
+  Check,
+  Download,
+  Eye,
+  FileSignature,
+  FolderKanban,
+  Mail,
+  PencilLine,
+  RotateCcw,
+  Save,
+  Send,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
-import { adminPrimaryBtn } from "@/components/admin/adminActionStyles";
+import { adminBlueBtn, adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { AdminInfoTip } from "@/components/admin/AdminInfoTip";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
 import { LineItemsEditor } from "@/components/documents/LineItemsEditor";
+import { LineListEditor } from "@/components/documents/LineListEditor";
 import { ProposalDocumentView } from "@/components/documents/ProposalDocumentView";
-import { ProposalPresetPanel } from "@/components/documents/ProposalPresetPanel";
+import { ProposalAdditionalPanel, ProposalScopePanel } from "@/components/documents/ProposalPresetPanel";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import {
   defaultProposalLineItem,
@@ -16,10 +31,13 @@ import {
   documentMailRecipientCopy,
   documentMailRecipients,
   effectiveDocumentStatus,
+  lineItemTotalCents,
   lineItemsTotalCents,
   type LineItemDraft,
 } from "@/data/documents";
-import { applyProposalDraftDefaults } from "@/data/proposalPresets";
+import { applyProposalDraftDefaults, displayLineItemName } from "@/data/proposalPresets";
+import { requestedScopeFromBrief, type ClientScopeBrief } from "@/data/scopeBriefs";
+import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
 import { proposalDraftOverrides, type AgencySettings } from "@/data/settings";
 import { fetchAgencySettings } from "@/data/settingsRepository";
 import {
@@ -28,12 +46,14 @@ import {
   createProposalRevision,
   discardProposalDraft,
   downloadProposalPdf,
+  fetchContractSummaries,
   fetchProposalDetail,
   proposalLineDrafts,
   saveProposalDraft,
   resendProposalEmail,
   restoreProposal,
   sendProposal,
+  type ContractSummary,
   type ProposalDetail,
 } from "@/data/documentsRepository";
 import { formatUsdFromCents } from "@/data/money";
@@ -71,11 +91,44 @@ async function saveDraftRevision(
   });
 }
 
+function scrollToPreview() {
+  const preview = document.getElementById("proposal-preview");
+  const scroller = document.getElementById("admin-main");
+  if (!preview) return;
+
+  const sideBySide = window.matchMedia("(min-width: 1280px)").matches;
+  if (!sideBySide && scroller) {
+    const previewRect = preview.getBoundingClientRect();
+    const scrollerRect = scroller.getBoundingClientRect();
+    const top = scroller.scrollTop + previewRect.top - scrollerRect.top - 12;
+    scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }
+
+  preview.classList.add("ring-2", "ring-[var(--admin-blue)]", "ring-offset-2");
+  window.setTimeout(() => {
+    preview.classList.remove("ring-2", "ring-[var(--admin-blue)]", "ring-offset-2");
+  }, 1400);
+}
+
+function relatedContract(
+  contracts: ContractSummary[],
+  proposalId: string,
+  projectId: string | null,
+): ContractSummary | null {
+  return (
+    contracts.find((row) => row.proposalId === proposalId) ??
+    (projectId ? contracts.find((row) => row.projectId === projectId) : undefined) ??
+    null
+  );
+}
+
 export function AdminProposalDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { clients, projects, notify, reload, portalAccounts } = useLeads();
   const [detail, setDetail] = useState<ProposalDetail | null>(null);
+  const [brief, setBrief] = useState<ClientScopeBrief | null>(null);
+  const [linkedContract, setLinkedContract] = useState<ContractSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -113,45 +166,55 @@ export function AdminProposalDetails() {
     if (settings) settingsRef.current = settings;
     if (generation != null && generation !== loadGen.current) return;
     setDetail(next);
-    if (next) {
-      const body = {
-        introduction: next.working.introduction,
-        overview: next.working.overview,
-        scope: next.working.scope,
-        deliverablesText: next.working.deliverables_text,
-        timeline: next.working.timeline,
-        paymentTerms: next.working.payment_terms,
-        terms: next.working.terms,
-        notes: next.working.notes,
-      };
-      const filled =
-        next.working.status === "draft"
-          ? applyProposalDraftDefaults(body, proposalDraftOverrides(settingsRef.current))
-          : body;
-      const nextForm: ProposalForm = {
-        title: next.working.title,
-        ...filled,
-        validUntil: next.working.valid_until ?? "",
-        adminNotes: next.adminNotes,
-      };
-      const nextItems = proposalLineDrafts(next);
-      setForm(nextForm);
-      setItems(nextItems);
-      if (next.working.status !== "draft") return;
-      if (generation != null && generation !== loadGen.current) return;
-      const formChanged = JSON.stringify(filled) !== JSON.stringify(body);
-      const collapsedDuplicates = nextItems.length < next.items.length;
-      const filledDescriptions = next.items.some((row) => {
-        const draft = nextItems.find((item) => item.name.trim().toLowerCase() === row.name.trim().toLowerCase());
-        return Boolean(draft?.description.trim()) && !row.description.trim();
-      });
-      if (formChanged && !collapsedDuplicates && !filledDescriptions) {
-        await saveDraftRevision(next.working.id, nextForm);
-        return;
-      }
-      if (collapsedDuplicates || filledDescriptions) {
-        await saveDraftRevision(next.working.id, nextForm, nextItems);
-      }
+    if (!next) {
+      setBrief(null);
+      setLinkedContract(null);
+      return;
+    }
+    const [nextBrief, contracts] = await Promise.all([
+      fetchClientScopeBrief(next.proposal.client_id).catch(() => null),
+      fetchContractSummaries(next.proposal.client_id).catch(() => [] as ContractSummary[]),
+    ]);
+    if (generation != null && generation !== loadGen.current) return;
+    setBrief(nextBrief);
+    setLinkedContract(relatedContract(contracts, next.proposal.id, next.proposal.project_id));
+    const body = {
+      introduction: next.working.introduction,
+      overview: next.working.overview,
+      scope: next.working.scope,
+      deliverablesText: next.working.deliverables_text,
+      timeline: next.working.timeline,
+      paymentTerms: next.working.payment_terms,
+      terms: next.working.terms,
+      notes: next.working.notes,
+    };
+    const filled =
+      next.working.status === "draft"
+        ? applyProposalDraftDefaults(body, proposalDraftOverrides(settingsRef.current))
+        : body;
+    const nextForm: ProposalForm = {
+      title: next.working.title,
+      ...filled,
+      validUntil: next.working.valid_until ?? "",
+      adminNotes: next.adminNotes,
+    };
+    const nextItems = proposalLineDrafts(next);
+    setForm(nextForm);
+    setItems(nextItems);
+    if (next.working.status !== "draft") return;
+    if (generation != null && generation !== loadGen.current) return;
+    const formChanged = JSON.stringify(filled) !== JSON.stringify(body);
+    const collapsedDuplicates = nextItems.length < next.items.length;
+    const filledDescriptions = next.items.some((row) => {
+      const draft = nextItems.find((item) => item.name.trim().toLowerCase() === row.name.trim().toLowerCase());
+      return Boolean(draft?.description.trim()) && !row.description.trim();
+    });
+    if (formChanged && !collapsedDuplicates && !filledDescriptions) {
+      await saveDraftRevision(next.working.id, nextForm);
+      return;
+    }
+    if (collapsedDuplicates || filledDescriptions) {
+      await saveDraftRevision(next.working.id, nextForm, nextItems);
     }
   }
 
@@ -196,7 +259,10 @@ export function AdminProposalDetails() {
   const publishedStatus = detail.published
     ? effectiveDocumentStatus(detail.published.status, detail.published.valid_until)
     : null;
+  const accepted = status === "accepted" || publishedStatus === "accepted";
   const current = detail;
+  const requested = brief ? requestedScopeFromBrief(brief) : { pages: [] as string[], features: [] as string[] };
+  const requestedLines = [...requested.pages, ...requested.features];
 
   async function persist() {
     if (!isDraft) return;
@@ -210,6 +276,15 @@ export function AdminProposalDetails() {
         notify(error instanceof AgencyDbError ? error.message : "Unable to save this proposal.");
       });
       return nextForm;
+    });
+  }
+
+  function persistItems(nextItems: LineItemDraft[]) {
+    itemsRef.current = nextItems;
+    setItems(nextItems);
+    if (!isDraft) return;
+    void saveDraftRevision(current.working.id, form, nextItems).catch((error) => {
+      notify(error instanceof AgencyDbError ? error.message : "Unable to save this proposal.");
     });
   }
 
@@ -282,27 +357,13 @@ export function AdminProposalDetails() {
       },
     },
   ];
-  if (isDraft) {
-    proposalActions.push(
-      { id: "save", label: busy ? "Saving…" : "Save draft", icon: Save, disabled: busy, onSelect: () => void onSave() },
-      { id: "send", label: "Send Proposal", icon: Send, disabled: busy, onSelect: () => setSendOpen(true) },
-    );
-    if (detail.published) {
-      proposalActions.push({
-        id: "stop-editing",
-        label: "Stop editing",
-        icon: Undo2,
-        disabled: busy,
-        onSelect: () => setDiscardOpen(true),
-      });
-    }
-  } else if (status !== "cancelled") {
+  if (isDraft && detail.published) {
     proposalActions.push({
-      id: "resend",
-      label: "Resend email",
-      icon: Mail,
-      disabled: busy || pdfBusy,
-      onSelect: () => setResendOpen(true),
+      id: "stop-editing",
+      label: "Stop editing",
+      icon: Undo2,
+      disabled: busy,
+      onSelect: () => setDiscardOpen(true),
     });
   }
   if (publishedStatus === "accepted" && !project) {
@@ -373,6 +434,12 @@ export function AdminProposalDetails() {
     });
   }
 
+  const namedItems = items.filter((item) => item.name.trim());
+  const investmentCents = isDraft ? lineItemsTotalCents(namedItems) : detail.working.investment_cents;
+  const createContractHref = `/admin/contracts/new?client=${detail.proposal.client_id}&proposal=${detail.proposal.id}${detail.proposal.project_id ? `&project=${detail.proposal.project_id}` : ""}`;
+  const contractActionHref = linkedContract ? `/admin/contracts/${linkedContract.id}` : createContractHref;
+  const contractActionLabel = linkedContract ? "Open Contract" : "Create Contract";
+
   return (
     <div className="space-y-6">
       <Link to="/admin/proposals" className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
@@ -383,164 +450,314 @@ export function AdminProposalDetails() {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">{detail.proposal.proposal_number}</h1>
             <DocumentStatusBadge status={status} />
+            {accepted ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(16_185_129_/_0.12)] px-2.5 py-1 font-heading text-[12px] font-semibold text-emerald-800">
+                <Check className="h-3.5 w-3.5" />
+                Proposal Accepted
+              </span>
+            ) : null}
           </div>
           <p className="mt-1 text-sm text-[var(--admin-muted)]">
             {client?.businessName ?? "Client"} · Revision {detail.working.revision_number}
             {project ? ` · ${project.name}` : ""}
           </p>
         </div>
-        <AdminActionsMenu ariaLabel="Proposal actions" items={proposalActions} />
+        <div className="flex flex-wrap items-center gap-2">
+            {isDraft ? (
+              <>
+                <button type="button" disabled={busy} className={adminGhostBtn} onClick={() => void onSave()}>
+                  <Save className="mr-2 h-4 w-4" />
+                  {busy ? "Saving…" : "Save Draft"}
+                </button>
+                <button type="button" className={adminGhostBtn} onClick={scrollToPreview}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Preview
+                </button>
+                <button type="button" disabled={busy} className={adminPrimaryBtn} onClick={() => setSendOpen(true)}>
+                  <Send className="mr-2 h-4 w-4" />
+                  Send Proposal
+                </button>
+              </>
+            ) : accepted ? (
+              <Link to={contractActionHref} className={adminPrimaryBtn}>
+                <FileSignature className="mr-2 h-4 w-4" />
+                {contractActionLabel}
+              </Link>
+            ) : status !== "cancelled" ? (
+              <>
+                <button type="button" className={adminGhostBtn} onClick={scrollToPreview}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Proposal
+                </button>
+                <button type="button" disabled={busy} className={adminBlueBtn} onClick={() => setResendOpen(true)}>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Send / Resend
+                </button>
+              </>
+            ) : null}
+            <AdminActionsMenu ariaLabel="Proposal actions" iconOnly items={proposalActions} />
+          </div>
       </div>
 
-      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-        <form className="space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-          <h2 className="font-heading text-sm font-semibold">Proposal content</h2>
-          <Field
-            label="Title"
-            hint="The heading the client sees at the top of the proposal."
-            value={form.title}
-            disabled={!isDraft}
-            onChange={(value) => setForm({ ...form, title: value })}
-          />
-          <Area
-            label="Introduction"
-            hint="Opening note to the client. Shown as Overview on the proposal."
-            value={form.introduction}
-            disabled={!isDraft}
-            rows={5}
-            onChange={(value) => setForm({ ...form, introduction: value })}
-          />
-          <Area
-            label="Project overview"
-            hint="A short description of the website you plan to build."
-            value={form.overview}
-            disabled={!isDraft}
-            rows={5}
-            onChange={(value) => setForm({ ...form, overview: value })}
-          />
-          {isDraft ? (
-            <ProposalPresetPanel
-              scope={form.scope}
-              deliverables={form.deliverablesText}
-              items={items}
-              onScopeChange={(scope) => patchDraft({ scope })}
-              onDeliverablesChange={(deliverablesText) => patchDraft({ deliverablesText })}
-              onItemsChange={(nextItems) => {
-                itemsRef.current = nextItems;
-                setItems(nextItems);
-              }}
-            />
-          ) : null}
-          <Area
-            label="Scope of work"
-            hint="What is included in this build. Scope chips write here. The client sees this section."
-            value={form.scope}
-            disabled={!isDraft}
-            onChange={(value) => setForm({ ...form, scope: value })}
-          />
-          <Area
-            label="Deliverables"
-            hint="What you will hand over. Feature chips write here."
-            value={form.deliverablesText}
-            disabled={!isDraft}
-            onChange={(value) => setForm({ ...form, deliverablesText: value })}
-          />
-          <Area
-            label="Timeline"
-            hint="When work happens and what can delay the dates."
-            value={form.timeline}
-            disabled={!isDraft}
-            rows={7}
-            onChange={(value) => setForm({ ...form, timeline: value })}
-          />
-          <div>
-            <p className="flex items-center gap-1.5 text-sm font-semibold">
-              Line items
-              <AdminInfoTip text="The price list. Quantity × unit price is the investment the client sees. Scope and Features do not add a dollar amount." />
-            </p>
-            <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Totals are calculated from quantity × unit price in cents.</p>
-            <div className="mt-3">
-              <LineItemsEditor items={items} disabled={!isDraft} onChange={setItems} />
-            </div>
-          </div>
-          <Area
-            label="Payment terms"
-            hint="When and how they pay. This proposal does not charge a card."
-            value={form.paymentTerms}
-            disabled={!isDraft}
-            rows={7}
-            onChange={(value) => setForm({ ...form, paymentTerms: value })}
-          />
-          <Area
-            label="Terms & conditions"
-            hint="The rules of this offer. They agree to this when they accept in the portal."
-            value={form.terms}
-            disabled={!isDraft}
-            rows={10}
-            onChange={(value) => setForm({ ...form, terms: value })}
-          />
-          <Area
-            label="Notes"
-            hint="An extra note on the client-facing proposal. Optional."
-            value={form.notes}
-            disabled={!isDraft}
-            rows={4}
-            onChange={(value) => setForm({ ...form, notes: value })}
-          />
-          <div>
-            <p className="flex items-center gap-1.5 text-sm font-semibold">
-              <label htmlFor="proposal-valid-until">Valid until</label>
-              <AdminInfoTip text="Last day the client can accept this revision. After that it expires." />
-            </p>
-            <input
-              id="proposal-valid-until"
-              type="date"
-              disabled={!isDraft}
-              value={form.validUntil}
-              onChange={(event) => setForm({ ...form, validUntil: event.target.value })}
-              className={fieldClass}
-            />
-          </div>
-          <Area
-            label="Internal notes (not shown to the client)"
-            hint="Staff only. Never shown on the proposal, PDF, or client portal."
-            value={form.adminNotes}
-            disabled={!isDraft}
-            onChange={(value) => setForm({ ...form, adminNotes: value })}
-          />
-          <p className="text-sm text-[var(--admin-muted)]">
-            Calculated investment {formatUsdFromCents(isDraft ? lineItemsTotalCents(items) : detail.working.investment_cents)}
+      {accepted ? (
+        <section className="rounded-[var(--admin-radius)] border border-[rgb(16_185_129_/_0.35)] bg-[rgb(16_185_129_/_0.06)] p-5">
+          <p className="inline-flex items-center gap-1.5 font-heading text-base font-semibold text-emerald-800">
+            <Check className="h-4 w-4" />
+            Proposal Accepted ✓
           </p>
-          {isDraft ? (
-            <div className="flex justify-end border-t border-[var(--admin-line)] pt-4">
-              <button type="button" disabled={busy} className={adminPrimaryBtn} onClick={() => void onSave()}>
-                {busy ? "Saving…" : "Save draft"}
-              </button>
-            </div>
-          ) : null}
-        </form>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--admin-muted)]">
+            {linkedContract
+              ? "The client has accepted this proposal. A contract is already linked — open it to continue."
+              : "The client has accepted this proposal. The next step is to prepare the contract."}
+          </p>
+          <Link to={contractActionHref} className={`${adminPrimaryBtn} mt-4`}>
+            <FileSignature className="mr-2 h-4 w-4" />
+            {contractActionLabel}
+          </Link>
+        </section>
+      ) : null}
 
-        <ProposalDocumentView
-          document={{
-            number: detail.proposal.proposal_number,
-            title: form.title,
-            revisionNumber: detail.working.revision_number,
-            companyName: client?.businessName ?? "Client",
-            introduction: form.introduction,
-            overview: form.overview,
-            scope: form.scope,
-            deliverables: form.deliverablesText,
-            timeline: form.timeline,
-            paymentTerms: form.paymentTerms,
-            terms: form.terms,
-            notes: form.notes,
-            validUntil: form.validUntil || null,
-            items: previewItems,
-            investmentCents: isDraft
-              ? lineItemsTotalCents(items.filter((item) => item.name.trim()))
-              : detail.working.investment_cents,
-          }}
-        />
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+        <div className="space-y-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+            A. What are we proposing?
+          </p>
+          <ClientRequestedScope
+            brief={brief}
+            clientId={detail.proposal.client_id}
+            clientName={client?.businessName}
+          />
+          <EditorCard
+            title="Proposal Overview"
+            helper="The introduction and project overview the client will read first."
+          >
+            <Field
+              label="Proposal title"
+              hint="The heading saved on this proposal. The client-facing document is titled Website Proposal."
+              value={form.title}
+              disabled={!isDraft}
+              onChange={(value) => setForm({ ...form, title: value })}
+            />
+            <Area
+              label="Overview"
+              hint="Opening note to the client."
+              value={form.introduction}
+              disabled={!isDraft}
+              rows={5}
+              onChange={(value) => setForm({ ...form, introduction: value })}
+            />
+            <Area
+              label="Project overview"
+              hint="What the website will accomplish based on this client's goals."
+              value={form.overview}
+              disabled={!isDraft}
+              rows={5}
+              onChange={(value) => setForm({ ...form, overview: value })}
+            />
+          </EditorCard>
+
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+            B. What is included?
+          </p>
+          <EditorCard
+            title="Scope of Work"
+            helper="MotiveScripts' offer — not the original client request. Add or remove pages and functionality here."
+          >
+            <ProposalScopePanel
+              scope={form.scope}
+              requestedLines={requestedLines}
+              disabled={!isDraft}
+              onScopeChange={(scope) => patchDraft({ scope })}
+            />
+            <Area
+              label="Scope list"
+              hint="One item per line. Chips above write here. Use this for custom wording."
+              value={form.scope}
+              disabled={!isDraft}
+              rows={8}
+              onChange={(value) => setForm({ ...form, scope: value })}
+            />
+          </EditorCard>
+          <EditorCard
+            title="Deliverables"
+            helper="What MotiveScripts will deliver. Seeded from the proposal scope; edit freely without changing the original client request."
+          >
+            <LineListEditor
+              value={form.deliverablesText}
+              disabled={!isDraft}
+              addLabel="Add deliverable"
+              placeholder="Add a deliverable"
+              onChange={(deliverablesText) => patchDraft({ deliverablesText })}
+            />
+          </EditorCard>
+
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+            C. What costs extra?
+          </p>
+          <EditorCard
+            title="Additional Services / Features"
+            helper="Included extras stay in the offer at no added line item. Billed extras use the existing line-item prices."
+          >
+            <ProposalAdditionalPanel
+              scope={form.scope}
+              items={items}
+              disabled={!isDraft}
+              onScopeChange={(scope) => patchDraft({ scope })}
+              onItemsChange={persistItems}
+            />
+          </EditorCard>
+
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+            D. What will the client pay and agree to?
+          </p>
+          <EditorCard
+            title="Timeline"
+            helper="Estimated timeline. Final dates may change based on content, feedback, approvals, and project requirements."
+          >
+            <Area
+              label="Project timeline"
+              value={form.timeline}
+              disabled={!isDraft}
+              rows={8}
+              onChange={(value) => setForm({ ...form, timeline: value })}
+            />
+          </EditorCard>
+          <EditorCard
+            title="Investment"
+            helper="Quantity × unit price in cents. The client sees names, descriptions, and totals — not this editor."
+          >
+            <div className="rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4">
+              {namedItems.length === 0 ? (
+                <p className="text-sm text-[var(--admin-muted)]">Add a website line item to set the investment.</p>
+              ) : (
+                <ul className="space-y-3">
+                  {namedItems.map((item) => (
+                    <li key={item.key} className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
+                          {displayLineItemName(item.name)}
+                        </p>
+                        {item.description ? (
+                          <p className="mt-1 text-[12px] leading-5 text-[var(--admin-muted)]">{item.description}</p>
+                        ) : null}
+                      </div>
+                      <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
+                        {formatUsdFromCents(lineItemTotalCents(item))}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p className="mt-4 border-t border-[var(--admin-line)] pt-3 font-heading text-base font-semibold text-[var(--admin-ink)]">
+                Total Investment — {formatUsdFromCents(investmentCents)}
+              </p>
+            </div>
+            <div>
+              <p className="flex items-center gap-1.5 text-sm font-semibold">
+                Line items
+                <AdminInfoTip text="The price list. Quantity × unit price is the investment the client sees." />
+              </p>
+              <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
+                Totals are calculated from quantity × unit price in cents.
+              </p>
+              <div className="mt-3">
+                <LineItemsEditor items={items} disabled={!isDraft} onChange={setItems} />
+              </div>
+            </div>
+          </EditorCard>
+          <EditorCard title="Payment Terms" helper="When the deposit and remaining balance are due. This proposal does not charge a card.">
+            <Area
+              label="Payment terms"
+              value={form.paymentTerms}
+              disabled={!isDraft}
+              rows={7}
+              onChange={(value) => setForm({ ...form, paymentTerms: value })}
+            />
+          </EditorCard>
+          <EditorCard title="Terms & Conditions" helper="The client agrees to these terms when they accept in the portal.">
+            <Area
+              label="Terms & conditions"
+              value={form.terms}
+              disabled={!isDraft}
+              rows={10}
+              onChange={(value) => setForm({ ...form, terms: value })}
+            />
+          </EditorCard>
+          <EditorCard title="Notes" helper="Optional client-facing note on the proposal.">
+            <Area
+              label="Notes"
+              value={form.notes}
+              disabled={!isDraft}
+              rows={4}
+              onChange={(value) => setForm({ ...form, notes: value })}
+            />
+          </EditorCard>
+          <EditorCard
+            title="Proposal Settings"
+            helper="The date through which the client can accept this proposal."
+          >
+            <div>
+              <p className="flex items-center gap-1.5 text-sm font-semibold">
+                <label htmlFor="proposal-valid-until">Valid until</label>
+                <AdminInfoTip text="Last day the client can accept this revision. After that it expires." />
+              </p>
+              <input
+                id="proposal-valid-until"
+                type="date"
+                disabled={!isDraft}
+                value={form.validUntil}
+                onChange={(event) => setForm({ ...form, validUntil: event.target.value })}
+                className={fieldClass}
+              />
+              {form.validUntil ? (
+                <p className="mt-2 text-sm text-[var(--admin-ink)]">
+                  {new Date(`${form.validUntil}T00:00:00`).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+              ) : null}
+            </div>
+          </EditorCard>
+          <EditorCard
+            title="Internal notes"
+            helper="Staff only. Never shown on the proposal, PDF, or client portal."
+          >
+            <Area
+              label="Internal notes (not shown to the client)"
+              value={form.adminNotes}
+              disabled={!isDraft}
+              onChange={(value) => setForm({ ...form, adminNotes: value })}
+            />
+          </EditorCard>
+        </div>
+
+        <div id="proposal-preview" className="rounded-[var(--admin-radius)] transition-shadow xl:sticky xl:top-4">
+          <p className="mb-3 font-heading text-sm font-semibold text-[var(--admin-ink)]">Client preview</p>
+          <p className="mb-4 text-[12px] leading-5 text-[var(--admin-muted)]">
+            This is what the client sees. Internal notes and editing controls are not included.
+          </p>
+          <ProposalDocumentView
+            document={{
+              number: detail.proposal.proposal_number,
+              title: form.title,
+              revisionNumber: detail.working.revision_number,
+              companyName: client?.businessName ?? "Client",
+              introduction: form.introduction,
+              overview: form.overview,
+              scope: form.scope,
+              deliverables: form.deliverablesText,
+              timeline: form.timeline,
+              paymentTerms: form.paymentTerms,
+              terms: form.terms,
+              notes: form.notes,
+              validUntil: form.validUntil || null,
+              items: previewItems,
+              investmentCents,
+            }}
+          />
+        </div>
       </div>
 
       <ConfirmDocumentModal
@@ -661,6 +878,80 @@ export function AdminProposalDetails() {
         }}
       />
     </div>
+  );
+}
+
+function EditorCard({
+  title,
+  helper,
+  children,
+}: {
+  title: string;
+  helper?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+      <div>
+        <h2 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{title}</h2>
+        {helper ? <p className="mt-1 text-sm leading-6 text-[var(--admin-muted)]">{helper}</p> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function ClientRequestedScope({
+  brief,
+  clientId,
+  clientName,
+}: {
+  brief: ClientScopeBrief | null;
+  clientId: string;
+  clientName?: string;
+}) {
+  const requested = brief ? requestedScopeFromBrief(brief) : { pages: [] as string[], features: [] as string[] };
+  return (
+    <section className="space-y-3 rounded-[var(--admin-radius)] border border-[rgb(16_185_129_/_0.28)] bg-[rgb(16_185_129_/_0.05)] p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Client requested scope</h2>
+          <p className="mt-1 text-sm leading-6 text-[var(--admin-muted)]">
+            What {clientName ?? "the client"} submitted. This is the source of truth for their request. Editing the
+            proposal does not change this scope.
+          </p>
+        </div>
+        <Link to={`/admin/clients/${clientId}`} className="text-xs font-semibold text-[var(--admin-navy)] hover:underline">
+          View Full Scope
+        </Link>
+      </div>
+      {!brief ? (
+        <p className="text-sm text-[var(--admin-muted)]">No Website Scope submitted. You can still build this proposal.</p>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">Pages</p>
+            <ul className="mt-2 space-y-1 text-sm text-[var(--admin-ink)]">
+              {requested.pages.map((item) => (
+                <li key={item}>• {item}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">Features</p>
+            {requested.features.length ? (
+              <ul className="mt-2 space-y-1 text-sm text-[var(--admin-ink)]">
+                {requested.features.map((item) => (
+                  <li key={item}>• {item}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-[var(--admin-muted)]">None listed</p>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 

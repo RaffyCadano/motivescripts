@@ -99,7 +99,7 @@ export function StaffAssignmentCard({
               <div>
                 <p className="text-sm font-medium text-[var(--admin-ink)]">{member.fullName || member.email}</p>
                 <p className="text-[12px] text-[var(--admin-muted)]">
-                  {assignedLabels[member.id] || member.jobTitle || member.templateLabel}
+                  {[member.jobTitle || member.templateLabel, assignedLabels[member.id]].filter(Boolean).join(" · ")}
                 </p>
               </div>
               {canManage ? (

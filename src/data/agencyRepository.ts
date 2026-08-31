@@ -427,7 +427,7 @@ export async function insertProject(draft: AgencyProjectDraft): Promise<string> 
       description: draft.description.trim(),
       type: draft.type,
       status: draft.status,
-      start_date: emptyToNull(draft.startDate) ?? new Date().toISOString().slice(0, 10),
+      start_date: emptyToNull(draft.startDate),
       due_date: emptyToNull(draft.targetLaunchDate),
       archived: false,
       approval_status: "Pending",

@@ -2,16 +2,20 @@ import {
   documentErrorMessage,
   applyProposalLineDefaults,
   calendarDateOrNull,
+  contractIsAgencySigned,
+  contractSignedCopyFromRow,
   draftsFromItems,
   effectiveDocumentStatus,
   itemsFromSnapshot,
   rpcErrorCode,
+  type ContractSignedCopy,
   type LineItemDraft,
   type SnapshotItem,
 } from "@/data/documents";
 import { formatUsdFromCents } from "@/data/money";
 import { sendMessage, startConversation } from "@/data/messagingRepository";
 import { downloadAuthenticatedPdf } from "@/data/pdfDownload";
+import { tryRemoveProjectFile, uploadContractSignedCopy } from "@/data/fileStorage";
 import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import type {
@@ -58,6 +62,8 @@ export type ContractSummary = {
   expiresAt: string | null;
   sentAt: string | null;
   acceptedAt: string | null;
+  agencySigned: boolean;
+  signedCopy: ContractSignedCopy | null;
 };
 
 export type ProposalDetail = {
@@ -141,6 +147,8 @@ function toContractSummary(contract: ContractRow, revision: ContractRevisionRow)
     expiresAt: revision.expires_at,
     sentAt: revision.sent_at,
     acceptedAt: revision.accepted_at,
+    agencySigned: contractIsAgencySigned(revision),
+    signedCopy: contractSignedCopyFromRow(contract),
   };
 }
 
@@ -627,6 +635,32 @@ export async function sendContract(contractId: string): Promise<{ emailed: boole
     return { emailed: true };
   } catch {
     return { emailed: false };
+  }
+}
+
+export async function signContract(contractId: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("sign_contract", { p_contract_id: contractId });
+  throwIf(error, "sign contract", "Unable to sign this contract.");
+}
+
+export async function uploadClientSignedCopy(contractId: string, file: File): Promise<void> {
+  const path = await uploadContractSignedCopy({ contractId, file });
+  try {
+    const client = db();
+    const { data, error } = await client.rpc("register_contract_signed_copy", {
+      p_contract_id: contractId,
+      p_storage_path: path,
+      p_file_name: file.name,
+      p_mime_type: file.type || "",
+      p_file_size: file.size,
+    });
+    throwIf(error, "register signed copy", "Unable to save the signed copy.");
+    const previous = typeof data === "string" && data.trim() && data !== path ? data : null;
+    if (previous) await tryRemoveProjectFile(previous);
+  } catch (error) {
+    await tryRemoveProjectFile(path);
+    throw error;
   }
 }
 

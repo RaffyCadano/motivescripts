@@ -1,3 +1,4 @@
+import { deliverablesFromScope } from "@/data/proposalPresets";
 import {
   emptyScopeDraft,
   normalizeScopeFeatures,
@@ -184,11 +185,13 @@ export async function seedProposalDraftFromBrief(proposalId: string, clientId: s
   const revisionId = (data as { working_revision_id: string | null } | null)?.working_revision_id;
   if (!revisionId) return;
 
+  const scope = proposalScopeFromBrief(brief);
   const { error: updateError } = await client
     .from("proposal_revisions")
     .update({
-      scope: proposalScopeFromBrief(brief),
+      scope,
       overview: proposalOverviewFromBrief(brief),
+      deliverables_text: deliverablesFromScope(scope),
     })
     .eq("id", revisionId)
     .eq("status", "draft");

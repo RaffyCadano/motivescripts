@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { useClientProjects } from "@/components/admin/leads/LeadsProvider";
 import type { AgencyClient } from "@/data/agencyClients";
 import { formatClientDate } from "@/data/agencyClients";
 import { SCOPE_PACKAGE_INCLUDED, scopeStatus, scopeStatusLabel, type ClientScopeBrief } from "@/data/scopeBriefs";
 import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
+import { cn } from "@/lib/cn";
 
 export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
-  const projects = useClientProjects(client.id);
   const [brief, setBrief] = useState<ClientScopeBrief | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,7 +27,6 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
     };
   }, [client.id]);
 
-  const hasProject = projects.length > 0;
   const status = scopeStatus(brief);
   const pages = brief
     ? [...SCOPE_PACKAGE_INCLUDED, ...brief.selectedPages.filter((item) => item !== "Other"), brief.otherPages].filter(
@@ -42,8 +39,20 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
   const styles = brief ? [...brief.designStyles.filter((item) => item !== "Other"), brief.otherStyle].filter(Boolean) : [];
 
   return (
-    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-      <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Website Scope</h2>
+    <section
+      className={cn(
+        "rounded-[var(--admin-radius)] border bg-[var(--admin-card)] p-5",
+        status === "submitted" ? "border-[rgb(16_185_129_/_0.35)]" : "border-[var(--admin-line)]",
+      )}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Website Scope</h2>
+        {!loading && status === "submitted" ? (
+          <span className="inline-flex items-center rounded-full bg-[rgb(16_185_129_/_0.12)] px-2.5 py-0.5 font-heading text-[11px] font-semibold text-[#0f7a56]">
+            Ready for review
+          </span>
+        ) : null}
+      </div>
       {loading ? (
         <div className="mt-4 h-24 animate-pulse rounded-lg bg-[var(--admin-bg)]" />
       ) : status === "not_started" || !brief ? (
@@ -90,31 +99,6 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
             {brief.likedWebsites ? <Block label="Websites they like" value={brief.likedWebsites} /> : null}
             {brief.additionalNotes ? <Block label="Additional requirements" value={brief.additionalNotes} /> : null}
           </dl>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {!hasProject ? (
-              <Link
-                to={`/admin/projects/new?client=${client.id}`}
-                className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white"
-              >
-                Create project
-              </Link>
-            ) : (
-              <Link
-                to={`/admin/proposals/new?client=${client.id}`}
-                className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white"
-              >
-                Create proposal
-              </Link>
-            )}
-            {hasProject ? (
-              <Link
-                to={`/admin/projects/new?client=${client.id}`}
-                className="inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-              >
-                Another project
-              </Link>
-            ) : null}
-          </div>
         </>
       )}
     </section>

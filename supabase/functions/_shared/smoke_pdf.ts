@@ -164,6 +164,9 @@ for (const statusLabel of contractStatuses) {
     generalTerms: longClause,
     acceptedAt: statusLabel === "Accepted" ? "2026-08-22T18:30:00Z" : null,
     acceptedEmail: statusLabel === "Accepted" ? "jane@example.com" : null,
+    agencySignedAt: statusLabel === "Draft" ? null : "2026-08-21T14:00:00Z",
+    agencySignedName: statusLabel === "Draft" ? null : "Alex Rivera",
+    agencySignedEmail: statusLabel === "Draft" ? null : "alex@motivescripts.com",
     agencyEmail: "support@motivescripts.com",
   });
   assertPdf(bytes, `contract ${statusLabel}`);
@@ -196,6 +199,9 @@ const sparseContract = await generateContractPdf({
   generalTerms: "",
   acceptedAt: null,
   acceptedEmail: null,
+  agencySignedAt: "2026-08-21T14:00:00Z",
+  agencySignedName: "Alex Rivera",
+  agencySignedEmail: "alex@motivescripts.com",
   agencyEmail: "support@motivescripts.com",
 });
 assertPdf(sparseContract, "sparse contract");

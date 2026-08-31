@@ -42,6 +42,9 @@ export type ContractPdfModel = {
   generalTerms: string;
   acceptedAt: string | null;
   acceptedEmail: string | null;
+  agencySignedAt: string | null;
+  agencySignedName: string | null;
+  agencySignedEmail: string | null;
   agencyEmail: string;
 };
 
@@ -134,7 +137,7 @@ export async function generateContractPdf(model: ContractPdfModel): Promise<Uint
   drawSection(ctx, "General terms", model.generalTerms);
 
   ctx.y -= 4;
-  ensureSpace(ctx, 118);
+  ensureSpace(ctx, 132);
   drawText(ctx.page, "SIGNATURES", MARGIN, ctx.y, bold, 8, MUTED);
   ctx.y -= 14;
   drawBody(
@@ -149,7 +152,7 @@ export async function generateContractPdf(model: ContractPdfModel): Promise<Uint
   const gap = 24;
   const colW = (PAGE_W - MARGIN * 2 - gap) / 2;
   const rightX = MARGIN + colW + gap;
-  ensureSpace(ctx, 78);
+  ensureSpace(ctx, 90);
 
   function drawSignatureColumn(x: number, heading: string, name: string, detail: string, status: string) {
     drawText(ctx.page, heading, x, ctx.y, bold, 8, MUTED);
@@ -169,10 +172,18 @@ export async function generateContractPdf(model: ContractPdfModel): Promise<Uint
   }
 
   const clientAccepted = Boolean(model.acceptedAt || model.acceptedEmail);
+  const agencySigned = Boolean(model.agencySignedAt || model.agencySignedName);
   const clientDetail = [
     model.contactName && model.contactName !== model.companyName ? model.contactName : null,
     clientAccepted ? model.acceptedEmail : null,
     clientAccepted && model.acceptedAt ? formatTimestamp(model.acceptedAt) : null,
+  ]
+    .filter(Boolean)
+    .join("  ·  ");
+  const agencyDetail = [
+    agencySigned ? model.agencySignedName || "Authorized representative" : "Authorized representative",
+    agencySigned ? model.agencySignedEmail : null,
+    agencySigned && model.agencySignedAt ? formatTimestamp(model.agencySignedAt) : null,
   ]
     .filter(Boolean)
     .join("  ·  ");
@@ -183,8 +194,14 @@ export async function generateContractPdf(model: ContractPdfModel): Promise<Uint
     clientDetail || "Signed in the client portal",
     clientAccepted ? "Accepted in portal" : "",
   );
-  drawSignatureColumn(rightX, "AGENCY", "MotiveScripts", "Authorized representative", "");
-  ctx.y -= 68;
+  drawSignatureColumn(
+    rightX,
+    "AGENCY",
+    "MotiveScripts",
+    agencyDetail,
+    agencySigned ? "Signed" : "",
+  );
+  ctx.y -= 80;
 
   return await finishPdf(ctx);
 }

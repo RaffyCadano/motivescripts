@@ -8,6 +8,12 @@ function snapshotOrField(snapshot: Record<string, unknown> | null, key: string, 
   return asText(fallback);
 }
 
+function snapshotTimestamp(snapshot: Record<string, unknown> | null, key: string, fallback: unknown): string | null {
+  const fromSnap = snapshot ? snapshot[key] : null;
+  const value = asText(fromSnap) || asText(fallback);
+  return value || null;
+}
+
 export async function loadContractPdfModel(
   // deno-lint-ignore no-explicit-any
   admin: { from: (table: string) => any },
@@ -91,6 +97,9 @@ export async function loadContractPdfModel(
     generalTerms: snapshotOrField(snapshot, "general_terms", revision.general_terms),
     acceptedAt: asText(revision.accepted_at) || null,
     acceptedEmail: asText(revision.accepted_email) || null,
+    agencySignedAt: snapshotTimestamp(snapshot, "agency_signed_at", revision.agency_signed_at),
+    agencySignedName: snapshotOrField(snapshot, "agency_signed_name", revision.agency_signed_name) || null,
+    agencySignedEmail: snapshotOrField(snapshot, "agency_signed_email", revision.agency_signed_email) || null,
     agencyEmail: agencyEmail(),
   };
 }
