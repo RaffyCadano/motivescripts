@@ -30,7 +30,8 @@ export function useUnsavedNavigation(dirty: boolean) {
         return;
       }
       const target = (event.target as HTMLElement | null)?.closest("a[href]");
-      if (!target || target.getAttribute("target") === "_blank" || target.getAttribute("download")) return;
+      if (!(target instanceof HTMLAnchorElement)) return;
+      if (target.target === "_blank" || target.hasAttribute("download")) return;
       const href = target.href;
       if (!href) return;
       const next = new URL(href, window.location.href);
