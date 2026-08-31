@@ -17,9 +17,16 @@ import {
   type ScopeStatus,
 } from "@/data/scopeBriefs";
 import { fetchClientScopeBrief, saveClientScopeBrief } from "@/data/scopeBriefsRepository";
+import {
+  applyFeatureRecommendations,
+  applyPageRecommendations,
+  recommendedScopeFeatures,
+  recommendedScopePages,
+} from "@/data/scopeRecommendations";
 import { formatClientDate } from "@/data/agencyClients";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
+import { ScopeRecommendPanel } from "@/components/client/ScopeRecommendPanel";
 
 const fieldClass =
   "mt-2 w-full rounded-lg border border-[var(--client-line)] bg-white px-3 py-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]";
@@ -89,6 +96,16 @@ export function ClientScope() {
     patch({
       [key]: list.includes(label) ? list.filter((item) => item !== label) : [...list, label],
     });
+  }
+
+  function addRecommendedPages(picks: string[]) {
+    const next = applyPageRecommendations(draft, picks);
+    patch({ pages: next.pages });
+  }
+
+  function addRecommendedFeatures(picks: string[]) {
+    const next = applyFeatureRecommendations(draft, picks);
+    patch({ features: next.features });
   }
 
   async function persist(submit: boolean) {
@@ -217,6 +234,13 @@ export function ClientScope() {
                 />
               </label>
             ) : null}
+            <ScopeRecommendPanel
+              kind="pages"
+              industry={client?.industry}
+              suggestions={recommendedScopePages(client?.industry)}
+              selected={draft.pages}
+              onAdd={addRecommendedPages}
+            />
           </fieldset>
 
           <fieldset>
@@ -244,6 +268,13 @@ export function ClientScope() {
                 and include applicable costs in your proposal.
               </p>
             ) : null}
+            <ScopeRecommendPanel
+              kind="features"
+              industry={client?.industry}
+              suggestions={recommendedScopeFeatures(client?.industry)}
+              selected={draft.features}
+              onAdd={addRecommendedFeatures}
+            />
           </fieldset>
 
           <label className="block">
