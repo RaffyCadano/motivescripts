@@ -629,7 +629,7 @@ export function AdminSettings() {
           {section === "danger" ? (
             <Card
               title="Danger Zone"
-              description="These actions permanently remove workspace records. Team accounts and Settings are not deleted."
+              description="These actions permanently remove test workspace records, including paid invoices and accepted documents. Team accounts and Settings are not deleted. Stripe Dashboard history is not removed."
               danger
             >
               {!canEditAgency ? (
@@ -779,28 +779,28 @@ const dangerActions: {
     scope: "projects",
     title: "Delete all projects",
     button: "Delete all projects",
-    description: "Permanently removes every project and its files, tasks, and activity.",
-    tip: "Deletes projects, files, tasks, milestones, and project activity. Clients, leads, proposals, contracts, and invoices stay. Documents keep their client and lose the project link.",
+    description: "Permanently removes every project and its files, tasks, messages, and activity — including work that already has invoices or signed documents.",
+    tip: "Deletes projects, files, tasks, milestones, project conversations, and activity. Clients, leads, proposals, contracts, and invoices stay. Paid or accepted documents keep their client and lose the project link so this cannot fail on a progressed project.",
     confirm:
-      "This permanently deletes every project and its files. Proposals, contracts, and invoices are kept and unlinked from those projects.",
+      "This permanently deletes every project and its files, tasks, and activity. Proposals, contracts, and invoices are kept and unlinked from those projects, even if they are sent, accepted, or paid.",
   },
   {
     scope: "clients",
     title: "Delete all clients",
     button: "Delete all clients",
-    description: "Permanently removes every client, the records they own, and their portal Auth accounts.",
-    tip: "Deletes every client plus their projects, files, messages, proposals, contracts, invoices, and payment records in this workspace. Client portal Auth accounts are deleted. Leads, team members, and Settings stay. Stripe charges are not refunded.",
+    description: "Permanently removes every client, the records they own, and their portal Auth accounts — including paid invoices and accepted documents.",
+    tip: "Deletes every client plus their projects, scope briefs, files, messages, proposals, contracts, invoices, and payment records in this workspace. Client portal Auth accounts are deleted so you can invite the same email again. Leads, team members, and Settings stay. Stripe Dashboard charges are not refunded.",
     confirm:
-      "This permanently deletes every client, their documents, invoices, and payment records in MotiveScripts, and their client portal Auth accounts. Invoice-level delete still never removes payments; this workspace wipe is the exception. Team accounts stay.",
+      "This permanently deletes every client, their documents, invoices, payments, files, messages, and portal accounts. Paid and accepted records are included. Team accounts and Settings stay. Stripe test payments remain in Stripe.",
   },
   {
     scope: "agency",
     title: "Delete entire agency",
     button: "Delete entire agency",
-    description: "Permanently wipes workspace records and client portal Auth accounts. Team accounts and Settings stay.",
-    tip: "Deletes leads, clients, projects, files, messages, proposals, contracts, invoices, payment records, and client portal Auth accounts. Team accounts and Settings stay. Document numbers reset. Stripe Dashboard history is not refunded or removed.",
+    description: "The strongest test-workspace reset. Wipes client data so you can run the commercial workflow again from a clean state.",
+    tip: "Deletes leads, clients, projects, scope briefs, files, messages, proposals, contracts, invoices, payment records, and client portal Auth accounts. Team accounts and Settings stay. Document numbers reset. Stripe Dashboard history is not refunded or removed.",
     confirm:
-      "This permanently deletes all workspace records, including invoices, payment records, and client portal Auth accounts. Team accounts and Settings are kept. Stripe Dashboard history is not refunded or removed.",
+      "This permanently deletes all clients, projects, proposals, contracts, invoices, payments, files, messages, and portal accounts. Team accounts and Settings will remain.",
   },
 ];
 

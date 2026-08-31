@@ -234,6 +234,12 @@ export async function purgeWorkspace(scope: WorkspacePurgeScope, confirmation: s
     if (message.includes("CONFIRMATION_REQUIRED")) {
       throw new AgencyDbError("Type the confirmation phrase exactly to continue.", error);
     }
+    if (message.includes("PORTAL_PURGE_FAILED") || message.toLowerCase().includes("auth.users")) {
+      throw new AgencyDbError(
+        "Workspace records were not deleted because client portal accounts could not be removed. Try again or delete those users in Supabase Auth, then retry.",
+        error,
+      );
+    }
     fail("purge workspace", error, "Unable to complete this workspace action.");
   }
 }

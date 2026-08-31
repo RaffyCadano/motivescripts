@@ -5,6 +5,7 @@ import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionSt
 import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { documentMailRecipientCopy, documentMailRecipients } from "@/data/documents";
+import { InvoiceBillingTypeCard } from "@/components/invoices/InvoiceBillingTypeCard";
 import { InvoiceDocumentView } from "@/components/invoices/InvoiceDocumentView";
 import { InvoiceDraftForm, type InvoiceDraftFormValue } from "@/components/invoices/InvoiceDraftForm";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
@@ -16,9 +17,11 @@ import {
   proposalLineDrafts,
 } from "@/data/documentsRepository";
 import {
+  applyInvoiceBillingNotes,
   emptyLineItem,
   formatInvoiceDate,
   invoiceDraftTotalCents,
+  invoiceItemsForBillingType,
   invoiceLinkingBlockedReason,
   invoiceSendBlockedReason,
   invoiceSendConfirmCopy,
@@ -26,9 +29,12 @@ import {
   isoCalendarDate,
   isoCalendarDatePlusDays,
   previewInvoiceDraftItems,
+  splitInvoiceInvestmentCents,
+  suggestedInvoiceBillingType,
+  type InvoiceBillingType,
   type LineItemDraft,
 } from "@/data/invoices";
-import { createInvoice, saveInvoiceDraft, sendInvoice } from "@/data/invoicesRepository";
+import { createInvoice, fetchInvoiceSummaries, saveInvoiceDraft, sendInvoice, type InvoiceSummary } from "@/data/invoicesRepository";
 import { formatMoneyFromCents, formatUsdFromCents } from "@/data/money";
 import { invoiceNotesFromSettings } from "@/data/settings";
 import { fetchAgencySettings } from "@/data/settingsRepository";
@@ -65,6 +71,11 @@ export function AdminInvoiceNew() {
   const [linkedProposalId, setLinkedProposalId] = useState<string | null>(null);
   const [seededContractNumber, setSeededContractNumber] = useState("");
   const [contractSeedReady, setContractSeedReady] = useState(!presetContract);
+  const [investmentCents, setInvestmentCents] = useState(0);
+  const [sourceItems, setSourceItems] = useState<LineItemDraft[]>([]);
+  const [billingType, setBillingType] = useState<InvoiceBillingType>(presetContract ? "deposit" : "custom");
+  const [relatedInvoices, setRelatedInvoices] = useState<InvoiceSummary[]>([]);
+  const billingTouched = useRef(false);
   const [busy, setBusy] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
   const saving = useRef(false);
@@ -133,20 +144,62 @@ export function AdminInvoiceNew() {
   }, [accepted, presetContract]);
 
   useEffect(() => {
-    if (!presetContract) return;
+    if (!form.clientId) {
+      setRelatedInvoices([]);
+      return;
+    }
     let active = true;
-    void seedInvoiceFromContract(presetContract)
+    void fetchInvoiceSummaries(form.clientId)
+      .then((rows) => {
+        if (active) setRelatedInvoices(rows);
+      })
+      .catch(() => {
+        if (active) setRelatedInvoices([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [form.clientId]);
+
+  useEffect(() => {
+    const contractId = form.contractId.trim();
+    if (!contractId) {
+      setInvestmentCents(0);
+      setSourceItems([]);
+      if (!presetContract) {
+        setLinkedProposalId(null);
+        setSeededContractNumber("");
+      }
+      setContractSeedReady(true);
+      return;
+    }
+    let active = true;
+    setContractSeedReady(false);
+    void seedInvoiceFromContract(contractId)
       .then((seed) => {
         if (!active || !seed) return;
         setLinkedProposalId(seed.proposalId);
         setSeededContractNumber(seed.contractNumber);
-        setItems(seed.items);
+        setSourceItems(seed.items);
+        setInvestmentCents(seed.investmentCents);
+        const related = relatedInvoices.filter((row) => {
+          if (row.status === "cancelled") return false;
+          if (row.contractId === seed.contractId) return true;
+          if (seed.projectId && row.projectId === seed.projectId) return true;
+          return false;
+        });
+        const nextType = billingTouched.current
+          ? billingType
+          : suggestedInvoiceBillingType(related, splitInvoiceInvestmentCents(seed.investmentCents).depositCents);
+        const nextItems = invoiceItemsForBillingType(nextType, seed.items, seed.investmentCents);
+        setBillingType(nextType);
+        setItems(nextItems ?? seed.items);
         setForm((current) => ({
           ...current,
           clientId: seed.clientId || current.clientId,
           projectId: current.projectId || seed.projectId || "",
           contractId: seed.contractId || current.contractId,
-          notes: mergeInvoiceNotes(current.notes, seed.notes),
+          notes: applyInvoiceBillingNotes(mergeInvoiceNotes(current.notes, seed.notes), nextType),
           adminNotes: seed.adminNotes || current.adminNotes,
         }));
       })
@@ -157,7 +210,41 @@ export function AdminInvoiceNew() {
     return () => {
       active = false;
     };
-  }, [presetContract]);
+    // Seed from the selected accepted contract. relatedInvoices is read for the first suggestion only.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.contractId]);
+
+  const projectRelatedInvoices = useMemo(
+    () =>
+      relatedInvoices.filter((row) => {
+        if (row.status === "cancelled") return false;
+        if (form.contractId && row.contractId === form.contractId) return true;
+        if (form.projectId && row.projectId === form.projectId) return true;
+        return false;
+      }),
+    [relatedInvoices, form.contractId, form.projectId],
+  );
+
+  useEffect(() => {
+    if (billingTouched.current || investmentCents <= 0) return;
+    const nextType = suggestedInvoiceBillingType(
+      projectRelatedInvoices,
+      splitInvoiceInvestmentCents(investmentCents).depositCents,
+    );
+    if (nextType === billingType) return;
+    const nextItems = invoiceItemsForBillingType(nextType, sourceItems, investmentCents);
+    setBillingType(nextType);
+    if (nextItems) setItems(nextItems);
+    setForm((current) => ({ ...current, notes: applyInvoiceBillingNotes(current.notes, nextType) }));
+  }, [projectRelatedInvoices, investmentCents, sourceItems, billingType]);
+
+  function chooseBillingType(type: InvoiceBillingType) {
+    billingTouched.current = true;
+    setBillingType(type);
+    const nextItems = invoiceItemsForBillingType(type, sourceItems, investmentCents);
+    if (nextItems) setItems(nextItems);
+    setForm((current) => ({ ...current, notes: applyInvoiceBillingNotes(current.notes, type) }));
+  }
 
   const clientProjects = projects.filter(
     (project) => project.clientId === form.clientId && (!project.archived || project.id === form.projectId),
@@ -351,7 +438,8 @@ export function AdminInvoiceNew() {
               <Link className="font-medium text-[var(--admin-blue)] hover:underline" to={`/admin/contracts/${form.contractId}`}>
                 {contractNumber}
               </Link>
-              {totals.total > 0 ? ` · ${formatUsdFromCents(totals.total)}` : ""}
+              {investmentCents > 0 ? ` · Project ${formatUsdFromCents(investmentCents)}` : ""}
+              {totals.total > 0 ? ` · Invoice ${formatUsdFromCents(totals.total)}` : ""}
             </p>
           ) : (
             <p className="mt-1 max-w-2xl text-sm text-[var(--admin-muted)]">
@@ -386,6 +474,14 @@ export function AdminInvoiceNew() {
       ) : (
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <form className="space-y-6" onSubmit={(event) => event.preventDefault()}>
+            <InvoiceBillingTypeCard
+              currency={form.currency}
+              investmentCents={investmentCents}
+              billingType={billingType}
+              relatedInvoices={projectRelatedInvoices}
+              disabled={busy || !contractSeedReady}
+              onChange={chooseBillingType}
+            />
             <InvoiceDraftForm
               value={form}
               items={items}
@@ -393,6 +489,11 @@ export function AdminInvoiceNew() {
               lockClient={lockClient}
               lockProject={lockProject}
               lockContract={Boolean(presetContract)}
+              lineItemsHelper={
+                investmentCents > 0
+                  ? "The Payment amount choice above fills these line items. You can still edit them. The invoice total is these line items, not the proposal investment."
+                  : undefined
+              }
               clients={clients.map((item) => ({ id: item.id, label: item.businessName }))}
               projects={clientProjects.map((item) => ({ id: item.id, label: item.name }))}
               contracts={contractOptions}
@@ -534,6 +635,7 @@ async function seedInvoiceFromContract(contractId: string): Promise<{
   items: LineItemDraft[];
   notes: string;
   adminNotes: string;
+  investmentCents: number;
 } | null> {
   const detail = await fetchContractDetail(contractId);
   if (!detail) return null;
@@ -551,10 +653,13 @@ async function seedInvoiceFromContract(contractId: string): Promise<{
     items = [
       {
         ...emptyLineItem(),
-        name: revision.title.trim() || "Website",
+        name: revision.title.trim() || "Website Design & Development",
         unitPriceCents: investmentCents || centsFromMoneyText(revision.compensation),
       },
     ];
+  }
+  if (investmentCents <= 0) {
+    investmentCents = invoiceDraftTotalCents(items, 0, 0).subtotal || centsFromMoneyText(revision.compensation);
   }
   return {
     clientId: detail.contract.client_id,
@@ -565,5 +670,6 @@ async function seedInvoiceFromContract(contractId: string): Promise<{
     items,
     notes: revision.payment_terms.trim(),
     adminNotes: `Copied from contract ${detail.contract.contract_number}.`,
+    investmentCents,
   };
 }

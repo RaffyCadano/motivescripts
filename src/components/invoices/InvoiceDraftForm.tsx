@@ -33,6 +33,7 @@ export function InvoiceDraftForm({
   lockProject = false,
   lockContract = false,
   disabled,
+  lineItemsHelper,
   onChange,
   onItemsChange,
 }: {
@@ -47,6 +48,7 @@ export function InvoiceDraftForm({
   lockProject?: boolean;
   lockContract?: boolean;
   disabled?: boolean;
+  lineItemsHelper?: string;
   onChange: (value: InvoiceDraftFormValue) => void;
   onItemsChange: (items: LineItemDraft[]) => void;
 }) {
@@ -237,9 +239,8 @@ export function InvoiceDraftForm({
         helper="Add the services or deliverables being billed. Quantity × unit price is calculated in integer cents."
       >
         <p className="text-sm leading-6 text-[var(--admin-muted)]">
-          This invoice bills the amount shown here. If payment terms are a deposit and a remainder, label this charge
-          (for example “Website Design & Development — 50% Deposit”) and set that amount. Create another invoice later
-          for the rest.
+          {lineItemsHelper ??
+            "This invoice bills the amount shown here. If payment terms are a deposit and a remainder, label this charge (for example “Website Design & Development — 50% Deposit”) and set that amount. Create another invoice later for the rest."}
         </p>
         <LineItemsEditor items={items} disabled={disabled} showSubtotal={false} onChange={onItemsChange} />
         <div className="grid gap-4 sm:grid-cols-2">

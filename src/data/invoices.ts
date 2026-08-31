@@ -140,6 +140,89 @@ export function invoiceDraftTotalCents(items: LineItemDraft[], taxCents: number,
   return { subtotal, tax, discount, total };
 }
 
+export type InvoiceBillingType = "full" | "deposit" | "balance" | "custom";
+
+export const INVOICE_DEPOSIT_NOTE =
+  "50% deposit due to begin the project. The remaining 50% will be invoiced separately before the website goes live.";
+export const INVOICE_BALANCE_NOTE = "Remaining 50% balance due before the website goes live.";
+
+/** Same integer-cent split as contracts: first half floors, remainder keeps the leftover cent. */
+export function splitInvoiceInvestmentCents(cents: number): { depositCents: number; remainderCents: number } {
+  const total = Math.max(0, Math.floor(cents) || 0);
+  const depositCents = Math.floor(total / 2);
+  return { depositCents, remainderCents: total - depositCents };
+}
+
+export function cloneInvoiceLineItems(items: LineItemDraft[]): LineItemDraft[] {
+  return items.map((item) => ({ ...item, key: `item-${crypto.randomUUID()}` }));
+}
+
+export function invoiceBillingServiceName(items: LineItemDraft[]): string {
+  const named = items.find((item) => item.name.trim())?.name.trim() ?? "";
+  const cleaned = named.replace(/\s+[—–-]\s+(50% Deposit|Remaining 50% Balance)\s*$/i, "").trim();
+  return cleaned || "Website Design & Development";
+}
+
+export function invoiceItemsForBillingType(
+  type: InvoiceBillingType,
+  sourceItems: LineItemDraft[],
+  investmentCents: number,
+): LineItemDraft[] | null {
+  if (type === "custom") return null;
+  if (type === "full") {
+    if (sourceItems.some(invoiceItemIsBillable)) return cloneInvoiceLineItems(sourceItems);
+    if (investmentCents > 0) {
+      return [
+        {
+          ...emptyLineItem(),
+          name: invoiceBillingServiceName(sourceItems),
+          quantity: 1,
+          unitPriceCents: investmentCents,
+        },
+      ];
+    }
+    return [emptyLineItem()];
+  }
+  const split = splitInvoiceInvestmentCents(investmentCents);
+  const amount = type === "deposit" ? split.depositCents : split.remainderCents;
+  const suffix = type === "deposit" ? "50% Deposit" : "Remaining 50% Balance";
+  return [
+    {
+      ...emptyLineItem(),
+      name: `${invoiceBillingServiceName(sourceItems)} — ${suffix}`,
+      quantity: 1,
+      unitPriceCents: amount,
+    },
+  ];
+}
+
+function billingNoteParagraphs(notes: string): string[] {
+  return notes
+    .split(/\n\n+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+export function applyInvoiceBillingNotes(notes: string, type: InvoiceBillingType): string {
+  const kept = billingNoteParagraphs(notes).filter(
+    (part) => part !== INVOICE_DEPOSIT_NOTE && part !== INVOICE_BALANCE_NOTE,
+  );
+  if (type === "deposit") return [INVOICE_DEPOSIT_NOTE, ...kept].join("\n\n");
+  if (type === "balance") return [INVOICE_BALANCE_NOTE, ...kept].join("\n\n");
+  return kept.join("\n\n");
+}
+
+export function suggestedInvoiceBillingType(
+  existing: { totalCents: number; status: InvoiceStatus }[],
+  depositCents: number,
+): InvoiceBillingType {
+  if (depositCents <= 0) return "custom";
+  const matches = existing.filter((row) => row.status !== "cancelled" && row.totalCents === depositCents);
+  if (matches.length === 0) return "deposit";
+  if (matches.length === 1) return "balance";
+  return "custom";
+}
+
 export function invoiceSendBlockedReason(
   items: LineItemDraft[],
   taxCents: number,
