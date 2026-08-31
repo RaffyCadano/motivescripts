@@ -537,6 +537,16 @@ export type ClientScopeBriefRow = {
   client_id: string;
   selected_pages: string[];
   goal: string;
+  features: string[];
+  other_pages: string;
+  other_features: string;
+  has_existing_website: boolean;
+  current_website_url: string;
+  current_website_notes: string;
+  design_styles: string[];
+  other_style: string;
+  liked_websites: string;
+  additional_notes: string;
   submitted_at: string;
   updated_at: string;
   updated_by: string | null;

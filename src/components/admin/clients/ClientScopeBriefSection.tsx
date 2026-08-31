@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { useClientProjects } from "@/components/admin/leads/LeadsProvider";
 import type { AgencyClient } from "@/data/agencyClients";
 import { formatClientDate } from "@/data/agencyClients";
+import { SCOPE_PACKAGE_INCLUDED, type ClientScopeBrief } from "@/data/scopeBriefs";
 import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
-import type { ClientScopeBrief } from "@/data/scopeBriefs";
 
 export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
   const projects = useClientProjects(client.id);
@@ -30,10 +30,19 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
   }, [client.id]);
 
   const hasProject = projects.length > 0;
+  const pages = brief
+    ? [...SCOPE_PACKAGE_INCLUDED, ...brief.selectedPages.filter((item) => item !== "Other"), brief.otherPages].filter(
+        Boolean,
+      )
+    : [];
+  const features = brief
+    ? [...brief.features.filter((item) => item !== "Other"), brief.otherFeatures].filter(Boolean)
+    : [];
+  const styles = brief ? [...brief.designStyles.filter((item) => item !== "Other"), brief.otherStyle].filter(Boolean) : [];
 
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-      <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Scope form</h2>
+      <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Website Scope</h2>
       {loading ? (
         <div className="mt-4 h-24 animate-pulse rounded-lg bg-[var(--admin-bg)]" />
       ) : brief ? (
@@ -42,18 +51,23 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
             Submitted {formatClientDate(brief.submittedAt)}
             {brief.updatedAt !== brief.submittedAt ? ` · Updated ${formatClientDate(brief.updatedAt)}` : ""}
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {brief.selectedPages.map((page) => (
-              <span
-                key={page}
-                className="inline-flex min-h-8 items-center rounded-full border border-[var(--admin-line)] bg-[var(--admin-bg)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)]"
-              >
-                {page}
-              </span>
-            ))}
-          </div>
-          <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-[var(--admin-ink)]">{brief.goal}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
+          <dl className="mt-4 space-y-4">
+            <Block label="Business goal" value={brief.goal} />
+            <ChipBlock label="Pages" values={pages} />
+            <ChipBlock label="Features" values={features.length ? features : ["None selected"]} muted={!features.length} />
+            <Block
+              label="Existing website"
+              value={
+                brief.hasExistingWebsite
+                  ? [brief.currentWebsiteUrl || "Yes", brief.currentWebsiteNotes].filter(Boolean).join("\n")
+                  : "No current website"
+              }
+            />
+            <ChipBlock label="Design direction" values={styles.length ? styles : ["Not specified"]} muted={!styles.length} />
+            {brief.likedWebsites ? <Block label="Websites they like" value={brief.likedWebsites} /> : null}
+            {brief.additionalNotes ? <Block label="Additional requirements" value={brief.additionalNotes} /> : null}
+          </dl>
+          <div className="mt-5 flex flex-wrap gap-2">
             {!hasProject ? (
               <Link
                 to={`/admin/projects/new?client=${client.id}`}
@@ -86,5 +100,34 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
         </p>
       )}
     </section>
+  );
+}
+
+function Block({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-[12px] text-[var(--admin-muted)]">{label}</dt>
+      <dd className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[var(--admin-ink)]">{value}</dd>
+    </div>
+  );
+}
+
+function ChipBlock({ label, values, muted = false }: { label: string; values: string[]; muted?: boolean }) {
+  return (
+    <div>
+      <dt className="text-[12px] text-[var(--admin-muted)]">{label}</dt>
+      <dd className="mt-2 flex flex-wrap gap-2">
+        {values.map((value) => (
+          <span
+            key={value}
+            className={`inline-flex min-h-8 items-center rounded-full border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold ${
+              muted ? "bg-white text-[var(--admin-muted)]" : "bg-[var(--admin-bg)] text-[var(--admin-ink)]"
+            }`}
+          >
+            {value}
+          </span>
+        ))}
+      </dd>
+    </div>
   );
 }
