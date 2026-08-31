@@ -12,8 +12,6 @@ import {
   type LineItemDraft,
   type SnapshotItem,
 } from "@/data/documents";
-import { formatUsdFromCents } from "@/data/money";
-import { sendMessage, startConversation } from "@/data/messagingRepository";
 import { downloadAuthenticatedPdf } from "@/data/pdfDownload";
 import { tryRemoveProjectFile, uploadContractSignedCopy } from "@/data/fileStorage";
 import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
@@ -367,67 +365,10 @@ async function invokeDocumentEmail(kind: "proposal" | "contract", id: string): P
   }
 }
 
-async function postProposalConversation(proposalId: string): Promise<void> {
-  const detail = await fetchProposalDetail(proposalId);
-  if (!detail) return;
-  const validUntil = detail.working.valid_until
-    ? new Date(`${detail.working.valid_until}T00:00:00`).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "";
-  const body = [
-    "A proposal is ready for you to review.",
-    "",
-    `${detail.proposal.proposal_number} — ${detail.working.title.trim() || "Proposal"}`,
-    `Investment ${formatUsdFromCents(detail.working.investment_cents)}`,
-    validUntil ? `Valid until ${validUntil}` : "",
-    "",
-    "Open Proposals in your client portal to review and accept it.",
-  ]
-    .filter((line) => line !== undefined)
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-
-  const client = db();
-  const { data, error } = await client
-    .from("conversations")
-    .select("id, project_id, status, last_message_at")
-    .eq("client_id", detail.proposal.client_id)
-    .order("last_message_at", { ascending: false });
-  throwIf(error, "proposal message", "Unable to post this proposal in Messages.");
-  const rows = data ?? [];
-  const projectId = detail.proposal.project_id;
-  const match =
-    rows.find((row) => projectId && row.project_id === projectId && row.status === "open") ??
-    rows.find((row) => projectId && row.project_id === projectId) ??
-    rows.find((row) => row.status === "open") ??
-    rows[0];
-
-  if (match) {
-    await sendMessage(match.id, body);
-    return;
-  }
-
-  await startConversation({
-    subject: `Proposal ${detail.proposal.proposal_number}`.slice(0, 120),
-    body,
-    projectId,
-    clientId: detail.proposal.client_id,
-  });
-}
-
 export async function sendProposal(proposalId: string): Promise<{ emailed: boolean }> {
   const client = db();
   const { error } = await client.rpc("send_proposal", { p_proposal_id: proposalId });
   throwIf(error, "send proposal", "Unable to send this proposal.");
-  try {
-    await postProposalConversation(proposalId);
-  } catch (caught) {
-    logDbError("proposal message", caught);
-  }
   try {
     await invokeDocumentEmail("proposal", proposalId);
     return { emailed: true };

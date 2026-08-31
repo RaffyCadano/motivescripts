@@ -206,6 +206,37 @@ export function sortMessages(items: ConversationMessage[]): ConversationMessage[
   return [...items].sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
 }
 
+/** Prefer one open thread per client, then a matching project, then the latest thread. */
+export function findPrimaryConversation(
+  conversations: ConversationSummary[],
+  filter: { clientId?: string; projectId?: string },
+): ConversationSummary | null {
+  const scoped = conversations.filter((item) => !filter.clientId || item.clientId === filter.clientId);
+  if (scoped.length === 0) return null;
+
+  const byRecency = [...scoped].sort((a, b) => {
+    const time = b.lastMessageAt.localeCompare(a.lastMessageAt);
+    return time !== 0 ? time : b.id.localeCompare(a.id);
+  });
+
+  if (filter.projectId) {
+    return (
+      byRecency.find((item) => item.projectId === filter.projectId && item.status === "open") ??
+      byRecency.find((item) => item.projectId === filter.projectId) ??
+      byRecency.find((item) => item.status === "open") ??
+      byRecency[0] ??
+      null
+    );
+  }
+
+  return byRecency.find((item) => item.status === "open") ?? byRecency[0] ?? null;
+}
+
+export function defaultConversationSubject(input: { clientName?: string; projectName?: string | null }): string {
+  const value = (input.projectName || input.clientName || "Messages").trim();
+  return (value || "Messages").slice(0, SUBJECT_MAX_LENGTH);
+}
+
 export function displaySenderLabel(message: ConversationMessage, currentUserId: string, tone: MessagingTone): string {
   if (message.senderUserId === currentUserId) return tone === "client" ? "You" : message.senderLabel || "You";
   if (tone === "client" && message.senderRole === "admin") return "MotiveScripts";

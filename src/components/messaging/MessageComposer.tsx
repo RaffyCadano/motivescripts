@@ -43,7 +43,7 @@ export function MessageComposer({ tone, value, sending, disabled, onChange, onSe
           value={value}
           disabled={sending || disabled}
           maxLength={MESSAGE_MAX_LENGTH + 20}
-          placeholder="Write a message…"
+          placeholder="Write a question or update…"
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={onKeyDown}
           className={cn(
@@ -67,7 +67,7 @@ export function MessageComposer({ tone, value, sending, disabled, onChange, onSe
       <p className={cn("mt-1.5 text-[11px]", tooLong ? "text-red-600" : styles.muted)}>
         {tooLong
           ? `Messages can be at most ${MESSAGE_MAX_LENGTH} characters.`
-          : "Enter to send · Shift+Enter for a new line"}
+          : "Shift+Enter for a new line"}
       </p>
     </form>
   );

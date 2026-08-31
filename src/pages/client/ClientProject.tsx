@@ -63,14 +63,17 @@ export function ClientProject() {
       <ClientScopePrompt brief={brief} hasProject={Boolean(project)} />
       <ClientProjectCard project={project} />
       {project ? (
-        <p>
+        <div>
           <Link
             to={`/client/messages?project=${project.id}`}
             className="inline-flex h-10 items-center rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] px-4 font-heading text-sm font-semibold text-[var(--client-ink)] hover:bg-[var(--client-bg)]"
           >
             Message MotiveScripts
           </Link>
-        </p>
+          <p className="mt-2 text-sm text-[var(--client-muted)]">
+            For general questions. Use Review to approve files or request changes.
+          </p>
+        </div>
       ) : null}
       {stages.length > 0 ? <ClientTimeline stages={stages} /> : null}
 

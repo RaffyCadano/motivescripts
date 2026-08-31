@@ -9,7 +9,8 @@ type ConversationListProps = {
   conversations: ConversationSummary[];
   activeId?: string;
   loading: boolean;
-  emptyLabel: string;
+  emptyTitle: string;
+  emptyDescription: string;
   showClient: boolean;
   onNew: () => void;
 };
@@ -20,7 +21,8 @@ export function ConversationList({
   conversations,
   activeId,
   loading,
-  emptyLabel,
+  emptyTitle,
+  emptyDescription,
   showClient,
   onNew,
 }: ConversationListProps) {
@@ -29,23 +31,26 @@ export function ConversationList({
   return (
     <aside className={cn("flex min-h-0 flex-col border-b lg:border-b-0 lg:border-r", styles.line)}>
       <div className={cn("flex items-center justify-between gap-2 border-b px-4 py-3", styles.line)}>
-        <p className={cn("text-[11px] font-semibold uppercase tracking-[0.14em]", styles.muted)}>Conversations</p>
+        <p className={cn("text-[11px] font-semibold uppercase tracking-[0.14em]", styles.muted)}>Inbox</p>
         <button
           type="button"
           className={cn(
-            "inline-flex h-8 items-center rounded-lg px-2.5 font-heading text-[12px] font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+            "inline-flex h-8 items-center whitespace-nowrap rounded-lg px-2.5 font-heading text-[12px] font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
             styles.blueBtn,
           )}
           onClick={onNew}
         >
-          New
+          New message
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-2">
         {loading ? (
           <p className={cn("px-2 py-6 text-sm", styles.muted)}>Loading conversations…</p>
         ) : conversations.length === 0 ? (
-          <p className={cn("px-2 py-6 text-sm", styles.muted)}>{emptyLabel}</p>
+          <div className="px-2 py-6">
+            <p className={cn("font-heading text-sm font-semibold", styles.ink)}>{emptyTitle}</p>
+            <p className={cn("mt-1 text-sm leading-relaxed", styles.muted)}>{emptyDescription}</p>
+          </div>
         ) : (
           <ul className="space-y-1">
             {conversations.map((item) => {

@@ -1,7 +1,6 @@
 import {
   draftsFromInvoiceItems,
   effectiveInvoiceStatus,
-  formatInvoiceDate,
   invoiceErrorMessage,
   invoiceItemClientDescription,
   invoiceItemIsBillable,
@@ -11,8 +10,6 @@ import {
   type InvoiceSnapshotItem,
   type LineItemDraft,
 } from "@/data/invoices";
-import { sendMessage, startConversation } from "@/data/messagingRepository";
-import { formatUsdFromCents } from "@/data/money";
 import { downloadAuthenticatedPdf } from "@/data/pdfDownload";
 import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -257,62 +254,10 @@ async function invokeInvoiceEmail(id: string): Promise<void> {
   }
 }
 
-async function postInvoiceConversation(invoiceId: string): Promise<void> {
-  const detail = await fetchInvoiceDetail(invoiceId);
-  if (!detail) return;
-  const due = formatInvoiceDate(detail.invoice.due_date);
-  const body = [
-    "A new invoice is ready.",
-    "",
-    `${detail.invoice.invoice_number}`,
-    `Total ${formatUsdFromCents(detail.invoice.total_cents)}`,
-    `Amount due ${formatUsdFromCents(detail.invoice.amount_due_cents)}`,
-    due !== "—" ? `Due ${due}` : "",
-    "",
-    "Open Invoices in your client portal to review and pay.",
-  ]
-    .filter((line) => line !== undefined)
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-
-  const client = db();
-  const { data, error } = await client
-    .from("conversations")
-    .select("id, project_id, status, last_message_at")
-    .eq("client_id", detail.invoice.client_id)
-    .order("last_message_at", { ascending: false });
-  throwIf(error, "invoice message", "Unable to post this invoice in Messages.");
-  const rows = data ?? [];
-  const projectId = detail.invoice.project_id;
-  const match =
-    rows.find((row) => projectId && row.project_id === projectId && row.status === "open") ??
-    rows.find((row) => projectId && row.project_id === projectId) ??
-    rows.find((row) => row.status === "open") ??
-    rows[0];
-
-  if (match) {
-    await sendMessage(match.id, body);
-    return;
-  }
-
-  await startConversation({
-    subject: `Invoice ${detail.invoice.invoice_number}`.slice(0, 120),
-    body,
-    projectId,
-    clientId: detail.invoice.client_id,
-  });
-}
-
 export async function sendInvoice(invoiceId: string): Promise<{ emailed: boolean }> {
   const client = db();
   const { error } = await client.rpc("send_invoice", { p_invoice_id: invoiceId });
   throwIf(error, "send invoice", "Unable to send this invoice.");
-  try {
-    await postInvoiceConversation(invoiceId);
-  } catch (caught) {
-    logDbError("invoice message", caught);
-  }
   try {
     await invokeInvoiceEmail(invoiceId);
     return { emailed: true };

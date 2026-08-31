@@ -319,23 +319,18 @@ export function ClientMessagesSection({ client }: { client: AgencyClient }) {
     >
       <div className="flex items-start justify-between gap-3">
         <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Messages</h2>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            to={`/admin/messages?client=${client.id}&compose=new`}
-            className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-          >
-            New conversation
-          </Link>
-          <Link
-            to={`/admin/messages?client=${client.id}`}
-            className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-          >
-            View messages
-          </Link>
-        </div>
+        <Link
+          to={`/admin/messages?client=${client.id}`}
+          className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+        >
+          Open conversation
+        </Link>
       </div>
+      <p className="mt-1 text-sm text-[var(--admin-muted)]">
+        General questions with this client. Proposals, contracts, invoices, and file review stay in their own sections.
+      </p>
       {items.length === 0 ? (
-        <p className="mt-4 text-sm text-[var(--admin-muted)]">No conversations with this client yet.</p>
+        <p className="mt-4 text-sm text-[var(--admin-muted)]">No messages yet. Opening the conversation will start one if needed.</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {items.map((item) => (

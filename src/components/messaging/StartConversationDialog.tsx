@@ -1,6 +1,13 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
-import { MESSAGE_MAX_LENGTH, SUBJECT_MAX_LENGTH, type MessagingTone } from "@/data/messaging";
+import {
+  defaultConversationSubject,
+  findPrimaryConversation,
+  MESSAGE_MAX_LENGTH,
+  SUBJECT_MAX_LENGTH,
+  type ConversationSummary,
+  type MessagingTone,
+} from "@/data/messaging";
 import { messagingClasses } from "@/components/messaging/messagingTheme";
 import { cn } from "@/lib/cn";
 
@@ -18,6 +25,7 @@ type StartConversationDialogProps = {
   open: boolean;
   tone: MessagingTone;
   canPickClient: boolean;
+  conversations: ConversationSummary[];
   clients: ClientOption[];
   projects: ProjectOption[];
   initialClientId?: string;
@@ -31,6 +39,7 @@ export function StartConversationDialog({
   open,
   tone,
   canPickClient,
+  conversations,
   clients,
   projects,
   initialClientId = "",
@@ -50,16 +59,24 @@ export function StartConversationDialog({
     if (!open) return;
     setClientId(initialClientId);
     setProjectId(initialProjectId);
-    setSubject("");
     setBody("");
-  }, [initialClientId, initialProjectId, open]);
+    const project = projects.find((item) => item.id === initialProjectId);
+    const client = clients.find((item) => item.id === initialClientId);
+    setSubject(defaultConversationSubject({ clientName: client?.businessName, projectName: project?.name }));
+  }, [clients, initialClientId, initialProjectId, open, projects]);
 
   const projectOptions = canPickClient ? projects.filter((item) => !clientId || item.clientId === clientId) : projects;
+  const existing =
+    !canPickClient || clientId
+      ? findPrimaryConversation(conversations, {
+          clientId: canPickClient ? clientId : undefined,
+          projectId: projectId || undefined,
+        })
+      : null;
   const valid =
-    subject.trim().length > 0 &&
+    (Boolean(existing) || (subject.trim().length > 0 && subject.trim().length <= SUBJECT_MAX_LENGTH)) &&
     body.trim().length > 0 &&
     body.trim().length <= MESSAGE_MAX_LENGTH &&
-    subject.trim().length <= SUBJECT_MAX_LENGTH &&
     (!canPickClient || Boolean(clientId));
 
   async function handleSubmit(event: FormEvent) {
@@ -87,8 +104,11 @@ export function StartConversationDialog({
             value={clientId}
             disabled={busy}
             onChange={(event) => {
-              setClientId(event.target.value);
+              const nextClientId = event.target.value;
+              setClientId(nextClientId);
               setProjectId("");
+              const client = clients.find((item) => item.id === nextClientId);
+              setSubject(defaultConversationSubject({ clientName: client?.businessName }));
             }}
             className={cn(styles.control, styles.controlBorder, styles.ink, "mt-1.5")}
           >
@@ -109,7 +129,13 @@ export function StartConversationDialog({
           id={`${titleId}-project`}
           value={projectId}
           disabled={busy || (canPickClient && !clientId)}
-          onChange={(event) => setProjectId(event.target.value)}
+          onChange={(event) => {
+            const nextProjectId = event.target.value;
+            setProjectId(nextProjectId);
+            const project = projectOptions.find((item) => item.id === nextProjectId);
+            const client = clients.find((item) => item.id === clientId);
+            setSubject(defaultConversationSubject({ clientName: client?.businessName, projectName: project?.name }));
+          }}
           className={cn(styles.control, styles.controlBorder, styles.ink, "mt-1.5")}
         >
           <option value="">No project</option>
@@ -120,20 +146,22 @@ export function StartConversationDialog({
           ))}
         </select>
       </div>
-      <div>
-        <label htmlFor={`${titleId}-subject`} className={cn("block font-heading text-sm font-semibold", styles.ink)}>
-          Subject
-        </label>
-        <input
-          id={`${titleId}-subject`}
-          required
-          maxLength={SUBJECT_MAX_LENGTH}
-          value={subject}
-          disabled={busy}
-          onChange={(event) => setSubject(event.target.value)}
-          className={cn(styles.control, styles.controlBorder, styles.ink, "mt-1.5")}
-        />
-      </div>
+      {existing ? null : (
+        <div>
+          <label htmlFor={`${titleId}-subject`} className={cn("block font-heading text-sm font-semibold", styles.ink)}>
+            Subject
+          </label>
+          <input
+            id={`${titleId}-subject`}
+            required
+            maxLength={SUBJECT_MAX_LENGTH}
+            value={subject}
+            disabled={busy}
+            onChange={(event) => setSubject(event.target.value)}
+            className={cn(styles.control, styles.controlBorder, styles.ink, "mt-1.5")}
+          />
+        </div>
+      )}
       <div>
         <label htmlFor={`${titleId}-body`} className={cn("block font-heading text-sm font-semibold", styles.ink)}>
           Message
@@ -171,21 +199,24 @@ export function StartConversationDialog({
             styles.blueBtn,
           )}
         >
-          {busy ? "Starting…" : "Send"}
+          {busy ? (existing ? "Sending…" : "Starting…") : "Send"}
         </button>
       </div>
     </form>
   );
 
+  const adminTitle = existing ? "Continue conversation" : "New conversation";
+  const adminDescription = existing
+    ? "This client already has a conversation. Your message will be added there."
+    : "Ask this client a question. File feedback, approvals, and document updates stay on their own pages.";
+  const clientTitle = existing ? "Continue conversation" : "New message";
+  const clientDescription = existing
+    ? "Continue your conversation with MotiveScripts."
+    : "Have a question about your project? Send it to MotiveScripts.";
+
   if (tone === "admin") {
     return (
-      <AdminDialog
-        open={open}
-        title="New conversation"
-        description="Start a thread with this client. The first message is saved with the conversation."
-        busy={busy}
-        onClose={onClose}
-      >
+      <AdminDialog open={open} title={adminTitle} description={adminDescription} busy={busy} onClose={onClose}>
         {fields}
       </AdminDialog>
     );
@@ -203,9 +234,9 @@ export function StartConversationDialog({
         className="relative max-h-[min(40rem,calc(100svh-2rem))] w-full max-w-lg overflow-auto rounded-[var(--client-radius)] border border-[var(--client-line)] bg-white p-6 shadow-[0_16px_40px_rgb(7_17_31_/_0.12)]"
       >
         <h2 id={titleId} className="font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">
-          New message
+          {clientTitle}
         </h2>
-        <p className="mt-2 text-sm text-[var(--client-muted)]">Write MotiveScripts about your project.</p>
+        <p className="mt-2 text-sm text-[var(--client-muted)]">{clientDescription}</p>
         <div className="mt-5">{fields}</div>
       </div>
     </div>

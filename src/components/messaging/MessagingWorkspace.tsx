@@ -8,7 +8,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { useMessaging } from "@/providers/MessagingProvider";
 import { fetchConversationById } from "@/data/messagingRepository";
-import type { ConversationSummary, MessagingTone } from "@/data/messaging";
+import { findPrimaryConversation, type ConversationSummary, type MessagingTone } from "@/data/messaging";
 import { hasPermission } from "@/auth/permissions";
 import { cn } from "@/lib/cn";
 
@@ -48,19 +48,23 @@ export function MessagingWorkspace({ tone, basePath }: MessagingWorkspaceProps) 
 
   useEffect(() => {
     if (messaging.loadStatus !== "ready") return;
-    if (composeFlag === "new") {
+    if (conversationId) return;
+
+    const clientId = queryClientId || undefined;
+    const projectId = queryProjectId || undefined;
+    if (clientId || projectId) {
+      const match = findPrimaryConversation(messaging.conversations, { clientId, projectId });
+      if (match) {
+        navigate(`${basePath}/${match.id}`, { replace: true });
+        return;
+      }
       setComposeOpen(true);
       return;
     }
-    if (!queryProjectId || conversationId) return;
-    const match = messaging.conversations.find(
-      (item) => item.projectId === queryProjectId && (!queryClientId || item.clientId === queryClientId),
-    );
-    if (match) {
-      navigate(`${basePath}/${match.id}`, { replace: true });
-      return;
+
+    if (composeFlag === "new") {
+      setComposeOpen(true);
     }
-    setComposeOpen(true);
   }, [basePath, composeFlag, conversationId, messaging.conversations, messaging.loadStatus, navigate, queryClientId, queryProjectId]);
 
   useEffect(() => {
@@ -112,7 +116,11 @@ export function MessagingWorkspace({ tone, basePath }: MessagingWorkspaceProps) 
     queryClientId && !conversationId
       ? messaging.conversations.filter((item) => item.clientId === queryClientId)
       : messaging.conversations;
-  const emptyLabel = tone === "admin" ? "No conversations yet." : "No messages yet.";
+  const emptyTitle = tone === "admin" ? "No conversations yet" : "No messages yet";
+  const emptyDescription =
+    tone === "admin"
+      ? "Messages are for questions and communication between your agency and clients. Proposal, contract, invoice, review, and payment updates appear in their dedicated sections."
+      : "Have a question about your project? Start a conversation with MotiveScripts.";
 
   return (
     <div className="flex min-h-0 flex-col gap-4">
@@ -123,8 +131,8 @@ export function MessagingWorkspace({ tone, basePath }: MessagingWorkspaceProps) 
           </h1>
           <p className={cn("mt-1 text-sm", styles.muted)}>
             {tone === "admin"
-              ? "Talk with clients. Messages are stored in the database and stay after refresh."
-              : "Talk with MotiveScripts about your project. Messages stay after you refresh or sign out."}
+              ? "Client and agency communication. Use Messages for questions that do not belong on a proposal, contract, invoice, or file."
+              : "Questions and communication with MotiveScripts. Proposals, contracts, invoices, and file review stay in their own sections."}
           </p>
         </header>
       ) : null}
@@ -157,7 +165,8 @@ export function MessagingWorkspace({ tone, basePath }: MessagingWorkspaceProps) 
               conversations={listedConversations}
               activeId={conversationId}
               loading={messaging.loadStatus === "loading"}
-              emptyLabel={emptyLabel}
+              emptyTitle={emptyTitle}
+              emptyDescription={emptyDescription}
               showClient={tone === "admin"}
               onNew={() => setComposeOpen(true)}
             />
@@ -208,8 +217,12 @@ export function MessagingWorkspace({ tone, basePath }: MessagingWorkspaceProps) 
                 }
               />
             ) : (
-              <div className="hidden flex-1 items-center justify-center px-6 py-10 lg:flex">
-                <p className={cn("text-sm", styles.muted)}>Select a conversation or start a new one.</p>
+              <div className="hidden flex-1 flex-col items-center justify-center px-6 py-10 text-center lg:flex">
+                <p className={cn("font-heading text-sm font-semibold", styles.ink)}>Select a conversation</p>
+                <p className={cn("mt-1 max-w-sm text-sm", styles.muted)}>
+                  Or start one for questions like when you need content, whether a blog can be added later, or if a login
+                  email bounced.
+                </p>
               </div>
             )
           ) : null}
@@ -220,6 +233,7 @@ export function MessagingWorkspace({ tone, basePath }: MessagingWorkspaceProps) 
         open={composeOpen}
         tone={tone}
         canPickClient={canPickClient}
+        conversations={messaging.conversations}
         clients={clients.map((item) => ({ id: item.id, businessName: item.businessName }))}
         projects={projects.map((item) => ({ id: item.id, name: item.name, clientId: item.clientId }))}
         initialClientId={queryClientId}
@@ -237,16 +251,32 @@ export function MessagingWorkspace({ tone, basePath }: MessagingWorkspaceProps) 
         }}
         onSubmit={async (draft) => {
           setComposeBusy(true);
-          const id = await messaging.startConversation({
-            subject: draft.subject,
-            body: draft.body,
-            projectId: draft.projectId || null,
-            clientId: canPickClient ? draft.clientId : undefined,
-          });
-          setComposeBusy(false);
-          if (!id) return false;
-          navigate(`${basePath}/${id}`);
-          return true;
+          try {
+            const existing =
+              !canPickClient || draft.clientId
+                ? findPrimaryConversation(messaging.conversations, {
+                    clientId: canPickClient ? draft.clientId : undefined,
+                    projectId: draft.projectId || undefined,
+                  })
+                : null;
+            if (existing) {
+              const sent = await messaging.sendMessage(existing.id, draft.body);
+              if (!sent) return false;
+              navigate(`${basePath}/${existing.id}`);
+              return true;
+            }
+            const id = await messaging.startConversation({
+              subject: draft.subject,
+              body: draft.body,
+              projectId: draft.projectId || null,
+              clientId: canPickClient ? draft.clientId : undefined,
+            });
+            if (!id) return false;
+            navigate(`${basePath}/${id}`);
+            return true;
+          } finally {
+            setComposeBusy(false);
+          }
         }}
       />
     </div>

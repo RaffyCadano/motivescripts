@@ -135,9 +135,6 @@ export function ClientProposalDetails() {
           <button type="button" disabled={busy} className={secondaryBtn} onClick={() => setDeclineOpen(true)}>
             Decline Proposal
           </button>
-          <Link to="/client/messages" className={`${secondaryBtn} text-center`}>
-            Discuss this proposal
-          </Link>
           <button
             type="button"
             disabled={pdfBusy}

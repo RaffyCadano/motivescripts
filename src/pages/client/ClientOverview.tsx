@@ -157,5 +157,12 @@ function MessagesLine({ unread, latestSubject }: { unread: number; latestSubject
       </p>
     );
   }
-  return null;
+  return (
+    <p className="text-sm text-[var(--client-muted)]">
+      Have a question about your project?{" "}
+      <Link to="/client/messages" className="font-heading font-semibold text-[var(--client-blue)] hover:underline">
+        Message MotiveScripts
+      </Link>
+    </p>
+  );
 }
