@@ -3,7 +3,7 @@ import { awaitingResponse } from "@/data/documents";
 import type { ContractSummary, ProposalSummary } from "@/data/documentsRepository";
 import { awaitingInvoicePayment } from "@/data/invoices";
 import type { InvoiceSummary } from "@/data/invoicesRepository";
-import type { ClientScopeBrief } from "@/data/scopeBriefs";
+import { scopeStatus, type ClientScopeBrief, type ScopeStatus } from "@/data/scopeBriefs";
 
 export type PortalPhase =
   | "pre_project"
@@ -22,6 +22,7 @@ export type OnboardingStep = {
   title: string;
   body: string;
   state: OnboardingStepState;
+  statusLabel?: string;
   href?: string;
   actionLabel?: string;
 };
@@ -112,7 +113,8 @@ export function salesFlags(input: {
   const actionContract = awaitingContract ?? contract;
   const actionInvoice = awaitingInvoice ?? invoice;
   return {
-    hasScope: Boolean(input.brief),
+    hasScope: scopeStatus(input.brief) === "submitted",
+    scopeStatus: scopeStatus(input.brief),
     hasProject: Boolean(input.project),
     projectName: input.project?.name ?? null,
     projectStatus: input.project?.status ?? null,
@@ -131,24 +133,42 @@ export function salesFlags(input: {
   };
 }
 
+function scopeOnboardingStep(status: ScopeStatus): OnboardingStep {
+  if (status === "submitted") {
+    return {
+      id: "scope",
+      title: "Website Scope",
+      statusLabel: "Submitted ✓",
+      body: "Your requirements have been received.",
+      state: "done",
+      href: "/client/scope",
+      actionLabel: "View Scope",
+    };
+  }
+  if (status === "in_progress") {
+    return {
+      id: "scope",
+      title: "Website Scope",
+      statusLabel: "In progress",
+      body: "Your scope is saved as a draft.",
+      state: "current",
+      href: "/client/scope",
+      actionLabel: "Continue Scope",
+    };
+  }
+  return {
+    id: "scope",
+    title: "Website Scope",
+    statusLabel: "Not started",
+    body: "Tell us what you want your website to include.",
+    state: "current",
+    href: "/client/scope",
+    actionLabel: "Complete Scope",
+  };
+}
+
 export function clientOnboardingSteps(flags: ReturnType<typeof salesFlags>): OnboardingStep[] {
-  const scope: OnboardingStep = flags.hasScope
-    ? {
-        id: "scope",
-        title: "Tell us about your website",
-        body: "Scope submitted. MotiveScripts will review it and prepare your project and proposal.",
-        state: "done",
-        href: "/client/scope",
-        actionLabel: "View scope",
-      }
-    : {
-        id: "scope",
-        title: "Tell us about your website",
-        body: "Complete the scope form so we know which pages you want and what the site should do.",
-        state: "current",
-        href: "/client/scope",
-        actionLabel: "Complete scope",
-      };
+  const scope = scopeOnboardingStep(flags.scopeStatus);
 
   const proposal: OnboardingStep = flags.proposalAccepted
     ? {

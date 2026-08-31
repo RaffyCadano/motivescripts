@@ -5,6 +5,7 @@ import {
   normalizeScopeStyles,
   splitLegacySelections,
   validateScopeBrief,
+  validateScopeDraftSave,
   proposalOverviewFromBrief,
   proposalScopeFromBrief,
   type ClientScopeBrief,
@@ -76,7 +77,7 @@ function mapBrief(row: ClientScopeBriefRow): ClientScopeBrief {
     features,
     otherFeatures: (row.other_features ?? "").trim(),
     goal: row.goal.trim(),
-    hasExistingWebsite: Boolean(row.has_existing_website),
+    hasExistingWebsite: row.has_existing_website,
     currentWebsiteUrl: (row.current_website_url ?? "").trim(),
     currentWebsiteNotes: (row.current_website_notes ?? "").trim(),
     designStyles: normalizeScopeStyles(stringList(row.design_styles)),
@@ -95,7 +96,12 @@ export async function fetchClientScopeBrief(clientId: string): Promise<ClientSco
   return data ? mapBrief(asRow(data)) : null;
 }
 
-export async function saveClientScopeBrief(clientId: string, input: ScopeBriefDraft): Promise<ClientScopeBrief> {
+export async function saveClientScopeBrief(
+  clientId: string,
+  input: ScopeBriefDraft,
+  options: { submit?: boolean } = {},
+): Promise<ClientScopeBrief> {
+  const submit = options.submit === true;
   const draft: ScopeBriefDraft = {
     ...emptyScopeDraft(),
     ...input,
@@ -111,7 +117,7 @@ export async function saveClientScopeBrief(clientId: string, input: ScopeBriefDr
     likedWebsites: input.likedWebsites.trim(),
     additionalNotes: input.additionalNotes.trim(),
   };
-  const invalid = validateScopeBrief(draft);
+  const invalid = submit ? validateScopeBrief(draft) : validateScopeDraftSave(draft);
   if (invalid) throw new AgencyDbError(invalid);
 
   const payload = {
@@ -120,7 +126,7 @@ export async function saveClientScopeBrief(clientId: string, input: ScopeBriefDr
     other_pages: draft.pages.includes("Other") ? draft.otherPages : "",
     other_features: draft.features.includes("Other") ? draft.otherFeatures : "",
     goal: draft.goal,
-    has_existing_website: draft.hasExistingWebsite === true,
+    has_existing_website: draft.hasExistingWebsite,
     current_website_url: draft.hasExistingWebsite ? draft.currentWebsiteUrl : "",
     current_website_notes: draft.hasExistingWebsite ? draft.currentWebsiteNotes : "",
     design_styles: draft.styles,
@@ -132,15 +138,18 @@ export async function saveClientScopeBrief(clientId: string, input: ScopeBriefDr
   const client = db();
   const { data: existing, error: existingError } = await client
     .from("client_scope_briefs")
-    .select("id")
+    .select("id, submitted_at")
     .eq("client_id", clientId)
     .maybeSingle();
   throwIf(existingError, "save scope brief", "Unable to save this scope form.");
 
+  const alreadySubmitted = Boolean(existing && "submitted_at" in existing && existing.submitted_at);
+  const write = submit && !alreadySubmitted ? { ...payload, submitted_at: new Date().toISOString() } : payload;
+
   if (existing?.id) {
     const { data, error } = await client
       .from("client_scope_briefs")
-      .update(payload)
+      .update(write)
       .eq("id", existing.id)
       .select("*")
       .single();
@@ -150,7 +159,11 @@ export async function saveClientScopeBrief(clientId: string, input: ScopeBriefDr
 
   const { data, error } = await client
     .from("client_scope_briefs")
-    .insert({ client_id: clientId, ...payload })
+    .insert({
+      client_id: clientId,
+      ...write,
+      ...(submit ? {} : { submitted_at: null }),
+    })
     .select("*")
     .single();
   throwIf(error, "save scope brief", "Unable to save this scope form.");

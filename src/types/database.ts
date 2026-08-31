@@ -540,14 +540,14 @@ export type ClientScopeBriefRow = {
   features: string[];
   other_pages: string;
   other_features: string;
-  has_existing_website: boolean;
+  has_existing_website: boolean | null;
   current_website_url: string;
   current_website_notes: string;
   design_styles: string[];
   other_style: string;
   liked_websites: string;
   additional_notes: string;
-  submitted_at: string;
+  submitted_at: string | null;
   updated_at: string;
   updated_by: string | null;
 };

@@ -78,16 +78,18 @@ export type ClientScopeBrief = {
   features: string[];
   otherFeatures: string;
   goal: string;
-  hasExistingWebsite: boolean;
+  hasExistingWebsite: boolean | null;
   currentWebsiteUrl: string;
   currentWebsiteNotes: string;
   designStyles: string[];
   otherStyle: string;
   likedWebsites: string;
   additionalNotes: string;
-  submittedAt: string;
+  submittedAt: string | null;
   updatedAt: string;
 };
+
+export type ScopeStatus = "not_started" | "in_progress" | "submitted";
 
 export type ScopeBriefDraft = {
   pages: string[];
@@ -119,6 +121,18 @@ export function emptyScopeDraft(): ScopeBriefDraft {
     likedWebsites: "",
     additionalNotes: "",
   };
+}
+
+export function scopeStatus(brief: ClientScopeBrief | null | undefined): ScopeStatus {
+  if (!brief) return "not_started";
+  if (brief.submittedAt) return "submitted";
+  return "in_progress";
+}
+
+export function scopeStatusLabel(status: ScopeStatus): string {
+  if (status === "not_started") return "Not Started";
+  if (status === "in_progress") return "In Progress";
+  return "Submitted";
 }
 
 export function draftFromBrief(brief: ClientScopeBrief): ScopeBriefDraft {
@@ -192,26 +206,31 @@ function looksLikeUrl(value: string): boolean {
   return /^(https?:\/\/)?[^\s]+\.[^\s]+$/i.test(trimmed);
 }
 
+export function validateScopeDraftSave(draft: ScopeBriefDraft): string | null {
+  if (draft.goal.trim().length > 2000) return "Keep the website purpose under 2,000 characters.";
+  if (draft.otherPages.trim().length > 400) return "Keep the other page description shorter.";
+  if (draft.otherFeatures.trim().length > 400) return "Keep the other functionality description shorter.";
+  if (draft.currentWebsiteNotes.trim().length > 2000) return "Keep the current-website notes shorter.";
+  if (draft.otherStyle.trim().length > 200) return "Keep the style description shorter.";
+  if (draft.likedWebsites.trim().length > 1000) return "Keep the website links shorter.";
+  if (draft.additionalNotes.trim().length > 2000) return "Keep the extra notes shorter.";
+  return null;
+}
+
 export function validateScopeBrief(draft: ScopeBriefDraft): string | null {
   const pages = normalizeScopePages(draft.pages);
   const features = normalizeScopeFeatures(draft.features);
   const styles = normalizeScopeStyles(draft.styles);
-  const goal = draft.goal.trim();
-  if (goal.length < 1) return "Tell us what your website is for.";
-  if (goal.length > 2000) return "Keep the website purpose under 2,000 characters.";
+  const lengthError = validateScopeDraftSave(draft);
+  if (lengthError) return lengthError;
+  if (!draft.goal.trim()) return "Tell us what your website is for.";
   if (pages.includes("Other") && !draft.otherPages.trim()) return "Describe the other page you need.";
-  if (draft.otherPages.trim().length > 400) return "Keep the other page description shorter.";
   if (features.includes("Other") && !draft.otherFeatures.trim()) return "Describe the other functionality you need.";
-  if (draft.otherFeatures.trim().length > 400) return "Keep the other functionality description shorter.";
   if (draft.hasExistingWebsite == null) return "Tell us whether you already have a website.";
   if (draft.hasExistingWebsite && !looksLikeUrl(draft.currentWebsiteUrl)) {
     return "Enter the current website address.";
   }
-  if (draft.currentWebsiteNotes.trim().length > 2000) return "Keep the current-website notes shorter.";
   if (styles.includes("Other") && !draft.otherStyle.trim()) return "Describe the style you’re looking for.";
-  if (draft.otherStyle.trim().length > 200) return "Keep the style description shorter.";
-  if (draft.likedWebsites.trim().length > 1000) return "Keep the website links shorter.";
-  if (draft.additionalNotes.trim().length > 2000) return "Keep the extra notes shorter.";
   return null;
 }
 

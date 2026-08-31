@@ -52,7 +52,7 @@ export function ClientPreProjectDashboard({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">
-                  {step.state === "done" ? "Done" : `Step ${index}`}
+                  {step.statusLabel ?? (step.state === "done" ? "Done" : `Step ${index}`)}
                 </p>
                 <p className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">
                   {step.state === "done" ? `✓ ${step.title}` : step.title}

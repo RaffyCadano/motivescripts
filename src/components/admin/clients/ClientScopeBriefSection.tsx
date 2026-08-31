@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useClientProjects } from "@/components/admin/leads/LeadsProvider";
 import type { AgencyClient } from "@/data/agencyClients";
 import { formatClientDate } from "@/data/agencyClients";
-import { SCOPE_PACKAGE_INCLUDED, type ClientScopeBrief } from "@/data/scopeBriefs";
+import { SCOPE_PACKAGE_INCLUDED, scopeStatus, scopeStatusLabel, type ClientScopeBrief } from "@/data/scopeBriefs";
 import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
 
 export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
@@ -30,6 +30,7 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
   }, [client.id]);
 
   const hasProject = projects.length > 0;
+  const status = scopeStatus(brief);
   const pages = brief
     ? [...SCOPE_PACKAGE_INCLUDED, ...brief.selectedPages.filter((item) => item !== "Other"), brief.otherPages].filter(
         Boolean,
@@ -45,22 +46,44 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
       <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Website Scope</h2>
       {loading ? (
         <div className="mt-4 h-24 animate-pulse rounded-lg bg-[var(--admin-bg)]" />
-      ) : brief ? (
+      ) : status === "not_started" || !brief ? (
         <>
+          <p className="mt-2 font-heading text-sm font-semibold text-[var(--admin-ink)]">Not Started</p>
+          <p className="mt-2 text-sm text-[var(--admin-muted)]">
+            Waiting for this client to start the scope form in the portal. You can still create a project if you already
+            know the brief.
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="mt-2 font-heading text-sm font-semibold text-[var(--admin-ink)]">
+            {status === "submitted" ? "Submitted ✓" : scopeStatusLabel(status)}
+          </p>
+          <p className="mt-1 text-sm text-[var(--admin-muted)]">
+            {status === "submitted"
+              ? "The client has submitted their website requirements."
+              : "Client has started their scope but has not submitted it."}
+          </p>
           <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
-            Submitted {formatClientDate(brief.submittedAt)}
-            {brief.updatedAt !== brief.submittedAt ? ` · Updated ${formatClientDate(brief.updatedAt)}` : ""}
+            {status === "submitted" && brief.submittedAt
+              ? `Submitted ${formatClientDate(brief.submittedAt)}`
+              : `Last saved ${formatClientDate(brief.updatedAt)}`}
+            {brief.submittedAt && brief.updatedAt !== brief.submittedAt
+              ? ` · Updated ${formatClientDate(brief.updatedAt)}`
+              : ""}
           </p>
           <dl className="mt-4 space-y-4">
-            <Block label="Business goal" value={brief.goal} />
+            <Block label="Business goal" value={brief.goal || "Not entered yet"} />
             <ChipBlock label="Pages" values={pages} />
             <ChipBlock label="Features" values={features.length ? features : ["None selected"]} muted={!features.length} />
             <Block
               label="Existing website"
               value={
-                brief.hasExistingWebsite
+                brief.hasExistingWebsite === true
                   ? [brief.currentWebsiteUrl || "Yes", brief.currentWebsiteNotes].filter(Boolean).join("\n")
-                  : "No current website"
+                  : brief.hasExistingWebsite === false
+                    ? "No current website"
+                    : "Not answered yet"
               }
             />
             <ChipBlock label="Design direction" values={styles.length ? styles : ["Not specified"]} muted={!styles.length} />
@@ -93,11 +116,6 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
             ) : null}
           </div>
         </>
-      ) : (
-        <p className="mt-4 text-sm text-[var(--admin-muted)]">
-          Waiting for this client to submit the scope form in the portal. You can still create a project if you already
-          know the brief.
-        </p>
       )}
     </section>
   );

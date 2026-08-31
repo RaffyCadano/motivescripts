@@ -1,15 +1,20 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ClientConfirmDialog } from "@/components/client/ClientConfirmDialog";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
+import { useUnsavedNavigation } from "@/components/documents/UnsavedChangesDialog";
 import {
   draftFromBrief,
   emptyScopeDraft,
   needsComplexityNote,
+  scopeStatus,
+  scopeStatusLabel,
   validateScopeBrief,
   SCOPE_FEATURE_OPTIONS,
   SCOPE_PACKAGE_INCLUDED,
   SCOPE_PAGE_OPTIONS,
   SCOPE_STYLE_OPTIONS,
   type ScopeBriefDraft,
+  type ScopeStatus,
 } from "@/data/scopeBriefs";
 import { fetchClientScopeBrief, saveClientScopeBrief } from "@/data/scopeBriefsRepository";
 import { formatClientDate } from "@/data/agencyClients";
@@ -19,14 +24,27 @@ import { cn } from "@/lib/cn";
 const fieldClass =
   "mt-2 w-full rounded-lg border border-[var(--client-line)] bg-white px-3 py-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]";
 
+function draftSnapshot(draft: ScopeBriefDraft) {
+  return JSON.stringify(draft);
+}
+
 export function ClientScope() {
   const { client } = usePortalSession();
   const [draft, setDraft] = useState<ScopeBriefDraft>(emptyScopeDraft);
+  const [status, setStatus] = useState<ScopeStatus>("not_started");
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<"draft" | "submit" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [notice, setNotice] = useState<"draft" | "submit" | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const snapshotRef = useRef(draftSnapshot(emptyScopeDraft()));
+  const blocker = useUnsavedNavigation(dirty);
+
+  function remember(next: ScopeBriefDraft) {
+    snapshotRef.current = draftSnapshot(next);
+    setDirty(false);
+  }
 
   useEffect(() => {
     if (!client?.id) {
@@ -36,9 +54,12 @@ export function ClientScope() {
     let active = true;
     void fetchClientScopeBrief(client.id)
       .then((brief) => {
-        if (!active || !brief) return;
-        setDraft(draftFromBrief(brief));
-        setSubmittedAt(brief.submittedAt);
+        if (!active) return;
+        const next = brief ? draftFromBrief(brief) : emptyScopeDraft();
+        setDraft(next);
+        setStatus(scopeStatus(brief));
+        setSubmittedAt(brief?.submittedAt ?? null);
+        remember(next);
       })
       .catch((caught) => {
         if (active) {
@@ -54,9 +75,13 @@ export function ClientScope() {
   }, [client?.id]);
 
   function patch(next: Partial<ScopeBriefDraft>) {
-    setSaved(false);
+    setNotice(null);
     setError(null);
-    setDraft((current) => ({ ...current, ...next }));
+    setDraft((current) => {
+      const merged = { ...current, ...next };
+      setDirty(draftSnapshot(merged) !== snapshotRef.current);
+      return merged;
+    });
   }
 
   function toggle(key: "pages" | "features" | "styles", label: string) {
@@ -66,27 +91,38 @@ export function ClientScope() {
     });
   }
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault();
+  async function persist(submit: boolean) {
     if (!client?.id || busy) return;
-    const invalid = validateScopeBrief(draft);
-    if (invalid) {
-      setError(invalid);
-      return;
+    if (submit) {
+      const invalid = validateScopeBrief(draft);
+      if (invalid) {
+        setError(invalid);
+        return;
+      }
     }
-    setBusy(true);
+    setBusy(submit ? "submit" : "draft");
     setError(null);
     try {
-      const brief = await saveClientScopeBrief(client.id, draft);
-      setDraft(draftFromBrief(brief));
+      const brief = await saveClientScopeBrief(client.id, draft, { submit });
+      const next = draftFromBrief(brief);
+      setDraft(next);
+      setStatus(scopeStatus(brief));
       setSubmittedAt(brief.submittedAt);
-      setSaved(true);
+      setNotice(submit ? "submit" : "draft");
+      remember(next);
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to save this form.");
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    await persist(true);
+  }
+
+  const submitted = status === "submitted";
 
   return (
     <div className="w-full space-y-6">
@@ -98,24 +134,41 @@ export function ClientScope() {
         </p>
       </header>
 
-      {submittedAt && !loading ? (
-        <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
-          <p className="font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">Scope submitted ✓</p>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">
-            Thanks! We’ve received your website requirements.
-          </p>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">
-            MotiveScripts will review your scope and use it to plan your project and prepare your proposal.
-          </p>
-          <p className="mt-3 text-sm text-[var(--client-ink)]">
-            Status: <span className="font-heading font-semibold">Scope Submitted</span>
-            <span className="text-[var(--client-muted)]"> · {formatClientDate(submittedAt)}</span>
-          </p>
-        </section>
-      ) : !loading && !submittedAt ? (
-        <section className="rounded-[var(--client-radius)] border border-[rgb(0_80_240_/_0.22)] bg-[var(--client-card)] p-5 md:p-6">
-          <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">Scope form</p>
-          <p className="mt-1 text-sm text-[var(--client-muted)]">Not completed</p>
+      {!loading ? (
+        <section
+          className={cn(
+            "rounded-[var(--client-radius)] border bg-[var(--client-card)] p-5 md:p-6",
+            submitted ? "border-[var(--client-line)]" : "border-[rgb(0_80_240_/_0.22)]",
+          )}
+        >
+          {submitted ? (
+            <>
+              <p className="font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">
+                Scope Submitted ✓
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">
+                Thanks! We’ve received your website requirements. MotiveScripts will review your scope and use it to
+                plan your project and prepare your proposal.
+              </p>
+              <p className="mt-3 text-sm text-[var(--client-ink)]">
+                Status: <span className="font-heading font-semibold">Submitted</span>
+                {submittedAt ? (
+                  <span className="text-[var(--client-muted)]"> · {formatClientDate(submittedAt)}</span>
+                ) : null}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">
+                Status: {scopeStatusLabel(status)}
+              </p>
+              <p className="mt-1 text-sm text-[var(--client-muted)]">
+                {status === "in_progress"
+                  ? "Your scope is saved as a draft. You can come back and finish it later."
+                  : "Tell us what you want your website to include."}
+              </p>
+            </>
+          )}
         </section>
       ) : null}
 
@@ -126,7 +179,7 @@ export function ClientScope() {
           className="space-y-8 rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6"
           onSubmit={onSubmit}
         >
-          {submittedAt ? (
+          {submitted ? (
             <p className="text-sm text-[var(--client-muted)]">
               You can update this if something changes. We still keep one scope record for your account.
             </p>
@@ -195,13 +248,13 @@ export function ClientScope() {
 
           <label className="block">
             <span className="font-heading text-sm font-semibold text-[var(--client-ink)]">
-              What is your website for? <span className="font-medium text-[var(--client-muted)]">(required)</span>
+              What is your website for?{" "}
+              <span className="font-medium text-[var(--client-muted)]">(required to submit)</span>
             </span>
             <p className="mt-1 text-[12px] text-[var(--client-muted)]">
               Tell us briefly about your business, who the website is for, and what you want visitors to do.
             </p>
             <textarea
-              required
               rows={4}
               maxLength={2000}
               value={draft.goal}
@@ -213,7 +266,8 @@ export function ClientScope() {
 
           <fieldset>
             <legend className="font-heading text-sm font-semibold text-[var(--client-ink)]">
-              Do you currently have a website? <span className="font-medium text-[var(--client-muted)]">(required)</span>
+              Do you currently have a website?{" "}
+              <span className="font-medium text-[var(--client-muted)]">(required to submit)</span>
             </legend>
             <div className="mt-3 flex flex-wrap gap-2">
               <Chip label="Yes" on={draft.hasExistingWebsite === true} onClick={() => patch({ hasExistingWebsite: true })} />
@@ -310,21 +364,49 @@ export function ClientScope() {
           </p>
 
           {error ? <p className="text-sm text-red-700">{error}</p> : null}
-          {saved ? (
+          {notice === "draft" ? (
             <p className="text-sm text-[var(--client-ink)]">
-              Saved. MotiveScripts will use this to plan your project and prepare your proposal.
+              Draft saved ✓ Your scope has been saved. You can come back and finish it later.
+            </p>
+          ) : null}
+          {notice === "submit" ? (
+            <p className="text-sm text-[var(--client-ink)]">
+              Scope submitted ✓ Thanks! We’ve received your website requirements. MotiveScripts will review your scope
+              and use it to plan your project and prepare your proposal.
             </p>
           ) : null}
 
-          <button
-            type="submit"
-            disabled={busy || !client}
-            className="inline-flex h-11 items-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-5 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)] disabled:opacity-60"
-          >
-            {busy ? "Saving…" : submittedAt ? "Update scope" : "Submit scope"}
-          </button>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            {!submitted ? (
+              <button
+                type="button"
+                disabled={Boolean(busy) || !client}
+                onClick={() => void persist(false)}
+                className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-5 font-heading text-sm font-semibold text-[var(--client-ink)] hover:bg-[var(--client-hover)] disabled:opacity-60"
+              >
+                {busy === "draft" ? "Saving…" : "Save Draft"}
+              </button>
+            ) : null}
+            <button
+              type="submit"
+              disabled={Boolean(busy) || !client}
+              className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-5 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)] disabled:opacity-60"
+            >
+              {busy === "submit" ? "Submitting…" : submitted ? "Update scope" : "Submit Scope"}
+            </button>
+          </div>
         </form>
       )}
+
+      <ClientConfirmDialog
+        open={blocker.state === "blocked"}
+        title="Unsaved changes"
+        body="You have unsaved changes. Save your draft before leaving?"
+        confirmLabel="Leave without saving"
+        cancelLabel="Stay"
+        onConfirm={blocker.proceed}
+        onCancel={blocker.reset}
+      />
     </div>
   );
 }
@@ -342,7 +424,7 @@ function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () 
           : "border-[var(--client-line)] bg-white text-[var(--client-ink)] hover:border-[rgb(0_80_240_/_0.35)] hover:bg-[var(--client-hover)]",
       )}
     >
-      {on ? label : `+ ${label}`}
+      {on ? `${label} ✓` : `+ ${label}`}
     </button>
   );
 }

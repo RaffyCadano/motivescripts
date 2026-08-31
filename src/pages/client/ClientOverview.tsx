@@ -60,9 +60,11 @@ export function ClientOverview() {
         <header>
           <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight md:text-3xl">{greeting}</h1>
           <p className="mt-1 text-sm text-[var(--client-muted)]">
-            {onboarding.flags.hasScope
+            {onboarding.flags.scopeStatus === "submitted"
               ? "Thanks — we’ll use your answers to prepare your project and proposal."
-              : "Start by telling us what you need on the website."}
+              : onboarding.flags.scopeStatus === "in_progress"
+                ? "Your scope is saved as a draft. Continue when you’re ready."
+                : "Start by telling us what you need on the website."}
           </p>
         </header>
         {onboarding.loading ? (
