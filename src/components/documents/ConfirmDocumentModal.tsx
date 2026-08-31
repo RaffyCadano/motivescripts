@@ -1,10 +1,11 @@
 import { adminDangerSolidBtn, adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
+import type { ReactNode } from "react";
 
 type ConfirmDocumentModalProps = {
   open: boolean;
   title: string;
-  description: string;
+  description: ReactNode;
   actionLabel: string;
   cancelLabel?: string;
   busy?: boolean;
@@ -33,7 +34,11 @@ export function ConfirmDocumentModal({
         <button type="button" className="absolute inset-0 bg-[rgb(7_17_31_/_0.4)]" aria-label="Close" onClick={onClose} />
         <div className="relative w-full max-w-lg rounded-[var(--client-radius)] border border-[var(--client-line)] bg-white p-5 shadow-[0_16px_40px_rgb(7_17_31_/_0.12)]">
           <h2 className="font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">{title}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">{description}</p>
+          {typeof description === "string" ? (
+            <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-[var(--client-muted)]">{description}</p>
+          ) : (
+            <div className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">{description}</div>
+          )}
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
               type="button"
@@ -59,24 +64,28 @@ export function ConfirmDocumentModal({
 
   return (
     <AdminDialog open={open} busy={busy} title={title} description={description} onClose={onClose}>
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <form
+        className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"
+        onSubmit={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!busy) onConfirm();
+        }}
+      >
         <button
           type="button"
           disabled={busy}
           className={`${adminGhostBtn} justify-center`}
-          onClick={onClose}
+          onClick={() => {
+            if (!busy) onClose();
+          }}
         >
           {cancelLabel}
         </button>
-        <button
-          type="button"
-          disabled={busy}
-          className={`${danger ? adminDangerSolidBtn : adminPrimaryBtn} justify-center`}
-          onClick={onConfirm}
-        >
+        <button type="submit" disabled={busy} className={`${danger ? adminDangerSolidBtn : adminPrimaryBtn} justify-center`}>
           {busy ? "Working…" : actionLabel}
         </button>
-      </div>
+      </form>
     </AdminDialog>
   );
 }

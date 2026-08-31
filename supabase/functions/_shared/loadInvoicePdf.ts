@@ -7,6 +7,7 @@ type InvoiceRow = {
   invoice_number: string;
   client_id: string;
   project_id: string | null;
+  contract_id: string | null;
   status: string;
   issue_date: string;
   due_date: string;
@@ -144,7 +145,7 @@ export async function loadInvoicePdfModel(
   const { data } = await admin
     .from("invoices")
     .select(
-      "id, invoice_number, client_id, project_id, status, issue_date, due_date, currency, subtotal_cents, tax_cents, discount_cents, total_cents, amount_paid_cents, amount_due_cents, notes, snapshot_items, bill_to",
+      "id, invoice_number, client_id, project_id, contract_id, status, issue_date, due_date, currency, subtotal_cents, tax_cents, discount_cents, total_cents, amount_paid_cents, amount_due_cents, notes, snapshot_items, bill_to",
     )
     .eq("id", invoiceId)
     .maybeSingle();
@@ -173,6 +174,18 @@ export async function loadInvoicePdfModel(
   if (invoice.project_id) {
     const { data: projectRow } = await admin.from("projects").select("name").eq("id", invoice.project_id).maybeSingle();
     if (typeof projectRow?.name === "string" && projectRow.name.trim()) projectName = projectRow.name.trim();
+  }
+
+  let contractNumber: string | null = null;
+  if (invoice.contract_id) {
+    const { data: contractRow } = await admin
+      .from("contracts")
+      .select("contract_number")
+      .eq("id", invoice.contract_id)
+      .maybeSingle();
+    if (typeof contractRow?.contract_number === "string" && contractRow.contract_number.trim()) {
+      contractNumber = contractRow.contract_number.trim();
+    }
   }
 
   const snapshot = itemsFromUnknown(invoice.snapshot_items);
@@ -206,6 +219,7 @@ export async function loadInvoicePdfModel(
     billToEmail: email,
     billToPhone: phone,
     projectName,
+    contractNumber,
     notes: invoice.notes ?? "",
     items,
     subtotal_cents: asCents(invoice.subtotal_cents),

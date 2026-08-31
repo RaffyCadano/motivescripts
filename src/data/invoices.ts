@@ -41,17 +41,44 @@ export function invoiceItemsFromSnapshot(value: unknown): InvoiceSnapshotItem[] 
   return items;
 }
 
+export function invoiceItemIsBillable(item: LineItemDraft): boolean {
+  return Boolean(item.name.trim() || item.description.trim());
+}
+
+/** Invoice items store a single description. Keep name + optional detail in that field. */
+export function invoiceItemClientDescription(item: LineItemDraft): string {
+  return [item.name.trim(), item.description.trim()].filter(Boolean).join("\n");
+}
+
+export function previewInvoiceDraftItems(items: LineItemDraft[]): InvoiceSnapshotItem[] {
+  return items.filter(invoiceItemIsBillable).map((item, index) => {
+    const quantity = Math.max(1, Math.floor(item.quantity) || 1);
+    const unit = Math.max(0, Math.floor(item.unitPriceCents) || 0);
+    return {
+      description: invoiceItemClientDescription(item),
+      quantity,
+      unit_price_cents: unit,
+      total_cents: quantity * unit,
+      sort_order: index,
+    };
+  });
+}
+
 export function draftsFromInvoiceItems(items: InvoiceItemRow[] | InvoiceSnapshotItem[]): LineItemDraft[] {
   if (items.length === 0) return [emptyLineItem()];
   return [...items]
     .sort((a, b) => a.sort_order - b.sort_order)
-    .map((item) => ({
-      key: item.id || `item-${crypto.randomUUID()}`,
-      name: item.description,
-      description: "",
-      quantity: item.quantity,
-      unitPriceCents: item.unit_price_cents,
-    }));
+    .map((item) => {
+      const raw = item.description.trim();
+      const breakAt = raw.indexOf("\n");
+      return {
+        key: item.id || `item-${crypto.randomUUID()}`,
+        name: breakAt >= 0 ? raw.slice(0, breakAt).trim() : raw,
+        description: breakAt >= 0 ? raw.slice(breakAt + 1).trim() : "",
+        quantity: item.quantity,
+        unitPriceCents: item.unit_price_cents,
+      };
+    });
 }
 
 export function isoCalendarDate(date = new Date()): string {
@@ -106,7 +133,7 @@ export function invoiceDraftTotalCents(items: LineItemDraft[], taxCents: number,
   discount: number;
   total: number;
 } {
-  const subtotal = lineItemsTotalCents(items.filter((item) => item.name.trim()));
+  const subtotal = lineItemsTotalCents(items.filter(invoiceItemIsBillable));
   const tax = Math.max(0, Math.floor(taxCents) || 0);
   const discount = Math.max(0, Math.floor(discountCents) || 0);
   const total = Math.max(0, subtotal + tax - discount);
@@ -120,13 +147,65 @@ export function invoiceSendBlockedReason(
   issueDate: string,
   dueDate: string,
 ): string | null {
-  if (!items.some((item) => item.name.trim())) return "Add at least one line item before sending.";
+  const billed = items.filter(invoiceItemIsBillable);
+  if (billed.length === 0) return "Add at least one line item before sending.";
+  if (billed.some((item) => item.quantity <= 0)) return "Each line item needs a quantity greater than zero.";
+  if (billed.some((item) => item.unitPriceCents < 0)) return "Unit price cannot be negative.";
   if (!issueDate || !dueDate) return "Issue date and due date are required.";
   if (dueDate < issueDate) return "Due date must be on or after the issue date.";
   if (invoiceDraftTotalCents(items, taxCents, discountCents).total <= 0) {
     return "Total must be greater than zero before sending.";
   }
   return null;
+}
+
+export function invoiceLinkingBlockedReason(input: {
+  clientId: string;
+  projectId: string;
+  contractId: string;
+  projects: { id: string; clientId: string }[];
+  contracts: { id: string; clientId: string; projectId: string | null }[];
+}): string | null {
+  if (!input.clientId) return "Select a client first.";
+  if (input.projectId) {
+    const project = input.projects.find((row) => row.id === input.projectId);
+    if (!project) return "The selected project could not be found.";
+    if (project.clientId !== input.clientId) return "The selected project does not belong to this client.";
+  }
+  if (input.contractId) {
+    const contract = input.contracts.find((row) => row.id === input.contractId);
+    if (!contract) return "The selected contract could not be found.";
+    if (contract.clientId !== input.clientId) return "The selected contract does not belong to this client.";
+    if (input.projectId && contract.projectId && contract.projectId !== input.projectId) {
+      return "The selected contract does not belong to this project.";
+    }
+  }
+  return null;
+}
+
+export function invoiceSendConfirmCopy(input: {
+  companyName: string;
+  totalLabel: string;
+  dueLabel: string;
+}): { title: string; totalLabel: string; dueLabel: string; description: string } {
+  const company = input.companyName.trim() || "the client";
+  return {
+    title: `Send invoice to ${company}?`,
+    totalLabel: input.totalLabel,
+    dueLabel: input.dueLabel,
+    description: [
+      `Total: ${input.totalLabel}`,
+      `Due: ${input.dueLabel}`,
+      "",
+      "This emails the client and makes the invoice available in their portal.",
+    ].join("\n"),
+  };
+}
+
+export function invoiceSentMessage(emailed: boolean): string {
+  return emailed
+    ? "Invoice sent to the client. They’ll see it in their portal and receive an email."
+    : "Invoice is now in the client portal, but the email could not be delivered. Open the invoice and use Resend email.";
 }
 
 export function effectiveInvoiceStatus(
@@ -220,6 +299,10 @@ export function invoiceErrorMessage(code: string): string {
       return "That client record could not be found.";
     case "email_failed":
       return "The invoice was saved, but the email could not be sent.";
+    case "no_recipient":
+      return "This client has no email address. Add one on the client record, then resend.";
+    case "email_unavailable":
+      return "Invoice email isn’t available yet. Deploy the document-email function.";
     case "missing_site_url":
       return "Email isn’t configured yet. Set PUBLIC_SITE_URL on the Edge Function.";
     case "not_allowed":

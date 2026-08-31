@@ -37,6 +37,7 @@ const invoiceBytes = await generateInvoicePdf({
   billToEmail: "jane@example.com",
   billToPhone: "555-0100",
   projectName: "Marketing Website",
+  contractNumber: "MS-CON-2026-001",
   notes: "Net 15.",
   items: [
     { description: "Website Design", quantity: 1, unit_price_cents: 120000, total_cents: 120000 },

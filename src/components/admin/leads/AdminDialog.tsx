@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 type AdminDialogProps = {
   open: boolean;
   title: string;
-  description?: string;
+  description?: ReactNode;
   children: ReactNode;
   size?: "md" | "lg";
   busy?: boolean;
@@ -16,20 +16,23 @@ export function AdminDialog({ open, title, description, children, size = "md", b
   const titleId = useId();
   const descriptionId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const busyRef = useRef(busy);
+  onCloseRef.current = onClose;
+  busyRef.current = busy;
 
   useEffect(() => {
     if (!open) return;
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const frame = requestAnimationFrame(() => {
-      const focusable = panelRef.current?.querySelector<HTMLElement>(
-        "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])",
-      );
-      focusable?.focus();
+      const buttons = panelRef.current?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
+      const primary = buttons && buttons.length > 0 ? buttons[buttons.length - 1] : null;
+      primary?.focus();
     });
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        if (!busy) onClose();
+        if (!busyRef.current) onCloseRef.current();
       }
     };
     document.addEventListener("keydown", onKey);
@@ -42,7 +45,7 @@ export function AdminDialog({ open, title, description, children, size = "md", b
       root.style.overflow = previousOverflow;
       previous?.focus();
     };
-  }, [busy, onClose, open]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -53,7 +56,7 @@ export function AdminDialog({ open, title, description, children, size = "md", b
         className="absolute inset-0 bg-[rgb(7_17_31_/_0.4)]"
         aria-label="Close dialog"
         onClick={() => {
-          if (!busy) onClose();
+          if (!busyRef.current) onCloseRef.current();
         }}
       />
       <div
@@ -63,7 +66,7 @@ export function AdminDialog({ open, title, description, children, size = "md", b
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         className={cn(
-          "relative max-h-[min(40rem,calc(100svh-2rem))] w-full overflow-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white p-5 shadow-[0_16px_40px_rgb(7_17_31_/_0.12)] sm:p-6",
+          "relative z-10 max-h-[min(40rem,calc(100svh-2rem))] w-full overflow-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white p-5 shadow-[0_16px_40px_rgb(7_17_31_/_0.12)] sm:p-6",
           size === "lg" ? "max-w-2xl" : "max-w-lg",
         )}
       >
@@ -71,9 +74,9 @@ export function AdminDialog({ open, title, description, children, size = "md", b
           {title}
         </h2>
         {description ? (
-          <p id={descriptionId} className="mt-2 text-sm leading-relaxed text-[var(--admin-muted)]">
-            {description}
-          </p>
+          <div id={descriptionId} className="mt-2 text-sm leading-relaxed text-[var(--admin-muted)]">
+            {typeof description === "string" ? <p className="whitespace-pre-line">{description}</p> : description}
+          </div>
         ) : null}
         <div className="mt-5">{children}</div>
       </div>

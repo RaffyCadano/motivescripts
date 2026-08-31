@@ -5,10 +5,11 @@ import { formatUsdFromCents } from "@/data/money";
 type LineItemsEditorProps = {
   items: LineItemDraft[];
   disabled?: boolean;
+  showSubtotal?: boolean;
   onChange: (items: LineItemDraft[]) => void;
 };
 
-export function LineItemsEditor({ items, disabled, onChange }: LineItemsEditorProps) {
+export function LineItemsEditor({ items, disabled, showSubtotal = true, onChange }: LineItemsEditorProps) {
   function update(index: number, patch: Partial<LineItemDraft>) {
     onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   }
@@ -20,26 +21,33 @@ export function LineItemsEditor({ items, disabled, onChange }: LineItemsEditorPr
           key={item.key}
           className="grid gap-2 rounded-lg border border-[var(--admin-line)] bg-white p-3 sm:grid-cols-[minmax(0,1.2fr)_4.5rem_7rem_auto]"
         >
+          <div>
+            <label className="block">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Item</span>
+              <input
+                value={item.name}
+                disabled={disabled}
+                placeholder="Item name"
+                onChange={(event) => update(index, { name: event.target.value })}
+                className={inputClass}
+              />
+            </label>
+            <label className="mt-2 block">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                Description
+              </span>
+              <textarea
+                value={item.description}
+                disabled={disabled}
+                rows={2}
+                placeholder="Optional description"
+                onChange={(event) => update(index, { description: event.target.value })}
+                className={`${inputClass} mt-1 min-h-[4rem] py-2`}
+              />
+            </label>
+          </div>
           <label className="block">
-            <span className="sr-only">Item name</span>
-            <input
-              value={item.name}
-              disabled={disabled}
-              placeholder="Item name"
-              onChange={(event) => update(index, { name: event.target.value })}
-              className={inputClass}
-            />
-            <textarea
-              value={item.description}
-              disabled={disabled}
-              rows={2}
-              placeholder="Optional description"
-              onChange={(event) => update(index, { description: event.target.value })}
-              className={`${inputClass} mt-2 min-h-[4rem] py-2`}
-            />
-          </label>
-          <label className="block">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Qty</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Quantity</span>
             <input
               type="number"
               min={1}
@@ -52,7 +60,7 @@ export function LineItemsEditor({ items, disabled, onChange }: LineItemsEditorPr
             />
           </label>
           <label className="block">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Unit</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Unit price</span>
             <input
               inputMode="decimal"
               disabled={disabled}
@@ -66,9 +74,12 @@ export function LineItemsEditor({ items, disabled, onChange }: LineItemsEditorPr
             />
           </label>
           <div className="flex items-end justify-between gap-2 sm:flex-col sm:items-stretch">
-            <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
-              {formatUsdFromCents(lineItemTotalCents(item))}
-            </p>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Total</p>
+              <p className="mt-1 font-heading text-sm font-semibold text-[var(--admin-ink)]">
+                {formatUsdFromCents(lineItemTotalCents(item))}
+              </p>
+            </div>
             <button
               type="button"
               disabled={disabled || items.length <= 1}
@@ -89,9 +100,11 @@ export function LineItemsEditor({ items, disabled, onChange }: LineItemsEditorPr
         >
           Add line item
         </button>
-        <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
-          Total {formatUsdFromCents(lineItemsTotalCents(items))}
-        </p>
+        {showSubtotal ? (
+          <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
+            Total {formatUsdFromCents(lineItemsTotalCents(items))}
+          </p>
+        ) : null}
       </div>
     </div>
   );

@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, Eye, Save, Send } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
+import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
+import { documentMailRecipientCopy, documentMailRecipients } from "@/data/documents";
 import { InvoiceDocumentView } from "@/components/invoices/InvoiceDocumentView";
 import { InvoiceDraftForm, type InvoiceDraftFormValue } from "@/components/invoices/InvoiceDraftForm";
-import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
+import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
-import { documentMailRecipientCopy, documentMailRecipients } from "@/data/documents";
 import {
   fetchContractDetail,
   fetchContractSummaries,
@@ -14,17 +17,41 @@ import {
 } from "@/data/documentsRepository";
 import {
   emptyLineItem,
+  formatInvoiceDate,
   invoiceDraftTotalCents,
-  invoiceItemsFromSnapshot,
+  invoiceLinkingBlockedReason,
   invoiceSendBlockedReason,
+  invoiceSendConfirmCopy,
+  invoiceSentMessage,
   isoCalendarDate,
   isoCalendarDatePlusDays,
+  previewInvoiceDraftItems,
   type LineItemDraft,
 } from "@/data/invoices";
 import { createInvoice, saveInvoiceDraft, sendInvoice } from "@/data/invoicesRepository";
+import { formatMoneyFromCents, formatUsdFromCents } from "@/data/money";
 import { invoiceNotesFromSettings } from "@/data/settings";
 import { fetchAgencySettings } from "@/data/settingsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
+
+type AcceptedContract = { id: string; number: string; clientId: string; projectId: string | null };
+
+function scrollToInvoicePreview() {
+  const preview = document.getElementById("invoice-preview");
+  const scroller = document.getElementById("admin-main");
+  if (!preview) return;
+  const sideBySide = window.matchMedia("(min-width: 1280px)").matches;
+  if (!sideBySide && scroller) {
+    const previewRect = preview.getBoundingClientRect();
+    const scrollerRect = scroller.getBoundingClientRect();
+    const top = scroller.scrollTop + previewRect.top - scrollerRect.top - 12;
+    scroller.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+  }
+  preview.classList.add("ring-2", "ring-[var(--admin-blue)]", "ring-offset-2");
+  window.setTimeout(() => {
+    preview.classList.remove("ring-2", "ring-[var(--admin-blue)]", "ring-offset-2");
+  }, 1400);
+}
 
 export function AdminInvoiceNew() {
   const { clients, projects, notify, portalAccounts } = useLeads();
@@ -33,13 +60,14 @@ export function AdminInvoiceNew() {
   const presetClient = searchParams.get("client") ?? "";
   const presetProject = searchParams.get("project") ?? "";
   const presetContract = searchParams.get("contract") ?? "";
-  const [accepted, setAccepted] = useState<{ id: string; number: string; clientId: string; projectId: string | null }[]>([]);
+  const [accepted, setAccepted] = useState<AcceptedContract[]>([]);
   const [items, setItems] = useState<LineItemDraft[]>([emptyLineItem()]);
   const [linkedProposalId, setLinkedProposalId] = useState<string | null>(null);
   const [seededContractNumber, setSeededContractNumber] = useState("");
   const [contractSeedReady, setContractSeedReady] = useState(!presetContract);
   const [busy, setBusy] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
+  const saving = useRef(false);
   const [form, setForm] = useState<InvoiceDraftFormValue>({
     clientId: presetClient,
     projectId: presetProject,
@@ -82,6 +110,17 @@ export function AdminInvoiceNew() {
   }, []);
 
   useEffect(() => {
+    if (!presetProject || form.clientId) return;
+    const match = projects.find((row) => row.id === presetProject);
+    if (!match) return;
+    setForm((current) => ({
+      ...current,
+      clientId: match.clientId,
+      projectId: current.projectId || match.id,
+    }));
+  }, [form.clientId, presetProject, projects]);
+
+  useEffect(() => {
     if (!presetContract) return;
     const match = accepted.find((row) => row.id === presetContract);
     if (!match) return;
@@ -120,40 +159,85 @@ export function AdminInvoiceNew() {
     };
   }, [presetContract]);
 
-  const clientProjects = projects.filter((project) => project.clientId === form.clientId && !project.archived);
-  const clientContracts = useMemo(
-    () => accepted.filter((row) => row.clientId === form.clientId),
-    [accepted, form.clientId],
+  const clientProjects = projects.filter(
+    (project) => project.clientId === form.clientId && (!project.archived || project.id === form.projectId),
   );
   const client = clients.find((item) => item.id === form.clientId);
+  const project = projects.find((item) => item.id === form.projectId);
   const mailRecipients = documentMailRecipients(
     client?.email,
     portalAccounts.filter((account) => account.clientId === form.clientId).map((account) => account.email),
   );
-  const project = projects.find((item) => item.id === form.projectId);
+  const clientContracts = useMemo(
+    () =>
+      accepted.filter((row) => {
+        if (row.clientId !== form.clientId) return false;
+        if (form.projectId && row.projectId && row.projectId !== form.projectId) return false;
+        return true;
+      }),
+    [accepted, form.clientId, form.projectId],
+  );
   const contractOptions = useMemo(() => {
-    const rows = clientContracts.map((item) => ({ id: item.id, label: item.number }));
+    const rows = clientContracts.map((item) => ({
+      id: item.id,
+      label: item.number,
+      projectId: item.projectId,
+    }));
     if (form.contractId && !rows.some((row) => row.id === form.contractId)) {
-      rows.unshift({ id: form.contractId, label: seededContractNumber || "Selected contract" });
+      const fallback = accepted.find((row) => row.id === form.contractId);
+      rows.unshift({
+        id: form.contractId,
+        label: fallback?.number || seededContractNumber || "Selected contract",
+        projectId: fallback?.projectId ?? null,
+      });
     }
     return rows;
-  }, [clientContracts, form.contractId, seededContractNumber]);
-  const contract = clientContracts.find((item) => item.id === form.contractId);
+  }, [accepted, clientContracts, form.contractId, seededContractNumber]);
+  const contract = accepted.find((item) => item.id === form.contractId);
+  const contractNumber = contract?.number || seededContractNumber || "";
   const totals = invoiceDraftTotalCents(items, form.taxCents, form.discountCents);
-  const previewItems = items
-    .filter((item) => item.name.trim())
-    .map((item, index) => ({
-      description: item.name.trim(),
-      quantity: item.quantity,
-      unit_price_cents: item.unitPriceCents,
-      total_cents: item.quantity * item.unitPriceCents,
-      sort_order: index,
-    }));
+  const money = (cents: number) => formatMoneyFromCents(cents, form.currency);
+  const linkingReason = invoiceLinkingBlockedReason({
+    clientId: form.clientId,
+    projectId: form.projectId,
+    contractId: form.contractId,
+    projects,
+    contracts: accepted.concat(
+      form.contractId && !accepted.some((row) => row.id === form.contractId)
+        ? [
+            {
+              id: form.contractId,
+              number: seededContractNumber || "Selected contract",
+              clientId: form.clientId,
+              projectId: form.projectId || null,
+            },
+          ]
+        : [],
+    ),
+  });
+  const sendReason =
+    linkingReason || invoiceSendBlockedReason(items, form.taxCents, form.discountCents, form.issueDate, form.dueDate);
+  const canSave = !linkingReason && contractSeedReady && !busy;
+  const canSend = canSave && !invoiceSendBlockedReason(items, form.taxCents, form.discountCents, form.issueDate, form.dueDate);
+  const lockClient = Boolean(presetClient || presetContract || presetProject);
+  const lockProject = Boolean(presetProject || (presetContract && form.projectId));
+  const sendCopy = invoiceSendConfirmCopy({
+    companyName: client?.businessName || "",
+    totalLabel: money(totals.total),
+    dueLabel: formatInvoiceDate(form.dueDate),
+  });
 
   async function persistNew(send: boolean) {
-    if (busy) return;
-    if (!form.clientId) {
-      notify("Select a client first.");
+    if (saving.current) {
+      notify("This invoice is still saving. Try again in a moment.");
+      return;
+    }
+    if (linkingReason) {
+      notify(linkingReason);
+      return;
+    }
+    if (form.dueDate && form.issueDate && form.dueDate < form.issueDate) {
+      notify("Due date must be on or after the issue date.");
       return;
     }
     if (send) {
@@ -163,6 +247,7 @@ export function AdminInvoiceNew() {
         return;
       }
     }
+    saving.current = true;
     setBusy(true);
     let invoiceId: string | null = null;
     try {
@@ -188,54 +273,138 @@ export function AdminInvoiceNew() {
       });
       if (send) {
         const result = await sendInvoice(invoiceId);
-        notify(result.emailed ? "Invoice sent." : "Invoice sent. The email could not be delivered.");
+        notify(invoiceSentMessage(result.emailed));
       } else {
         notify("Invoice saved as a draft.");
       }
+      setSendOpen(false);
       navigate(`/admin/invoices/${invoiceId}`);
     } catch (error) {
       notify(error instanceof AgencyDbError ? error.message : send ? "Unable to send this invoice." : "Unable to save this invoice.");
-      if (invoiceId) navigate(`/admin/invoices/${invoiceId}`);
-      else setBusy(false);
+      if (invoiceId) {
+        setSendOpen(false);
+        navigate(`/admin/invoices/${invoiceId}`);
+      }
+    } finally {
+      saving.current = false;
+      setBusy(false);
     }
   }
 
+  function onSendClick() {
+    if (!canSend) {
+      notify(sendReason || "Add the required invoice information before sending.");
+      return;
+    }
+    setSendOpen(true);
+  }
+
+  function editorActions() {
+    if (clients.length === 0) return null;
+    return (
+      <InvoiceEditorActions
+        busy={busy}
+        canSave={canSave}
+        canSend={canSend}
+        sendReason={sendReason}
+        onSave={() => void persistNew(false)}
+        onSend={onSendClick}
+        onPreview={scrollToInvoicePreview}
+      />
+    );
+  }
+
+  const contextLine = [client?.businessName, project?.name].filter(Boolean).join(" · ");
+
   return (
     <div className="space-y-6">
-      <Link to="/admin/invoices" className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
-        Invoices
-      </Link>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">New invoice</h1>
-        {clients.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            <button type="button" disabled={busy || !contractSeedReady} className={secondaryBtn} onClick={() => void persistNew(false)}>
-              {busy ? "Saving…" : "Save Draft"}
-            </button>
-            <button type="button" disabled={busy || !contractSeedReady} className={primaryBtn} onClick={() => setSendOpen(true)}>
-              Send Invoice
-            </button>
-          </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        <Link to="/admin/invoices" className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
+          Invoices
+        </Link>
+        {presetContract ? (
+          <Link
+            to={`/admin/contracts/${presetContract}`}
+            className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline"
+          >
+            Contract
+          </Link>
         ) : null}
       </div>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">Create Invoice</h1>
+            <InvoiceStatusBadge status="draft" />
+            <span className="font-heading text-sm font-semibold text-[var(--admin-muted)]">Invoice Draft</span>
+            {contractNumber ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(16_185_129_/_0.12)] px-2.5 py-1 font-heading text-[12px] font-semibold text-emerald-800">
+                <Check className="h-3.5 w-3.5" />
+                Linked to accepted contract
+              </span>
+            ) : null}
+          </div>
+          {contextLine ? <p className="mt-1 text-sm text-[var(--admin-muted)]">{contextLine}</p> : null}
+          {contractNumber && form.contractId ? (
+            <p className="mt-1 text-sm text-[var(--admin-muted)]">
+              Based on accepted contract{" "}
+              <Link className="font-medium text-[var(--admin-blue)] hover:underline" to={`/admin/contracts/${form.contractId}`}>
+                {contractNumber}
+              </Link>
+              {totals.total > 0 ? ` · ${formatUsdFromCents(totals.total)}` : ""}
+            </p>
+          ) : (
+            <p className="mt-1 max-w-2xl text-sm text-[var(--admin-muted)]">
+              Create an invoice for an approved project or contract. Review the billing details before sending it to the
+              client.
+            </p>
+          )}
+        </div>
+        {editorActions()}
+      </div>
+      {clients.length > 0 && contractNumber ? (
+        <section className="rounded-[var(--admin-radius)] border border-[rgb(16_185_129_/_0.35)] bg-[rgb(16_185_129_/_0.06)] p-5">
+          <p className="inline-flex items-center gap-1.5 font-heading text-base font-semibold text-emerald-800">
+            <Check className="h-4 w-4" />
+            Linked to accepted contract ✓
+          </p>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--admin-muted)]">
+            The client has accepted the contract. Review the billing details, then save a draft or send this invoice.
+          </p>
+          <p className="mt-2 text-sm font-semibold text-[var(--admin-ink)]">Next step: Send Invoice</p>
+          <button type="button" disabled={!canSend} className={`${adminPrimaryBtn} mt-4`} onClick={onSendClick}>
+            <Send className="mr-2 h-4 w-4" />
+            Send Invoice
+          </button>
+        </section>
+      ) : null}
+      {clients.length > 0 && sendReason ? (
+        <p className="text-sm text-[var(--admin-muted)]">{sendReason}</p>
+      ) : null}
       {clients.length === 0 ? (
         <NeedClientEmpty document="invoice" />
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-            <form className="space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-              <InvoiceDraftForm
-                value={form}
-                items={items}
-                disabled={busy}
-                lockClient={Boolean(presetClient || presetContract)}
-                lockContract={Boolean(presetContract)}
-                clients={clients.map((item) => ({ id: item.id, label: item.businessName }))}
-                projects={clientProjects.map((item) => ({ id: item.id, label: item.name }))}
-                contracts={contractOptions}
-                onChange={setForm}
-                onItemsChange={setItems}
-              />
-            </form>
+        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+          <form className="space-y-6" onSubmit={(event) => event.preventDefault()}>
+            <InvoiceDraftForm
+              value={form}
+              items={items}
+              disabled={busy || !contractSeedReady}
+              lockClient={lockClient}
+              lockProject={lockProject}
+              lockContract={Boolean(presetContract)}
+              clients={clients.map((item) => ({ id: item.id, label: item.businessName }))}
+              projects={clientProjects.map((item) => ({ id: item.id, label: item.name }))}
+              contracts={contractOptions}
+              onChange={setForm}
+              onItemsChange={setItems}
+            />
+          </form>
+          <div id="invoice-preview" className="rounded-[var(--admin-radius)] transition-shadow xl:sticky xl:top-4">
+            <p className="mb-3 font-heading text-sm font-semibold text-[var(--admin-ink)]">Client preview</p>
+            <p className="mb-4 text-[12px] leading-5 text-[var(--admin-muted)]">
+              This is what the client sees. Internal notes and editing controls are not included.
+            </p>
             <InvoiceDocumentView
               document={{
                 number: "MS-INV-DRAFT",
@@ -246,9 +415,9 @@ export function AdminInvoiceNew() {
                 contactName: client?.contactName,
                 email: client?.email,
                 projectName: project?.name,
-                contractNumber: contract?.number || seededContractNumber || undefined,
+                contractNumber: contractNumber || undefined,
                 notes: form.notes,
-                items: invoiceItemsFromSnapshot(previewItems),
+                items: previewInvoiceDraftItems(items),
                 subtotalCents: totals.subtotal,
                 taxCents: totals.tax,
                 discountCents: totals.discount,
@@ -258,19 +427,83 @@ export function AdminInvoiceNew() {
               }}
             />
           </div>
+        </div>
       )}
       <ConfirmDocumentModal
         open={sendOpen}
         busy={busy}
-        title="Send this invoice to the client?"
-        description={`${documentMailRecipientCopy(mailRecipients, { companyName: client?.businessName, action: "send" })} They’ll see this invoice in the Client Portal. Email is attempted after send; a delivery failure will not undo the invoice.`}
+        title={sendCopy.title}
+        description={
+          <div className="space-y-3">
+            <dl className="space-y-2">
+              <div className="flex justify-between gap-4">
+                <dt>Total</dt>
+                <dd className="font-medium text-[var(--admin-ink)]">{sendCopy.totalLabel}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt>Due</dt>
+                <dd className="font-medium text-[var(--admin-ink)]">{sendCopy.dueLabel}</dd>
+              </div>
+            </dl>
+            <p>
+              {documentMailRecipientCopy(mailRecipients, { companyName: client?.businessName, action: "send" })} This
+              emails the client and makes the invoice available in their portal.
+            </p>
+          </div>
+        }
         actionLabel="Send Invoice"
-        onClose={() => setSendOpen(false)}
-        onConfirm={() => {
-          setSendOpen(false);
-          void persistNew(true);
+        cancelLabel="Cancel"
+        onClose={() => {
+          if (!busy) setSendOpen(false);
         }}
+        onConfirm={() => void persistNew(true)}
       />
+    </div>
+  );
+}
+
+function InvoiceEditorActions({
+  busy,
+  canSave,
+  sendReason,
+  onSave,
+  onSend,
+  onPreview,
+}: {
+  busy: boolean;
+  canSave: boolean;
+  canSend: boolean;
+  sendReason: string | null;
+  onSave: () => void;
+  onSend: () => void;
+  onPreview: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        disabled={!canSave}
+        title="Save this invoice without sending it to the client."
+        className={adminGhostBtn}
+        onClick={onSave}
+      >
+        <Save className="mr-2 h-4 w-4" />
+        {busy ? "Saving…" : "Save Draft"}
+      </button>
+      <button type="button" title="Preview what the client will receive." className={adminGhostBtn} onClick={onPreview}>
+        <Eye className="mr-2 h-4 w-4" />
+        Preview
+      </button>
+      <button
+        type="button"
+        disabled={busy}
+        title={sendReason || "Send this invoice to the client and make it available in the client portal."}
+        className={adminPrimaryBtn}
+        onClick={onSend}
+      >
+        <Send className="mr-2 h-4 w-4" />
+        Send Invoice
+      </button>
     </div>
   );
 }
@@ -334,8 +567,3 @@ async function seedInvoiceFromContract(contractId: string): Promise<{
     adminNotes: `Copied from contract ${detail.contract.contract_number}.`,
   };
 }
-
-const primaryBtn =
-  "inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white disabled:opacity-60";
-const secondaryBtn =
-  "inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold disabled:opacity-60";

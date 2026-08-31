@@ -1,13 +1,18 @@
 import {
   draftsFromInvoiceItems,
   effectiveInvoiceStatus,
+  formatInvoiceDate,
   invoiceErrorMessage,
+  invoiceItemClientDescription,
+  invoiceItemIsBillable,
   invoiceItemsFromSnapshot,
   invoiceRpcErrorCode,
   type EffectiveInvoiceStatus,
   type InvoiceSnapshotItem,
   type LineItemDraft,
 } from "@/data/invoices";
+import { sendMessage, startConversation } from "@/data/messagingRepository";
+import { formatUsdFromCents } from "@/data/money";
 import { downloadAuthenticatedPdf } from "@/data/pdfDownload";
 import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -70,7 +75,11 @@ function fail(context: string, error: unknown, fallback: string): never {
     error && typeof error === "object" && "message" in error && typeof error.message === "string"
       ? error.message
       : "";
-  throw new AgencyDbError(invoiceErrorMessage(invoiceRpcErrorCode(message)) || friendlyDbError(error, fallback), error);
+  const mapped = invoiceRpcErrorCode(message);
+  if (mapped !== "error") {
+    throw new AgencyDbError(invoiceErrorMessage(mapped), error);
+  }
+  throw new AgencyDbError(friendlyDbError(error, fallback), error);
 }
 
 function throwIf(error: unknown, context: string, fallback: string) {
@@ -191,9 +200,9 @@ export async function saveInvoiceDraft(input: {
 }): Promise<void> {
   const client = db();
   const items: Json = input.items
-    .filter((item) => item.name.trim())
+    .filter((item) => invoiceItemIsBillable(item))
     .map((item, index) => ({
-      name: item.name.trim(),
+      name: invoiceItemClientDescription(item),
       description: item.description.trim(),
       quantity: Math.max(1, Math.floor(item.quantity) || 1),
       unit_price_cents: Math.max(0, Math.floor(item.unitPriceCents) || 0),
@@ -201,8 +210,8 @@ export async function saveInvoiceDraft(input: {
     }));
   const { error } = await client.rpc("update_invoice_draft", {
     p_invoice_id: input.invoiceId,
-    p_issue_date: input.issueDate,
-    p_due_date: input.dueDate,
+    p_issue_date: input.issueDate.slice(0, 10),
+    p_due_date: input.dueDate.slice(0, 10),
     p_currency: input.currency || "USD",
     p_tax_cents: Math.max(0, Math.floor(input.taxCents) || 0),
     p_discount_cents: Math.max(0, Math.floor(input.discountCents) || 0),
@@ -216,10 +225,26 @@ export async function saveInvoiceDraft(input: {
   throwIf(error, "save invoice", "Unable to save this invoice.");
 }
 
+async function functionErrorCode(error: unknown): Promise<string | null> {
+  if (!error || typeof error !== "object" || !("context" in error)) return null;
+  const context = (error as { context?: unknown }).context;
+  if (!context || typeof context !== "object" || !("json" in context)) return null;
+  const json = (context as { json?: unknown }).json;
+  if (typeof json !== "function") return null;
+  try {
+    const body = (await json.call(context)) as { error?: string };
+    return typeof body?.error === "string" && body.error ? body.error : null;
+  } catch {
+    return null;
+  }
+}
+
 async function invokeInvoiceEmail(id: string): Promise<void> {
   const client = db();
   const { data, error } = await client.functions.invoke("document-email", { body: { kind: "invoice", id } });
   if (error) {
+    const code = await functionErrorCode(error);
+    if (code) throw new AgencyDbError(invoiceErrorMessage(code), error);
     const message = (error.message ?? "").toLowerCase();
     if (message.includes("failed to fetch") || message.includes("network")) {
       throw new AgencyDbError(invoiceErrorMessage("network"), error);
@@ -232,14 +257,67 @@ async function invokeInvoiceEmail(id: string): Promise<void> {
   }
 }
 
+async function postInvoiceConversation(invoiceId: string): Promise<void> {
+  const detail = await fetchInvoiceDetail(invoiceId);
+  if (!detail) return;
+  const due = formatInvoiceDate(detail.invoice.due_date);
+  const body = [
+    "A new invoice is ready.",
+    "",
+    `${detail.invoice.invoice_number}`,
+    `Total ${formatUsdFromCents(detail.invoice.total_cents)}`,
+    `Amount due ${formatUsdFromCents(detail.invoice.amount_due_cents)}`,
+    due !== "—" ? `Due ${due}` : "",
+    "",
+    "Open Invoices in your client portal to review and pay.",
+  ]
+    .filter((line) => line !== undefined)
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  const client = db();
+  const { data, error } = await client
+    .from("conversations")
+    .select("id, project_id, status, last_message_at")
+    .eq("client_id", detail.invoice.client_id)
+    .order("last_message_at", { ascending: false });
+  throwIf(error, "invoice message", "Unable to post this invoice in Messages.");
+  const rows = data ?? [];
+  const projectId = detail.invoice.project_id;
+  const match =
+    rows.find((row) => projectId && row.project_id === projectId && row.status === "open") ??
+    rows.find((row) => projectId && row.project_id === projectId) ??
+    rows.find((row) => row.status === "open") ??
+    rows[0];
+
+  if (match) {
+    await sendMessage(match.id, body);
+    return;
+  }
+
+  await startConversation({
+    subject: `Invoice ${detail.invoice.invoice_number}`.slice(0, 120),
+    body,
+    projectId,
+    clientId: detail.invoice.client_id,
+  });
+}
+
 export async function sendInvoice(invoiceId: string): Promise<{ emailed: boolean }> {
   const client = db();
   const { error } = await client.rpc("send_invoice", { p_invoice_id: invoiceId });
   throwIf(error, "send invoice", "Unable to send this invoice.");
   try {
+    await postInvoiceConversation(invoiceId);
+  } catch (caught) {
+    logDbError("invoice message", caught);
+  }
+  try {
     await invokeInvoiceEmail(invoiceId);
     return { emailed: true };
-  } catch {
+  } catch (caught) {
+    logDbError("invoice email", caught);
     return { emailed: false };
   }
 }

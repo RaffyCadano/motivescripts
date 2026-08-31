@@ -265,11 +265,17 @@ Deno.serve(async (req) => {
       });
       let attachments: { filename: string; content: string }[] | undefined;
       try {
-        const model = await loadInvoicePdfModel(admin, invoice.id, "client");
-        if (model) {
-          const bytes = await generateInvoicePdf(model);
-          attachments = [{ filename: invoicePdfFilename(model.number), content: bytesToBase64(bytes) }];
-        }
+        attachments = await Promise.race([
+          (async () => {
+            const model = await loadInvoicePdfModel(admin, invoice.id, "client");
+            if (!model) return undefined;
+            const bytes = await generateInvoicePdf(model);
+            return [{ filename: invoicePdfFilename(model.number), content: bytesToBase64(bytes) }];
+          })(),
+          new Promise<undefined>((resolve) => {
+            setTimeout(() => resolve(undefined), 8000);
+          }),
+        ]);
       } catch {
         console.error("document-email invoice pdf failed");
       }

@@ -60,5 +60,11 @@ export function logDbError(context: string, error: unknown) {
     error && typeof error === "object" && "message" in error && typeof error.message === "string"
       ? error.message
       : String(error);
-  console.error(`[agency-db] ${context}`, code ? { code, message } : message);
+  const details =
+    error && typeof error === "object" && "details" in error && typeof error.details === "string"
+      ? error.details
+      : undefined;
+  const hint =
+    error && typeof error === "object" && "hint" in error && typeof error.hint === "string" ? error.hint : undefined;
+  console.error(`[agency-db] ${context}`, { code, message, details, hint });
 }

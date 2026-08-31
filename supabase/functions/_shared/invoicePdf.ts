@@ -42,6 +42,7 @@ export type InvoicePdfModel = {
   billToEmail: string;
   billToPhone: string;
   projectName: string | null;
+  contractNumber?: string | null;
   notes: string;
   items: InvoicePdfItem[];
   subtotal_cents: number;
@@ -107,6 +108,14 @@ export async function generateInvoicePdf(model: InvoicePdfModel): Promise<Uint8A
     ctx.y -= 20;
   }
 
+  if (model.contractNumber) {
+    ensureSpace(ctx, 36);
+    drawText(ctx.page, "CONTRACT", MARGIN, ctx.y, bold, 8, MUTED);
+    ctx.y -= 14;
+    drawText(ctx.page, model.contractNumber, MARGIN, ctx.y, font, 11, INK);
+    ctx.y -= 20;
+  }
+
   ensureSpace(ctx, 40);
   drawText(ctx.page, "Description", MARGIN, ctx.y, bold, 8, MUTED);
   drawText(ctx.page, "Qty", 360, ctx.y, bold, 8, MUTED);
@@ -156,8 +165,8 @@ export async function generateInvoicePdf(model: InvoicePdfModel): Promise<Uint8A
 
   const rows: [string, string, boolean][] = [
     ["Subtotal", money(model.subtotal_cents), false],
-    ["Discount", model.discount_cents > 0 ? `-${money(model.discount_cents)}` : money(0), false],
     ["Tax", money(model.tax_cents), false],
+    ["Discount", money(model.discount_cents), false],
     ["Total", money(model.total_cents), true],
     ["Amount paid", money(model.amount_paid_cents), false],
     ["Amount due", money(model.amount_due_cents), true],

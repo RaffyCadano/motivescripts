@@ -22,6 +22,13 @@ export type InvoiceViewModel = {
   amountDueCents: number;
 };
 
+function itemLines(description: string): { title: string; detail: string } {
+  const trimmed = description.trim() || "Item";
+  const breakAt = trimmed.indexOf("\n");
+  if (breakAt < 0) return { title: trimmed, detail: "" };
+  return { title: trimmed.slice(0, breakAt).trim() || "Item", detail: trimmed.slice(breakAt + 1).trim() };
+}
+
 export function InvoiceDocumentView({
   document: doc,
   tone = "admin",
@@ -49,56 +56,55 @@ export function InvoiceDocumentView({
         </div>
       </div>
 
-      <dl className="mt-8 grid gap-4 sm:grid-cols-2">
+      <dl className="mt-8 grid gap-6 sm:grid-cols-2">
         <div>
           <dt className={`text-[12px] font-semibold uppercase tracking-[0.12em] ${muted}`}>Bill to</dt>
           <dd className="mt-2">
             <p className="font-heading text-sm font-semibold">{doc.companyName}</p>
             {doc.contactName ? <p className={`mt-1 text-sm ${muted}`}>{doc.contactName}</p> : null}
-            {doc.email ? <p className={`mt-1 text-sm ${muted}`}>{doc.email}</p> : null}
+            {doc.email ? (
+              <p className={`mt-1 text-sm ${muted}`}>
+                <a href={`mailto:${doc.email}`} className="hover:underline">
+                  {doc.email}
+                </a>
+              </p>
+            ) : null}
           </dd>
         </div>
-        <div className="sm:text-right">
-          <div>
-            <p className={`text-[12px] ${muted}`}>Issue date</p>
-            <p className="mt-1 text-sm font-medium">{formatInvoiceDate(doc.issueDate)}</p>
-          </div>
-          <div className="mt-3">
-            <p className={`text-[12px] ${muted}`}>Due date</p>
-            <p className="mt-1 text-sm font-medium">{formatInvoiceDate(doc.dueDate)}</p>
-          </div>
-          {doc.projectName ? (
-            <div className="mt-3">
-              <p className={`text-[12px] ${muted}`}>Project</p>
-              <p className="mt-1 text-sm font-medium">{doc.projectName}</p>
-            </div>
-          ) : null}
-          {doc.contractNumber ? (
-            <div className="mt-3">
-              <p className={`text-[12px] ${muted}`}>Contract</p>
-              <p className="mt-1 text-sm font-medium">{doc.contractNumber}</p>
-            </div>
-          ) : null}
+        <div>
+          <dt className={`text-[12px] font-semibold uppercase tracking-[0.12em] ${muted}`}>Invoice details</dt>
+          <dd className="mt-2 space-y-2 text-sm">
+            <DetailRow label="Issue date" value={formatInvoiceDate(doc.issueDate)} muted={muted} />
+            <DetailRow label="Due date" value={formatInvoiceDate(doc.dueDate)} muted={muted} />
+            {doc.projectName ? <DetailRow label="Project" value={doc.projectName} muted={muted} /> : null}
+            {doc.contractNumber ? <DetailRow label="Contract" value={doc.contractNumber} muted={muted} /> : null}
+          </dd>
         </div>
       </dl>
 
       <section className="mt-8">
-        <h2 className={`font-heading text-sm font-semibold tracking-tight ${ink}`}>Line items</h2>
+        <h2 className={`font-heading text-sm font-semibold tracking-tight ${ink}`}>Line Items</h2>
         <ul className="mt-3 divide-y divide-[rgb(7_17_31_/_0.08)]">
           {doc.items.length === 0 ? (
             <li className={`py-3 text-sm ${muted}`}>No line items yet.</li>
           ) : (
-            doc.items.map((item, index) => (
-              <li key={item.id ?? `${item.description}-${index}`} className="flex flex-wrap items-start justify-between gap-2 py-3">
-                <div>
-                  <p className={`font-heading text-sm font-semibold ${ink}`}>{item.description}</p>
-                  <p className={`mt-1 text-[12px] ${muted}`}>
-                    {item.quantity} × {money(item.unit_price_cents)}
-                  </p>
-                </div>
-                <p className={`font-heading text-sm font-semibold ${ink}`}>{money(item.total_cents)}</p>
-              </li>
-            ))
+            doc.items.map((item, index) => {
+              const lines = itemLines(item.description);
+              return (
+                <li key={item.id ?? `${item.description}-${index}`} className="flex flex-wrap items-start justify-between gap-2 py-3">
+                  <div>
+                    <p className={`font-heading text-sm font-semibold ${ink}`}>{lines.title}</p>
+                    {lines.detail ? (
+                      <p className={`mt-1 whitespace-pre-wrap text-[12px] leading-5 ${muted}`}>{lines.detail}</p>
+                    ) : null}
+                    <p className={`mt-1 text-[12px] ${muted}`}>
+                      {item.quantity} × {money(item.unit_price_cents)}
+                    </p>
+                  </div>
+                  <p className={`font-heading text-sm font-semibold ${ink}`}>{money(item.total_cents)}</p>
+                </li>
+              );
+            })
           )}
         </ul>
       </section>
@@ -108,28 +114,24 @@ export function InvoiceDocumentView({
           <dt className={muted}>Subtotal</dt>
           <dd>{money(doc.subtotalCents)}</dd>
         </div>
-        {doc.taxCents > 0 ? (
-          <div className="flex justify-between gap-6">
-            <dt className={muted}>Tax</dt>
-            <dd>{money(doc.taxCents)}</dd>
-          </div>
-        ) : null}
-        {doc.discountCents > 0 ? (
-          <div className="flex justify-between gap-6">
-            <dt className={muted}>Discount</dt>
-            <dd>−{money(doc.discountCents)}</dd>
-          </div>
-        ) : null}
-        <div className="flex justify-between gap-6 border-t border-[rgb(7_17_31_/_0.08)] pt-2 font-heading text-base font-semibold">
+        <div className="flex justify-between gap-6">
+          <dt className={muted}>Tax</dt>
+          <dd>{money(doc.taxCents)}</dd>
+        </div>
+        <div className="flex justify-between gap-6">
+          <dt className={muted}>Discount</dt>
+          <dd>{money(doc.discountCents)}</dd>
+        </div>
+        <div className="flex justify-between gap-6 border-t border-[rgb(7_17_31_/_0.08)] pt-3 font-heading text-base font-semibold">
           <dt>Total</dt>
           <dd>{money(doc.totalCents)}</dd>
         </div>
         <div className="flex justify-between gap-6">
-          <dt className={muted}>Paid</dt>
+          <dt className={muted}>Amount paid</dt>
           <dd>{money(doc.amountPaidCents)}</dd>
         </div>
-        <div className="flex justify-between gap-6 font-heading font-semibold">
-          <dt>Amount due</dt>
+        <div className="flex justify-between gap-6 border-t border-[rgb(7_17_31_/_0.08)] pt-3 font-heading text-lg font-semibold">
+          <dt>Amount Due</dt>
           <dd>{money(doc.amountDueCents)}</dd>
         </div>
       </dl>
@@ -141,5 +143,14 @@ export function InvoiceDocumentView({
         </section>
       ) : null}
     </article>
+  );
+}
+
+function DetailRow({ label, value, muted }: { label: string; value: string; muted: string }) {
+  return (
+    <div className="flex flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+      <span className={muted}>{label}</span>
+      <span className="font-medium">{value}</span>
+    </div>
   );
 }

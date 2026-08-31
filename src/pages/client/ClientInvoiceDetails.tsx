@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { InvoiceDocumentView } from "@/components/invoices/InvoiceDocumentView";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { fetchClientContractSummaries } from "@/data/documentsRepository";
 import {
   canPayInvoiceOnline,
   formatInvoiceDate,
@@ -19,6 +20,7 @@ export function ClientInvoiceDetails() {
   const { id } = useParams();
   const { clients, projects, notify } = useLeads();
   const [detail, setDetail] = useState<InvoiceDetail | null>(null);
+  const [contractNumber, setContractNumber] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [payBusy, setPayBusy] = useState(false);
@@ -29,8 +31,17 @@ export function ClientInvoiceDetails() {
     if (!id) return;
     const next = await fetchInvoiceDetail(id);
     setDetail(next);
-    if (!next) return;
+    if (!next) {
+      setContractNumber(null);
+      return;
+    }
     setPayAmount(next.invoice.amount_due_cents);
+    if (next.invoice.contract_id) {
+      const contracts = await fetchClientContractSummaries().catch(() => []);
+      setContractNumber(contracts.find((row) => row.id === next.invoice.contract_id)?.number ?? null);
+    } else {
+      setContractNumber(null);
+    }
     try {
       await markInvoiceViewed(next.invoice.id);
     } catch {
@@ -122,6 +133,7 @@ export function ClientInvoiceDetails() {
           contactName: detail.billTo?.contactName,
           email: detail.billTo?.email,
           projectName: project?.name,
+          contractNumber,
           notes: detail.invoice.notes,
           items,
           subtotalCents: detail.invoice.subtotal_cents,

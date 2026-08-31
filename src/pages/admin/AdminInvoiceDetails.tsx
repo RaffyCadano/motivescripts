@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Ban, Download, Mail, PencilLine, RotateCcw, Save, Send, Trash2 } from "lucide-react";
+import { Ban, Download, Mail, PencilLine, RotateCcw, Send, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
+import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { InvoiceDocumentView } from "@/components/invoices/InvoiceDocumentView";
 import { InvoiceDraftForm, type InvoiceDraftFormValue } from "@/components/invoices/InvoiceDraftForm";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
+import { InvoiceWorkflowSteps } from "@/components/invoices/InvoiceWorkflowSteps";
 import { RecordPaymentModal } from "@/components/invoices/RecordPaymentModal";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { documentMailRecipientCopy, documentMailRecipients } from "@/data/documents";
@@ -20,11 +22,15 @@ import {
   formatInvoiceDate,
   invoiceDraftTotalCents,
   invoiceHasActivePayments,
+  invoiceLinkingBlockedReason,
   invoiceSendBlockedReason,
+  invoiceSendConfirmCopy,
+  invoiceSentMessage,
   isoCalendarDate,
   isoCalendarDatePlusDays,
   paymentMethodLabel,
   paymentStatusLabel,
+  previewInvoiceDraftItems,
   type LineItemDraft,
 } from "@/data/invoices";
 import {
@@ -59,7 +65,6 @@ export function AdminInvoiceDetails() {
   const [resendOpen, setResendOpen] = useState(false);
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
@@ -111,7 +116,6 @@ export function AdminInvoiceDetails() {
 
   useEffect(() => {
     let active = true;
-    setEditing(false);
     setLoading(true);
     void load()
       .catch((error) => notify(error instanceof AgencyDbError ? error.message : "Unable to load this invoice."))
@@ -133,10 +137,30 @@ export function AdminInvoiceDetails() {
   );
   const project = projects.find((item) => item.id === (form.projectId || detail?.invoice.project_id));
   const clientContracts = useMemo(
-    () => accepted.filter((row) => row.clientId === (detail?.invoice.client_id ?? "")),
-    [accepted, detail?.invoice.client_id],
+    () =>
+      accepted.filter((row) => {
+        if (row.clientId !== (detail?.invoice.client_id ?? "")) return false;
+        if (form.projectId && row.projectId && row.projectId !== form.projectId) return false;
+        return true;
+      }),
+    [accepted, detail?.invoice.client_id, form.projectId],
   );
-  const contract = clientContracts.find((item) => item.id === (form.contractId || detail?.invoice.contract_id));
+  const contract = accepted.find((item) => item.id === (form.contractId || detail?.invoice.contract_id));
+  const contractOptions = useMemo(() => {
+    const rows = clientContracts.map((item) => ({
+      id: item.id,
+      label: item.number,
+      projectId: item.projectId,
+    }));
+    const selectedId = form.contractId || detail?.invoice.contract_id || "";
+    if (selectedId && !rows.some((row) => row.id === selectedId)) {
+      const extra = accepted.find((row) => row.id === selectedId);
+      if (extra) {
+        rows.unshift({ id: extra.id, label: extra.number, projectId: extra.projectId });
+      }
+    }
+    return rows;
+  }, [accepted, clientContracts, detail?.invoice.contract_id, form.contractId]);
 
   if (loading) {
     return <div className="h-64 animate-pulse rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]" />;
@@ -155,7 +179,7 @@ export function AdminInvoiceDetails() {
   const current = detail;
   const isDraft = current.invoice.status === "draft";
   const hasPayments = invoiceHasActivePayments(current.payments);
-  const locked = hasPayments || !isDraft || !editing;
+  const locked = hasPayments || !isDraft;
   const totals = isDraft
     ? invoiceDraftTotalCents(items, form.taxCents, form.discountCents)
     : {
@@ -165,15 +189,7 @@ export function AdminInvoiceDetails() {
         total: current.invoice.total_cents,
       };
   const previewItems = isDraft
-    ? items
-        .filter((item) => item.name.trim())
-        .map((item, index) => ({
-          description: item.name.trim(),
-          quantity: item.quantity,
-          unit_price_cents: item.unitPriceCents,
-          total_cents: item.quantity * item.unitPriceCents,
-          sort_order: index,
-        }))
+    ? previewInvoiceDraftItems(items)
     : current.snapshotItems.length > 0
       ? current.snapshotItems
       : current.items.map((item) => ({
@@ -183,6 +199,30 @@ export function AdminInvoiceDetails() {
           total_cents: item.total_cents,
           sort_order: item.sort_order,
         }));
+  const linkingReason = invoiceLinkingBlockedReason({
+    clientId: current.invoice.client_id,
+    projectId: form.projectId,
+    contractId: form.contractId,
+    projects,
+    contracts: accepted.concat(
+      form.contractId && !accepted.some((row) => row.id === form.contractId)
+        ? [
+            {
+              id: form.contractId,
+              number: contract?.number || "Selected contract",
+              clientId: current.invoice.client_id,
+              projectId: form.projectId || null,
+            },
+          ]
+        : [],
+    ),
+  });
+  const sendReason = invoiceSendBlockedReason(items, form.taxCents, form.discountCents, form.issueDate, form.dueDate);
+  const sendCopy = invoiceSendConfirmCopy({
+    companyName: client?.businessName || current.billTo?.businessName || "",
+    totalLabel: formatMoneyFromCents(totals.total, current.invoice.currency),
+    dueLabel: formatInvoiceDate(form.dueDate || current.invoice.due_date),
+  });
   const money = (cents: number) => formatMoneyFromCents(cents, current.invoice.currency);
   const activity = (client?.activity ?? []).filter((item) =>
     item.description.toLowerCase().includes(current.invoice.invoice_number.toLowerCase()),
@@ -190,6 +230,12 @@ export function AdminInvoiceDetails() {
 
   async function persist() {
     if (!isDraft) return;
+    const linksChanged =
+      form.projectId !== (current.invoice.project_id ?? "") || form.contractId !== (current.invoice.contract_id ?? "");
+    if (linksChanged && linkingReason) throw new AgencyDbError(linkingReason);
+    if (form.dueDate && form.issueDate && form.dueDate < form.issueDate) {
+      throw new AgencyDbError("Due date must be on or after the issue date.");
+    }
     await saveInvoiceDraft({
       invoiceId: current.invoice.id,
       issueDate: form.issueDate,
@@ -206,8 +252,38 @@ export function AdminInvoiceDetails() {
     });
   }
 
-  function scrollToInvoiceForm() {
-    document.getElementById("invoice-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  async function sendDraft() {
+    const blocked = invoiceSendBlockedReason(items, form.taxCents, form.discountCents, form.issueDate, form.dueDate);
+    if (blocked) {
+      notify(blocked);
+      return;
+    }
+    setBusy(true);
+    try {
+      await saveInvoiceDraft({
+        invoiceId: current.invoice.id,
+        issueDate: form.issueDate,
+        dueDate: form.dueDate,
+        currency: form.currency,
+        taxCents: form.taxCents,
+        discountCents: form.discountCents,
+        notes: form.notes,
+        projectId: form.projectId || null,
+        contractId: form.contractId || null,
+        proposalId: current.invoice.proposal_id,
+        adminNotes: form.adminNotes,
+        items,
+      });
+      const result = await sendInvoice(current.invoice.id);
+      notify(invoiceSentMessage(result.emailed));
+      setSendOpen(false);
+      await load();
+      await reload();
+    } catch (error) {
+      notify(error instanceof AgencyDbError ? error.message : "Unable to send this invoice.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const invoiceActions: AdminActionsMenuItem[] = [
@@ -229,40 +305,19 @@ export function AdminInvoiceDetails() {
     },
   ];
   if (isDraft) {
-    if (editing) {
-      invoiceActions.push({
-        id: "save",
-        label: busy ? "Saving…" : "Save draft",
-        icon: Save,
-        disabled: busy,
-        onSelect: async () => {
-          setBusy(true);
-          try {
-            await persist();
-            notify("Invoice saved.");
-            setEditing(false);
-            await load();
-            await reload();
-          } catch (error) {
-            notify(error instanceof AgencyDbError ? error.message : "Unable to save this invoice.");
-          } finally {
-            setBusy(false);
-          }
-        },
-      });
-    } else {
-      invoiceActions.push({
-        id: "edit-draft",
-        label: "Edit",
-        icon: PencilLine,
-        disabled: busy,
-        onSelect: () => {
-          setEditing(true);
-          scrollToInvoiceForm();
-        },
-      });
-    }
-    invoiceActions.push({ id: "send", label: "Send Invoice", icon: Send, disabled: busy, onSelect: () => setSendOpen(true) });
+    invoiceActions.push({
+      id: "send",
+      label: "Send Invoice",
+      icon: Send,
+      disabled: busy,
+      onSelect: () => {
+        if (sendReason) {
+          notify(sendReason);
+          return;
+        }
+        setSendOpen(true);
+      },
+    });
   } else if (current.invoice.status !== "cancelled") {
     invoiceActions.push({
       id: "resend",
@@ -337,8 +392,57 @@ export function AdminInvoiceDetails() {
             {project ? ` · ${project.name}` : ""}
             {contract ? ` · ${contract.number}` : ""}
           </p>
+          <InvoiceWorkflowSteps status={current.effectiveStatus} className="mt-3" />
+          {contract ? (
+            <p className="mt-2 text-sm text-[var(--admin-muted)]">
+              <span className="font-heading font-semibold text-emerald-800">Linked to accepted contract ✓</span>
+              <span className="ml-2 font-mono text-[12px] text-[var(--admin-ink)]">{contract.number}</span>
+            </p>
+          ) : null}
         </div>
-        <AdminActionsMenu ariaLabel="Invoice actions" items={invoiceActions} />
+        <div className="flex flex-wrap items-start gap-2">
+          {isDraft ? (
+            <>
+              <button
+                type="button"
+                disabled={busy}
+                title="Save this invoice without sending it to the client."
+                className={adminGhostBtn}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await persist();
+                    notify("Invoice saved as a draft.");
+                    await load();
+                    await reload();
+                  } catch (error) {
+                    notify(error instanceof AgencyDbError ? error.message : "Unable to save this invoice.");
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {busy ? "Saving…" : "Save Draft"}
+              </button>
+              <button
+                type="button"
+                disabled={busy}
+                title={sendReason || "Send this invoice to the client and make it available in the client portal."}
+                className={adminPrimaryBtn}
+                onClick={() => {
+                  if (sendReason) {
+                    notify(sendReason);
+                    return;
+                  }
+                  setSendOpen(true);
+                }}
+              >
+                Send Invoice
+              </button>
+            </>
+          ) : null}
+          <AdminActionsMenu ariaLabel="Invoice actions" iconOnly items={invoiceActions} />
+        </div>
       </div>
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -362,12 +466,8 @@ export function AdminInvoiceDetails() {
         </p>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-        <form
-          id="invoice-form"
-          className="space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5"
-        >
-          <h2 className="font-heading text-sm font-semibold">Invoice information</h2>
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+        <form id="invoice-form" className="space-y-6" onSubmit={(event) => event.preventDefault()}>
           <InvoiceDraftForm
             value={form}
             items={items}
@@ -375,34 +475,94 @@ export function AdminInvoiceDetails() {
             disabled={locked || busy}
             clients={clients.map((item) => ({ id: item.id, label: item.businessName }))}
             projects={projects
-              .filter((item) => item.clientId === current.invoice.client_id && !item.archived)
+              .filter(
+                (item) =>
+                  item.clientId === current.invoice.client_id && (!item.archived || item.id === form.projectId),
+              )
               .map((item) => ({ id: item.id, label: item.name }))}
-            contracts={clientContracts.map((item) => ({ id: item.id, label: item.number }))}
+            contracts={contractOptions}
             onChange={setForm}
             onItemsChange={setItems}
           />
+          {isDraft ? (
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  title="Save this invoice without sending it to the client."
+                  className={adminGhostBtn}
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      await persist();
+                      notify("Invoice saved as a draft.");
+                      await load();
+                      await reload();
+                    } catch (error) {
+                      notify(error instanceof AgencyDbError ? error.message : "Unable to save this invoice.");
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  {busy ? "Saving…" : "Save Draft"}
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  title={sendReason || "Send this invoice to the client and make it available in the client portal."}
+                  className={adminPrimaryBtn}
+                  onClick={() => {
+                    if (sendReason) {
+                      notify(sendReason);
+                      return;
+                    }
+                    setSendOpen(true);
+                  }}
+                >
+                  Send Invoice
+                </button>
+              </div>
+              <p className="max-w-md text-[12px] leading-5 text-[var(--admin-muted)]">
+                Save this invoice without sending it to the client.
+              </p>
+              <p className="max-w-md text-[12px] leading-5 text-[var(--admin-muted)]">
+                Send this invoice to the client and make it available in the client portal.
+              </p>
+              {sendReason ? <p className="max-w-md text-[12px] leading-5 text-amber-800">{sendReason}</p> : null}
+            </div>
+          ) : null}
         </form>
-        <InvoiceDocumentView
-          document={{
-            number: current.invoice.invoice_number,
-            issueDate: form.issueDate,
-            dueDate: form.dueDate,
-            currency: form.currency,
-            companyName: current.billTo?.businessName || client?.businessName || "Client",
-            contactName: current.billTo?.contactName || client?.contactName,
-            email: current.billTo?.email || client?.email,
-            projectName: project?.name,
-            contractNumber: contract?.number,
-            notes: form.notes,
-            items: previewItems,
-            subtotalCents: totals.subtotal,
-            taxCents: totals.tax,
-            discountCents: totals.discount,
-            totalCents: totals.total,
-            amountPaidCents: current.invoice.amount_paid_cents,
-            amountDueCents: isDraft ? totals.total : current.invoice.amount_due_cents,
-          }}
-        />
+        <div className="xl:sticky xl:top-4">
+          <p className="mb-1 text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+            Client preview
+          </p>
+          <p className="mb-3 text-sm leading-6 text-[var(--admin-muted)]">
+            This is what the client will receive. Internal notes are not included.
+          </p>
+          <InvoiceDocumentView
+            document={{
+              number: current.invoice.invoice_number,
+              issueDate: form.issueDate,
+              dueDate: form.dueDate,
+              currency: form.currency,
+              companyName: current.billTo?.businessName || client?.businessName || "Client",
+              contactName: current.billTo?.contactName || client?.contactName,
+              email: current.billTo?.email || client?.email,
+              projectName: project?.name,
+              contractNumber: contract?.number,
+              notes: form.notes,
+              items: previewItems,
+              subtotalCents: totals.subtotal,
+              taxCents: totals.tax,
+              discountCents: totals.discount,
+              totalCents: totals.total,
+              amountPaidCents: current.invoice.amount_paid_cents,
+              amountDueCents: isDraft ? totals.total : current.invoice.amount_due_cents,
+            }}
+          />
+        </div>
       </div>
 
       <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
@@ -483,30 +643,12 @@ export function AdminInvoiceDetails() {
       <ConfirmDocumentModal
         open={sendOpen}
         busy={busy}
-        title="Send this invoice to the client?"
-        description={`${documentMailRecipientCopy(mailRecipients, { companyName: client?.businessName, action: "send" })} They’ll see this exact invoice in the Client Portal. Email is attempted after send; a delivery failure will not undo the invoice.`}
+        title={sendCopy.title}
+        description={`${documentMailRecipientCopy(mailRecipients, { companyName: client?.businessName, action: "send" })} This emails the client and makes the invoice available in their portal.`}
         actionLabel="Send Invoice"
+        cancelLabel="Cancel"
         onClose={() => setSendOpen(false)}
-        onConfirm={async () => {
-          const blocked = invoiceSendBlockedReason(items, form.taxCents, form.discountCents, form.issueDate, form.dueDate);
-          if (blocked) {
-            notify(blocked);
-            return;
-          }
-          setBusy(true);
-          try {
-            await persist();
-            const result = await sendInvoice(current.invoice.id);
-            notify(result.emailed ? "Invoice sent." : "Invoice sent. The email could not be delivered.");
-            setSendOpen(false);
-            await load();
-            await reload();
-          } catch (error) {
-            notify(error instanceof AgencyDbError ? error.message : "Unable to send this invoice.");
-          } finally {
-            setBusy(false);
-          }
-        }}
+        onConfirm={() => void sendDraft()}
       />
       <ConfirmDocumentModal
         open={resendOpen}
@@ -563,7 +705,6 @@ export function AdminInvoiceDetails() {
             await reopenInvoiceDraft(current.invoice.id);
             notify("Invoice is a draft again. You can edit and send it.");
             setEditOpen(false);
-            setEditing(true);
             await load();
             await reload();
           } catch (error) {
