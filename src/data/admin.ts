@@ -5,4 +5,5 @@ export type AdminStat = {
   supporting: string;
   tone: "neutral" | "up" | "attention";
   icon: "leads" | "projects" | "review" | "revenue" | "clients" | "messages";
+  href?: string;
 };

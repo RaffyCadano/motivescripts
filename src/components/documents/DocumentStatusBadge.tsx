@@ -25,12 +25,14 @@ const icons = {
 export function DocumentStatusBadge({
   status,
   audience = "admin",
+  label,
 }: {
   status: DocumentStatus;
   audience?: "admin" | "client";
+  label?: string;
 }) {
   const Icon = icons[status];
-  const label = audience === "client" ? clientStatusLabel(status) : adminStatusLabel(status);
+  const text = label ?? (audience === "client" ? clientStatusLabel(status) : adminStatusLabel(status));
   return (
     <span
       className={cn(
@@ -39,7 +41,7 @@ export function DocumentStatusBadge({
       )}
     >
       <Icon size={11} strokeWidth={2.2} aria-hidden="true" />
-      {label}
+      {text}
     </span>
   );
 }

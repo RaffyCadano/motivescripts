@@ -8,14 +8,17 @@ export function LeadProjectRequest({ lead }: LeadProjectRequestProps) {
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
       <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Project Request</h2>
+      <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
+        Originally submitted by this lead. This is not the Website Scope form.
+      </p>
       <dl className="mt-4 space-y-4">
         <div>
           <dt className="text-[12px] text-[var(--admin-muted)]">What do you need?</dt>
-          <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{lead.request}</dd>
+          <dd className="mt-1 font-heading text-base font-semibold leading-snug text-[var(--admin-ink)]">{lead.request}</dd>
         </div>
         <div>
           <dt className="text-[12px] text-[var(--admin-muted)]">Project details</dt>
-          <dd className="mt-1 text-sm leading-relaxed text-[var(--admin-ink)]">{lead.projectDetails}</dd>
+          <dd className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[var(--admin-ink)]">{lead.projectDetails}</dd>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

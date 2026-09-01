@@ -39,6 +39,8 @@ export type InvoiceSummary = {
   amountPaidCents: number;
   amountDueCents: number;
   createdAt: string;
+  updatedAt: string;
+  firstLine: string | null;
 };
 
 export type InvoiceBillTo = {
@@ -89,6 +91,8 @@ function firstId(data: string | string[] | null | undefined): string | null {
 }
 
 function toSummary(row: InvoiceRow): InvoiceSummary {
+  const items = invoiceItemsFromSnapshot(row.snapshot_items);
+  const first = items[0]?.description.trim() ?? "";
   return {
     id: row.id,
     clientId: row.client_id,
@@ -105,6 +109,8 @@ function toSummary(row: InvoiceRow): InvoiceSummary {
     amountPaidCents: row.amount_paid_cents,
     amountDueCents: row.amount_due_cents,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    firstLine: first ? first.split("\n")[0].trim() : null,
   };
 }
 
@@ -125,6 +131,46 @@ export async function fetchInvoiceSummaries(clientId?: string): Promise<InvoiceS
   const { data, error } = await query;
   throwIf(error, "load invoices", "Unable to load invoices.");
   return ((data ?? []) as InvoiceRow[]).map(toSummary);
+}
+
+export type InvoicePaymentChannel = Pick<PaymentRow, "payment_method" | "provider">;
+
+export async function fetchInvoicePaymentMethods(
+  invoiceIds: string[],
+): Promise<Map<string, InvoicePaymentChannel[]>> {
+  const methods = new Map<string, InvoicePaymentChannel[]>();
+  if (invoiceIds.length === 0) return methods;
+  const client = db();
+  const { data, error } = await client
+    .from("payments")
+    .select("invoice_id, payment_method, provider, reversed_at")
+    .in("invoice_id", invoiceIds);
+  throwIf(error, "load invoice payments", "Unable to load invoice payments.");
+  for (const row of (data ?? []) as Pick<PaymentRow, "invoice_id" | "payment_method" | "provider" | "reversed_at">[]) {
+    if (row.reversed_at) continue;
+    const current = methods.get(row.invoice_id) ?? [];
+    current.push({ payment_method: row.payment_method, provider: row.provider });
+    methods.set(row.invoice_id, current);
+  }
+  return methods;
+}
+
+export async function fetchInvoiceFirstLines(invoiceIds: string[]): Promise<Map<string, string>> {
+  const lines = new Map<string, string>();
+  if (invoiceIds.length === 0) return lines;
+  const client = db();
+  const { data, error } = await client
+    .from("invoice_items")
+    .select("invoice_id, description, sort_order")
+    .in("invoice_id", invoiceIds)
+    .order("sort_order", { ascending: true });
+  throwIf(error, "load invoice items", "Unable to load invoice line items.");
+  for (const row of (data ?? []) as Pick<InvoiceItemRow, "invoice_id" | "description" | "sort_order">[]) {
+    if (lines.has(row.invoice_id)) continue;
+    const line = row.description.split("\n")[0]?.trim() ?? "";
+    if (line) lines.set(row.invoice_id, line);
+  }
+  return lines;
 }
 
 export async function fetchClientInvoiceSummaries(): Promise<InvoiceSummary[]> {

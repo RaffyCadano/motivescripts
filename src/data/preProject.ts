@@ -276,6 +276,35 @@ export function clientOnboardingSteps(flags: ReturnType<typeof salesFlags>): Onb
   ];
 }
 
+/** Lead-page strip. Later steps are done only when matching records already exist. */
+export function deriveLeadFunnel(input: {
+  converted: boolean;
+  portalInvited?: boolean;
+  hasScope?: boolean;
+  hasProject?: boolean;
+  proposalAccepted?: boolean;
+  contractAccepted?: boolean;
+  hasInvoice?: boolean;
+  invoicePaid?: boolean;
+}): AdminFunnelItem[] {
+  return [
+    { id: "lead", label: "Lead", done: input.converted },
+    { id: "client", label: "Client", done: input.converted },
+    { id: "invited", label: "Portal Invite", done: Boolean(input.portalInvited) },
+    { id: "scope", label: "Scope", done: Boolean(input.hasScope) },
+    { id: "project", label: "Project", done: Boolean(input.hasProject) },
+    { id: "proposal", label: "Proposal", done: Boolean(input.proposalAccepted) },
+    { id: "contract", label: "Contract", done: Boolean(input.contractAccepted) },
+    { id: "invoice", label: "Invoice", done: Boolean(input.hasInvoice) },
+    { id: "payment", label: "Payment", done: Boolean(input.invoicePaid) },
+  ];
+}
+
+export function leadFunnelCurrentId(items: AdminFunnelItem[], converted: boolean): string {
+  if (!converted) return "lead";
+  return items.find((item) => !item.done)?.id ?? "client";
+}
+
 export function deriveAdminFunnel(input: {
   portalInvited: boolean;
   hasScope: boolean;
@@ -335,8 +364,8 @@ export function adminClientWorkflowAction(input: {
 
   if (input.invoicePaid && !input.projectStarted && input.projectId) {
     return {
-      title: "Payment received — ready to start production",
-      body: "The invoice is paid. Start production when you are ready. This sets the project to In Development.",
+      title: "Payment received ✓ — production ready",
+      body: "The invoice is paid and the initial production task plan is ready. Start production when you are ready. This sets the project to In Development.",
       currentStepId: "started",
       primaryKind: "start_project",
       primaryLabel: "Start Project",
@@ -426,6 +455,30 @@ export function adminClientWorkflowAction(input: {
 export function adminEngagementLabel(hasProject: boolean, projectStarted: boolean): string {
   if (projectStarted) return "Active project";
   if (hasProject) return "Project created";
+  return "Pre-Project";
+}
+
+export const clientCommercialStages = [
+  "Pre-Project",
+  "Project",
+  "Proposal",
+  "Contract",
+  "Invoice",
+  "Production",
+  "Complete",
+] as const;
+
+export type ClientCommercialStage = (typeof clientCommercialStages)[number];
+
+/** Current commercial stage from live records — not a stored client status. */
+export function clientCommercialStage(flags: ReturnType<typeof salesFlags>): ClientCommercialStage {
+  if (flags.projectStatus === "Completed") return "Complete";
+  if (isProductionProject(flags.projectStatus)) return "Production";
+  if (flags.invoicePaid) return "Production";
+  if (flags.invoiceAwaiting || (flags.contractAccepted && !flags.invoicePaid)) return "Invoice";
+  if (flags.contractAwaiting || (flags.proposalAccepted && !flags.contractAccepted)) return "Contract";
+  if (flags.proposalAwaiting || flags.proposalId) return "Proposal";
+  if (flags.hasProject) return "Project";
   return "Pre-Project";
 }
 

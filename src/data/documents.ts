@@ -40,13 +40,17 @@ export function emptyLineItem(): LineItemDraft {
 /** Starter website price on new proposal drafts. Change the unit price on the draft if this job is different. */
 export const DEFAULT_PROPOSAL_LINE_PRICE_CENTS = 250_000;
 
-export function defaultProposalLineItem(): LineItemDraft {
+export function defaultProposalLineItem(priceCents = DEFAULT_PROPOSAL_LINE_PRICE_CENTS): LineItemDraft {
+  const cents =
+    typeof priceCents === "number" && Number.isFinite(priceCents) && priceCents >= 0
+      ? Math.floor(priceCents)
+      : DEFAULT_PROPOSAL_LINE_PRICE_CENTS;
   return {
     key: `item-${crypto.randomUUID()}`,
     name: "Website",
     description: proposalLineDescription("Website"),
     quantity: 1,
-    unitPriceCents: DEFAULT_PROPOSAL_LINE_PRICE_CENTS,
+    unitPriceCents: cents,
   };
 }
 
@@ -106,14 +110,20 @@ export function dedupeProposalLineItems(items: LineItemDraft[]): LineItemDraft[]
   return unique;
 }
 
-export function applyProposalLineDefaults(items: LineItemDraft[]): LineItemDraft[] {
+export function applyProposalLineDefaults(
+  items: LineItemDraft[],
+  websiteCents = DEFAULT_PROPOSAL_LINE_PRICE_CENTS,
+): LineItemDraft[] {
   const named = items.filter((item) => item.name.trim());
-  if (named.length === 0) return [defaultProposalLineItem()];
+  if (named.length === 0) return [defaultProposalLineItem(websiteCents)];
 
   const priced = named.map((item) => {
     const next = { ...item };
     if (next.name.trim().toLowerCase() === "website" && next.unitPriceCents === 0) {
-      next.unitPriceCents = DEFAULT_PROPOSAL_LINE_PRICE_CENTS;
+      next.unitPriceCents =
+        typeof websiteCents === "number" && Number.isFinite(websiteCents) && websiteCents >= 0
+          ? Math.floor(websiteCents)
+          : DEFAULT_PROPOSAL_LINE_PRICE_CENTS;
     }
     if (!next.description.trim()) {
       next.description = proposalLineDescription(next.name);
@@ -122,7 +132,7 @@ export function applyProposalLineDefaults(items: LineItemDraft[]): LineItemDraft
   });
 
   const unique = dedupeProposalLineItems(priced);
-  return unique.length > 0 ? unique : [defaultProposalLineItem()];
+  return unique.length > 0 ? unique : [defaultProposalLineItem(websiteCents)];
 }
 
 export const DEFAULT_CONTRACT_VALID_DAYS = 30;
@@ -309,6 +319,49 @@ export function clientStatusLabel(status: DocumentStatus): string {
 
 export function awaitingResponse(status: DocumentStatus): boolean {
   return status === "sent" || status === "viewed";
+}
+
+/** Agency-facing proposal label. Database status stays sent/viewed. */
+export function proposalWorkspaceLabel(status: DocumentStatus): string {
+  if (awaitingResponse(status)) return "Awaiting Response";
+  return adminStatusLabel(status);
+}
+
+export function proposalActivityAt(row: {
+  acceptedAt: string | null;
+  sentAt: string | null;
+  createdAt: string;
+}): string {
+  return row.acceptedAt || row.sentAt || row.createdAt;
+}
+
+export function formatProposalValidUntil(value: string | null): string {
+  if (!value) return "—";
+  const date = new Date(value.includes("T") ? value : `${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "—";
+  return `Valid until ${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+}
+
+export function contractWorkspaceLabel(status: DocumentStatus): string {
+  return proposalWorkspaceLabel(status);
+}
+
+export function formatContractCalendarDate(value: string | null): string {
+  if (!value) return "—";
+  const date = new Date(value.includes("T") ? value : `${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+/** Display-only signature caption from existing agency_signed_at. */
+export function contractSignatureCaption(input: { status: DocumentStatus; agencySigned: boolean }): string {
+  if (input.status === "draft") {
+    return input.agencySigned ? "Agency Signed ✓ · Ready to send" : "Agency signature required";
+  }
+  if (awaitingResponse(input.status)) {
+    return input.agencySigned ? "Agency Signed ✓" : "Sent";
+  }
+  return input.agencySigned ? "Agency Signed ✓" : "—";
 }
 
 export function documentErrorMessage(code: string): string {

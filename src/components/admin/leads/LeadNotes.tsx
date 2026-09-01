@@ -11,7 +11,7 @@ export function LeadNotes({ lead, onAddNote }: LeadNotesProps) {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Internal Notes</h2>
-          <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Agency only — never shown in the client portal.</p>
+          <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Agency only — never shown in the Client Portal.</p>
         </div>
         <button
           type="button"

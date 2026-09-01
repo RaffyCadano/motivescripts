@@ -20,21 +20,41 @@ export function displayRoleLabel(role: string | null | undefined): string {
   return "User";
 }
 
+export const PRODUCTION_TEAM_TEMPLATES = new Set<string>([
+  "developer",
+  "designer",
+  "content_writer",
+  "team_member",
+]);
+
+export function isProductionTeamTemplate(templateKey: string | null | undefined): boolean {
+  return PRODUCTION_TEAM_TEMPLATES.has(templateKey ?? "");
+}
+
+export function usesTeamWorkspace(
+  profile: { role?: string | null; templateKey?: string | null } | null | undefined,
+): boolean {
+  return profile?.role === "staff" && isProductionTeamTemplate(profile.templateKey);
+}
+
 export function agencyHomePath(
   profile: { role?: string | null; templateKey?: string | null } | null | undefined,
 ): string {
   if (!profile) return "/login";
   if (profile.role === "client") return "/client";
   if (profile.role === "admin") return "/admin";
-  if (
-    profile.role === "staff" &&
-    (profile.templateKey === "developer" ||
-      profile.templateKey === "designer" ||
-      profile.templateKey === "content_writer" ||
-      profile.templateKey === "team_member")
-  ) {
-    return "/team/dashboard";
-  }
+  if (usesTeamWorkspace(profile)) return "/team/dashboard";
   if (isAgencyRole(profile.role)) return "/admin";
   return "/login";
+}
+
+export function adminPathToTeamPath(pathname: string, search = ""): string {
+  const project = pathname.match(/^\/admin\/projects\/([^/]+)(?:\/edit)?$/);
+  if (project) return `/team/projects/${project[1]}${search}`;
+  if (pathname === "/admin/projects" || pathname.startsWith("/admin/projects/")) return "/team/projects";
+  if (pathname.startsWith("/admin/files")) return "/team/files";
+  if (pathname.startsWith("/admin/messages")) {
+    return `${pathname.replace("/admin/messages", "/team/messages")}${search}`;
+  }
+  return "/team/dashboard";
 }

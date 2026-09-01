@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useAuth } from "@/auth/AuthProvider";
+import { hasPermission } from "@/auth/permissions";
 import { ConfirmArchiveDeliverableModal } from "@/components/admin/projects/ConfirmArchiveDeliverableModal";
 import { ConfirmSendForReviewModal } from "@/components/admin/projects/ConfirmSendForReviewModal";
 import { DeliverableDetailPanel } from "@/components/admin/projects/DeliverableDetailPanel";
@@ -35,6 +37,8 @@ type ProjectFilesPanelProps = {
 };
 
 export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFilesPanelProps) {
+  const { profile } = useAuth();
+  const canManageFiles = hasPermission(profile, "files.manage");
   const {
     addDeliverable,
     addVersion,
@@ -124,13 +128,15 @@ export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFile
           <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Files</h2>
           <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Project deliverables and their versions.</p>
         </div>
-        <button
-          type="button"
-          className="inline-flex h-9 items-center rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white"
-          onClick={() => setCreateOpen(true)}
-        >
-          + New Deliverable
-        </button>
+        {canManageFiles ? (
+          <button
+            type="button"
+            className="inline-flex h-9 items-center rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white"
+            onClick={() => setCreateOpen(true)}
+          >
+            + New Deliverable
+          </button>
+        ) : null}
       </div>
 
       <div className="mt-4 space-y-3">

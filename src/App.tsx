@@ -71,6 +71,7 @@ import { TeamFiles } from "@/pages/team/TeamFiles";
 import { TeamMessages } from "@/pages/team/TeamMessages";
 import { TeamProfile } from "@/pages/team/TeamProfile";
 import { TeamProjects } from "@/pages/team/TeamProjects";
+import { TeamProjectDetails } from "@/pages/team/TeamProjectDetails";
 import { TeamTasks } from "@/pages/team/TeamTasks";
 import { MessagingProvider } from "@/providers/MessagingProvider";
 
@@ -139,6 +140,7 @@ export default function App() {
             <Route path="dashboard" element={<TeamDashboard />} />
             <Route path="tasks" element={<TeamTasks />} />
             <Route path="projects" element={<TeamProjects />} />
+            <Route path="projects/:id" element={<TeamProjectDetails />} />
             <Route path="messages" element={<TeamMessages />} />
             <Route path="messages/:conversationId" element={<TeamMessages />} />
             <Route path="files" element={<TeamFiles />} />

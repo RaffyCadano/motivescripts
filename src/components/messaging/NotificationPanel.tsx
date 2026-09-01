@@ -13,6 +13,7 @@ type NotificationPanelProps = {
   onClose: () => void;
   onOpen: (item: AppNotification) => void;
   onMarkAllRead: () => void;
+  onClearAll?: () => void;
 };
 
 export function NotificationPanel({
@@ -25,6 +26,7 @@ export function NotificationPanel({
   onClose,
   onOpen,
   onMarkAllRead,
+  onClearAll,
 }: NotificationPanelProps) {
   const styles = messagingClasses(tone);
   if (!open) return null;
@@ -65,6 +67,14 @@ export function NotificationPanel({
               onClick={onMarkAllRead}
             >
               Mark all as read
+            </button>
+          ) : notifications.length > 0 && onClearAll ? (
+            <button
+              type="button"
+              className={cn("shrink-0 text-[12px] font-medium underline-offset-2 hover:underline", styles.muted)}
+              onClick={onClearAll}
+            >
+              Clear all
             </button>
           ) : null}
         </div>

@@ -1,5 +1,7 @@
 import type { AgencySettings, AgencySettingsPatch, WorkspacePurgeScope } from "@/data/settings";
-import { clampSettingDays } from "@/data/settings";
+import { clampSettingCents, clampSettingDays } from "@/data/settings";
+import { DEFAULT_PROPOSAL_LINE_PRICE_CENTS } from "@/data/documents";
+import { PROPOSAL_PAID_ADDONS_CENTS } from "@/data/proposalPresets";
 import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase } from "@/lib/supabase";
 import type { AgencySettingsRow, Database, Json } from "@/types/database";
@@ -78,6 +80,28 @@ function mapSettings(row: AgencySettingsRow): AgencySettings {
     defaultInvoicePaymentTerms: row.default_invoice_payment_terms,
     defaultInvoiceNotes: row.default_invoice_notes,
     clientPortalWelcomeMessage: row.client_portal_welcome_message,
+    defaultProposalWebsiteCents: clampSettingCents(row.default_proposal_website_cents, DEFAULT_PROPOSAL_LINE_PRICE_CENTS),
+    defaultAddonQuoteRequestFormCents: clampSettingCents(
+      row.default_addon_quote_request_form_cents,
+      PROPOSAL_PAID_ADDONS_CENTS["Quote Request Form"],
+    ),
+    defaultAddonBookingFormCents: clampSettingCents(
+      row.default_addon_booking_form_cents,
+      PROPOSAL_PAID_ADDONS_CENTS["Booking Form"],
+    ),
+    defaultAddonSocialMediaCents: clampSettingCents(
+      row.default_addon_social_media_cents,
+      PROPOSAL_PAID_ADDONS_CENTS["Social Media Integration"],
+    ),
+    defaultAddonBusinessEmailCents: clampSettingCents(
+      row.default_addon_business_email_cents,
+      PROPOSAL_PAID_ADDONS_CENTS["Business Email"],
+    ),
+    defaultAddonDomainCents: clampSettingCents(row.default_addon_domain_cents, PROPOSAL_PAID_ADDONS_CENTS.Domain),
+    defaultAddonHostingSetupCents: clampSettingCents(
+      row.default_addon_hosting_setup_cents,
+      PROPOSAL_PAID_ADDONS_CENTS["Hosting Setup"],
+    ),
     updatedAt: row.updated_at,
     updatedBy: row.updated_by,
   };
@@ -112,6 +136,31 @@ function toPatch(settings: AgencySettingsPatch): Json {
     default_invoice_payment_terms: settings.defaultInvoicePaymentTerms,
     default_invoice_notes: settings.defaultInvoiceNotes,
     client_portal_welcome_message: settings.clientPortalWelcomeMessage,
+    default_proposal_website_cents: clampSettingCents(
+      settings.defaultProposalWebsiteCents,
+      DEFAULT_PROPOSAL_LINE_PRICE_CENTS,
+    ),
+    default_addon_quote_request_form_cents: clampSettingCents(
+      settings.defaultAddonQuoteRequestFormCents,
+      PROPOSAL_PAID_ADDONS_CENTS["Quote Request Form"],
+    ),
+    default_addon_booking_form_cents: clampSettingCents(
+      settings.defaultAddonBookingFormCents,
+      PROPOSAL_PAID_ADDONS_CENTS["Booking Form"],
+    ),
+    default_addon_social_media_cents: clampSettingCents(
+      settings.defaultAddonSocialMediaCents,
+      PROPOSAL_PAID_ADDONS_CENTS["Social Media Integration"],
+    ),
+    default_addon_business_email_cents: clampSettingCents(
+      settings.defaultAddonBusinessEmailCents,
+      PROPOSAL_PAID_ADDONS_CENTS["Business Email"],
+    ),
+    default_addon_domain_cents: clampSettingCents(settings.defaultAddonDomainCents, PROPOSAL_PAID_ADDONS_CENTS.Domain),
+    default_addon_hosting_setup_cents: clampSettingCents(
+      settings.defaultAddonHostingSetupCents,
+      PROPOSAL_PAID_ADDONS_CENTS["Hosting Setup"],
+    ),
   };
 }
 

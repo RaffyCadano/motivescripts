@@ -95,7 +95,7 @@ export function TeamProfile() {
             {myProjects.map((project) => (
               <li key={project.id}>
                 <Link
-                  to={`/admin/projects/${project.id}`}
+                  to={`/team/projects/${project.id}`}
                   className="text-sm font-medium text-[var(--admin-blue)] hover:underline"
                 >
                   {project.name}

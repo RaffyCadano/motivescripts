@@ -28,7 +28,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
   const notesRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const notesId = useId();
-  const { notifications, unreadNotificationCount, loadStatus, markNotificationRead, markAllNotificationsRead } =
+  const { notifications, unreadNotificationCount, loadStatus, markNotificationRead, markAllNotificationsRead, clearNotifications } =
     useMessaging();
 
   useEffect(() => {
@@ -125,6 +125,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
               if (!item.readAt) void markNotificationRead(item.id);
             }}
             onMarkAllRead={() => void markAllNotificationsRead()}
+            onClearAll={() => void clearNotifications()}
           />
         </div>
 
@@ -164,7 +165,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
             <div
               id={menuId}
               role="menu"
-              className="absolute right-0 z-50 mt-1.5 w-48 overflow-hidden rounded-xl border border-[var(--admin-line)] bg-[var(--admin-card)] py-1 shadow-[0_12px_32px_rgb(7_17_31_/_0.08)]"
+              className="absolute right-0 z-50 mt-1.5 w-48 overflow-hidden rounded-lg border border-[var(--admin-line)] bg-[var(--admin-card)] py-1 shadow-[0_12px_32px_rgb(7_17_31_/_0.08)]"
             >
               {profile?.role === "staff" ? (
                 <Link

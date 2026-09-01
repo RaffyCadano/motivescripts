@@ -647,8 +647,8 @@ export async function createContractRevision(contractId: string): Promise<void> 
   throwIf(error, "revise contract", "Unable to create a new revision.");
 }
 
-export function proposalLineDrafts(detail: ProposalDetail): LineItemDraft[] {
-  if (detail.working.status === "draft") return applyProposalLineDefaults(draftsFromItems(detail.items));
+export function proposalLineDrafts(detail: ProposalDetail, websiteCents?: number): LineItemDraft[] {
+  if (detail.working.status === "draft") return applyProposalLineDefaults(draftsFromItems(detail.items), websiteCents);
   return draftsFromItems(detail.snapshotItems.length > 0 ? detail.snapshotItems : detail.items);
 }
 

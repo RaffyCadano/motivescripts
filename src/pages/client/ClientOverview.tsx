@@ -2,30 +2,25 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ClientActionCard } from "@/components/client/ClientActionCard";
 import { ClientActivity } from "@/components/client/ClientActivity";
-import { ClientDocumentAttention } from "@/components/client/ClientDocumentAttention";
 import { ClientFiles } from "@/components/client/ClientFiles";
 import { ClientPreProjectDashboard } from "@/components/client/ClientPreProjectDashboard";
 import { ClientProjectCard } from "@/components/client/ClientProjectCard";
 import { ClientStatusBadge } from "@/components/client/ClientStatusBadge";
-import { ClientTasks } from "@/components/client/ClientTasks";
 import { ClientTimeline } from "@/components/client/ClientTimeline";
-import { usePortalOnboarding } from "@/components/client/usePortalOnboarding";
+import { useClientPortalAction } from "@/components/client/useClientPortalAction";
 import { usePortalIdentity, usePortalSession } from "@/components/admin/leads/LeadsProvider";
-import { currentVersion, versionLabel } from "@/data/files";
 import { formatProjectDate } from "@/data/agencyProjects";
-import { awaitingReview, canClientReview } from "@/data/review";
 import { greetingForHour } from "@/data/clientPortal";
+import { timelineStagesFromProject } from "@/data/clientProjectProgress";
 import { fetchClientPortalWelcome } from "@/data/settingsRepository";
-import { isProductionProject } from "@/data/preProject";
-import { clientTasksFromProject, timelineStagesFromProject } from "@/data/clientProjectProgress";
 import { useMessaging } from "@/providers/MessagingProvider";
 
 export function ClientOverview() {
   const identity = usePortalIdentity();
   const greeting = useMemo(() => greetingForHour(new Date().getHours(), identity.firstName), [identity.firstName]);
   const [welcome, setWelcome] = useState("");
-  const { project, files } = usePortalSession();
-  const onboarding = usePortalOnboarding();
+  const { project } = usePortalSession();
+  const { action, waiting, onboarding, loading } = useClientPortalAction();
   const { unreadMessageCount, conversations } = useMessaging();
 
   useEffect(() => {
@@ -40,19 +35,17 @@ export function ClientOverview() {
     };
   }, []);
 
-  const waiting = awaitingReview(files.filter((item) => item.status !== "Archived"));
-  const first = waiting[0];
-  const current = first ? currentVersion(first) : null;
   const stages = timelineStagesFromProject(project);
-  const tasks = clientTasksFromProject(project);
   const activity = (project?.activity ?? []).slice(0, 4).map((item) => ({
     id: item.id,
     description: item.description,
     time: formatProjectDate(item.createdAt),
-    icon: (item.icon === "review" ? "approval" : item.icon === "file" ? "upload" : "status") as "upload" | "approval" | "update" | "status",
+    icon: (item.icon === "review" ? "approval" : item.icon === "file" ? "upload" : "status") as
+      | "upload"
+      | "approval"
+      | "update"
+      | "status",
   }));
-  const showOnboarding =
-    !isProductionProject(project?.status) && onboarding.steps.some((step) => step.state === "current");
 
   if (!project) {
     return (
@@ -94,44 +87,33 @@ export function ClientOverview() {
         <ClientStatusBadge label={onboarding.phaseLabel} tone={onboarding.phaseTone} />
       </header>
 
-      {showOnboarding && !onboarding.loading ? (
-        <ClientPreProjectDashboard
-          firstName={identity.firstName}
-          phaseLabel={onboarding.phaseLabel}
-          phaseTone={onboarding.phaseTone}
-          steps={onboarding.steps}
-          projectName={onboarding.flags.projectName}
-          hasProject
-        />
+      <ClientActionCard action={action} loading={loading} />
+
+      {waiting.length > 1 && action?.kind === "review" ? (
+        <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
+          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--client-ink)]">Also waiting</h2>
+          <ul className="mt-3 space-y-3">
+            {waiting.slice(1).map((item) => (
+              <li key={item.id} className="flex items-center justify-between gap-3">
+                <p className="text-sm text-[var(--client-ink)]">{item.name}</p>
+                <Link to={`/client/files/${item.id}`} className="font-heading text-[12px] font-semibold text-[var(--client-blue)] hover:underline">
+                  Review
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
-      <ClientProjectCard />
-      <ClientDocumentAttention />
-      <MessagesLine unread={unreadMessageCount} latestSubject={conversations[0]?.subject} />
+      <ClientProjectCard nextLabel={action && action.kind !== "idle" ? action.title : "We’ll notify you when the next step is ready."} />
       {stages.length > 0 ? <ClientTimeline stages={stages} /> : null}
-
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(16rem,0.85fr)]">
-        <ClientActionCard
-          action={
-            first && current
-              ? {
-                  id: first.id,
-                  title: `${first.name} ${versionLabel(current.versionNumber)} is ready for review.`,
-                  body: "Review the current version and let us know if you’d like any changes.",
-                  fileId: first.id,
-                  reviewHref: `/client/files/${first.id}`,
-                  canApprove: canClientReview(first),
-                }
-              : null
-          }
-        />
-        {tasks.length > 0 ? <ClientTasks tasks={tasks} /> : null}
-      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ClientActivity items={activity} />
         <ClientFiles />
       </div>
+
+      <MessagesLine unread={unreadMessageCount} latestSubject={conversations[0]?.subject} />
     </div>
   );
 }

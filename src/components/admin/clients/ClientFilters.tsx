@@ -1,6 +1,8 @@
+import { adminGhostBtn } from "@/components/admin/adminActionStyles";
+import { AdminStatusChips } from "@/components/admin/list/AdminStatusChips";
+import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { clientStatuses, type AgencyClientStatus } from "@/data/agencyClients";
 import { leadIndustries, type LeadIndustry } from "@/data/leads";
-import { cn } from "@/lib/cn";
 
 type ClientFiltersProps = {
   query: string;
@@ -9,6 +11,8 @@ type ClientFiltersProps = {
   onQueryChange: (value: string) => void;
   onStatusChange: (value: AgencyClientStatus | "All") => void;
   onIndustryChange: (value: LeadIndustry | "All") => void;
+  onClear: () => void;
+  filtering: boolean;
 };
 
 export function ClientFilters({
@@ -18,6 +22,8 @@ export function ClientFilters({
   onQueryChange,
   onStatusChange,
   onIndustryChange,
+  onClear,
+  filtering,
 }: ClientFiltersProps) {
   return (
     <div className="space-y-3">
@@ -28,8 +34,8 @@ export function ClientFilters({
             type="search"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search clients..."
-            className="h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none placeholder:text-[var(--admin-muted)] focus:border-[rgb(0_80_240_/_0.45)]"
+            placeholder="Search business, contact, email, or phone"
+            className={adminFilterControlState(Boolean(query.trim()))}
           />
         </label>
         <label className="lg:w-56">
@@ -37,7 +43,7 @@ export function ClientFilters({
           <select
             value={industry}
             onChange={(event) => onIndustryChange(event.target.value as LeadIndustry | "All")}
-            className="h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            className={adminFilterControlState(industry !== "All")}
           >
             <option value="All">All industries</option>
             {leadIndustries.map((item) => (
@@ -47,24 +53,18 @@ export function ClientFilters({
             ))}
           </select>
         </label>
-      </div>
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="group" aria-label="Client status">
-        {(["All", ...clientStatuses] as const).map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => onStatusChange(item)}
-            className={cn(
-              "shrink-0 rounded-full px-3 py-1.5 font-heading text-[12px] font-semibold",
-              status === item
-                ? "bg-[var(--admin-navy)] text-white"
-                : "bg-white text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)] hover:bg-[var(--admin-hover)]",
-            )}
-          >
-            {item}
+        {filtering ? (
+          <button type="button" className={`${adminGhostBtn} shrink-0 justify-center`} onClick={onClear}>
+            Clear filters
           </button>
-        ))}
+        ) : null}
       </div>
+      <AdminStatusChips
+        items={["All", ...clientStatuses]}
+        value={status}
+        onChange={onStatusChange}
+        label="Client status"
+      />
     </div>
   );
 }

@@ -149,12 +149,22 @@ export const PROPOSAL_PAID_ADDONS_CENTS: Record<string, number> = {
   "Hosting Setup": 15_000,
 };
 
-export function paidAddonCents(label: string): number | undefined {
+function addonCentsLookup(key: string, overrides?: Partial<Record<string, number>>): number | undefined {
+  const override = overrides?.[key];
+  if (typeof override === "number" && Number.isFinite(override) && override >= 0) {
+    return Math.floor(override);
+  }
+  return PROPOSAL_PAID_ADDONS_CENTS[key];
+}
+
+export function paidAddonCents(label: string, overrides?: Partial<Record<string, number>>): number | undefined {
   const canonical = canonicalScopeLabel(label);
   return (
-    PROPOSAL_PAID_ADDONS_CENTS[label] ??
-    PROPOSAL_PAID_ADDONS_CENTS[canonical] ??
-    scopeLineVariants(label).map((variant) => PROPOSAL_PAID_ADDONS_CENTS[variant]).find((cents) => cents != null)
+    addonCentsLookup(label, overrides) ??
+    addonCentsLookup(canonical, overrides) ??
+    scopeLineVariants(label)
+      .map((variant) => addonCentsLookup(variant, overrides))
+      .find((cents) => cents != null)
   );
 }
 

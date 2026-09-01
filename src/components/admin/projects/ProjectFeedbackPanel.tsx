@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
+import { hasPermission } from "@/auth/permissions";
 import { DeliverableStatusBadge } from "@/components/admin/projects/DeliverableStatusBadge";
 import { useLeads, useProjectReview } from "@/components/admin/leads/LeadsProvider";
 import { versionLabel } from "@/data/files";
@@ -13,7 +15,15 @@ import { cn } from "@/lib/cn";
 
 const filters = ["Open", "Resolved", "All"] as const;
 
-export function ProjectFeedbackPanel({ project }: { project: AgencyProject }) {
+export function ProjectFeedbackPanel({
+  project,
+  fileHref,
+}: {
+  project: AgencyProject;
+  fileHref?: (fileId: string) => string;
+}) {
+  const { profile } = useAuth();
+  const canResolve = hasPermission(profile, "feedback.manage");
   const { resolveFeedback } = useLeads();
   const { feedback, deliverables } = useProjectReview(project.id);
   const [query, setQuery] = useState("");
@@ -83,13 +93,13 @@ export function ProjectFeedbackPanel({ project }: { project: AgencyProject }) {
                 <div className="mt-3 flex flex-wrap gap-2">
                   {deliverable ? (
                     <Link
-                      to={`/admin/projects/${project.id}?tab=files&file=${deliverable.id}`}
+                      to={fileHref ? fileHref(deliverable.id) : `/admin/projects/${project.id}?tab=files&file=${deliverable.id}`}
                       className="inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
                     >
                       View
                     </Link>
                   ) : null}
-                  {item.status === "Open" ? (
+                  {item.status === "Open" && canResolve ? (
                     <button
                       type="button"
                       className="inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission } from "@/auth/permissions";
+import { usesTeamWorkspace } from "@/auth/roles";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import type { AgencyTaskDraft, AgencyTaskStatus } from "@/data/agencyProjects";
 import { fetchMyProjectAssignmentIds, updateMyTaskStatus } from "@/data/teamRepository";
@@ -34,7 +35,7 @@ export function useTeamWork() {
     return () => {
       active = false;
     };
-  }, [profile?.id]);
+  }, [loadStatus, profile?.id]);
 
   const clientsById = useMemo(
     () => new Map(clients.map((client) => [client.id, { businessName: client.businessName }])),
@@ -46,10 +47,12 @@ export function useTeamWork() {
     [clientsById, profile?.fullName, profile?.id, projects],
   );
 
-  const myProjects = useMemo(
-    () => collectMyProjects(projects, new Set(assignedProjectIds), tasks),
-    [assignedProjectIds, projects, tasks],
-  );
+  const myProjects = useMemo(() => {
+    if (usesTeamWorkspace(profile)) {
+      return projects.filter((project) => !project.archived);
+    }
+    return collectMyProjects(projects, new Set(assignedProjectIds), tasks);
+  }, [assignedProjectIds, profile, projects, tasks]);
 
   const stats = useMemo(() => myWorkStats(tasks), [tasks]);
   const upcoming = useMemo(() => sortUpcomingTasks(tasks), [tasks]);

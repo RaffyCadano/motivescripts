@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { BrandMark } from "@/components/BrandMark";
 import { ClientNavItem } from "@/components/client/ClientNavItem";
 import { clientMainNavFor, clientSettingsNav } from "@/data/clientNav";
-import { usePortalIdentity, usePortalSession } from "@/components/admin/leads/LeadsProvider";
+import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { cn } from "@/lib/cn";
 
 type ClientSidebarProps = {
@@ -13,7 +13,6 @@ type ClientSidebarProps = {
 };
 
 export function ClientSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigate }: ClientSidebarProps) {
-  const identity = usePortalIdentity();
   const { project } = usePortalSession();
   const mainNav = clientMainNavFor(Boolean(project));
   const portalLabel = project ? "Client Portal" : "Pre-Project";
@@ -30,7 +29,7 @@ export function ClientSidebar({ collapsed, mobileOpen, inertWhenClosed, onNaviga
         mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
         "w-[min(var(--client-sidebar),calc(100vw-2.5rem))]",
       )}
-      aria-label="Client portal"
+      aria-label="Client portal navigation"
     >
       <div
         className={cn(
@@ -67,23 +66,6 @@ export function ClientSidebar({ collapsed, mobileOpen, inertWhenClosed, onNaviga
           ))}
         </div>
       </nav>
-
-      <div className={cn("shrink-0 border-t border-[var(--client-line)] px-4 py-4", collapsed && "lg:px-0 lg:py-3")}>
-        <div className={cn("flex items-center gap-3", collapsed && "lg:justify-center")}>
-          <span
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--client-navy)] font-heading text-xs font-semibold text-white"
-            aria-hidden="true"
-          >
-            {identity.initials}
-          </span>
-          <div className={cn("min-w-0", collapsed && "lg:hidden")}>
-            <p className="truncate font-heading text-[13px] font-semibold text-[var(--client-ink)]">
-              {identity.businessName}
-            </p>
-            <p className="truncate text-[11px] text-[var(--client-muted)]">{project ? "Client" : "Pre-Project"}</p>
-          </div>
-        </div>
-      </div>
     </aside>
   );
 }

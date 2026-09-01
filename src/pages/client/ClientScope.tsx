@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ClientConfirmDialog } from "@/components/client/ClientConfirmDialog";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { useUnsavedNavigation } from "@/components/documents/UnsavedChangesDialog";
@@ -45,6 +45,7 @@ export function ClientScope() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<"draft" | "submit" | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [editing, setEditing] = useState(false);
   const snapshotRef = useRef(draftSnapshot(emptyScopeDraft()));
   const blocker = useUnsavedNavigation(dirty);
 
@@ -127,6 +128,7 @@ export function ClientScope() {
       setSubmittedAt(brief.submittedAt);
       setNotice(submit ? "submit" : "draft");
       remember(next);
+      if (submit) setEditing(false);
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to save this form.");
     } finally {
@@ -140,6 +142,16 @@ export function ClientScope() {
   }
 
   const submitted = status === "submitted";
+  const formOpen = !submitted || editing;
+
+  function cancelEdit() {
+    const next = JSON.parse(snapshotRef.current) as ScopeBriefDraft;
+    setDraft(next);
+    setDirty(false);
+    setEditing(false);
+    setError(null);
+    setNotice(null);
+  }
 
   return (
     <div className="w-full space-y-6">
@@ -173,6 +185,24 @@ export function ClientScope() {
                   <span className="text-[var(--client-muted)]"> · {formatClientDate(submittedAt)}</span>
                 ) : null}
               </p>
+              <p className="mt-3 text-sm text-[var(--client-muted)]">
+                You can update this if something changes. We still keep one scope record for your account.
+              </p>
+              {!editing ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNotice(null);
+                    setError(null);
+                    setEditing(true);
+                  }}
+                  className="mt-4 inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-5 font-heading text-sm font-semibold text-[var(--client-ink)] hover:bg-[var(--client-hover)]"
+                >
+                  Edit scope
+                </button>
+              ) : (
+                <p className="mt-3 text-sm text-[var(--client-ink)]">You’re editing your submitted scope.</p>
+              )}
             </>
           ) : (
             <>
@@ -191,14 +221,14 @@ export function ClientScope() {
 
       {loading ? (
         <div className="h-64 animate-pulse rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)]" />
-      ) : (
+      ) : formOpen ? (
         <form
           className="space-y-8 rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6"
           onSubmit={onSubmit}
         >
           {submitted ? (
             <p className="text-sm text-[var(--client-muted)]">
-              You can update this if something changes. We still keep one scope record for your account.
+              Change only what you need, then save. This still updates the same scope record for your account.
             </p>
           ) : null}
 
@@ -408,7 +438,16 @@ export function ClientScope() {
           ) : null}
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            {!submitted ? (
+            {submitted ? (
+              <button
+                type="button"
+                disabled={Boolean(busy)}
+                onClick={cancelEdit}
+                className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-5 font-heading text-sm font-semibold text-[var(--client-ink)] hover:bg-[var(--client-hover)] disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            ) : (
               <button
                 type="button"
                 disabled={Boolean(busy) || !client}
@@ -417,7 +456,7 @@ export function ClientScope() {
               >
                 {busy === "draft" ? "Saving…" : "Save Draft"}
               </button>
-            ) : null}
+            )}
             <button
               type="submit"
               disabled={Boolean(busy) || !client}
@@ -427,6 +466,12 @@ export function ClientScope() {
             </button>
           </div>
         </form>
+      ) : (
+        <ScopeSummary draft={draft} onEdit={() => {
+          setNotice(null);
+          setError(null);
+          setEditing(true);
+        }} />
       )}
 
       <ClientConfirmDialog
@@ -439,6 +484,120 @@ export function ClientScope() {
         onCancel={blocker.reset}
       />
     </div>
+  );
+}
+
+function ScopeSummary({ draft, onEdit }: { draft: ScopeBriefDraft; onEdit: () => void }) {
+  return (
+    <div className="space-y-8 rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
+      <section>
+        <h2 className="font-heading text-sm font-semibold text-[var(--client-ink)]">Included in your website package</h2>
+        <ul className="mt-3 space-y-2">
+          {SCOPE_PACKAGE_INCLUDED.map((item) => (
+            <li key={item} className="text-sm font-medium text-[var(--client-ink)]">
+              ✓ {item}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <SummaryBlock title="Pages">
+        {draft.pages.length > 0 ? (
+          <SelectedList items={draft.pages} />
+        ) : (
+          <p className="text-sm text-[var(--client-muted)]">No additional pages selected.</p>
+        )}
+        {draft.pages.includes("Other") && draft.otherPages.trim() ? (
+          <p className="mt-2 text-sm text-[var(--client-ink)]">{draft.otherPages}</p>
+        ) : null}
+      </SummaryBlock>
+
+      <SummaryBlock title="Features">
+        {draft.features.length > 0 ? (
+          <SelectedList items={draft.features} />
+        ) : (
+          <p className="text-sm text-[var(--client-muted)]">No additional features selected.</p>
+        )}
+        {draft.features.includes("Other") && draft.otherFeatures.trim() ? (
+          <p className="mt-2 text-sm text-[var(--client-ink)]">{draft.otherFeatures}</p>
+        ) : null}
+      </SummaryBlock>
+
+      <SummaryBlock title="What is your website for?">
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--client-ink)]">
+          {draft.goal.trim() || "—"}
+        </p>
+      </SummaryBlock>
+
+      <SummaryBlock title="Do you currently have a website?">
+        <p className="text-sm font-medium text-[var(--client-ink)]">
+          {draft.hasExistingWebsite === true ? "Yes" : draft.hasExistingWebsite === false ? "No" : "—"}
+        </p>
+        {draft.hasExistingWebsite ? (
+          <div className="mt-2 space-y-1 text-sm text-[var(--client-ink)]">
+            {draft.currentWebsiteUrl.trim() ? <p>{draft.currentWebsiteUrl}</p> : null}
+            {draft.currentWebsiteNotes.trim() ? (
+              <p className="whitespace-pre-wrap leading-relaxed text-[var(--client-muted)]">{draft.currentWebsiteNotes}</p>
+            ) : null}
+          </div>
+        ) : null}
+      </SummaryBlock>
+
+      <SummaryBlock title="Style">
+        {draft.styles.length > 0 ? (
+          <SelectedList items={draft.styles} />
+        ) : (
+          <p className="text-sm text-[var(--client-muted)]">No style selected.</p>
+        )}
+        {draft.styles.includes("Other") && draft.otherStyle.trim() ? (
+          <p className="mt-2 text-sm text-[var(--client-ink)]">{draft.otherStyle}</p>
+        ) : null}
+      </SummaryBlock>
+
+      {draft.likedWebsites.trim() ? (
+        <SummaryBlock title="Websites you like">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--client-ink)]">{draft.likedWebsites}</p>
+        </SummaryBlock>
+      ) : null}
+
+      {draft.additionalNotes.trim() ? (
+        <SummaryBlock title="Anything else?">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--client-ink)]">{draft.additionalNotes}</p>
+        </SummaryBlock>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={onEdit}
+        className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-5 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)]"
+      >
+        Edit scope
+      </button>
+    </div>
+  );
+}
+
+function SummaryBlock({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section>
+      <h2 className="font-heading text-sm font-semibold text-[var(--client-ink)]">{title}</h2>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
+
+function SelectedList({ items }: { items: string[] }) {
+  return (
+    <ul className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <li
+          key={item}
+          className="inline-flex min-h-9 items-center rounded-full border border-[var(--client-navy)] bg-[var(--client-navy)] px-3 py-1.5 font-heading text-[12px] font-semibold text-white"
+        >
+          {item}
+        </li>
+      ))}
+    </ul>
   );
 }
 

@@ -15,9 +15,10 @@ import { cn } from "@/lib/cn";
 type MessagingWorkspaceProps = {
   tone: MessagingTone;
   basePath: string;
+  showHeading?: boolean;
 };
 
-export function MessagingWorkspace({ tone, basePath }: MessagingWorkspaceProps) {
+export function MessagingWorkspace({ tone, basePath, showHeading = true }: MessagingWorkspaceProps) {
   const { conversationId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -119,19 +120,19 @@ export function MessagingWorkspace({ tone, basePath }: MessagingWorkspaceProps) 
   const emptyTitle = tone === "admin" ? "No conversations yet" : "No messages yet";
   const emptyDescription =
     tone === "admin"
-      ? "Messages are for questions and communication between your agency and clients. Proposal, contract, invoice, review, and payment updates appear in their dedicated sections."
+      ? "Messages are for client questions that do not belong to a proposal, contract, invoice, review, or file."
       : "Have a question about your project? Start a conversation with MotiveScripts.";
 
   return (
     <div className="flex min-h-0 flex-col gap-4">
-      {!conversationId || isLg ? (
+      {showHeading && (!conversationId || isLg) ? (
         <header>
-          <h1 className={cn("font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl", styles.ink)}>
+          <h1 className={cn("font-heading text-[1.5rem] font-semibold tracking-tight md:text-[1.65rem]", styles.ink)}>
             Messages
           </h1>
           <p className={cn("mt-1 text-sm", styles.muted)}>
             {tone === "admin"
-              ? "Client and agency communication. Use Messages for questions that do not belong on a proposal, contract, invoice, or file."
+              ? "Client questions that do not belong to a proposal, contract, invoice, review, or file."
               : "Questions and communication with MotiveScripts. Proposals, contracts, invoices, and file review stay in their own sections."}
           </p>
         </header>

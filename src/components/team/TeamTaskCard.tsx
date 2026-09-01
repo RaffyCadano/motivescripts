@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
-import { dueBucket, dueLabel, type TeamWorkTask } from "@/data/teamWorkspace";
+import { dueBucket, dueLabel, teamProjectHref, type TeamWorkTask } from "@/data/teamWorkspace";
 import { cn } from "@/lib/cn";
 
 type TeamTaskCardProps = {
@@ -49,7 +49,7 @@ export function TeamTaskCard({ task, onOpen }: TeamTaskCardProps) {
             Open task
           </button>
           <Link
-            to={`/admin/projects/${task.projectId}?tab=tasks`}
+            to={teamProjectHref(task.projectId, { tab: "tasks" })}
             className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
           >
             View project

@@ -102,7 +102,7 @@ export function ClientInvoiceDetails() {
         <button
           type="button"
           disabled={pdfBusy}
-          className="inline-flex h-10 items-center rounded-[var(--client-radius)] border border-[var(--client-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--client-ink)] disabled:opacity-60"
+          className="ml-auto inline-flex h-10 items-center rounded-[var(--client-radius)] border border-[var(--client-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--client-ink)] disabled:opacity-60"
           onClick={async () => {
             setPdfBusy(true);
             try {

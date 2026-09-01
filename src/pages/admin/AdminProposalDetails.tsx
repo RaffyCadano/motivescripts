@@ -38,7 +38,12 @@ import {
 import { applyProposalDraftDefaults, displayLineItemName } from "@/data/proposalPresets";
 import { requestedScopeFromBrief, type ClientScopeBrief } from "@/data/scopeBriefs";
 import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
-import { proposalDraftOverrides, type AgencySettings } from "@/data/settings";
+import {
+  proposalAddonPriceOverrides,
+  proposalDraftOverrides,
+  proposalWebsitePriceCents,
+  type AgencySettings,
+} from "@/data/settings";
 import { fetchAgencySettings } from "@/data/settingsRepository";
 import {
   cancelProposal,
@@ -198,7 +203,7 @@ export function AdminProposalDetails() {
       validUntil: next.working.valid_until ?? "",
       adminNotes: next.adminNotes,
     };
-    const nextItems = proposalLineDrafts(next);
+    const nextItems = proposalLineDrafts(next, proposalWebsitePriceCents(settingsRef.current));
     setForm(nextForm);
     setItems(nextItems);
     if (next.working.status !== "draft") return;
@@ -310,7 +315,9 @@ export function AdminProposalDetails() {
         title: form.title.trim() || "Website proposal",
         validUntil: form.validUntil || defaultProposalValidUntil(undefined, settingsRef.current?.defaultProposalValidDays ?? 30),
       };
-      const nextItems = items.some((item) => item.name.trim()) ? items : [defaultProposalLineItem()];
+      const nextItems = items.some((item) => item.name.trim())
+        ? items
+        : [defaultProposalLineItem(proposalWebsitePriceCents(settingsRef.current))];
       setForm(nextForm);
       setItems(nextItems);
       await saveDraftRevision(current.working.id, nextForm, nextItems);
@@ -602,6 +609,7 @@ export function AdminProposalDetails() {
               scope={form.scope}
               items={items}
               disabled={!isDraft}
+              addonCents={proposalAddonPriceOverrides(settingsRef.current)}
               onScopeChange={(scope) => patchDraft({ scope })}
               onItemsChange={persistItems}
             />

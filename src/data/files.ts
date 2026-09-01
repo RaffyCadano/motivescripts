@@ -145,11 +145,17 @@ export function fileKind(fileType: string): "image" | "document" | "design" | "c
   return "other";
 }
 
+export type DeliverableSearchNames = {
+  projectName: (projectId: string) => string;
+  clientName: (projectId: string) => string;
+};
+
 export function filterDeliverables(
   items: AgencyDeliverable[],
   query: string,
   status: DeliverableStatus | "All",
   category: DeliverableCategory | "All",
+  names?: DeliverableSearchNames,
 ): AgencyDeliverable[] {
   const needle = query.trim().toLowerCase();
   return items.filter((item) => {
@@ -159,7 +165,9 @@ export function filterDeliverables(
     if (!needle) return true;
     const inName = item.name.toLowerCase().includes(needle) || item.description.toLowerCase().includes(needle);
     const inFiles = item.versions.some((version) => version.fileName.toLowerCase().includes(needle));
-    return inName || inFiles;
+    const inProject = (names?.projectName(item.projectId) ?? "").toLowerCase().includes(needle);
+    const inClient = (names?.clientName(item.projectId) ?? "").toLowerCase().includes(needle);
+    return inName || inFiles || inProject || inClient;
   });
 }
 
@@ -190,4 +198,24 @@ export function formatFileUpdated(iso: string): string {
   if (label === "Today") return "today";
   if (label === "Yesterday") return "yesterday";
   return label;
+}
+
+export function formatFileUpdatedLabel(iso: string): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  const relative = formatLeadDate(iso);
+  if (relative === "Today") return "Updated today";
+  if (relative === "Yesterday") return "Updated yesterday";
+  return `Updated ${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+}
+
+export function deliverableCurrentVersionLabel(deliverable: AgencyDeliverable): string {
+  const current = currentVersion(deliverable);
+  if (!current) return "No version";
+  return `${versionLabel(current.versionNumber)} · Current`;
+}
+
+export function earlierVersionCount(deliverable: AgencyDeliverable): number {
+  return Math.max(0, deliverable.versions.length - 1);
 }

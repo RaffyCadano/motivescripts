@@ -326,6 +326,52 @@ export function adminInvoiceStatusLabel(status: EffectiveInvoiceStatus): string 
   }
 }
 
+/** Agency list label. Database status stays sent/viewed. */
+export function invoiceWorkspaceLabel(status: EffectiveInvoiceStatus): string {
+  if (status === "sent" || status === "viewed") return "Awaiting Payment";
+  return adminInvoiceStatusLabel(status);
+}
+
+export function invoiceAmountCaption(row: {
+  effectiveStatus: EffectiveInvoiceStatus;
+  amountPaidCents: number;
+  amountDueCents: number;
+  totalCents: number;
+  currency: string;
+}): string {
+  const money = (cents: number) => formatMoneyFromCents(cents, row.currency);
+  if (row.effectiveStatus === "paid") return "Paid ✓";
+  if (row.effectiveStatus === "cancelled") {
+    return row.amountPaidCents > 0 ? `${money(row.amountPaidCents)} paid` : money(row.totalCents);
+  }
+  if (row.amountDueCents <= 0 && row.amountPaidCents > 0) return "Paid ✓";
+  if (row.amountPaidCents > 0) return `${money(row.amountPaidCents)} paid · ${money(row.amountDueCents)} due`;
+  return `${money(row.amountDueCents)} due`;
+}
+
+export function invoiceListPaymentLabel(
+  payments: Array<{ payment_method: PaymentMethod; provider?: string }>,
+): string | null {
+  if (payments.length === 0) return null;
+  const online = payments.some((row) => row.payment_method === "stripe" || row.provider === "stripe");
+  const manual = payments.some((row) => row.payment_method !== "stripe" && row.provider !== "stripe");
+  if (online && manual) return "Paid online and manually";
+  if (online) return "Paid online";
+  return "Paid manually";
+}
+
+export function formatInvoiceListDate(value: string | null | undefined): string {
+  if (!value) return "—";
+  const parsed = new Date(`${value.slice(0, 10)}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return parsed.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+export function invoiceFirstLineLabel(description: string | null | undefined): string | null {
+  const line = description?.split("\n")[0]?.trim() ?? "";
+  return line || null;
+}
+
 export function clientInvoiceStatusLabel(status: EffectiveInvoiceStatus): string {
   if (status === "sent" || status === "viewed") return "Unpaid";
   if (status === "paid") return "Paid ✓";

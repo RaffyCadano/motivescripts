@@ -108,7 +108,9 @@ export function TeamLayout() {
                     ? "Loading messages…"
                     : pathname.includes("files")
                       ? "Loading files…"
-                      : "Loading your work…"
+                      : pathname.includes("projects")
+                        ? "Loading your project…"
+                        : "Loading your work…"
                 }
                 onRetry={() => void reload()}
               />

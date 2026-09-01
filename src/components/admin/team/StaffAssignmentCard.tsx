@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAdmin } from "@/auth/permissions";
-import type { TeamMember } from "@/data/team";
+import type { AgencyTask } from "@/data/agencyProjects";
+import { teamWorkloadCaption, type TeamMember } from "@/data/team";
 import { assignStaffToClient, assignStaffToProject, unassignStaffFromClient, unassignStaffFromProject } from "@/data/teamRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 
@@ -14,6 +15,7 @@ type StaffAssignmentCardProps = {
   members: TeamMember[];
   assignedUserIds: string[];
   assignedLabels: Record<string, string>;
+  projectTasks?: AgencyTask[];
   onChanged: () => void;
 };
 
@@ -24,6 +26,7 @@ export function StaffAssignmentCard({
   members,
   assignedUserIds,
   assignedLabels,
+  projectTasks,
   onChanged,
 }: StaffAssignmentCardProps) {
   const { profile } = useAuth();
@@ -88,35 +91,50 @@ export function StaffAssignmentCard({
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
       <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
-        {kind === "client" ? "Assigned Team" : "Team"}
+        {kind === "client" ? "Assigned Team" : "Assigned team"}
       </h2>
       {assigned.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--admin-muted)]">No team members assigned yet.</p>
       ) : (
-        <ul className="mt-3 space-y-2">
-          {assigned.map((member) => (
-            <li key={member.id} className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-[var(--admin-ink)]">{member.fullName || member.email}</p>
-                <p className="text-[12px] text-[var(--admin-muted)]">
-                  {[member.jobTitle || member.templateLabel, assignedLabels[member.id]].filter(Boolean).join(" · ")}
-                </p>
-              </div>
-              {canManage ? (
-                <button
-                  type="button"
-                  className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-                  onClick={() => void remove(member.id)}
-                >
-                  Remove
-                </button>
-              ) : null}
-            </li>
-          ))}
+        <ul className="mt-3 space-y-3">
+          {assigned.map((member) => {
+            const projectAssigned = (projectTasks ?? []).filter((task) => task.assignedTo === member.id);
+            const openOnProject = projectAssigned.filter((task) => task.status !== "Completed").length;
+            return (
+              <li key={member.id} className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-[var(--admin-ink)]">{member.fullName || member.email}</p>
+                  <p className="text-[12px] text-[var(--admin-muted)]">
+                    {[member.templateLabel, member.jobTitle && member.jobTitle !== member.templateLabel ? member.jobTitle : null]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                  {assignedLabels[member.id] ? (
+                    <p className="text-[12px] text-[var(--admin-muted)]">{assignedLabels[member.id]}</p>
+                  ) : null}
+                  <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
+                    {kind === "project"
+                      ? `${openOnProject} assigned task${openOnProject === 1 ? "" : "s"} · ${teamWorkloadCaption(member)}`
+                      : teamWorkloadCaption(member)}
+                  </p>
+                </div>
+                {canManage ? (
+                  <button
+                    type="button"
+                    className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+                    onClick={() => void remove(member.id)}
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       )}
       {canManage ? (
         <div className="mt-4 space-y-2 border-t border-[var(--admin-line)] pt-4">
+          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Assign team member</h2>
           <select
             value={userId}
             onChange={(event) => setUserId(event.target.value)}

@@ -2,27 +2,30 @@ import { Link } from "react-router-dom";
 import { ClientProgress } from "@/components/client/ClientProgress";
 import { ClientStatusBadge } from "@/components/client/ClientStatusBadge";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
-import { calculateProjectProgress, currentMilestone, formatProjectDay, upcomingTasks, type AgencyProject } from "@/data/agencyProjects";
+import { calculateProjectProgress, currentMilestone, formatProjectDay, type AgencyProject } from "@/data/agencyProjects";
+import { clientProjectStatusExplanation, clientProjectStatusTone } from "@/data/clientPortal";
 import { cn } from "@/lib/cn";
 
 type ClientProjectCardProps = {
   compact?: boolean;
   project?: AgencyProject | null;
+  nextLabel?: string;
 };
 
-export function ClientProjectCard({ compact = false, project: projectProp }: ClientProjectCardProps) {
+export function ClientProjectCard({ compact = false, project: projectProp, nextLabel }: ClientProjectCardProps) {
   const { client, project: sessionProject } = usePortalSession();
   const project = projectProp ?? sessionProject;
   if (!project) return null;
 
   const progress = calculateProjectProgress(project);
   const milestone = currentMilestone(project);
-  const nextTask = upcomingTasks(project, 1)[0];
+  const statusNote = clientProjectStatusExplanation(project.status);
+  const nextStep = nextLabel ?? "We’ll notify you when the next step is ready.";
 
   return (
     <article
       className={cn(
-        "rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)]",
+        "w-full rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)]",
         compact ? "p-5 md:p-6" : "p-6 md:p-8",
       )}
     >
@@ -36,8 +39,9 @@ export function ClientProjectCard({ compact = false, project: projectProp }: Cli
           </h2>
           <p className="mt-1 text-sm text-[var(--client-muted)]">{client?.businessName ?? "Your business"}</p>
           <div className="mt-4">
-            <ClientStatusBadge label={project.status} tone="progress" />
+            <ClientStatusBadge label={project.status} tone={clientProjectStatusTone(project.status)} />
           </div>
+          {statusNote ? <p className="mt-3 max-w-xl text-sm leading-relaxed text-[var(--client-muted)]">{statusNote}</p> : null}
         </div>
         {!compact ? (
           <p className="font-heading text-4xl font-semibold tracking-tight text-[var(--client-ink)] lg:text-right">
@@ -60,9 +64,7 @@ export function ClientProjectCard({ compact = false, project: projectProp }: Cli
         </div>
         <div>
           <dt className="text-[12px] text-[var(--client-muted)]">Next</dt>
-          <dd className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">
-            {nextTask?.title ?? "We’ll share the next step soon."}
-          </dd>
+          <dd className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">{nextStep}</dd>
         </div>
         <div>
           <dt className="text-[12px] text-[var(--client-muted)]">Project status</dt>

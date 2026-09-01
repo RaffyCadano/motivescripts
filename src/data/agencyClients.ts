@@ -92,13 +92,14 @@ export function filterAgencyClients(
     return (
       client.contactName.toLowerCase().includes(needle) ||
       client.businessName.toLowerCase().includes(needle) ||
-      client.email.toLowerCase().includes(needle)
+      client.email.toLowerCase().includes(needle) ||
+      (client.phone ?? "").toLowerCase().includes(needle)
     );
   });
 }
 
 export function projectCountLabel(count: number): string {
-  return count === 1 ? "1 Project" : `${count} Projects`;
+  return count === 1 ? "1 project" : `${count} projects`;
 }
 
 export {

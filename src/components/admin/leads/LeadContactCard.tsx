@@ -1,3 +1,5 @@
+import { Mail, Phone } from "lucide-react";
+import { adminGhostBtn } from "@/components/admin/adminActionStyles";
 import type { Lead } from "@/data/leads";
 
 type LeadContactCardProps = {
@@ -5,11 +7,13 @@ type LeadContactCardProps = {
 };
 
 export function LeadContactCard({ lead }: LeadContactCardProps) {
+  const phoneHref = lead.phone !== "—" ? `tel:${lead.phone.replace(/[^\d+]/g, "")}` : null;
+
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
       <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Contact</h2>
       <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-        <Item label="Name" value={lead.name} />
+        <Item label="Contact name" value={lead.name} />
         <Item label="Business name" value={lead.businessName} />
         <div>
           <dt className="text-[12px] text-[var(--admin-muted)]">Email</dt>
@@ -22,11 +26,8 @@ export function LeadContactCard({ lead }: LeadContactCardProps) {
         <div>
           <dt className="text-[12px] text-[var(--admin-muted)]">Phone</dt>
           <dd className="mt-1">
-            {lead.phone !== "—" ? (
-              <a
-                className="text-sm font-medium text-[var(--admin-blue)] hover:underline"
-                href={`tel:${lead.phone.replace(/[^\d+]/g, "")}`}
-              >
+            {phoneHref ? (
+              <a className="text-sm font-medium text-[var(--admin-blue)] hover:underline" href={phoneHref}>
                 {lead.phone}
               </a>
             ) : (
@@ -36,6 +37,18 @@ export function LeadContactCard({ lead }: LeadContactCardProps) {
         </div>
         <Item label="Industry" value={lead.industry} />
       </dl>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <a href={`mailto:${lead.email}`} className={`${adminGhostBtn} gap-2`}>
+          <Mail size={16} strokeWidth={2} aria-hidden="true" />
+          Email
+        </a>
+        {phoneHref ? (
+          <a href={phoneHref} className={`${adminGhostBtn} gap-2`}>
+            <Phone size={16} strokeWidth={2} aria-hidden="true" />
+            Call
+          </a>
+        ) : null}
+      </div>
     </section>
   );
 }

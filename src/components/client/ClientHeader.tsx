@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, ChevronDown, Globe, LogOut, Menu, PanelLeft } from "lucide-react";
+import { Bell, ChevronDown, Globe, LogOut, Menu, PanelLeft, Settings } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { ClientConfirmDialog } from "@/components/client/ClientConfirmDialog";
 import { NotificationPanel } from "@/components/messaging/NotificationPanel";
@@ -30,7 +30,7 @@ export function ClientHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenM
   const menuId = useId();
   const notesId = useId();
   const identity = usePortalIdentity();
-  const { notifications, unreadNotificationCount, loadStatus, markNotificationRead, markAllNotificationsRead } =
+  const { notifications, unreadNotificationCount, loadStatus, markNotificationRead, markAllNotificationsRead, clearNotifications } =
     useMessaging();
   const unread = unreadNotificationCount;
 
@@ -122,6 +122,7 @@ export function ClientHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenM
               if (!item.readAt) void markNotificationRead(item.id);
             }}
             onMarkAllRead={() => void markAllNotificationsRead()}
+            onClearAll={() => void clearNotifications()}
           />
         </div>
 
@@ -180,6 +181,7 @@ export function ClientHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenM
                 className="flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--client-ink)] hover:bg-[var(--client-bg)]"
                 onClick={() => setMenuOpen(false)}
               >
+                <Settings size={15} strokeWidth={1.75} aria-hidden="true" />
                 Account settings
               </Link>
               <button

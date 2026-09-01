@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
-import { taskStatuses, type AgencyTaskStatus } from "@/data/agencyProjects";
+import { formatProjectDay, taskStatuses, type AgencyTaskStatus } from "@/data/agencyProjects";
 import type { AgencyDeliverable } from "@/data/files";
-import { dueLabel, type TeamWorkTask } from "@/data/teamWorkspace";
+import { dueLabel, teamProjectHref, type TeamWorkTask } from "@/data/teamWorkspace";
 
 type TeamTaskDetailProps = {
   task: TeamWorkTask;
@@ -65,6 +65,22 @@ export function TeamTaskDetail({
             <dt className="text-[12px] text-[var(--admin-muted)]">Client</dt>
             <dd className="mt-1 text-sm">{task.clientName}</dd>
           </div>
+          {task.milestoneName ? (
+            <div>
+              <dt className="text-[12px] text-[var(--admin-muted)]">Milestone</dt>
+              <dd className="mt-1 text-sm">{task.milestoneName}</dd>
+            </div>
+          ) : null}
+          <div>
+            <dt className="text-[12px] text-[var(--admin-muted)]">Created</dt>
+            <dd className="mt-1 text-sm">{formatProjectDay(task.createdAt)}</dd>
+          </div>
+          {task.completedAt ? (
+            <div>
+              <dt className="text-[12px] text-[var(--admin-muted)]">Completed</dt>
+              <dd className="mt-1 text-sm">{formatProjectDay(task.completedAt)}</dd>
+            </div>
+          ) : null}
         </dl>
 
         {canUpdateStatus ? (
@@ -96,7 +112,7 @@ export function TeamTaskDetail({
               {files.map((file) => (
                 <li key={file.id}>
                   <Link
-                    to={`/admin/projects/${task.projectId}?tab=files&file=${file.id}`}
+                    to={teamProjectHref(task.projectId, { tab: "files", file: file.id })}
                     className="text-sm font-medium text-[var(--admin-blue)] hover:underline"
                   >
                     {file.name}
@@ -108,7 +124,7 @@ export function TeamTaskDetail({
         </section>
 
         <Link
-          to={`/admin/projects/${task.projectId}?tab=tasks`}
+          to={teamProjectHref(task.projectId, { tab: "tasks" })}
           className="mt-6 inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white"
         >
           Open project workspace

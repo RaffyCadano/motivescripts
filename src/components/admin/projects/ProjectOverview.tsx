@@ -75,6 +75,7 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
   const [proposal, setProposal] = useState<ProposalSummary | null>(null);
   const [contract, setContract] = useState<ContractSummary | null>(null);
   const [workflow, setWorkflow] = useState<AdminFunnelItem[] | null>(null);
+  const [invoicePaid, setInvoicePaid] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -99,6 +100,7 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
       setBrief(nextBrief);
       setProposal(projectProposals[0] ?? null);
       setContract(projectContracts[0] ?? null);
+      setInvoicePaid(flags.invoicePaid);
       setWorkflow(
         projectWorkspaceFunnel({
           hasScope: flags.hasScope,
@@ -130,6 +132,28 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
 
   return (
     <div className="space-y-6">
+      {invoicePaid && !isProductionProject(project.status) ? (
+        <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-4 py-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+            Payment received ✓
+          </p>
+          <h2 className="mt-1 font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
+            Production ready
+          </h2>
+          <p className="mt-1 text-sm text-[var(--admin-muted)]">
+            The initial production task plan is on the Tasks tab. Start production when you are ready — that sets the
+            project to In Development.
+          </p>
+          <button
+            type="button"
+            className="mt-3 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+            onClick={() => onOpenTab("tasks")}
+          >
+            View tasks
+          </button>
+        </section>
+      ) : null}
+
       {attention.length > 0 ? (
         <p className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-4 py-3 text-sm text-[var(--admin-ink)]">
           {attention.length} deliverable{attention.length === 1 ? "" : "s"} need{attention.length === 1 ? "s" : ""} attention
@@ -161,6 +185,7 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
                 .map((item) => [member.id, item.label]),
             ),
           )}
+          projectTasks={project.tasks}
           onChanged={() => void team.reload()}
         />
       ) : null}

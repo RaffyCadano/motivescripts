@@ -1,5 +1,8 @@
 import type { InvitationPreviewState } from "@/data/invitation";
+import { isProductionTeamTemplate } from "@/auth/roles";
 import type { StaffInvitationStatus } from "@/types/database";
+
+export { isProductionTeamTemplate };
 
 export const STAFF_TEMPLATE_KEYS = [
   "admin",
@@ -14,17 +17,6 @@ export const STAFF_TEMPLATE_KEYS = [
 ] as const;
 
 export type StaffTemplateKey = (typeof STAFF_TEMPLATE_KEYS)[number];
-
-const PRODUCTION_TEAM_TEMPLATES = new Set<string>([
-  "developer",
-  "designer",
-  "content_writer",
-  "team_member",
-]);
-
-export function isProductionTeamTemplate(templateKey: string | null | undefined): boolean {
-  return PRODUCTION_TEAM_TEMPLATES.has(templateKey ?? "");
-}
 
 export type TeamMemberStatus = "active" | "inactive" | "pending";
 
@@ -107,6 +99,33 @@ export function teamRowRole(row: TeamListRow): string {
 
 export function teamRowTitle(row: TeamListRow): string {
   return row.kind === "member" ? row.member.jobTitle : row.invitation.jobTitle;
+}
+
+export function teamRowHref(row: TeamListRow): string {
+  return row.kind === "member" ? `/admin/team/${row.member.id}` : `/admin/team/invite/${row.invitation.id}`;
+}
+
+export function teamRoleSubtitle(row: TeamListRow): string {
+  const title = teamRowTitle(row).trim();
+  const role = teamRowRole(row);
+  if (title && title !== role) return title;
+  if (row.kind === "member") return row.member.role === "admin" ? "Administrator" : "Staff";
+  return "Invitation — not active until accepted";
+}
+
+export function teamWorkloadCaption(member: TeamMember): string {
+  const projects = member.projectAssignments.length;
+  const active = member.activeTaskCount;
+  const projectLabel = projects === 1 ? "1 project" : `${projects} projects`;
+  const activeLabel = active === 1 ? "1 active" : `${active} active`;
+  return `${projectLabel} · ${activeLabel}`;
+}
+
+export function teamAssignedProjectNames(member: TeamMember, limit = 2): string | null {
+  if (member.projectAssignments.length === 0) return null;
+  const names = member.projectAssignments.map((item) => item.entityName);
+  if (names.length <= limit) return names.join(", ");
+  return `${names.slice(0, limit).join(", ")} +${names.length - limit}`;
 }
 
 export function formatTeamDate(value: string | null): string {

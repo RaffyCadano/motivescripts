@@ -49,15 +49,19 @@ export function ClientTimeline({ stages }: ClientTimelineProps) {
                   />
                 ) : null}
               </div>
-              <p
-                className={cn(
-                  "font-heading text-sm font-semibold md:mt-3 md:text-center",
-                  !last && "pb-6 md:pb-0",
-                  current ? "text-[var(--client-blue)]" : complete ? "text-[var(--client-ink)]" : "text-[var(--client-muted)]",
-                )}
-              >
-                {stage.label}
-              </p>
+              <div className={cn("md:mt-3 md:text-center", !last && "pb-6 md:pb-0")}>
+                <p
+                  className={cn(
+                    "font-heading text-sm font-semibold",
+                    current ? "text-[var(--client-blue)]" : complete ? "text-[var(--client-ink)]" : "text-[var(--client-muted)]",
+                  )}
+                >
+                  {stage.label}
+                </p>
+                {current ? (
+                  <p className="mt-0.5 text-[11px] font-medium text-[var(--client-blue)]">Current</p>
+                ) : null}
+              </div>
             </li>
           );
         })}

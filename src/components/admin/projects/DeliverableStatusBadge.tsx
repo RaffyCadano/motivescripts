@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 const styles: Record<DeliverableStatus, string> = {
   Draft: "bg-[var(--admin-bg)] text-[var(--admin-muted)]",
   "In Review": "bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]",
-  "Needs Changes": "bg-[rgb(7_17_31_/_0.06)] text-[var(--admin-ink)]",
+  "Needs Changes": "bg-[rgb(220_38_38_/_0.08)] text-[#b42318]",
   Approved: "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]",
   Archived: "bg-[var(--admin-bg)] text-[var(--admin-muted)]",
 };

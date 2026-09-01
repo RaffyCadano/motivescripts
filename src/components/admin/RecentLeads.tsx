@@ -11,10 +11,7 @@ export function RecentLeads() {
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
       <div className="flex items-center justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
         <h2 className="font-heading text-sm font-semibold tracking-tight">Recent Leads</h2>
-        <Link
-          className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline"
-          to="/admin/leads"
-        >
+        <Link className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline" to="/admin/leads">
           View all
         </Link>
       </div>
@@ -24,14 +21,18 @@ export function RecentLeads() {
       ) : (
         <>
           <div className="hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[36rem] text-left text-[13px]">
+            <table className="w-full min-w-[40rem] text-left text-[13px]">
               <thead>
                 <tr className="border-b border-[var(--admin-line)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
                   <th className="px-5 py-3 font-semibold">Business</th>
+                  <th className="px-5 py-3 font-semibold">Contact</th>
                   <th className="px-5 py-3 font-semibold">Industry</th>
                   <th className="px-5 py-3 font-semibold">Request</th>
                   <th className="px-5 py-3 font-semibold">Status</th>
                   <th className="px-5 py-3 font-semibold">Date</th>
+                  <th className="px-5 py-3 font-semibold">
+                    <span className="sr-only">Action</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -45,12 +46,21 @@ export function RecentLeads() {
                         {lead.businessName}
                       </Link>
                     </td>
+                    <td className="px-5 py-3.5">{lead.name}</td>
                     <td className="px-5 py-3.5">{lead.industry}</td>
                     <td className="px-5 py-3.5">{lead.request}</td>
                     <td className="px-5 py-3.5">
                       <LeadStatusBadge status={lead.status} />
                     </td>
                     <td className="px-5 py-3.5 text-[var(--admin-muted)]">{formatLeadDate(lead.createdAt)}</td>
+                    <td className="px-5 py-3.5 text-right">
+                      <Link
+                        to={`/admin/leads/${lead.id}`}
+                        className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+                      >
+                        View Lead
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -69,12 +79,20 @@ export function RecentLeads() {
                       {lead.businessName}
                     </Link>
                     <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
-                      {lead.industry} · {lead.request}
+                      {lead.name} · {lead.industry} · {lead.request}
                     </p>
                   </div>
                   <LeadStatusBadge status={lead.status} />
                 </div>
-                <p className="mt-2 text-[12px] text-[var(--admin-muted)]">{formatLeadDate(lead.createdAt)}</p>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <p className="text-[12px] text-[var(--admin-muted)]">{formatLeadDate(lead.createdAt)}</p>
+                  <Link
+                    to={`/admin/leads/${lead.id}`}
+                    className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+                  >
+                    View Lead
+                  </Link>
+                </div>
               </li>
             ))}
           </ul>

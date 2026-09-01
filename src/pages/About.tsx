@@ -41,22 +41,6 @@ export function AboutPage() {
 
       <div className="container-wide space-y-20 py-16 md:space-y-24 md:py-24">
         <AnimateIn>
-        <section className="max-w-3xl">
-          <h2 className="text-2xl md:text-3xl">Built for business owners, not for a marketplace profile.</h2>
-          <p className="mt-5 text-[var(--text-md)] text-muted">
-            Most small-business websites fail because they look unfinished, hide the services, or
-            make it hard to get in touch. We build sites that present the company clearly, work on
-            a phone, and give customers a next step.
-          </p>
-          <p className="mt-4 text-[var(--text-md)] text-muted">
-            You don’t need to manage a designer in one place and a developer in another. MotiveScripts
-            handles the website as one project: structure, design, build, and launch — with a process
-            you can follow from the first conversation.
-          </p>
-        </section>
-        </AnimateIn>
-
-        <AnimateIn>
         <section>
           <h2 className="text-2xl md:text-3xl">What the website has to do</h2>
           <p className="mt-4 max-w-2xl text-muted">

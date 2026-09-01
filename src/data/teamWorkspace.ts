@@ -24,7 +24,35 @@ export type TeamWorkTask = {
   createdAt: string;
   completedAt: string | null;
   milestoneId: string;
+  milestoneName: string;
 };
+
+export type TeamAttentionItem = {
+  id: string;
+  title: string;
+  body: string;
+  href: string;
+};
+
+export type TeamActivityItem = {
+  id: string;
+  projectId: string;
+  projectName: string;
+  description: string;
+  createdAt: string;
+};
+
+export function teamProjectHref(projectId: string, options?: { tab?: string; file?: string }): string {
+  const params = new URLSearchParams();
+  if (options?.file) {
+    params.set("tab", "files");
+    params.set("file", options.file);
+  } else if (options?.tab && options.tab !== "overview") {
+    params.set("tab", options.tab);
+  }
+  const query = params.toString();
+  return query ? `/team/projects/${projectId}?${query}` : `/team/projects/${projectId}`;
+}
 
 export type DueBucket = "overdue" | "today" | "tomorrow" | "upcoming" | "none";
 
@@ -63,6 +91,19 @@ export function isTaskOverdue(task: Pick<TeamWorkTask, "status" | "dueDate">): b
   return task.status !== "Completed" && dueBucket(task.dueDate) === "overdue";
 }
 
+export function isDueSoon(task: Pick<TeamWorkTask, "status" | "dueDate">, now = new Date()): boolean {
+  if (task.status === "Completed") return false;
+  const bucket = dueBucket(task.dueDate, now);
+  if (bucket === "today" || bucket === "tomorrow") return true;
+  if (bucket !== "upcoming") return false;
+  const due = new Date(`${task.dueDate}T00:00:00`);
+  if (Number.isNaN(due.getTime())) return false;
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const diff = Math.round((dueDay.getTime() - start.getTime()) / 86_400_000);
+  return diff > 0 && diff <= 7;
+}
+
 export function isAssignedToMe(task: AgencyTask, userId: string, fullName: string): boolean {
   if (task.assignedTo && task.assignedTo === userId) return true;
   if (!task.assignedTo && fullName.trim() && task.assignee.trim().toLowerCase() === fullName.trim().toLowerCase()) {
@@ -98,6 +139,7 @@ export function collectAssignedTasks(
         createdAt: task.createdAt,
         completedAt: task.completedAt,
         milestoneId: task.milestoneId,
+        milestoneName: project.milestones.find((item) => item.id === task.milestoneId)?.name ?? "",
       });
     }
   }
@@ -154,10 +196,67 @@ export function filterTeamTasks(
 export function myWorkStats(tasks: TeamWorkTask[]) {
   return {
     dueToday: tasks.filter((task) => task.status !== "Completed" && dueBucket(task.dueDate) === "today").length,
+    dueSoon: tasks.filter((task) => isDueSoon(task)).length,
     inProgress: tasks.filter((task) => task.status === "In Progress").length,
     completed: tasks.filter((task) => task.status === "Completed").length,
     overdue: tasks.filter((task) => isTaskOverdue(task)).length,
+    open: tasks.filter((task) => task.status !== "Completed").length,
   };
+}
+
+export function myOpenTaskCount(project: AgencyProject, userId: string, fullName: string): number {
+  return project.tasks.filter((task) => isAssignedToMe(task, userId, fullName) && task.status !== "Completed").length;
+}
+
+export function collectTeamAttention(input: {
+  projects: AgencyProject[];
+  deliverables: { id: string; projectId: string; name: string; status: string }[];
+}): TeamAttentionItem[] {
+  const items: TeamAttentionItem[] = [];
+  const seen = new Set<string>();
+  function push(item: TeamAttentionItem) {
+    if (seen.has(item.id)) return;
+    seen.add(item.id);
+    items.push(item);
+  }
+
+  for (const file of input.deliverables) {
+    if (file.status !== "Needs Changes") continue;
+    const project = input.projects.find((item) => item.id === file.projectId);
+    if (!project) continue;
+    push({
+      id: `file-${file.id}`,
+      title: file.name,
+      body: `Needs changes · ${project.name}`,
+      href: teamProjectHref(file.projectId, { tab: "files", file: file.id }),
+    });
+  }
+  for (const project of input.projects) {
+    if (project.status === "Client Review") {
+      push({
+        id: `review-${project.id}`,
+        title: project.name,
+        body: "Waiting on client review",
+        href: teamProjectHref(project.id),
+      });
+    }
+  }
+  return items.slice(0, 8);
+}
+
+export function collectRecentProjectActivity(projects: AgencyProject[], limit = 8): TeamActivityItem[] {
+  return projects
+    .flatMap((project) =>
+      project.activity.map((item) => ({
+        id: item.id,
+        projectId: project.id,
+        projectName: project.name,
+        description: item.description,
+        createdAt: item.createdAt,
+      })),
+    )
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, limit);
 }
 
 export function projectWorkload(project: AgencyProject) {

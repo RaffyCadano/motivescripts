@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
+import { adminPathToTeamPath, usesTeamWorkspace } from "@/auth/roles";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { TeamDirectoryProvider } from "@/components/admin/team/useTeamDirectory";
@@ -7,7 +9,8 @@ import { cn } from "@/lib/cn";
 import "@/styles/admin.css";
 
 export function AdminLayout() {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const { profile } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [isLg, setIsLg] = useState(() =>
@@ -56,6 +59,10 @@ export function AdminLayout() {
   }, [pathname]);
 
   const dockCollapsed = isLg && collapsed;
+
+  if (usesTeamWorkspace(profile)) {
+    return <Navigate to={adminPathToTeamPath(pathname, search)} replace />;
+  }
 
   return (
     <TeamDirectoryProvider>

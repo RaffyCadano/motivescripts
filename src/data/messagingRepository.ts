@@ -192,6 +192,12 @@ export async function markAllNotificationsRead(): Promise<void> {
   throwIf(error, "mark notifications read", "Unable to update notifications.");
 }
 
+export async function clearNotifications(): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("clear_notifications", {});
+  throwIf(error, "clear notifications", "Unable to clear notifications.");
+}
+
 export function subscribeMessaging(handlers: {
   userId: string;
   clientId: string | null;

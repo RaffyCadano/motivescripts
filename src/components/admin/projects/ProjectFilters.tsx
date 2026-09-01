@@ -1,3 +1,6 @@
+import { adminGhostBtn } from "@/components/admin/adminActionStyles";
+import { AdminStatusChips } from "@/components/admin/list/AdminStatusChips";
+import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import type { AgencyClient } from "@/data/agencyClients";
 import {
   projectStatuses,
@@ -5,7 +8,6 @@ import {
   type AgencyProjectStatus,
   type AgencyProjectType,
 } from "@/data/agencyProjects";
-import { cn } from "@/lib/cn";
 
 type ProjectFiltersProps = {
   query: string;
@@ -17,6 +19,7 @@ type ProjectFiltersProps = {
   onStatusChange: (value: AgencyProjectStatus | "All") => void;
   onClientChange: (value: string | "All") => void;
   onTypeChange: (value: AgencyProjectType | "All") => void;
+  onReset: () => void;
 };
 
 export function ProjectFilters({
@@ -29,7 +32,10 @@ export function ProjectFilters({
   onStatusChange,
   onClientChange,
   onTypeChange,
+  onReset,
 }: ProjectFiltersProps) {
+  const filtersActive = query.trim().length > 0 || status !== "All" || clientId !== "All" || type !== "All";
+
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-3 lg:flex-row">
@@ -39,8 +45,8 @@ export function ProjectFilters({
             type="search"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search projects..."
-            className="h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none placeholder:text-[var(--admin-muted)] focus:border-[rgb(0_80_240_/_0.45)]"
+            placeholder="Search project or client"
+            className={adminFilterControlState(Boolean(query.trim()))}
           />
         </label>
         <label className="lg:w-56">
@@ -48,7 +54,7 @@ export function ProjectFilters({
           <select
             value={clientId}
             onChange={(event) => onClientChange(event.target.value)}
-            className="h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            className={adminFilterControlState(clientId !== "All")}
           >
             <option value="All">All clients</option>
             {clients.map((client) => (
@@ -63,7 +69,7 @@ export function ProjectFilters({
           <select
             value={type}
             onChange={(event) => onTypeChange(event.target.value as AgencyProjectType | "All")}
-            className="h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            className={adminFilterControlState(type !== "All")}
           >
             <option value="All">All types</option>
             {projectTypes.map((item) => (
@@ -73,24 +79,18 @@ export function ProjectFilters({
             ))}
           </select>
         </label>
-      </div>
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="group" aria-label="Project status">
-        {(["All", ...projectStatuses] as const).map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => onStatusChange(item)}
-            className={cn(
-              "shrink-0 rounded-full px-3 py-1.5 font-heading text-[12px] font-semibold",
-              status === item
-                ? "bg-[var(--admin-navy)] text-white"
-                : "bg-white text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)] hover:bg-[var(--admin-hover)]",
-            )}
-          >
-            {item}
+        {filtersActive ? (
+          <button type="button" className={`${adminGhostBtn} shrink-0 justify-center`} onClick={onReset}>
+            Clear filters
           </button>
-        ))}
+        ) : null}
       </div>
+      <AdminStatusChips
+        items={["All", ...projectStatuses]}
+        value={status}
+        onChange={onStatusChange}
+        label="Project status"
+      />
     </div>
   );
 }

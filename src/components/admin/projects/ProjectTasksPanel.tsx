@@ -27,7 +27,10 @@ export function ProjectTasksPanel({ project, onAdd, onEdit, onToggle }: ProjectT
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Tasks</h2>
-          <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Completing a task updates project progress immediately.</p>
+          <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
+            Completing a task updates project progress immediately. Generated production tasks can be edited, assigned, or
+            removed.
+          </p>
         </div>
         <button
           type="button"
@@ -96,7 +99,7 @@ function TaskRow({
           <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
             <TaskStatusBadge status={task.status} />
             <TaskPriorityBadge priority={task.priority} />
-            <span className="text-[12px] text-[var(--admin-muted)]">{task.assignee}</span>
+            <span className="text-[12px] text-[var(--admin-muted)]">{task.assignee.trim() || "Unassigned"}</span>
             <span className="text-[12px] text-[var(--admin-muted)]">Due {formatProjectDay(task.dueDate)}</span>
             {milestone ? <span className="text-[12px] text-[var(--admin-muted)]">{milestone.name}</span> : null}
           </span>

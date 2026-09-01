@@ -78,6 +78,7 @@ export type ProjectRow = {
   approval_status: string;
   created_by: string | null;
   last_activity_at: string;
+  production_plan_generated_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -592,6 +593,13 @@ export type AgencySettingsRow = {
   default_invoice_payment_terms: string;
   default_invoice_notes: string;
   client_portal_welcome_message: string;
+  default_proposal_website_cents?: number | null;
+  default_addon_quote_request_form_cents?: number | null;
+  default_addon_booking_form_cents?: number | null;
+  default_addon_social_media_cents?: number | null;
+  default_addon_business_email_cents?: number | null;
+  default_addon_domain_cents?: number | null;
+  default_addon_hosting_setup_cents?: number | null;
   updated_at: string;
   updated_by: string | null;
 };
@@ -761,6 +769,10 @@ export type Database = {
         Returns: null;
       };
       mark_all_notifications_read: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      clear_notifications: {
         Args: Record<string, never>;
         Returns: number;
       };
@@ -935,6 +947,10 @@ export type Database = {
           p_notes?: string;
         };
         Returns: string;
+      };
+      prepare_project_production_from_paid_invoice: {
+        Args: { p_invoice_id: string };
+        Returns: number;
       };
       reverse_invoice_payment: {
         Args: { p_payment_id: string };

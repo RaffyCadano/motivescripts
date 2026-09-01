@@ -158,6 +158,13 @@ export function currentMilestone(project: AgencyProject): AgencyMilestone | null
   );
 }
 
+export function upcomingMilestone(project: AgencyProject): AgencyMilestone | null {
+  const ordered = [...project.milestones].sort((a, b) => a.order - b.order);
+  const current = currentMilestone(project);
+  if (!current) return ordered.find((item) => item.status !== "Completed") ?? null;
+  return ordered.find((item) => item.order > current.order && item.status !== "Completed") ?? null;
+}
+
 export function upcomingTasks(project: AgencyProject, limit = 3): AgencyTask[] {
   return project.tasks
     .filter((task) => task.status !== "Completed")
@@ -220,6 +227,47 @@ export function formatProjectDayShort(value: string): string {
   if (!value) return "—";
   const date = new Date(value.includes("T") ? value : `${value}T12:00:00`);
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function parseProjectDay(value: string): Date | null {
+  if (!value.trim()) return null;
+  const date = new Date(value.includes("T") ? value : `${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function formatProjectLaunch(value: string): string {
+  if (!value.trim()) return "Not scheduled";
+  return formatProjectDay(value);
+}
+
+export type ProjectLaunchUrgency = "none" | "scheduled" | "soon" | "overdue";
+
+export function projectLaunchUrgency(value: string, status: AgencyProjectStatus): ProjectLaunchUrgency {
+  const date = parseProjectDay(value);
+  if (!date) return "none";
+  if (status === "Completed") return "scheduled";
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  if (day < start) return "overdue";
+  const soon = new Date(start);
+  soon.setDate(soon.getDate() + 7);
+  if (day < soon) return "soon";
+  return "scheduled";
+}
+
+export function projectListAttention(project: AgencyProject): { body: string } | null {
+  if (project.archived) return null;
+  if (projectLaunchUrgency(project.targetLaunchDate, project.status) === "overdue") {
+    return { body: "Target launch date is overdue." };
+  }
+  if (project.status === "Client Review") {
+    return { body: "Client Review — waiting for the client." };
+  }
+  if (project.status === "On Hold") {
+    return { body: "This project is on hold." };
+  }
+  return null;
 }
 
 export {

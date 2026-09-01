@@ -38,6 +38,12 @@ export function ClientLayout() {
 
   useEffect(() => {
     const root = document.documentElement;
+    root.classList.add("client-shell");
+    return () => root.classList.remove("client-shell");
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
     if (mobileOpen) root.classList.add("client-nav-open");
     else root.classList.remove("client-nav-open");
 
@@ -59,7 +65,7 @@ export function ClientLayout() {
   const dockCollapsed = isLg && collapsed;
 
   return (
-    <div className="client-app">
+    <div className="client-app h-full overflow-hidden">
       <a className="skip-link" href="#client-main">
         Skip to content
       </a>
@@ -82,7 +88,7 @@ export function ClientLayout() {
 
       <div
         className={cn(
-          "flex h-svh w-full min-w-0 flex-col overflow-hidden transition-[padding] duration-[var(--duration-base)] ease-[var(--ease-out)]",
+          "flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden transition-[padding] duration-[var(--duration-base)] ease-[var(--ease-out)]",
           dockCollapsed ? "lg:pl-[var(--client-sidebar-collapsed)]" : "lg:pl-[var(--client-sidebar)]",
         )}
       >

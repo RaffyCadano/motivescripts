@@ -18,7 +18,12 @@ export function ClientFiles() {
         </Link>
       </div>
       {recent.length === 0 ? (
-        <p className="px-5 py-4 text-sm text-[var(--client-muted)]">No files yet.</p>
+        <div className="px-5 py-6">
+          <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">No files yet</p>
+          <p className="mt-1 text-sm text-[var(--client-muted)]">
+            Files and deliverables will appear here as your project progresses.
+          </p>
+        </div>
       ) : (
         <ul className="divide-y divide-[var(--client-line)]">
           {recent.map((item) => {

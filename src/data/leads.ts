@@ -99,6 +99,28 @@ export function formatLeadSubmitted(iso: string): string {
   });
 }
 
+export function leadListNextAction(lead: Lead): { label: string; href: string } {
+  if (lead.convertedClientId) {
+    return { label: "View Client", href: `/admin/clients/${lead.convertedClientId}` };
+  }
+  switch (lead.status) {
+    case "New":
+      return { label: "Contact", href: `/admin/leads/${lead.id}` };
+    case "Contacted":
+      return { label: "Qualify", href: `/admin/leads/${lead.id}` };
+    case "Qualified":
+    case "Won":
+      return { label: "Convert", href: `/admin/leads/${lead.id}` };
+    case "Proposal":
+    case "Lost":
+      return { label: "View", href: `/admin/leads/${lead.id}` };
+  }
+}
+
+export function leadNeedsListAttention(lead: Lead): boolean {
+  return !lead.convertedClientId && lead.status === "New";
+}
+
 export function filterLeads(
   leads: Lead[],
   query: string,
@@ -113,7 +135,8 @@ export function filterLeads(
     return (
       lead.name.toLowerCase().includes(needle) ||
       lead.businessName.toLowerCase().includes(needle) ||
-      lead.email.toLowerCase().includes(needle)
+      lead.email.toLowerCase().includes(needle) ||
+      (lead.phone ?? "").toLowerCase().includes(needle)
     );
   });
 }

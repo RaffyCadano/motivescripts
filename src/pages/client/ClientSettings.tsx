@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { usePortalIdentity } from "@/components/admin/leads/LeadsProvider";
+import { useLeads, usePortalIdentity } from "@/components/admin/leads/LeadsProvider";
 
 const PREFS_KEY = "motivescripts.client.device-notification-prefs";
 
@@ -24,6 +24,7 @@ function loadPrefs(): DevicePrefs {
 
 export function ClientSettings() {
   const identity = usePortalIdentity();
+  const { notify } = useLeads();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [projectUpdates, setProjectUpdates] = useState(true);
   const [saved, setSaved] = useState(false);
@@ -41,6 +42,7 @@ export function ClientSettings() {
       JSON.stringify({ emailNotifications, projectUpdates } satisfies DevicePrefs),
     );
     setSaved(true);
+    notify("Preferences saved");
   }
 
   return (
@@ -48,31 +50,37 @@ export function ClientSettings() {
       <header>
         <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight md:text-3xl">Settings</h1>
         <p className="mt-1 text-sm text-[var(--client-muted)]">
-          Profile details come from your MotiveScripts account. The toggles below only remember a preference on this
-          device. They do not change which emails MotiveScripts sends.
+          Manage your profile information and notification preferences.
         </p>
       </header>
 
-      <form
-        className="space-y-8 rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6"
-        onSubmit={onSubmit}
-      >
-        <fieldset>
-          <legend className="font-heading text-sm font-semibold text-[var(--client-ink)]">Profile</legend>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <ReadOnlyField id="name" label="Name" value={identity.name} />
-            <ReadOnlyField id="email" label="Email" value={identity.email} />
-            <ReadOnlyField id="business" label="Business name" value={identity.businessName} />
-            <ReadOnlyField id="phone" label="Phone" value={identity.phone || "—"} />
-          </div>
-        </fieldset>
+      <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
+        <h2 className="font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">Profile</h2>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">
+          Profile information is managed through your MotiveScripts account.
+        </p>
+        <dl className="mt-5 grid gap-4 sm:grid-cols-2">
+          <ProfileItem label="Name" value={identity.name} />
+          <ProfileItem label="Email" value={identity.email || "—"} />
+          <ProfileItem label="Business name" value={identity.businessName} />
+          <ProfileItem label="Phone" value={identity.phone || "—"} />
+        </dl>
+      </section>
 
-        <fieldset>
-          <legend className="font-heading text-sm font-semibold text-[var(--client-ink)]">This device</legend>
-          <div className="mt-4 space-y-3">
+      <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
+        <h2 className="font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">Notifications</h2>
+        <p className="mt-1 text-sm font-semibold text-[var(--client-ink)]">Browser reminders</p>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">
+          These preferences only control reminders shown on this device. They do not unsubscribe you from required
+          account, document, payment, or security emails.
+        </p>
+
+        <form className="mt-5 space-y-5" onSubmit={onSubmit}>
+          <div className="space-y-3">
             <Toggle
               id="email-notes"
-              label="Remember that I want email reminders on this browser"
+              label="Show email reminders on this device"
+              hint="Remembers this choice in this browser. MotiveScripts will still send required emails."
               checked={emailNotifications}
               onChange={(checked) => {
                 setEmailNotifications(checked);
@@ -81,7 +89,8 @@ export function ClientSettings() {
             />
             <Toggle
               id="project-updates"
-              label="Remember that I want project-update reminders on this browser"
+              label="Show project reminders on this device"
+              hint="Remembers this choice in this browser. It does not change project email notifications."
               checked={projectUpdates}
               onChange={(checked) => {
                 setProjectUpdates(checked);
@@ -89,39 +98,42 @@ export function ClientSettings() {
               }}
             />
           </div>
-        </fieldset>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-5 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)]"
-          >
-            Save on this device
-          </button>
-          {saved ? (
-            <p className="text-sm text-[var(--client-muted)]" role="status">
-              Saved on this device only.
+          <div className="rounded-[var(--client-radius)] border border-[var(--client-line)] px-4 py-3">
+            <p className="text-sm font-semibold text-[var(--client-ink)]">Emails you will still receive</p>
+            <p className="mt-1 text-sm leading-relaxed text-[var(--client-muted)]">
+              Proposal and contract review notices, invoices and payment confirmations, and account security messages
+              are sent by MotiveScripts and cannot be turned off here.
             </p>
-          ) : null}
-        </div>
-      </form>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="submit"
+                className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-5 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)]"
+              >
+                Save Preferences
+              </button>
+              {saved ? (
+                <p className="text-sm font-medium text-[#0f7a56]" role="status">
+                  Preferences saved
+                </p>
+              ) : null}
+            </div>
+            <p className="text-sm text-[var(--client-muted)]">Saved on this device.</p>
+          </div>
+        </form>
+      </section>
     </div>
   );
 }
 
-function ReadOnlyField({ id, label, value }: { id: string; label: string; value: string }) {
+function ProfileItem({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <label htmlFor={id} className="text-[13px] font-medium text-[var(--client-ink)]">
-        {label}
-      </label>
-      <input
-        id={id}
-        type="text"
-        value={value}
-        readOnly
-        className="mt-1.5 h-11 w-full rounded-[var(--radius-md)] border border-[var(--client-line)] bg-[var(--client-bg)] px-3 text-sm text-[var(--client-ink)]"
-      />
+    <div className="rounded-[var(--client-radius)] border border-[var(--client-line)] px-4 py-3">
+      <dt className="text-[12px] text-[var(--client-muted)]">{label}</dt>
+      <dd className="mt-1 text-sm font-medium text-[var(--client-ink)]">{value}</dd>
     </div>
   );
 }
@@ -129,18 +141,26 @@ function ReadOnlyField({ id, label, value }: { id: string; label: string; value:
 function Toggle({
   id,
   label,
+  hint,
   checked,
   onChange,
 }: {
   id: string;
   label: string;
+  hint: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label htmlFor={id} className="flex cursor-pointer items-center justify-between gap-4 rounded-xl bg-[var(--client-bg)] px-4 py-3">
-      <span className="text-sm text-[var(--client-ink)]">{label}</span>
-      <span className="relative inline-flex">
+    <label
+      htmlFor={id}
+      className="flex cursor-pointer items-start justify-between gap-4 rounded-[var(--client-radius)] border border-[var(--client-line)] px-4 py-3"
+    >
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-[var(--client-ink)]">{label}</span>
+        <span className="mt-1 block text-xs leading-relaxed text-[var(--client-muted)]">{hint}</span>
+      </span>
+      <span className="relative mt-0.5 inline-flex shrink-0">
         <input
           id={id}
           type="checkbox"

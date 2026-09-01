@@ -5,7 +5,13 @@ import { currentVersion, versionLabel } from "@/data/files";
 import { awaitingReview, formatReviewLong } from "@/data/review";
 import type { AgencyProject } from "@/data/agencyProjects";
 
-export function ProjectApprovalsPanel({ project }: { project: AgencyProject }) {
+export function ProjectApprovalsPanel({
+  project,
+  fileHref,
+}: {
+  project: AgencyProject;
+  fileHref?: (fileId: string) => string;
+}) {
   const { approvals, deliverables } = useProjectReview(project.id);
   const waiting = awaitingReview(deliverables);
   const approved = deliverables.filter((item) => item.status === "Approved");
@@ -35,7 +41,7 @@ export function ProjectApprovalsPanel({ project }: { project: AgencyProject }) {
                   </p>
                 </div>
                 <Link
-                  to={`/admin/projects/${project.id}?tab=files&file=${item.id}`}
+                  to={fileHref ? fileHref(item.id) : `/admin/projects/${project.id}?tab=files&file=${item.id}`}
                   className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
                 >
                   View

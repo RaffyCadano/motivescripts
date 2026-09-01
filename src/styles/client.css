@@ -20,7 +20,8 @@
 .client-app {
   background: var(--client-bg);
   color: var(--client-muted);
-  height: 100svh;
+  min-height: 100svh;
+  height: 100%;
   overflow: hidden;
 }
 
@@ -28,6 +29,19 @@
 .client-app h2,
 .client-app h3 {
   color: var(--client-ink);
+}
+
+html.client-shell,
+html.client-shell body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  scrollbar-gutter: auto;
+}
+
+html.client-shell #root {
+  height: 100%;
+  min-height: 0;
 }
 
 html.client-nav-open,

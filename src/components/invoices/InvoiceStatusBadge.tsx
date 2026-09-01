@@ -25,12 +25,14 @@ const icons = {
 export function InvoiceStatusBadge({
   status,
   audience = "admin",
+  label,
 }: {
   status: EffectiveInvoiceStatus;
   audience?: "admin" | "client";
+  label?: string;
 }) {
   const Icon = icons[status];
-  const label = audience === "client" ? clientInvoiceStatusLabel(status) : adminInvoiceStatusLabel(status);
+  const text = label ?? (audience === "client" ? clientInvoiceStatusLabel(status) : adminInvoiceStatusLabel(status));
   return (
     <span
       className={cn(
@@ -39,7 +41,7 @@ export function InvoiceStatusBadge({
       )}
     >
       <Icon size={11} strokeWidth={2.2} aria-hidden="true" />
-      {label}
+      {text}
     </span>
   );
 }

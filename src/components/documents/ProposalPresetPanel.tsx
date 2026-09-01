@@ -25,6 +25,7 @@ type ProposalAdditionalPanelProps = {
   scope: string;
   items: LineItemDraft[];
   disabled?: boolean;
+  addonCents?: Partial<Record<string, number>>;
   onScopeChange: (value: string) => void;
   onItemsChange: (items: LineItemDraft[]) => void;
 };
@@ -178,6 +179,7 @@ export function ProposalAdditionalPanel({
   scope,
   items,
   disabled,
+  addonCents,
   onScopeChange,
   onItemsChange,
 }: ProposalAdditionalPanelProps) {
@@ -211,7 +213,7 @@ export function ProposalAdditionalPanel({
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
           {PROPOSAL_ADDITIONAL_PAID.map((item) => {
-            const cents = paidAddonCents(item);
+            const cents = paidAddonCents(item, addonCents);
             const match = lineItemMatches(items, item);
             const on = Boolean(match);
             return (

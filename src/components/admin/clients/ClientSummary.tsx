@@ -1,33 +1,50 @@
+import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 
-export function ClientSummary() {
-  const { clients, projects } = useLeads();
-  const counts = [
-    { id: "total", label: "Total Clients", value: clients.length },
-    { id: "active", label: "Active Clients", value: clients.filter((item) => item.status === "Active").length },
-    { id: "projects", label: "Projects", value: projects.filter((item) => !item.archived).length },
-    {
-      id: "attention",
-      label: "Needs Attention",
-      value: clients.filter((item) => item.status === "Inactive").length,
-    },
-  ];
+export type ClientSummarySelection = "total" | "active" | "inactive" | "attention" | null;
+
+type ClientSummaryProps = {
+  selected: ClientSummarySelection;
+  attentionCount: number;
+  onSelectTotal: () => void;
+  onSelectActive: () => void;
+  onSelectInactive: () => void;
+  onSelectAttention: () => void;
+};
+
+export function ClientSummary({
+  selected,
+  attentionCount,
+  onSelectTotal,
+  onSelectActive,
+  onSelectInactive,
+  onSelectAttention,
+}: ClientSummaryProps) {
+  const { clients } = useLeads();
 
   return (
     <section aria-label="Client snapshot">
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {counts.map((item) => (
-          <article
-            key={item.id}
-            className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-4 py-3"
-          >
-            <p className="text-[12px] text-[var(--admin-muted)]">{item.label}</p>
-            <p className="mt-1 font-heading text-2xl font-semibold tracking-tight text-[var(--admin-ink)]">
-              {item.value}
-            </p>
-          </article>
-        ))}
-      </div>
+      <AdminStatGrid columns={4}>
+        <AdminStatCard label="Total" value={clients.length} active={selected === "total"} onClick={onSelectTotal} />
+        <AdminStatCard
+          label="Active"
+          value={clients.filter((item) => item.status === "Active").length}
+          active={selected === "active"}
+          onClick={onSelectActive}
+        />
+        <AdminStatCard
+          label="Inactive"
+          value={clients.filter((item) => item.status === "Inactive").length}
+          active={selected === "inactive"}
+          onClick={onSelectInactive}
+        />
+        <AdminStatCard
+          label="Needs Attention"
+          value={attentionCount}
+          active={selected === "attention"}
+          onClick={onSelectAttention}
+        />
+      </AdminStatGrid>
     </section>
   );
 }

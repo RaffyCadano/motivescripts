@@ -6,10 +6,11 @@ import {
   calculateProjectProgress,
   currentMilestone,
   formatProjectDate,
-  formatProjectDay,
-  formatProjectDayShort,
+  formatProjectLaunch,
+  projectLaunchUrgency,
   type AgencyProject,
 } from "@/data/agencyProjects";
+import { cn } from "@/lib/cn";
 
 type ProjectTableProps = {
   projects: AgencyProject[];
@@ -22,11 +23,12 @@ export function ProjectTable({ projects, clientsById }: ProjectTableProps) {
   return (
     <>
       <div className="hidden overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] md:block">
-        <table className="w-full min-w-[60rem] text-left text-[13px]">
+        <table className="w-full min-w-[68rem] text-left text-[13px]">
           <thead>
             <tr className="border-b border-[var(--admin-line)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
               <th className="px-5 py-3 font-semibold">Project</th>
               <th className="px-5 py-3 font-semibold">Client</th>
+              <th className="px-5 py-3 font-semibold">Type</th>
               <th className="px-5 py-3 font-semibold">Status</th>
               <th className="px-5 py-3 font-semibold">Progress</th>
               <th className="px-5 py-3 font-semibold">Milestone</th>
@@ -41,8 +43,16 @@ export function ProjectTable({ projects, clientsById }: ProjectTableProps) {
               const milestone = currentMilestone(project);
               return (
                 <tr key={project.id} className="border-b border-[var(--admin-line)] last:border-b-0 hover:bg-[var(--admin-bg)]">
-                  <td className="px-5 py-3.5 font-medium text-[var(--admin-ink)]">{project.name}</td>
+                  <td className="px-5 py-3.5">
+                    <Link
+                      to={`/admin/projects/${project.id}`}
+                      className="font-heading font-semibold text-[var(--admin-ink)] hover:text-[var(--admin-blue)]"
+                    >
+                      {project.name}
+                    </Link>
+                  </td>
                   <td className="px-5 py-3.5">{client?.businessName ?? "Unknown client"}</td>
+                  <td className="px-5 py-3.5">{project.type}</td>
                   <td className="px-5 py-3.5">
                     <ProjectStatusBadge status={project.status} />
                   </td>
@@ -50,8 +60,8 @@ export function ProjectTable({ projects, clientsById }: ProjectTableProps) {
                     <ProgressBar value={calculateProjectProgress(project)} />
                   </td>
                   <td className="px-5 py-3.5">{milestone?.name ?? "—"}</td>
-                  <td className="px-5 py-3.5 text-[var(--admin-muted)]">
-                    {formatProjectDayShort(project.targetLaunchDate)}
+                  <td className="px-5 py-3.5">
+                    <LaunchCell project={project} />
                   </td>
                   <td className="px-5 py-3.5 text-[var(--admin-muted)]">{formatProjectDate(project.lastActivityAt)}</td>
                   <td className="px-5 py-3.5">
@@ -80,8 +90,17 @@ export function ProjectTable({ projects, clientsById }: ProjectTableProps) {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{project.name}</p>
-                  <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{client?.businessName ?? "Unknown client"}</p>
+                  <Link
+                    to={`/admin/projects/${project.id}`}
+                    className="font-heading text-sm font-semibold text-[var(--admin-ink)] hover:text-[var(--admin-blue)]"
+                  >
+                    {project.name}
+                  </Link>
+                  <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
+                    {client?.businessName ?? "Unknown client"}
+                    <span aria-hidden="true"> · </span>
+                    {project.type}
+                  </p>
                 </div>
                 <ProjectStatusBadge status={project.status} />
               </div>
@@ -89,21 +108,41 @@ export function ProjectTable({ projects, clientsById }: ProjectTableProps) {
                 <ProgressBar value={calculateProjectProgress(project)} label="Progress" />
               </div>
               <p className="mt-3 text-[12px] text-[var(--admin-muted)]">
-                Current milestone: <span className="text-[var(--admin-ink)]">{milestone?.name ?? "None"}</span>
+                Milestone: <span className="text-[var(--admin-ink)]">{milestone?.name ?? "—"}</span>
               </p>
+              <div className="mt-1 text-[12px] text-[var(--admin-muted)]">
+                Target launch: <LaunchCell project={project} />
+              </div>
               <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
-                Target launch: <span className="text-[var(--admin-ink)]">{formatProjectDay(project.targetLaunchDate)}</span>
+                Last activity: <span className="text-[var(--admin-ink)]">{formatProjectDate(project.lastActivityAt)}</span>
               </p>
               <Link
                 to={`/admin/projects/${project.id}`}
                 className="mt-4 inline-flex h-9 items-center rounded-lg bg-[var(--admin-blue)] px-3 font-heading text-[12px] font-semibold text-white"
               >
-                View Project
+                View
               </Link>
             </li>
           );
         })}
       </ul>
     </>
+  );
+}
+
+function LaunchCell({ project }: { project: AgencyProject }) {
+  const urgency = projectLaunchUrgency(project.targetLaunchDate, project.status);
+  const label = formatProjectLaunch(project.targetLaunchDate);
+
+  return (
+    <span className="inline-flex flex-col gap-0.5">
+      <span className={urgency === "none" ? "text-[var(--admin-muted)]" : "text-[var(--admin-ink)]"}>{label}</span>
+      {urgency === "overdue" ? (
+        <span className={cn("font-heading text-[11px] font-semibold text-[#b42318]")}>Overdue</span>
+      ) : null}
+      {urgency === "soon" ? (
+        <span className="font-heading text-[11px] font-semibold text-[var(--admin-blue)]">Launching soon</span>
+      ) : null}
+    </span>
   );
 }

@@ -1,11 +1,20 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { adminBlueBtn, adminGhostBtn } from "@/components/admin/adminActionStyles";
+import { AdminAttentionList } from "@/components/admin/list/AdminAttentionList";
+import { AdminEmptyState } from "@/components/admin/list/AdminEmptyState";
+import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { ProjectFilters } from "@/components/admin/projects/ProjectFilters";
 import { ProjectSummary } from "@/components/admin/projects/ProjectSummary";
 import { ProjectTable } from "@/components/admin/projects/ProjectTable";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import type { AgencyClient } from "@/data/agencyClients";
-import { filterProjects, type AgencyProjectStatus, type AgencyProjectType } from "@/data/agencyProjects";
+import {
+  filterProjects,
+  projectListAttention,
+  type AgencyProjectStatus,
+  type AgencyProjectType,
+} from "@/data/agencyProjects";
 
 export function AdminProjects() {
   const { projects, clients } = useLeads();
@@ -26,23 +35,46 @@ export function AdminProjects() {
   );
   const searching = query.trim().length > 0 || status !== "All" || clientId !== "All" || type !== "All";
   const activeProjects = projects.filter((project) => !project.archived);
+  const attention = useMemo(
+    () =>
+      projects.flatMap((project) => {
+        const item = projectListAttention(project);
+        return item ? [{ project, body: item.body }] : [];
+      }),
+    [projects],
+  );
+
+  function resetFilters() {
+    setQuery("");
+    setStatus("All");
+    setClientId("All");
+    setType("All");
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">Projects</h1>
-          <p className="mt-1 text-sm text-[var(--admin-muted)]">Manage active client work from planning to launch.</p>
-        </div>
-        <Link
-          to="/admin/projects/new"
-          className="inline-flex h-10 shrink-0 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--admin-bright)]"
-        >
-          + New Project
-        </Link>
-      </div>
+    <div className="space-y-5">
+      <AdminPageHeader
+        title="Projects"
+        description="Client work from planning through launch. Create a project after the client is ready to begin."
+        action={
+          <Link to="/admin/projects/new" className={`${adminBlueBtn} justify-center`}>
+            + New Project
+          </Link>
+        }
+      />
 
-      <ProjectSummary />
+      <ProjectSummary selected={status} onSelect={setStatus} />
+
+      <AdminAttentionList
+        items={attention.map((item) => ({
+          id: item.project.id,
+          name: item.project.name,
+          body: item.body,
+          href: `/admin/projects/${item.project.id}`,
+          label: "View",
+        }))}
+      />
+
       <ProjectFilters
         query={query}
         status={status}
@@ -53,28 +85,34 @@ export function AdminProjects() {
         onStatusChange={setStatus}
         onClientChange={setClientId}
         onTypeChange={setType}
+        onReset={resetFilters}
       />
 
       {activeProjects.length === 0 ? (
-        <Empty title="No projects yet" body="Create a project to start managing client work." />
+        <AdminEmptyState
+          title="No projects yet"
+          body="Create a project after a client is ready to move into project planning."
+          action={
+            <Link to="/admin/projects/new" className={`${adminBlueBtn} justify-center`}>
+              New Project
+            </Link>
+          }
+        />
       ) : visible.length === 0 ? (
-        <Empty
-          title="No projects match your search."
-          body={searching ? "Try a different name, client, type, or filter." : "No projects to show."}
+        <AdminEmptyState
+          title="No projects match your filters."
+          body="Try a different project name, client, type, or status."
+          action={
+            searching ? (
+              <button type="button" className={`${adminGhostBtn} justify-center`} onClick={resetFilters}>
+                Clear filters
+              </button>
+            ) : undefined
+          }
         />
       ) : (
         <ProjectTable projects={visible} clientsById={clientsById} />
       )}
-
-    </div>
-  );
-}
-
-function Empty({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-10">
-      <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{title}</p>
-      <p className="mt-1 text-sm text-[var(--admin-muted)]">{body}</p>
     </div>
   );
 }

@@ -97,6 +97,13 @@ export async function fetchClientScopeBrief(clientId: string): Promise<ClientSco
   return data ? mapBrief(asRow(data)) : null;
 }
 
+export async function fetchScopeBriefs(): Promise<ClientScopeBrief[]> {
+  const client = db();
+  const { data, error } = await client.from("client_scope_briefs").select("*");
+  throwIf(error, "load scope briefs", "Unable to load scope forms.");
+  return (data ?? []).map((row) => mapBrief(asRow(row)));
+}
+
 export async function saveClientScopeBrief(
   clientId: string,
   input: ScopeBriefDraft,

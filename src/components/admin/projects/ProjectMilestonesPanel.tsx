@@ -10,13 +10,13 @@ import {
 
 type ProjectMilestonesPanelProps = {
   project: AgencyProject;
-  onAdd: () => void;
-  onEdit: (milestone: AgencyMilestone) => void;
-  onComplete: (milestone: AgencyMilestone) => void;
-  onReopen: (milestone: AgencyMilestone) => void;
-  onHold: (milestone: AgencyMilestone) => void;
-  onMove: (milestone: AgencyMilestone, direction: "up" | "down") => void;
-  onRemove: (milestone: AgencyMilestone) => void;
+  onAdd?: () => void;
+  onEdit?: (milestone: AgencyMilestone) => void;
+  onComplete?: (milestone: AgencyMilestone) => void;
+  onReopen?: (milestone: AgencyMilestone) => void;
+  onHold?: (milestone: AgencyMilestone) => void;
+  onMove?: (milestone: AgencyMilestone, direction: "up" | "down") => void;
+  onRemove?: (milestone: AgencyMilestone) => void;
 };
 
 export function ProjectMilestonesPanel({
@@ -30,21 +30,26 @@ export function ProjectMilestonesPanel({
   onRemove,
 }: ProjectMilestonesPanelProps) {
   const ordered = [...project.milestones].sort((a, b) => a.order - b.order);
+  const canEdit = Boolean(onAdd && onEdit && onComplete && onReopen && onHold && onMove && onRemove);
 
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Milestones</h2>
-          <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Organize delivery from discovery to launch.</p>
+          <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
+            {canEdit ? "Organize delivery from discovery to launch." : "Delivery stages for this project."}
+          </p>
         </div>
-        <button
-          type="button"
-          className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-          onClick={onAdd}
-        >
-          Add Milestone
-        </button>
+        {onAdd ? (
+          <button
+            type="button"
+            className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+            onClick={onAdd}
+          >
+            Add Milestone
+          </button>
+        ) : null}
       </div>
       {ordered.length === 0 ? (
         <div className="mt-4">
@@ -80,50 +85,52 @@ export function ProjectMilestonesPanel({
                   </div>
                 ) : null}
                 <p className="mt-2 text-[12px] text-[var(--admin-muted)]">Due: {formatProjectDay(milestone.dueDate)}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" className={ghost} onClick={() => onEdit(milestone)}>
-                    Edit
-                  </button>
-                  {milestone.status === "Completed" ? (
-                    <button type="button" className={ghost} onClick={() => onReopen(milestone)}>
-                      Reopen
+                {canEdit ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button type="button" className={ghost} onClick={() => onEdit?.(milestone)}>
+                      Edit
                     </button>
-                  ) : (
-                    <button type="button" className={ghost} onClick={() => onComplete(milestone)}>
-                      Complete
+                    {milestone.status === "Completed" ? (
+                      <button type="button" className={ghost} onClick={() => onReopen?.(milestone)}>
+                        Reopen
+                      </button>
+                    ) : (
+                      <button type="button" className={ghost} onClick={() => onComplete?.(milestone)}>
+                        Complete
+                      </button>
+                    )}
+                    {milestone.status !== "On Hold" ? (
+                      <button type="button" className={ghost} onClick={() => onHold?.(milestone)}>
+                        On Hold
+                      </button>
+                    ) : (
+                      <button type="button" className={ghost} onClick={() => onReopen?.(milestone)}>
+                        Resume
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className={ghost}
+                      aria-label={`Move ${milestone.name} up`}
+                      disabled={index === 0}
+                      onClick={() => onMove?.(milestone, "up")}
+                    >
+                      <ChevronUp size={14} />
                     </button>
-                  )}
-                  {milestone.status !== "On Hold" ? (
-                    <button type="button" className={ghost} onClick={() => onHold(milestone)}>
-                      On Hold
+                    <button
+                      type="button"
+                      className={ghost}
+                      aria-label={`Move ${milestone.name} down`}
+                      disabled={index === ordered.length - 1}
+                      onClick={() => onMove?.(milestone, "down")}
+                    >
+                      <ChevronDown size={14} />
                     </button>
-                  ) : (
-                    <button type="button" className={ghost} onClick={() => onReopen(milestone)}>
-                      Resume
+                    <button type="button" className={ghost} onClick={() => onRemove?.(milestone)}>
+                      Remove
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    className={ghost}
-                    aria-label={`Move ${milestone.name} up`}
-                    disabled={index === 0}
-                    onClick={() => onMove(milestone, "up")}
-                  >
-                    <ChevronUp size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    className={ghost}
-                    aria-label={`Move ${milestone.name} down`}
-                    disabled={index === ordered.length - 1}
-                    onClick={() => onMove(milestone, "down")}
-                  >
-                    <ChevronDown size={14} />
-                  </button>
-                  <button type="button" className={ghost} onClick={() => onRemove(milestone)}>
-                    Remove
-                  </button>
-                </div>
+                  </div>
+                ) : null}
               </li>
             );
           })}

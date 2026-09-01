@@ -27,7 +27,7 @@ export function TeamHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMob
   const notesRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const notesId = useId();
-  const { notifications, unreadNotificationCount, loadStatus, markNotificationRead, markAllNotificationsRead } =
+  const { notifications, unreadNotificationCount, loadStatus, markNotificationRead, markAllNotificationsRead, clearNotifications } =
     useMessaging();
   const showAdmin = canOpenAdminWorkspace(profile);
 
@@ -125,6 +125,7 @@ export function TeamHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMob
               if (!item.readAt) void markNotificationRead(item.id);
             }}
             onMarkAllRead={() => void markAllNotificationsRead()}
+            onClearAll={() => void clearNotifications()}
           />
         </div>
 

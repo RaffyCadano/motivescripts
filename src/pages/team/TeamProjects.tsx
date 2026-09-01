@@ -1,13 +1,10 @@
-import { Link } from "react-router-dom";
-import { ProgressBar } from "@/components/admin/ProgressBar";
-import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
+import { TeamProjectCard } from "@/components/team/TeamProjectCard";
 import { useTeamWork } from "@/components/team/useTeamWork";
-import { formatProjectDay } from "@/data/agencyProjects";
-import { projectWorkload } from "@/data/teamWorkspace";
+import { myOpenTaskCount } from "@/data/teamWorkspace";
 
 export function TeamProjects() {
-  const { clientsById, myProjects, assignmentError } = useTeamWork();
+  const { profile, clientsById, myProjects, assignmentError } = useTeamWork();
   const { data } = useTeamDirectory();
 
   return (
@@ -27,42 +24,19 @@ export function TeamProjects() {
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           {myProjects.map((project) => {
-            const work = projectWorkload(project);
             const teammates =
-              data?.members.filter((member) =>
-                member.projectAssignments.some((item) => item.entityId === project.id),
-              ) ?? [];
+              data?.members
+                .filter((member) => member.projectAssignments.some((item) => item.entityId === project.id))
+                .map((member) => member.fullName || member.email)
+                .join(", ") ?? "";
             return (
-              <article
+              <TeamProjectCard
                 key={project.id}
-                className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5"
-              >
-                <p className="text-[12px] text-[var(--admin-muted)]">
-                  {clientsById.get(project.clientId)?.businessName ?? "Client"}
-                </p>
-                <div className="mt-1 flex flex-wrap items-start justify-between gap-2">
-                  <h2 className="font-heading text-base font-semibold text-[var(--admin-ink)]">{project.name}</h2>
-                  <ProjectStatusBadge status={project.status} />
-                </div>
-                <div className="mt-4">
-                  <ProgressBar value={work.progress} label="Complete" />
-                </div>
-                <p className="mt-3 text-sm text-[var(--admin-ink)]">
-                  {work.total} tasks · {work.completed} completed · {work.remaining} remaining
-                </p>
-                <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Due {formatProjectDay(project.targetLaunchDate)}</p>
-                {teammates.length > 0 ? (
-                  <p className="mt-3 text-[12px] text-[var(--admin-muted)]">
-                    {teammates.map((member) => member.fullName || member.email).join(", ")}
-                  </p>
-                ) : null}
-                <Link
-                  to={`/admin/projects/${project.id}`}
-                  className="mt-4 inline-flex font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-                >
-                  View Project →
-                </Link>
-              </article>
+                project={project}
+                clientName={clientsById.get(project.clientId)?.businessName ?? "Client"}
+                assignedTaskCount={myOpenTaskCount(project, profile?.id ?? "", profile?.fullName ?? "")}
+                teammates={teammates}
+              />
             );
           })}
         </div>

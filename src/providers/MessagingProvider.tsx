@@ -12,6 +12,7 @@ import {
   setConversationStatus as setConversationStatusRecord,
   startConversation as startConversationRecord,
   subscribeMessaging,
+  clearNotifications as clearNotificationsRecord,
 } from "@/data/messagingRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { mapMessageRow, type ConversationMessage } from "@/data/messaging";
@@ -36,6 +37,7 @@ type MessagingContextValue = {
   setConversationStatus: (conversationId: string, status: "open" | "closed") => Promise<boolean>;
   markNotificationRead: (notificationId: string) => Promise<void>;
   markAllNotificationsRead: () => Promise<void>;
+  clearNotifications: () => Promise<void>;
 };
 
 const MessagingContext = createContext<MessagingContextValue | null>(null);
@@ -243,6 +245,15 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     }
   }, [notify]);
 
+  const clearNotifications = useCallback(async () => {
+    try {
+      await clearNotificationsRecord();
+      setNotifications((current) => current.filter((item) => !item.readAt));
+    } catch (error) {
+      notify(error instanceof AgencyDbError ? error.message : "Unable to clear notifications.");
+    }
+  }, [notify]);
+
   const value = useMemo<MessagingContextValue>(
     () => ({
       conversations,
@@ -259,11 +270,13 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       setConversationStatus,
       markNotificationRead,
       markAllNotificationsRead,
+      clearNotifications,
     }),
     [
       conversations,
       loadError,
       loadStatus,
+      clearNotifications,
       markAllNotificationsRead,
       markConversationRead,
       markNotificationRead,
