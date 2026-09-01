@@ -560,6 +560,8 @@ export function AdminInvoiceDetails() {
               totalCents: totals.total,
               amountPaidCents: current.invoice.amount_paid_cents,
               amountDueCents: isDraft ? totals.total : current.invoice.amount_due_cents,
+              status: current.effectiveStatus,
+              paidAt: current.invoice.paid_at,
             }}
           />
         </div>

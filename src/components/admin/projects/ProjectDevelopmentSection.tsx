@@ -34,7 +34,12 @@ function ExternalLinkButton({ href, label }: { href: string; label: string }) {
   const safe = safeHttpHref(href);
   if (!safe) return null;
   return (
-    <a href={safe} target="_blank" rel="noopener noreferrer" className={`${adminSoftBtn} mt-2 h-9 px-3 text-[12px]`}>
+    <a
+      href={safe}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`${adminSoftBtn} mt-2 h-9 min-w-[8.5rem] justify-center px-4 text-[12px]`}
+    >
       {label}
     </a>
   );
@@ -45,11 +50,13 @@ function Field({
   value,
   href,
   linkLabel,
+  emptyLabel = "Not configured",
 }: {
   label: string;
   value: string;
   href?: string;
   linkLabel?: string;
+  emptyLabel?: string;
 }) {
   const display = value.trim() ? (href ? displayHttpHost(value) || value : value) : "";
   return (
@@ -59,7 +66,7 @@ function Field({
         {display ? (
           <p className="break-all font-heading text-sm font-semibold text-[var(--admin-ink)]">{display}</p>
         ) : (
-          <p className="text-sm text-[var(--admin-muted)]">Not configured</p>
+          <p className="text-sm text-[var(--admin-muted)]">{emptyLabel}</p>
         )}
         {href && linkLabel ? <ExternalLinkButton href={href} label={linkLabel} /> : null}
       </dd>
@@ -99,7 +106,11 @@ export function ProjectDevelopmentSection({ development, editHref }: ProjectDeve
             <DevelopmentStatus status={development.deploymentStatus} />
           </dd>
         </div>
-        <Field label="Last deployment" value={development.lastDeployedAt ? formatDeploymentWhen(development.lastDeployedAt) : ""} />
+        <Field
+          label="Last deployment"
+          value={development.lastDeployedAt ? formatDeploymentWhen(development.lastDeployedAt) : ""}
+          emptyLabel="Not deployed"
+        />
       </dl>
     </section>
   );

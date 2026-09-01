@@ -53,7 +53,7 @@ export function MilestoneFormModal({ open, milestone, onClose, onSubmit }: Miles
     <AdminDialog
       open={open}
       title={milestone ? "Edit Milestone" : "Add Milestone"}
-      description="Milestones organize the project from discovery through launch."
+      description="Milestones organize website delivery from discovery through launch."
       onClose={onClose}
     >
       <form className="space-y-3" onSubmit={handleSubmit}>

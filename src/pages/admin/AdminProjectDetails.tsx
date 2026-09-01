@@ -19,12 +19,17 @@ import { TaskFormModal } from "@/components/admin/projects/TaskFormModal";
 import { useAgencyProject, useLeads } from "@/components/admin/leads/LeadsProvider";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import {
+  calculateProjectProgress,
+  currentMilestone,
   formatProjectDay,
+  formatProductionTaskStats,
+  productionTaskStats,
   type AgencyMilestone,
   type AgencyMilestoneDraft,
   type AgencyProjectStatus,
   type AgencyTask,
 } from "@/data/agencyProjects";
+import { displayMilestoneName } from "@/data/projectMilestones";
 import { productionTaskAssigneeOptions } from "@/data/team";
 import { cn } from "@/lib/cn";
 
@@ -74,6 +79,7 @@ export function AdminProjectDetails() {
   const [removingMilestone, setRemovingMilestone] = useState<AgencyMilestone | null>(null);
   const [taskOpen, setTaskOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<AgencyTask | null>(null);
+  const [taskMilestoneId, setTaskMilestoneId] = useState<string | undefined>(undefined);
   const projectId = match?.project.id ?? "";
   const assignees = useMemo(
     () => productionTaskAssigneeOptions(teamData?.members ?? [], projectId),
@@ -112,6 +118,9 @@ export function AdminProjectDetails() {
   }
 
   const { project, client } = match;
+  const progress = calculateProjectProgress(project);
+  const phase = currentMilestone(project);
+  const stats = productionTaskStats(project);
 
   return (
     <div className="space-y-6">
@@ -121,24 +130,35 @@ export function AdminProjectDetails() {
         </Link>
         <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            {client ? (
-              <Link
-                to={`/admin/clients/${client.id}`}
-                className="text-[12px] font-medium text-[var(--admin-muted)] hover:text-[var(--admin-blue)] hover:underline"
-              >
-                {client.businessName}
-              </Link>
-            ) : (
-              <p className="text-[12px] text-[var(--admin-muted)]">Unknown client</p>
-            )}
-            <div className="mt-1 flex flex-wrap items-center gap-3">
-              <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">{project.name}</h1>
-              <ProjectStatusBadge status={project.status} />
-            </div>
+            <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">{project.name}</h1>
             <p className="mt-1 text-sm text-[var(--admin-muted)]">
+              {client ? (
+                <Link to={`/admin/clients/${client.id}`} className="hover:text-[var(--admin-blue)] hover:underline">
+                  {client.businessName}
+                </Link>
+              ) : (
+                "Not set"
+              )}
+              {" · "}
               {project.type}
               {project.archived ? " · Archived" : ""}
             </p>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <span className="inline-flex items-center gap-2">
+                <span className="text-[var(--admin-muted)]">Status</span>
+                <ProjectStatusBadge status={project.status} />
+              </span>
+              <span>
+                <span className="text-[var(--admin-muted)]">Progress</span>{" "}
+                <span className="font-heading font-semibold text-[var(--admin-ink)]">{progress}%</span>
+              </span>
+              <span>
+                <span className="text-[var(--admin-muted)]">Phase</span>{" "}
+                <span className="font-medium text-[var(--admin-ink)]">
+                  {phase ? displayMilestoneName(phase.name) : "Not set"}
+                </span>
+              </span>
+            </div>
           </div>
           <AdminActionsMenu
             ariaLabel={`Actions for ${project.name}`}
@@ -207,6 +227,12 @@ export function AdminProjectDetails() {
               project={project}
               onAdd={() => {
                 setEditingTask(null);
+                setTaskMilestoneId(undefined);
+                setTaskOpen(true);
+              }}
+              onAddForMilestone={(milestone) => {
+                setEditingTask(null);
+                setTaskMilestoneId(milestone.id);
                 setTaskOpen(true);
               }}
               onEdit={(task) => {
@@ -222,6 +248,11 @@ export function AdminProjectDetails() {
               onAdd={() => {
                 setEditingMilestone(null);
                 setMilestoneOpen(true);
+              }}
+              onAddTask={(item) => {
+                setEditingTask(null);
+                setTaskMilestoneId(item.id);
+                setTaskOpen(true);
               }}
               onEdit={(item) => {
                 setEditingMilestone(item);
@@ -259,6 +290,20 @@ export function AdminProjectDetails() {
                 </dd>
               </div>
               <div>
+                <dt className="text-[12px] text-[var(--admin-muted)]">Status</dt>
+                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{project.status}</dd>
+              </div>
+              <div>
+                <dt className="text-[12px] text-[var(--admin-muted)]">Phase</dt>
+                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">
+                  {phase ? displayMilestoneName(phase.name) : "Not set"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[12px] text-[var(--admin-muted)]">Progress</dt>
+                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{progress}%</dd>
+              </div>
+              <div>
                 <dt className="text-[12px] text-[var(--admin-muted)]">Started</dt>
                 <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{formatProjectDay(project.startDate)}</dd>
               </div>
@@ -268,7 +313,13 @@ export function AdminProjectDetails() {
               </div>
               <div>
                 <dt className="text-[12px] text-[var(--admin-muted)]">Approval</dt>
-                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{project.approvalStatus}</dd>
+                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{project.approvalStatus || "Not set"}</dd>
+              </div>
+              <div>
+                <dt className="text-[12px] text-[var(--admin-muted)]">Tasks</dt>
+                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">
+                  {formatProductionTaskStats(stats)}
+                </dd>
               </div>
             </dl>
           </section>
@@ -329,10 +380,12 @@ export function AdminProjectDetails() {
         open={taskOpen}
         task={editingTask}
         milestones={project.milestones}
+        defaultMilestoneId={taskMilestoneId}
         assignees={assignees}
         onClose={() => {
           setTaskOpen(false);
           setEditingTask(null);
+          setTaskMilestoneId(undefined);
         }}
         onSubmit={(draft) => {
           if (editingTask) updateTask(project.id, editingTask.id, draft);

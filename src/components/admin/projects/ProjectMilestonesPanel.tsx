@@ -7,10 +7,12 @@ import {
   type AgencyMilestone,
   type AgencyProject,
 } from "@/data/agencyProjects";
+import { displayMilestoneName, websiteMilestonePurpose } from "@/data/projectMilestones";
 
 type ProjectMilestonesPanelProps = {
   project: AgencyProject;
   onAdd?: () => void;
+  onAddTask?: (milestone: AgencyMilestone) => void;
   onEdit?: (milestone: AgencyMilestone) => void;
   onComplete?: (milestone: AgencyMilestone) => void;
   onReopen?: (milestone: AgencyMilestone) => void;
@@ -22,6 +24,7 @@ type ProjectMilestonesPanelProps = {
 export function ProjectMilestonesPanel({
   project,
   onAdd,
+  onAddTask,
   onEdit,
   onComplete,
   onReopen,
@@ -38,7 +41,7 @@ export function ProjectMilestonesPanel({
         <div>
           <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Milestones</h2>
           <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
-            {canEdit ? "Organize delivery from discovery to launch." : "Delivery stages for this project."}
+            Website delivery: Discovery → Design → Development → QA & Client Review → Launch.
           </p>
         </div>
         {onAdd ? (
@@ -60,75 +63,86 @@ export function ProjectMilestonesPanel({
         <ol className="mt-5 space-y-3">
           {ordered.map((milestone, index) => {
             const counts = milestoneTaskCounts(project, milestone.id);
+            const remaining = counts.total - counts.completed;
+            const purpose = websiteMilestonePurpose(milestone.name, milestone.description);
+            const name = displayMilestoneName(milestone.name);
             return (
               <li key={milestone.id} className="rounded-xl border border-[var(--admin-line)] px-4 py-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="font-heading text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
-                      {String(index + 1).padStart(2, "0")}
+                  <div className="min-w-0">
+                    <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
+                      {String(index + 1).padStart(2, "0")} — {name}
                     </p>
-                    <p className="mt-1 font-heading text-sm font-semibold text-[var(--admin-ink)]">{milestone.name}</p>
-                    {milestone.description ? (
-                      <p className="mt-1 text-[13px] text-[var(--admin-muted)]">{milestone.description}</p>
-                    ) : null}
+                    {purpose ? <p className="mt-1 text-[13px] text-[var(--admin-muted)]">{purpose}</p> : null}
                   </div>
                   <MilestoneStatusBadge status={milestone.status} />
                 </div>
-                <p className="mt-3 text-[12px] text-[var(--admin-muted)]">
-                  {counts.total === 0
-                    ? "No tasks yet"
-                    : `${counts.completed} of ${counts.total} tasks completed · ${counts.percent}%`}
-                </p>
-                {counts.total > 0 ? (
-                  <div className="mt-2">
-                    <ProgressBar value={counts.percent} />
-                  </div>
-                ) : null}
+                {counts.total === 0 ? (
+                  <p className="mt-3 text-[12px] text-[var(--admin-muted)]">
+                    No tasks yet. Add tasks when the project reaches this stage.
+                  </p>
+                ) : (
+                  <p className="mt-3 text-[12px] text-[var(--admin-ink)]">
+                    {counts.completed} of {counts.total} tasks completed · {remaining} remaining
+                  </p>
+                )}
+                <div className="mt-2">
+                  <ProgressBar value={counts.percent} label={counts.total === 0 ? "No tasks yet" : "Progress"} />
+                </div>
                 <p className="mt-2 text-[12px] text-[var(--admin-muted)]">Due: {formatProjectDay(milestone.dueDate)}</p>
-                {canEdit ? (
+                {canEdit || onAddTask ? (
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <button type="button" className={ghost} onClick={() => onEdit?.(milestone)}>
-                      Edit
-                    </button>
-                    {milestone.status === "Completed" ? (
-                      <button type="button" className={ghost} onClick={() => onReopen?.(milestone)}>
-                        Reopen
+                    {onAddTask ? (
+                      <button type="button" className={ghost} onClick={() => onAddTask(milestone)}>
+                        Add Task
                       </button>
-                    ) : (
-                      <button type="button" className={ghost} onClick={() => onComplete?.(milestone)}>
-                        Complete
-                      </button>
-                    )}
-                    {milestone.status !== "On Hold" ? (
-                      <button type="button" className={ghost} onClick={() => onHold?.(milestone)}>
-                        On Hold
-                      </button>
-                    ) : (
-                      <button type="button" className={ghost} onClick={() => onReopen?.(milestone)}>
-                        Resume
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className={ghost}
-                      aria-label={`Move ${milestone.name} up`}
-                      disabled={index === 0}
-                      onClick={() => onMove?.(milestone, "up")}
-                    >
-                      <ChevronUp size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className={ghost}
-                      aria-label={`Move ${milestone.name} down`}
-                      disabled={index === ordered.length - 1}
-                      onClick={() => onMove?.(milestone, "down")}
-                    >
-                      <ChevronDown size={14} />
-                    </button>
-                    <button type="button" className={ghost} onClick={() => onRemove?.(milestone)}>
-                      Remove
-                    </button>
+                    ) : null}
+                    {canEdit ? (
+                      <>
+                        <button type="button" className={ghost} onClick={() => onEdit?.(milestone)}>
+                          Edit
+                        </button>
+                        {milestone.status === "Completed" ? (
+                          <button type="button" className={ghost} onClick={() => onReopen?.(milestone)}>
+                            Reopen
+                          </button>
+                        ) : (
+                          <button type="button" className={ghost} onClick={() => onComplete?.(milestone)}>
+                            Complete
+                          </button>
+                        )}
+                        {milestone.status !== "On Hold" ? (
+                          <button type="button" className={ghost} onClick={() => onHold?.(milestone)}>
+                            On Hold
+                          </button>
+                        ) : (
+                          <button type="button" className={ghost} onClick={() => onReopen?.(milestone)}>
+                            Resume
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className={ghost}
+                          aria-label={`Move ${name} up`}
+                          disabled={index === 0}
+                          onClick={() => onMove?.(milestone, "up")}
+                        >
+                          <ChevronUp size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          className={ghost}
+                          aria-label={`Move ${name} down`}
+                          disabled={index === ordered.length - 1}
+                          onClick={() => onMove?.(milestone, "down")}
+                        >
+                          <ChevronDown size={14} />
+                        </button>
+                        <button type="button" className={ghost} onClick={() => onRemove?.(milestone)}>
+                          Remove
+                        </button>
+                      </>
+                    ) : null}
                   </div>
                 ) : null}
               </li>

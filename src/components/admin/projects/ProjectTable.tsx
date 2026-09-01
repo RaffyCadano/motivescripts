@@ -10,6 +10,7 @@ import {
   projectLaunchUrgency,
   type AgencyProject,
 } from "@/data/agencyProjects";
+import { displayMilestoneName } from "@/data/projectMilestones";
 import { cn } from "@/lib/cn";
 
 type ProjectTableProps = {
@@ -59,7 +60,7 @@ export function ProjectTable({ projects, clientsById }: ProjectTableProps) {
                   <td className="min-w-[8.5rem] px-5 py-3.5">
                     <ProgressBar value={calculateProjectProgress(project)} />
                   </td>
-                  <td className="px-5 py-3.5">{milestone?.name ?? "—"}</td>
+                    <td className="px-5 py-3.5">{milestone ? displayMilestoneName(milestone.name) : "—"}</td>
                   <td className="px-5 py-3.5">
                     <LaunchCell project={project} />
                   </td>
@@ -108,7 +109,10 @@ export function ProjectTable({ projects, clientsById }: ProjectTableProps) {
                 <ProgressBar value={calculateProjectProgress(project)} label="Progress" />
               </div>
               <p className="mt-3 text-[12px] text-[var(--admin-muted)]">
-                Milestone: <span className="text-[var(--admin-ink)]">{milestone?.name ?? "—"}</span>
+                Milestone:{" "}
+                <span className="text-[var(--admin-ink)]">
+                  {milestone ? displayMilestoneName(milestone.name) : "—"}
+                </span>
               </p>
               <div className="mt-1 text-[12px] text-[var(--admin-muted)]">
                 Target launch: <LaunchCell project={project} />

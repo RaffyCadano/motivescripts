@@ -1,15 +1,25 @@
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
-import { formatProjectDay, type AgencyMilestone, type AgencyProject, type AgencyTask } from "@/data/agencyProjects";
+import {
+  formatProjectDay,
+  formatProductionTaskStats,
+  productionTaskStats,
+  type AgencyMilestone,
+  type AgencyProject,
+  type AgencyTask,
+} from "@/data/agencyProjects";
+import { displayMilestoneName, websiteMilestonePurpose } from "@/data/projectMilestones";
 
 type ProjectTasksPanelProps = {
   project: AgencyProject;
   onAdd: () => void;
+  onAddForMilestone?: (milestone: AgencyMilestone) => void;
   onEdit: (task: AgencyTask) => void;
   onToggle: (task: AgencyTask) => void;
 };
 
-export function ProjectTasksPanel({ project, onAdd, onEdit, onToggle }: ProjectTasksPanelProps) {
+export function ProjectTasksPanel({ project, onAdd, onAddForMilestone, onEdit, onToggle }: ProjectTasksPanelProps) {
+  const stats = productionTaskStats(project);
   const orderedMilestones = [...project.milestones].sort((a, b) => a.order - b.order);
   const grouped = [
     ...orderedMilestones.map((milestone) => ({
@@ -28,13 +38,19 @@ export function ProjectTasksPanel({ project, onAdd, onEdit, onToggle }: ProjectT
         <div>
           <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Tasks</h2>
           <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
-            Completing a task updates project progress immediately. Generated production tasks can be edited, assigned, or
-            removed.
+            {stats.total > 0
+              ? `${formatProductionTaskStats(stats)}. Completing a task updates project progress immediately.`
+              : "Completing a task updates project progress immediately. Generated production tasks can be edited, assigned, or removed."}
           </p>
+          {stats.unassigned > 0 ? (
+            <p className="mt-2 text-[12px] text-[var(--admin-ink)]">
+              Needs assignment: {stats.unassigned} unassigned task{stats.unassigned === 1 ? "" : "s"}.
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
-          className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+          className="inline-flex h-9 min-w-[7.5rem] items-center justify-center rounded-lg border border-[var(--admin-line)] px-4 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
           onClick={onAdd}
         >
           Add Task
@@ -49,11 +65,26 @@ export function ProjectTasksPanel({ project, onAdd, onEdit, onToggle }: ProjectT
         <div className="mt-5 space-y-6">
           {grouped.map((group) => (
             <div key={group.milestone?.id ?? "ungrouped"}>
-              <h3 className="font-heading text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
-                {group.milestone?.name ?? "Ungrouped"}
-              </h3>
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="font-heading text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+                  {group.milestone ? displayMilestoneName(group.milestone.name) : "Ungrouped"}
+                </h3>
+                {group.milestone && onAddForMilestone ? (
+                  <button
+                    type="button"
+                    className="font-heading text-[11px] font-semibold text-[var(--admin-blue)] hover:underline"
+                    onClick={() => onAddForMilestone(group.milestone!)}
+                  >
+                    Add Task
+                  </button>
+                ) : null}
+              </div>
               {group.tasks.length === 0 ? (
-                <p className="mt-2 text-sm text-[var(--admin-muted)]">No tasks in this milestone.</p>
+                <p className="mt-2 text-sm text-[var(--admin-muted)]">
+                  {group.milestone
+                    ? `${websiteMilestonePurpose(group.milestone.name, group.milestone.description)} No tasks yet.`
+                    : "No tasks in this group."}
+                </p>
               ) : (
                 <ul className="mt-2 divide-y divide-[var(--admin-line)]">
                   {group.tasks.map((task) => (
@@ -101,7 +132,9 @@ function TaskRow({
             <TaskPriorityBadge priority={task.priority} />
             <span className="text-[12px] text-[var(--admin-muted)]">{task.assignee.trim() || "Unassigned"}</span>
             <span className="text-[12px] text-[var(--admin-muted)]">Due {formatProjectDay(task.dueDate)}</span>
-            {milestone ? <span className="text-[12px] text-[var(--admin-muted)]">{milestone.name}</span> : null}
+            {milestone ? (
+              <span className="text-[12px] text-[var(--admin-muted)]">{displayMilestoneName(milestone.name)}</span>
+            ) : null}
           </span>
         </span>
       </label>

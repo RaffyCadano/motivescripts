@@ -3,6 +3,7 @@ import { ProgressBar } from "@/components/admin/ProgressBar";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { calculateProjectProgress, currentMilestone, formatProjectDay } from "@/data/agencyProjects";
+import { displayMilestoneName } from "@/data/projectMilestones";
 
 export function ActiveProjects() {
   const { projects, clients } = useLeads();
@@ -36,7 +37,7 @@ export function ActiveProjects() {
                     </Link>
                     <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{client?.businessName ?? "Unknown client"}</p>
                     <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
-                      {milestone ? milestone.name : "No milestone"} · Target launch — {formatProjectDay(project.targetLaunchDate)}
+                      {milestone ? displayMilestoneName(milestone.name) : "No milestone"} · Target launch — {formatProjectDay(project.targetLaunchDate)}
                     </p>
                   </div>
                   <ProjectStatusBadge status={project.status} />

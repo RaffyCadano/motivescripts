@@ -101,6 +101,36 @@ export function productionTaskAssigneeOptions(
     .map((member) => ({ id: member.id, name: member.fullName || member.email }));
 }
 
+export function productionProjectCandidates(
+  members: TeamMember[],
+  assignedUserIds: string[],
+  clientId?: string,
+): TeamMember[] {
+  return members
+    .filter((member) => {
+      if (!member.isActive) return false;
+      if (assignedUserIds.includes(member.id)) return false;
+      if (!isProductionTeamTemplate(member.templateKey)) return false;
+      if (clientId) {
+        const clientIds = new Set(member.clientAssignments.map((item) => item.entityId));
+        if (clientIds.size > 0 && !clientIds.has(clientId)) return false;
+      }
+      return true;
+    })
+    .slice()
+    .sort((a, b) => (a.fullName || a.email).localeCompare(b.fullName || b.email));
+}
+
+export function assignedProjectMembers(members: TeamMember[], projectId: string): TeamMember[] {
+  return members.filter((member) => member.projectAssignments.some((item) => item.entityId === projectId));
+}
+
+export function memberRoleLabel(member: TeamMember, assignmentLabel?: string): string {
+  const extra = assignmentLabel?.trim();
+  if (extra) return extra;
+  return member.templateLabel || member.jobTitle || "Team Member";
+}
+
 export function teamStatusLabel(row: TeamListRow): string {
   if (row.kind === "invite") return "Pending invitation";
   return row.member.isActive ? "Active" : "Inactive";

@@ -3,6 +3,7 @@ import { ClientProgress } from "@/components/client/ClientProgress";
 import { ClientStatusBadge } from "@/components/client/ClientStatusBadge";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { calculateProjectProgress, currentMilestone, formatProjectDay, type AgencyProject } from "@/data/agencyProjects";
+import { displayMilestoneName } from "@/data/projectMilestones";
 import { clientProjectStatusExplanation, clientProjectStatusTone } from "@/data/clientPortal";
 import { cn } from "@/lib/cn";
 
@@ -59,7 +60,7 @@ export function ClientProjectCard({ compact = false, project: projectProp, nextL
         <div>
           <dt className="text-[12px] text-[var(--client-muted)]">Current milestone</dt>
           <dd className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">
-            {milestone?.name ?? "None yet"}
+            {milestone ? displayMilestoneName(milestone.name) : "None yet"}
           </dd>
         </div>
         <div>

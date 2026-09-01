@@ -95,11 +95,24 @@ export function versionReviewCaption(
   feedback: ReviewFeedback[],
   approvals: ReviewApproval[],
 ): string {
+  return versionHistoryReviewLabel(version, deliverable, feedback, approvals);
+}
+
+export function versionHistoryReviewLabel(
+  version: AgencyFileVersion,
+  deliverable: AgencyDeliverable,
+  feedback: ReviewFeedback[],
+  approvals: ReviewApproval[],
+): string {
+  if (version.status === "Archived") return "Archived";
   if (approvalsForVersion(approvals, version.id).length > 0) return "Approved";
-  if (feedbackForVersion(feedback, version.id).length > 0) return "Changes Requested";
-  if (version.id === deliverable.currentVersionId && deliverable.status === "In Review") return "In Review";
-  if (version.id === deliverable.currentVersionId) return "Current";
-  return "Historical";
+  if (feedbackForVersion(feedback, version.id).length > 0) return "Needs Changes";
+  if (version.id === deliverable.currentVersionId) return deliverable.status;
+  return "Previous";
+}
+
+export function isClientVisibleDeliverable(deliverable: AgencyDeliverable): boolean {
+  return deliverable.status === "In Review" || deliverable.status === "Needs Changes" || deliverable.status === "Approved";
 }
 
 export function awaitingReview(items: AgencyDeliverable[]): AgencyDeliverable[] {

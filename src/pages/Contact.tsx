@@ -3,6 +3,7 @@ import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { PageHero } from "@/components/PageHero";
 import { leadIndustries } from "@/data/leads";
+import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { inquiryMailtoHref, submitPublicLead, type PublicLeadDraft } from "@/data/publicLead";
 import { site } from "@/data/site";
 import { cn } from "@/lib/cn";
@@ -20,6 +21,7 @@ function draftFromForm(form: HTMLFormElement): PublicLeadDraft {
 }
 
 export function ContactPage() {
+  const { reload } = useLeads();
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +40,7 @@ export function ContactPage() {
     if (result.ok) {
       setMailtoHref(null);
       setSubmitted(true);
+      void reload();
       return;
     }
     setMailtoHref(fallback);
@@ -69,10 +72,10 @@ export function ContactPage() {
         ) : (
           <form className="rounded-[var(--radius-lg)] border border-[var(--color-line)] p-6 md:p-8" onSubmit={onSubmit}>
             <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Name" name="name" autoComplete="name" required placeholder="Alex Rivera" />
-              <Field label="Business name" name="business" autoComplete="organization" required placeholder="Ridge Landscaping" />
-              <Field label="Email" name="email" type="email" autoComplete="email" required placeholder="you@company.com" />
-              <Field label="Phone" name="phone" type="tel" autoComplete="tel" placeholder="(555) 000-1234" />
+              <Field label="Name" name="name" autoComplete="name" required placeholder="Your name" />
+              <Field label="Business name" name="business" autoComplete="organization" required placeholder="Your business" />
+              <Field label="Email" name="email" type="email" autoComplete="email" required placeholder="you@email.com" />
+              <Field label="Phone" name="phone" type="tel" autoComplete="tel" placeholder="Phone number" />
               <div className="sm:col-span-2">
                 <label className="block font-heading text-sm font-semibold text-ink" htmlFor="industry">
                   Industry
@@ -83,9 +86,11 @@ export function ContactPage() {
                   required
                   className={inputClass}
                   defaultValue=""
+                  onInvalid={(event) => event.currentTarget.setCustomValidity("Choose an industry.")}
+                  onChange={(event) => event.currentTarget.setCustomValidity("")}
                 >
                   <option value="" disabled>
-                    Select one
+                    Choose an industry
                   </option>
                   {leadIndustries.map((industry) => (
                     <option key={industry} value={industry}>
@@ -102,9 +107,12 @@ export function ContactPage() {
                   id="goal"
                   name="goal"
                   required
+                  minLength={8}
                   rows={5}
                   className={inputClass}
-                  placeholder="A new website, a rebuild, ongoing care…"
+                  placeholder="Describe the website you want to build."
+                  onInvalid={(event) => event.currentTarget.setCustomValidity("Tell us what you need.")}
+                  onInput={(event) => event.currentTarget.setCustomValidity("")}
                 />
               </div>
             </div>

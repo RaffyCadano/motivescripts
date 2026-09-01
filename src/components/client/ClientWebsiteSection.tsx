@@ -92,7 +92,7 @@ export function ClientWebsiteSection({ projectName, development }: ClientWebsite
           />
         ) : null}
         <WebsiteField
-          label="Live Website"
+          label="Production Website"
           url={development.productionUrl}
           emptyLabel="Not available yet"
           actionLabel="Visit Website"

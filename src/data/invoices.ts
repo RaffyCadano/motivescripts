@@ -392,6 +392,18 @@ export function paymentStatusLabel(reversedAt: string | null): string {
   return reversedAt ? "Reversed" : "Received";
 }
 
+export function latestActivePayment<T extends { payment_date: string; reversed_at: string | null; created_at?: string }>(
+  payments: T[],
+): T | null {
+  const active = payments.filter((item) => item.reversed_at == null);
+  if (active.length === 0) return null;
+  return [...active].sort((a, b) => {
+    const byDate = b.payment_date.localeCompare(a.payment_date);
+    if (byDate !== 0) return byDate;
+    return (b.created_at ?? "").localeCompare(a.created_at ?? "");
+  })[0] ?? null;
+}
+
 export function paymentMethodLabel(method: PaymentMethod): string {
   switch (method) {
     case "bank_transfer":

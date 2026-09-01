@@ -6,6 +6,7 @@ import {
   fileTypeFromName,
   formatFileSize,
   reviewStatuses,
+  type AgencyDeliverable,
   type DeliverableCategory,
   type DeliverableDraft,
   type ReviewStatus,
@@ -24,23 +25,34 @@ const emptyDraft: DeliverableDraft = {
 
 type DeliverableFormModalProps = {
   open: boolean;
+  deliverable?: AgencyDeliverable | null;
   onClose: () => void;
   onSubmit: (draft: DeliverableDraft, file: File | null) => Promise<boolean>;
 };
 
-export function DeliverableFormModal({ open, onClose, onSubmit }: DeliverableFormModalProps) {
+export function DeliverableFormModal({ open, deliverable, onClose, onSubmit }: DeliverableFormModalProps) {
   const [draft, setDraft] = useState<DeliverableDraft>(emptyDraft);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const editing = Boolean(deliverable);
 
   useEffect(() => {
     if (!open) return;
-    setDraft(emptyDraft);
+    setDraft(
+      deliverable
+        ? {
+            name: deliverable.name,
+            description: deliverable.description,
+            category: deliverable.category,
+            status: deliverable.status === "Archived" ? "Draft" : deliverable.status,
+          }
+        : emptyDraft,
+    );
     setFile(null);
     setError(null);
     setUploading(false);
-  }, [open]);
+  }, [deliverable, open]);
 
   function chooseFile(nextFile: File | null) {
     setFile(nextFile);
@@ -72,8 +84,12 @@ export function DeliverableFormModal({ open, onClose, onSubmit }: DeliverableFor
     <AdminDialog
       open={open}
       busy={uploading}
-      title="New Deliverable"
-      description="Create a piece of project work. Versions can be added now or later."
+      title={editing ? "Edit Deliverable" : "New Deliverable"}
+      description={
+        editing
+          ? "Update the deliverable name, description, or category. Review status stays the same."
+          : "Create a project deliverable. Upload a first version now, or add versions later."
+      }
       onClose={onClose}
     >
       <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>
@@ -111,6 +127,7 @@ export function DeliverableFormModal({ open, onClose, onSubmit }: DeliverableFor
             ))}
           </select>
         </label>
+        {editing ? null : (
         <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
           Initial status
           <select
@@ -125,6 +142,8 @@ export function DeliverableFormModal({ open, onClose, onSubmit }: DeliverableFor
             ))}
           </select>
         </label>
+        )}
+        {editing ? null : (
         <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
           Initial file
           <input
@@ -138,6 +157,7 @@ export function DeliverableFormModal({ open, onClose, onSubmit }: DeliverableFor
             Optional. Uploaded to private Storage. Maximum {MAX_FILE_SIZE_LABEL}.
           </span>
         </label>
+        )}
         {error ? <p className="text-sm text-[#b42318]">{error}</p> : null}
         {file ? (
           <p className="text-[12px] text-[var(--admin-muted)]">
@@ -166,7 +186,7 @@ export function DeliverableFormModal({ open, onClose, onSubmit }: DeliverableFor
             disabled={uploading || Boolean(error)}
             className="inline-flex h-10 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white disabled:opacity-50"
           >
-            {uploading ? "Uploading…" : "Create Deliverable"}
+            {uploading ? "Saving…" : editing ? "Save changes" : "Create Deliverable"}
           </button>
         </div>
       </form>

@@ -145,6 +145,34 @@ export function taskCounts(project: Pick<AgencyProject, "tasks">) {
   return { total, completed };
 }
 
+export function taskIsAssigned(task: Pick<AgencyTask, "assignedTo" | "assignee">): boolean {
+  return Boolean(task.assignedTo.trim() || task.assignee.trim());
+}
+
+export function productionTaskStats(project: Pick<AgencyProject, "tasks">) {
+  const total = project.tasks.length;
+  const completed = project.tasks.filter((task) => task.status === "Completed").length;
+  const assigned = project.tasks.filter(taskIsAssigned).length;
+  const remaining = total - completed;
+  const unassigned = project.tasks.filter((task) => !taskIsAssigned(task) && task.status !== "Completed").length;
+  return { total, completed, assigned, remaining, unassigned };
+}
+
+export function formatProductionTaskStats(stats: ReturnType<typeof productionTaskStats>): string {
+  return `${stats.total} total · ${stats.assigned} assigned · ${stats.completed} completed · ${stats.remaining} remaining`;
+}
+
+export function milestoneProductionRows(project: Pick<AgencyProject, "milestones" | "tasks">) {
+  return [...project.milestones]
+    .sort((a, b) => a.order - b.order)
+    .map((milestone) => ({
+      id: milestone.id,
+      name: milestone.name,
+      status: milestone.status,
+      ...milestoneTaskCounts(project, milestone.id),
+    }));
+}
+
 export function milestoneTaskCounts(project: Pick<AgencyProject, "tasks">, milestoneId: string) {
   const tasks = project.tasks.filter((task) => task.milestoneId === milestoneId);
   const completed = tasks.filter((task) => task.status === "Completed").length;

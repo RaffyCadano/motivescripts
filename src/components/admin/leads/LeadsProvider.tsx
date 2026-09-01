@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { firstNameFrom, initialsFromName } from "@/auth/userDisplay";
 import type { AgencyClient, AgencyClientDraft, AgencyClientEdits, AgencyClientStatus } from "@/data/agencyClients";
@@ -35,6 +36,7 @@ import {
   updateMilestoneStatus,
   updateProjectRecord,
   updateProjectStatus,
+  updateDeliverableRecord,
   updateTaskRecord,
   uploadAndCreateVersion,
   type AgencySnapshot,
@@ -56,6 +58,7 @@ import {
 import {
   canClientReview,
   canSendForReview,
+  isClientVisibleDeliverable,
   type ReviewApproval,
   type ReviewFeedback,
 } from "@/data/review";
@@ -98,6 +101,7 @@ type LeadsContextValue = {
   updateTask: (projectId: string, taskId: string, draft: AgencyTaskDraft) => Promise<void>;
   toggleTaskComplete: (projectId: string, taskId: string) => Promise<void>;
   addDeliverable: (projectId: string, draft: DeliverableDraft, file: File | null) => Promise<boolean>;
+  updateDeliverable: (deliverableId: string, draft: DeliverableDraft) => Promise<boolean>;
   addVersion: (deliverableId: string, file: File, description: string) => Promise<boolean>;
   setCurrentVersion: (deliverableId: string, versionId: string) => Promise<void>;
   archiveVersion: (deliverableId: string, versionId: string) => Promise<void>;
@@ -128,6 +132,7 @@ const LeadsContext = createContext<LeadsContextValue | null>(null);
 
 export function LeadsProvider({ children }: { children: ReactNode }) {
   const { loading: authLoading, session, profile, profileStatus } = useAuth();
+  const { pathname } = useLocation();
   const [snapshot, setSnapshot] = useState<AgencySnapshot>(emptySnapshot);
   const [toast, setToast] = useState<Toast | null>(null);
   const [loadStatus, setLoadStatus] = useState<AgencyLoadStatus>("loading");
@@ -136,6 +141,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
   snapshotRef.current = snapshot;
   const roleRef = useRef(profile?.role);
   roleRef.current = profile?.role;
+  const loadStatusRef = useRef(loadStatus);
+  loadStatusRef.current = loadStatus;
 
   function showToast(message: string) {
     setToast({ id: createRecordId("toast"), message });
@@ -205,6 +212,14 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
     };
   }, [authLoading, profile, profileStatus, session]);
 
+  useEffect(() => {
+    if (pathname !== "/admin/leads") return;
+    if (loadStatusRef.current !== "ready") return;
+    const role = roleRef.current;
+    if (role !== "admin" && role !== "staff") return;
+    void refresh();
+  }, [pathname]);
+
   const value = useMemo<LeadsContextValue>(() => {
     const { leads, clients, projects, deliverables, feedback, approvals, portalAccounts } = snapshot;
 
@@ -240,7 +255,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       loadStatus,
       loadError,
       reload: async () => {
-        setLoadStatus("loading");
+        if (loadStatus !== "ready") setLoadStatus("loading");
         try {
           await refresh();
         } catch (error) {
@@ -513,6 +528,15 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
         }, "Deliverable created.");
         return result !== null;
       },
+      async updateDeliverable(deliverableId, draft) {
+        const current = snapshotRef.current.deliverables.find((item) => item.id === deliverableId);
+        if (!current || current.status === "Archived") return false;
+        const result = await run(async () => {
+          await updateDeliverableRecord(deliverableId, draft);
+          await addActivity(current.projectId, "deliverable_updated", `${draft.name.trim()} updated`, "file");
+        }, "Deliverable updated.");
+        return result !== null;
+      },
       async addVersion(deliverableId, file, description) {
         const current = snapshotRef.current.deliverables.find((item) => item.id === deliverableId);
         if (!current || current.status === "Archived") return false;
@@ -684,7 +708,7 @@ export function usePortalSession() {
   const clientProjects = clientId ? projects.filter((project) => project.clientId === clientId) : [];
   const project = clientProjects.find((item) => !item.archived) ?? clientProjects[0] ?? null;
   const projectIds = new Set(clientProjects.map((item) => item.id));
-  const files = deliverables.filter((item) => projectIds.has(item.projectId));
+  const files = deliverables.filter((item) => projectIds.has(item.projectId) && isClientVisibleDeliverable(item));
   const projectFeedback = feedback.filter((item) => projectIds.has(item.projectId));
   const projectApprovals = approvals.filter((item) => projectIds.has(item.projectId));
   return {

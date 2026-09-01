@@ -2,13 +2,18 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ProgressBar } from "@/components/admin/ProgressBar";
 import { useProjectDeliverables, useProjectReview } from "@/components/admin/leads/LeadsProvider";
+import { DeliverableStatusBadge } from "@/components/admin/projects/DeliverableStatusBadge";
 import { MilestoneStatusBadge } from "@/components/admin/projects/MilestoneStatusBadge";
 import { ProjectDevelopmentSection } from "@/components/admin/projects/ProjectDevelopmentSection";
 import { ProjectDocumentsCard } from "@/components/admin/projects/ProjectDocumentsCard";
 import { ProjectInvoicesCard } from "@/components/admin/projects/ProjectInvoicesCard";
+import { ProjectProductionPath } from "@/components/admin/projects/ProjectProductionPath";
+import { ProjectProductionPipeline } from "@/components/admin/projects/ProjectProductionPipeline";
+import { ProjectProductionTasksCard } from "@/components/admin/projects/ProjectProductionTasksCard";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
+import { ProjectTeamRoster } from "@/components/admin/projects/ProjectTeamRoster";
 import { ProjectWorkflow } from "@/components/admin/projects/ProjectWorkflow";
-import { StaffAssignmentCard } from "@/components/admin/team/StaffAssignmentCard";
+import { deriveProductionPath } from "@/data/projectWorkspace";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import type { AgencyClient } from "@/data/agencyClients";
 import { currentVersion, formatFileRelative, recentDeliverables, versionLabel } from "@/data/files";
@@ -30,6 +35,7 @@ import {
   taskCounts,
   type AgencyProject,
 } from "@/data/agencyProjects";
+import { displayMilestoneName } from "@/data/projectMilestones";
 import type { ClientScopeBrief } from "@/data/scopeBriefs";
 import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
 
@@ -130,6 +136,28 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
     ? [...brief.designStyles.filter((item) => item !== "Other"), brief.otherStyle.trim()].filter(Boolean)
     : [];
   const goal = brief?.goal.trim() ?? "";
+  const assignedLabels = team.data
+    ? Object.fromEntries(
+        team.data.members.flatMap((member) =>
+          member.projectAssignments
+            .filter((item) => item.entityId === project.id)
+            .map((item) => [member.id, item.label]),
+        ),
+      )
+    : {};
+  const assignedUserIds = team.data
+    ? team.data.members
+        .filter((member) => member.projectAssignments.some((item) => item.entityId === project.id))
+        .map((member) => member.id)
+    : [];
+  const productionPath = deriveProductionPath({
+    invoicePaid,
+    project,
+    staffAssigned: assignedUserIds.length > 0,
+    awaitingReview: waiting.length > 0,
+    approvedDeliverables: approvedCount,
+    openFeedback: openFeedback.length,
+  });
 
   return (
     <div className="space-y-6">
@@ -161,6 +189,28 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
         </p>
       ) : null}
 
+      <ProjectProductionPipeline project={project} />
+
+      <ProjectProductionPath steps={productionPath} />
+
+      {team.data ? (
+        <ProjectTeamRoster
+          members={team.data.members}
+          projectId={project.id}
+          clientId={project.clientId}
+          assignedLabels={assignedLabels}
+          onChanged={() => void team.reload()}
+          onOpenTasks={() => onOpenTab("tasks")}
+        />
+      ) : null}
+
+      <ProjectProductionTasksCard project={project} onOpenTasks={() => onOpenTab("tasks")} />
+
+      <ProjectDevelopmentSection
+        development={project.development}
+        editHref={`/admin/projects/${project.id}/edit`}
+      />
+
       <ProjectWorkflow items={workflow} />
       <ProjectDocumentsCard
         projectId={project.id}
@@ -169,27 +219,6 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
         contract={contract}
         loading={recordsLoading}
       />
-
-      {team.data ? (
-        <StaffAssignmentCard
-          kind="project"
-          entityId={project.id}
-          entityClientId={project.clientId}
-          members={team.data.members}
-          assignedUserIds={team.data.members
-            .filter((member) => member.projectAssignments.some((item) => item.entityId === project.id))
-            .map((member) => member.id)}
-          assignedLabels={Object.fromEntries(
-            team.data.members.flatMap((member) =>
-              member.projectAssignments
-                .filter((item) => item.entityId === project.id)
-                .map((item) => [member.id, item.label]),
-            ),
-          )}
-          projectTasks={project.tasks}
-          onChanged={() => void team.reload()}
-        />
-      ) : null}
 
       <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
         <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Project Progress</h2>
@@ -210,13 +239,15 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
           <div className="mt-5 border-t border-[var(--admin-line)] pt-4">
             <p className="text-[12px] text-[var(--admin-muted)]">Current milestone</p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{milestone.name}</p>
+              <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
+                {displayMilestoneName(milestone.name)}
+              </p>
               <MilestoneStatusBadge status={milestone.status} />
             </div>
             <p className="mt-2 text-sm text-[var(--admin-muted)]">
               {milestoneCounts && milestoneCounts.total > 0
                 ? `${milestoneCounts.completed} of ${milestoneCounts.total} tasks in this milestone`
-                : "No tasks in this milestone yet."}
+                : "No tasks yet. Add tasks when the project reaches this stage."}
             </p>
           </div>
         ) : (
@@ -252,7 +283,7 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
                   {client.businessName}
                 </Link>
               ) : (
-                <span className="text-sm text-[var(--admin-muted)]">Unknown client</span>
+                <span className="text-sm text-[var(--admin-muted)]">Not set</span>
               )}
             </dd>
           </div>
@@ -267,8 +298,16 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
             </dd>
           </div>
           <div>
+            <dt className="text-[12px] text-[var(--admin-muted)]">Current phase</dt>
+            <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{milestone?.name ?? "Not set"}</dd>
+          </div>
+          <div>
+            <dt className="text-[12px] text-[var(--admin-muted)]">Progress</dt>
+            <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{progress}%</dd>
+          </div>
+          <div>
             <dt className="text-[12px] text-[var(--admin-muted)]">Approval</dt>
-            <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{project.approvalStatus}</dd>
+            <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{project.approvalStatus || "Not set"}</dd>
           </div>
           <div>
             <dt className="text-[12px] text-[var(--admin-muted)]">Started</dt>
@@ -316,11 +355,6 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
         </div>
       </section>
 
-      <ProjectDevelopmentSection
-        development={project.development}
-        editHref={`/admin/projects/${project.id}/edit`}
-      />
-
       <ProjectInvoicesCard projectId={project.id} clientId={project.clientId} />
 
       <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
@@ -350,7 +384,7 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
 
       <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Recent files</h2>
+          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Recent deliverables</h2>
           <button
             type="button"
             className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
@@ -360,16 +394,21 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
           </button>
         </div>
         {recentFiles.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--admin-muted)]">No deliverables in this project yet.</p>
+          <p className="mt-3 text-sm text-[var(--admin-muted)]">No deliverables yet.</p>
         ) : (
           <ul className="mt-3 space-y-3">
             {recentFiles.map((item) => {
               const current = currentVersion(item);
               return (
                 <li key={item.id}>
-                  <p className="text-sm font-medium text-[var(--admin-ink)]">{item.name}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-medium text-[var(--admin-ink)]">{item.name}</p>
+                    <DeliverableStatusBadge status={item.status} />
+                  </div>
                   <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                    {current ? versionLabel(current.versionNumber) : "No versions"}
+                    {item.category}
+                    <span aria-hidden="true"> · </span>
+                    {current ? versionLabel(current.versionNumber) : "No version"}
                     <span aria-hidden="true"> · </span>
                     {formatFileRelative(item.updatedAt)}
                   </p>

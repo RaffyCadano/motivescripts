@@ -9,6 +9,7 @@ import {
   type AgencyTaskPriority,
   type AgencyTaskStatus,
 } from "@/data/agencyProjects";
+import { displayMilestoneName } from "@/data/projectMilestones";
 
 const fieldClass =
   "mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]";
@@ -33,12 +34,21 @@ type TaskFormModalProps = {
   open: boolean;
   task?: AgencyTask | null;
   milestones: AgencyMilestone[];
+  defaultMilestoneId?: string;
   assignees?: TaskAssigneeOption[];
   onClose: () => void;
   onSubmit: (draft: AgencyTaskDraft) => void;
 };
 
-export function TaskFormModal({ open, task, milestones, assignees = [], onClose, onSubmit }: TaskFormModalProps) {
+export function TaskFormModal({
+  open,
+  task,
+  milestones,
+  defaultMilestoneId,
+  assignees = [],
+  onClose,
+  onSubmit,
+}: TaskFormModalProps) {
   const [draft, setDraft] = useState<AgencyTaskDraft>(emptyDraft);
 
   useEffect(() => {
@@ -56,8 +66,11 @@ export function TaskFormModal({ open, task, milestones, assignees = [], onClose,
       });
       return;
     }
-    setDraft({ ...emptyDraft, milestoneId: milestones[0]?.id ?? "" });
-  }, [milestones, open, task]);
+    setDraft({
+      ...emptyDraft,
+      milestoneId: defaultMilestoneId || milestones[0]?.id || "",
+    });
+  }, [defaultMilestoneId, milestones, open, task]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -101,7 +114,7 @@ export function TaskFormModal({ open, task, milestones, assignees = [], onClose,
             <option value="">Ungrouped</option>
             {milestones.map((milestone) => (
               <option key={milestone.id} value={milestone.id}>
-                {milestone.name}
+                {displayMilestoneName(milestone.name)}
               </option>
             ))}
           </select>

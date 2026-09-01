@@ -1,5 +1,6 @@
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
 import type { AgencyMilestone } from "@/data/agencyProjects";
+import { displayMilestoneName } from "@/data/projectMilestones";
 
 type ConfirmRemoveMilestoneModalProps = {
   milestone: AgencyMilestone | null;
@@ -15,7 +16,9 @@ export function ConfirmRemoveMilestoneModal({ milestone, onClose, onConfirm }: C
       description="The milestone is removed from the project. Related tasks stay on the project as ungrouped."
       onClose={onClose}
     >
-      {milestone ? <p className="text-sm text-[var(--admin-muted)]">{milestone.name}</p> : null}
+      {milestone ? (
+        <p className="text-sm text-[var(--admin-muted)]">{displayMilestoneName(milestone.name)}</p>
+      ) : null}
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <button
           type="button"

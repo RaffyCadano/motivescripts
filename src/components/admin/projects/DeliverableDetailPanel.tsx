@@ -6,8 +6,9 @@ import { FileTypeIcon } from "@/components/admin/projects/FileTypeIcon";
 import { useLeads, useProjectReview } from "@/components/admin/leads/LeadsProvider";
 import {
   currentVersion,
+  deliverableUpdatedAt,
+  formatFileHistoryDate,
   formatFileLong,
-  formatFileRelative,
   formatFileSize,
   sortedVersions,
   versionHistoryLabel,
@@ -18,10 +19,9 @@ import {
 import {
   canSendForReview,
   formatReviewLong,
-  versionReviewCaption,
+  versionHistoryReviewLabel,
 } from "@/data/review";
 import { hasStoredFile } from "@/data/fileUploadConfig";
-import { cn } from "@/lib/cn";
 
 type DeliverableDetailPanelProps = {
   deliverable: AgencyDeliverable;
@@ -30,6 +30,7 @@ type DeliverableDetailPanelProps = {
   onPreview: (version: AgencyFileVersion) => void;
   onMakeCurrent: (versionId: string) => void;
   onArchiveVersion: (versionId: string) => void;
+  onEdit: () => void;
   onArchiveDeliverable: () => void;
   onRestore: () => void;
   onSendForReview: () => void;
@@ -43,6 +44,7 @@ export function DeliverableDetailPanel({
   onPreview,
   onMakeCurrent,
   onArchiveVersion,
+  onEdit,
   onArchiveDeliverable,
   onRestore,
   onSendForReview,
@@ -101,7 +103,16 @@ export function DeliverableDetailPanel({
                     className="inline-flex h-9 items-center rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white"
                     onClick={onAddVersion}
                   >
-                    Add Version
+                    Upload Version
+                  </button>
+                ) : null}
+                {canManageFiles ? (
+                  <button
+                    type="button"
+                    className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                    onClick={onEdit}
+                  >
+                    Edit
                   </button>
                 ) : null}
                 {canManageFiles && canSendForReview(deliverable) ? (
@@ -147,7 +158,9 @@ export function DeliverableDetailPanel({
           </div>
           <div>
             <dt className="text-[12px] text-[var(--admin-muted)]">Last updated</dt>
-            <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{formatFileLong(deliverable.updatedAt)}</dd>
+            <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">
+              {formatFileHistoryDate(deliverableUpdatedAt(deliverable))}
+            </dd>
           </div>
         </dl>
       </div>
@@ -177,35 +190,29 @@ export function DeliverableDetailPanel({
           <ul className="mt-3 divide-y divide-[var(--admin-line)]">
             {history.map((version) => {
               const label = versionHistoryLabel(version, deliverable.currentVersionId);
+              const reviewLabel = versionHistoryReviewLabel(version, deliverable, itemFeedback, itemApprovals);
               const open = openId === version.id;
               return (
                 <li key={version.id} className="py-3">
                   <button
                     type="button"
-                    className="flex w-full items-start justify-between gap-3 text-left"
+                    className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-3 text-left"
                     aria-expanded={open}
                     onClick={() => setOpenId(open ? null : version.id)}
                   >
-                    <span>
-                      <span className="text-sm font-medium text-[var(--admin-ink)]">
-                        {versionLabel(version.versionNumber)}
-                      </span>
-                      <span
-                        className={cn(
-                          "ml-2 font-heading text-[11px] font-semibold",
-                          label === "Current" ? "text-[var(--admin-blue)]" : "text-[var(--admin-muted)]",
-                        )}
-                      >
-                        {label}
-                        {versionReviewCaption(version, deliverable, itemFeedback, itemApprovals) !== label ? (
-                          <span className="ml-2 text-[var(--admin-muted)]">
-                            {versionReviewCaption(version, deliverable, itemFeedback, itemApprovals)}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="mt-1 block text-[12px] text-[var(--admin-muted)]">
-                        {formatFileRelative(version.uploadedAt)} · {version.fileName}
-                      </span>
+                    <span className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
+                      {versionLabel(version.versionNumber)}
+                    </span>
+                    <span className="min-w-0 text-sm text-[var(--admin-muted)]">
+                      {reviewLabel}
+                      {label === "Current" ? (
+                        <span className="ml-2 font-heading text-[11px] font-semibold text-[var(--admin-blue)]">
+                          Current
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="shrink-0 text-[12px] text-[var(--admin-muted)]">
+                      {formatFileHistoryDate(version.uploadedAt)}
                     </span>
                   </button>
                   {open ? (

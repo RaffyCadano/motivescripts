@@ -213,7 +213,18 @@ export function formatFileUpdatedLabel(iso: string): string {
 export function deliverableCurrentVersionLabel(deliverable: AgencyDeliverable): string {
   const current = currentVersion(deliverable);
   if (!current) return "No version";
-  return `${versionLabel(current.versionNumber)} · Current`;
+  return versionLabel(current.versionNumber);
+}
+
+export function deliverableUpdatedAt(deliverable: AgencyDeliverable): string {
+  return currentVersion(deliverable)?.uploadedAt || deliverable.updatedAt;
+}
+
+export function formatFileHistoryDate(iso: string): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export function earlierVersionCount(deliverable: AgencyDeliverable): number {

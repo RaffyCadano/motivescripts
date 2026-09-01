@@ -8,6 +8,7 @@ import { StoredFilePreview } from "@/components/files/StoredFilePreview";
 import { useLeads, usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import {
   currentVersion,
+  formatFileHistoryDate,
   formatFileLong,
   formatFileSize,
   sortedVersions,
@@ -19,7 +20,7 @@ import {
   clientReviewLabel,
   clientStatusTone,
   formatReviewLong,
-  versionReviewCaption,
+  versionHistoryReviewLabel,
 } from "@/data/review";
 import { cn } from "@/lib/cn";
 import { hasStoredFile } from "@/data/fileUploadConfig";
@@ -218,22 +219,25 @@ export function ClientReview() {
       </section>
 
       <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
-        <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--client-ink)]">Previous versions</h2>
-        <p className="mt-1 text-[12px] text-[var(--client-muted)]">Historical versions cannot be approved.</p>
+        <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--client-ink)]">Version history</h2>
+        <p className="mt-1 text-[12px] text-[var(--client-muted)]">Only the current version can be approved.</p>
         <ul className="mt-4 divide-y divide-[var(--client-line)]">
           {history.map((version) => {
             const isCurrent = version.id === file.currentVersionId;
             return (
-              <li key={version.id} className="py-3">
+              <li key={version.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-3 py-3">
                 <p className={cn("text-sm font-medium", isCurrent ? "text-[var(--client-ink)]" : "text-[var(--client-muted)]")}>
                   {versionLabel(version.versionNumber)}
-                  <span className="ml-2 font-heading text-[11px] font-semibold">
-                    {isCurrent ? "Current" : "Historical"}
-                    {" · "}
-                    {versionReviewCaption(version, file, feedback, approvals)}
-                  </span>
                 </p>
-                <p className="mt-1 text-[12px] text-[var(--client-muted)]">{version.fileName}</p>
+                <p className={cn("min-w-0 text-sm", isCurrent ? "text-[var(--client-ink)]" : "text-[var(--client-muted)]")}>
+                  {versionHistoryReviewLabel(version, file, feedback, approvals)}
+                  {isCurrent ? (
+                    <span className="ml-2 font-heading text-[11px] font-semibold text-[var(--client-blue)]">Current</span>
+                  ) : null}
+                </p>
+                <p className="shrink-0 text-[12px] text-[var(--client-muted)]">
+                  {formatFileHistoryDate(version.uploadedAt)}
+                </p>
               </li>
             );
           })}

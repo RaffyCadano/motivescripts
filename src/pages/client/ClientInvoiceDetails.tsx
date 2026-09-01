@@ -7,6 +7,7 @@ import { fetchClientContractSummaries } from "@/data/documentsRepository";
 import {
   canPayInvoiceOnline,
   formatInvoiceDate,
+  latestActivePayment,
   paymentMethodLabel,
   paymentStatusLabel,
 } from "@/data/invoices";
@@ -90,34 +91,52 @@ export function ClientInvoiceDetails() {
   const payments = [...detail.payments].sort((a, b) => b.payment_date.localeCompare(a.payment_date));
   const money = (cents: number) => formatMoneyFromCents(cents, detail.invoice.currency);
   const payable = canPayInvoiceOnline(detail.effectiveStatus, detail.invoice.amount_due_cents);
+  const lastPayment = latestActivePayment(detail.payments);
+  const paidAt = detail.invoice.paid_at ?? lastPayment?.payment_date ?? null;
 
   return (
     <div className="w-full space-y-6">
-      <Link to="/client/invoices" className="text-[12px] font-medium text-[var(--client-blue)] hover:underline">
-        Invoices
-      </Link>
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight">{detail.invoice.invoice_number}</h1>
-        <InvoiceStatusBadge status={detail.effectiveStatus} audience="client" />
-        <button
-          type="button"
-          disabled={pdfBusy}
-          className="ml-auto inline-flex h-10 items-center rounded-[var(--client-radius)] border border-[var(--client-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--client-ink)] disabled:opacity-60"
-          onClick={async () => {
-            setPdfBusy(true);
-            try {
-              await downloadInvoicePdf(detail.invoice.id);
-            } catch (caught) {
-              notify(caught instanceof AgencyDbError ? caught.message : "Unable to generate invoice PDF. Please try again.");
-            } finally {
-              setPdfBusy(false);
-            }
-          }}
-        >
-          {pdfBusy ? "Generating PDF..." : "Download PDF"}
-        </button>
+      <div className="invoice-actions">
+        <Link to="/client/invoices" className="text-[12px] font-medium text-[var(--client-blue)] hover:underline">
+          Invoices
+        </Link>
+        <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight">Invoice</h1>
+              <InvoiceStatusBadge status={detail.effectiveStatus} audience="client" />
+            </div>
+            <p className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">{detail.invoice.invoice_number}</p>
+            {project ? <p className="mt-1 text-sm text-[var(--client-muted)]">{project.name}</p> : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={pdfBusy}
+              className="inline-flex h-10 items-center rounded-[var(--client-radius)] border border-[var(--client-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--client-ink)] disabled:opacity-60"
+              onClick={async () => {
+                setPdfBusy(true);
+                try {
+                  await downloadInvoicePdf(detail.invoice.id);
+                } catch (caught) {
+                  notify(caught instanceof AgencyDbError ? caught.message : "Unable to generate invoice PDF. Please try again.");
+                } finally {
+                  setPdfBusy(false);
+                }
+              }}
+            >
+              {pdfBusy ? "Generating PDF..." : "Download PDF"}
+            </button>
+            <button
+              type="button"
+              className="inline-flex h-10 items-center rounded-[var(--client-radius)] border border-[var(--client-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--client-ink)]"
+              onClick={() => window.print()}
+            >
+              Print
+            </button>
+          </div>
+        </div>
       </div>
-      {project ? <p className="text-sm text-[var(--client-muted)]">{project.name}</p> : null}
 
       <InvoiceDocumentView
         tone="client"
@@ -139,11 +158,13 @@ export function ClientInvoiceDetails() {
           totalCents: detail.invoice.total_cents,
           amountPaidCents: detail.invoice.amount_paid_cents,
           amountDueCents: detail.invoice.amount_due_cents,
+          status: detail.effectiveStatus,
+          paidAt,
         }}
       />
 
       {payable ? (
-        <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5">
+        <section className="invoice-actions rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5">
           <h2 className="font-heading text-sm font-semibold">Pay Invoice</h2>
           <p className="mt-2 text-sm text-[var(--client-muted)]">
             {detail.invoice.amount_paid_cents > 0 ? (
@@ -173,16 +194,9 @@ export function ClientInvoiceDetails() {
             {payBusy ? "Redirecting…" : "Pay Invoice"}
           </button>
         </section>
-      ) : detail.effectiveStatus === "paid" ? (
-        <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5">
-          <h2 className="font-heading text-sm font-semibold">Paid ✓</h2>
-          <p className="mt-2 text-sm text-[var(--client-muted)]">
-            {money(0)} due. Paid {money(detail.invoice.amount_paid_cents)}.
-          </p>
-        </section>
       ) : null}
 
-      <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5">
+      <section className="invoice-actions rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5">
         <h2 className="font-heading text-sm font-semibold">Payment history</h2>
         {payments.length === 0 ? (
           <p className="mt-3 text-sm text-[var(--client-muted)]">No payments recorded yet.</p>

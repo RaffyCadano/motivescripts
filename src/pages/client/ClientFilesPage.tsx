@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ClientStatusBadge } from "@/components/client/ClientStatusBadge";
 import { FileTypeIcon } from "@/components/admin/projects/FileTypeIcon";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
-import { currentVersion, versionLabel } from "@/data/files";
+import { currentVersion } from "@/data/files";
 import { awaitingReview, canClientReview, clientReviewLabel, clientStatusTone } from "@/data/review";
 
 export function ClientFilesPage() {
@@ -15,7 +15,7 @@ export function ClientFilesPage() {
       <header>
         <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight md:text-3xl">Files</h1>
         <p className="mt-1 max-w-2xl text-sm text-[var(--client-muted)]">
-          Review current deliverables. Approval and change requests apply only to the current version.
+          Review current project deliverables. Approval and change requests apply only to the current version.
         </p>
         {waiting.length > 0 ? (
           <p className="mt-3 text-sm text-[var(--client-ink)]">You have {waiting.length} item{waiting.length === 1 ? "" : "s"} awaiting review.</p>
@@ -23,7 +23,9 @@ export function ClientFilesPage() {
       </header>
 
       {active.length === 0 ? (
-        <p className="text-sm text-[var(--client-muted)]">No files are ready yet.</p>
+        <p className="text-sm text-[var(--client-muted)]">
+          Deliverables will appear here when they are ready for your review.
+        </p>
       ) : (
         <ul className="space-y-4">
           {active.map((item) => {
@@ -41,9 +43,7 @@ export function ClientFilesPage() {
                   <div>
                     <p className="font-heading text-base font-semibold text-[var(--client-ink)]">{item.name}</p>
                     <p className="mt-1 text-[13px] text-[var(--client-muted)]">
-                      {current ? versionLabel(current.versionNumber) : "No versions"}
-                      <span aria-hidden="true"> · </span>
-                      {clientReviewLabel(item.status)}
+                      {current ? `Version ${current.versionNumber}` : "No version"}
                     </p>
                     <div className="mt-2">
                       <ClientStatusBadge

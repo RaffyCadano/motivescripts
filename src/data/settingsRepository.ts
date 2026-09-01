@@ -285,7 +285,7 @@ export async function purgeWorkspace(scope: WorkspacePurgeScope, confirmation: s
     }
     if (message.includes("PORTAL_PURGE_FAILED") || message.toLowerCase().includes("auth.users")) {
       throw new AgencyDbError(
-        "Workspace records were not deleted because client portal accounts could not be removed. Try again or delete those users in Supabase Auth, then retry.",
+        "Workspace records were not deleted because portal or team accounts could not be removed. Try again or delete those users in Supabase Auth, then retry.",
         error,
       );
     }

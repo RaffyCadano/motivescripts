@@ -27,6 +27,7 @@ import type {
   AgencyTaskDraft,
   ProjectDevelopment,
 } from "@/data/agencyProjects";
+import { defaultWebsiteMilestones } from "@/data/projectMilestones";
 import type { ReviewApproval, ReviewFeedback } from "@/data/review";
 import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
 import { normalizeHttpUrl } from "@/lib/safeUrl";
@@ -124,7 +125,6 @@ export async function fetchAgencySnapshot(role: AppRole): Promise<AgencySnapshot
   throwIf(staffRes.error, "load clients", "Unable to load clients.");
   throwIf(profilesRes.error, "load accounts", "Unable to load client accounts.");
   throwIf(projectsRes.error, "load projects", "Unable to load projects.");
-  throwIf(developmentRes.error, "load development", "Unable to load projects.");
   throwIf(milestonesRes.error, "load milestones", "Unable to load projects.");
   throwIf(tasksRes.error, "load tasks", "Unable to load projects.");
   throwIf(deliverablesRes.error, "load deliverables", "Unable to load files.");
@@ -165,8 +165,10 @@ export async function fetchAgencySnapshot(role: AppRole): Promise<AgencySnapshot
   }
 
   const developmentByProject = new Map<string, ReturnType<typeof mapProjectDevelopment>>();
-  for (const row of developmentRes.data ?? []) {
-    developmentByProject.set(row.project_id, mapProjectDevelopment(row));
+  if (!developmentRes.error) {
+    for (const row of developmentRes.data ?? []) {
+      developmentByProject.set(row.project_id, mapProjectDevelopment(row));
+    }
   }
 
   return {
@@ -421,13 +423,7 @@ export async function updateClientFields(
   }
 }
 
-const defaultMilestones = [
-  { name: "Discovery", description: "Kickoff and collect logo, photos, and written content after they accept." },
-  { name: "Design", description: "Layout, visual system, and page structure." },
-  { name: "Development", description: "Build, integrate, and refine the site." },
-  { name: "Client Review", description: "Client feedback, revisions, and approval." },
-  { name: "Launch", description: "Final QA, go-live, and handoff." },
-];
+const defaultMilestones = defaultWebsiteMilestones();
 
 export async function insertProject(draft: AgencyProjectDraft): Promise<string> {
   const client = db();
@@ -765,6 +761,22 @@ export async function archiveVersionRecord(versionId: string): Promise<void> {
     .eq("id", versionId)
     .eq("is_current", false);
   throwIf(error, "archive version", "Unable to archive version.");
+}
+
+export async function updateDeliverableRecord(
+  deliverableId: string,
+  draft: Pick<DeliverableDraft, "name" | "description" | "category">,
+): Promise<void> {
+  const client = db();
+  const { error } = await client
+    .from("deliverables")
+    .update({
+      name: draft.name.trim(),
+      description: draft.description.trim(),
+      category: draft.category,
+    })
+    .eq("id", deliverableId);
+  throwIf(error, "update deliverable", "Unable to update deliverable.");
 }
 
 export async function setDeliverableStatus(

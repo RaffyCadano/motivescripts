@@ -2,7 +2,7 @@ import { FileArchive, FileImage, LayoutTemplate } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ClientStatusBadge } from "@/components/client/ClientStatusBadge";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
-import { currentVersion, versionLabel } from "@/data/files";
+import { currentVersion } from "@/data/files";
 import { canClientReview, clientReviewLabel, clientStatusTone } from "@/data/review";
 
 export function ClientFiles() {
@@ -21,7 +21,7 @@ export function ClientFiles() {
         <div className="px-5 py-6">
           <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">No files yet</p>
           <p className="mt-1 text-sm text-[var(--client-muted)]">
-            Files and deliverables will appear here as your project progresses.
+            Deliverables will appear here when they are ready for your review.
           </p>
         </div>
       ) : (
@@ -46,7 +46,7 @@ export function ClientFiles() {
                       <div>
                         <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">{item.name}</p>
                         <p className="mt-0.5 text-[12px] text-[var(--client-muted)]">
-                          {current ? versionLabel(current.versionNumber) : "No versions"}
+                          {current ? `Version ${current.versionNumber}` : "No version"}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">

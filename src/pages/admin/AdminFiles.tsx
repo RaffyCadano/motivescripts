@@ -14,6 +14,7 @@ import {
   currentVersion,
   deliverableCurrentVersionLabel,
   deliverableStatuses,
+  deliverableUpdatedAt,
   earlierVersionCount,
   filterDeliverables,
   formatFileUpdatedLabel,
@@ -92,7 +93,7 @@ export function AdminFiles({
     <div className="space-y-5">
       <AdminPageHeader
         title="Files"
-        description="Deliverables across projects. Open a file to manage versions in the project workspace."
+        description="Agency deliverables across projects. Open one to manage versions and client review."
       />
 
       <section aria-label="Deliverable status counts">
@@ -158,7 +159,7 @@ export function AdminFiles({
       {scopedDeliverables.length === 0 ? (
         <AdminEmptyState
           title="No deliverables yet"
-          body="Deliverables are created inside a project's Files workspace."
+          body="Add designs, content, assets, and documents from a project's Files workspace. Each deliverable can have versions and client review."
           action={
             <Link to={projectsHref} className={`${adminBlueBtn} justify-center`}>
               View Projects
@@ -207,10 +208,11 @@ function DeliverableList({
   return (
     <>
       <div className="hidden overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] md:block">
-        <table className="w-full min-w-[58rem] text-left text-[13px]">
+        <table className="w-full min-w-[64rem] text-left text-[13px]">
           <thead>
             <tr className="border-b border-[var(--admin-line)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
               <th className="px-5 py-3 font-semibold">Deliverable</th>
+              <th className="px-5 py-3 font-semibold">Category</th>
               <th className="px-5 py-3 font-semibold">Client</th>
               <th className="px-5 py-3 font-semibold">Project</th>
               <th className="px-5 py-3 font-semibold">Version</th>
@@ -238,6 +240,7 @@ function DeliverableList({
                       </Link>
                     </div>
                   </td>
+                  <td className="px-5 py-3.5 text-[var(--admin-muted)]">{item.category}</td>
                   <td className="px-5 py-3.5">{clientName(item.projectId) || "Unknown client"}</td>
                   <td className="px-5 py-3.5">{projectName(item.projectId) || "Unknown project"}</td>
                   <td className="px-5 py-3.5">
@@ -256,7 +259,7 @@ function DeliverableList({
                       </p>
                     ) : null}
                   </td>
-                  <td className="px-5 py-3.5 text-[var(--admin-muted)]">{formatFileUpdatedLabel(item.updatedAt)}</td>
+                  <td className="px-5 py-3.5 text-[var(--admin-muted)]">{formatFileUpdatedLabel(deliverableUpdatedAt(item))}</td>
                   <td className="px-5 py-3.5">
                     <Link
                       to={hrefFor(item)}
@@ -293,6 +296,7 @@ function DeliverableList({
                     >
                       {item.name}
                     </Link>
+                    <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{item.category}</p>
                     <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
                       {clientName(item.projectId) || "Unknown client"}
                     </p>
@@ -309,7 +313,7 @@ function DeliverableList({
                   {earlier} earlier {earlier === 1 ? "version" : "versions"}
                 </p>
               ) : null}
-              <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{formatFileUpdatedLabel(item.updatedAt)}</p>
+              <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{formatFileUpdatedLabel(deliverableUpdatedAt(item))}</p>
               <Link
                 to={hrefFor(item)}
                 className="mt-4 inline-flex h-9 items-center rounded-lg bg-[var(--admin-blue)] px-3 font-heading text-[12px] font-semibold text-white"

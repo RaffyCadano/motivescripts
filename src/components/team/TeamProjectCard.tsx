@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ProgressBar } from "@/components/admin/ProgressBar";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
 import { currentMilestone, formatProjectDay, type AgencyProject } from "@/data/agencyProjects";
+import { displayMilestoneName } from "@/data/projectMilestones";
 import { projectWorkload, teamProjectHref } from "@/data/teamWorkspace";
 
 type TeamProjectCardProps = {
@@ -26,7 +27,7 @@ export function TeamProjectCard({ project, clientName, assignedTaskCount, teamma
         <ProgressBar value={work.progress} label="Complete" />
       </div>
       <p className="mt-3 text-sm text-[var(--admin-ink)]">
-        {milestone ? `Current: ${milestone.name}` : "No milestone yet"}
+        {milestone ? `Current: ${displayMilestoneName(milestone.name)}` : "No milestone yet"}
       </p>
       <p className="mt-1 text-sm text-[var(--admin-ink)]">
         {assignedTaskCount} assigned to you · {work.completed}/{work.total} tasks complete

@@ -100,3 +100,37 @@ html.client-nav-open body {
 #client-main {
   scrollbar-gutter: stable;
 }
+
+@media print {
+  html.client-shell,
+  html.client-shell body,
+  html.client-shell #root,
+  .client-app {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .client-app > button,
+  .client-app aside,
+  .client-app header,
+  .invoice-actions,
+  .skip-link {
+    display: none !important;
+  }
+
+  .client-app > div {
+    padding: 0 !important;
+  }
+
+  #client-main {
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .invoice-document {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}

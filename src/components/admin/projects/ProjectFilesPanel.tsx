@@ -14,17 +14,20 @@ import {
   currentVersion,
   deliverableCategories,
   deliverableStatuses,
+  deliverableUpdatedAt,
   fileSortOptions,
   filterDeliverables,
-  formatFileUpdated,
+  formatFileHistoryDate,
   sortDeliverables,
   versionLabel,
   type AgencyDeliverable,
   type AgencyFileVersion,
   type DeliverableCategory,
+  type DeliverableDraft,
   type DeliverableStatus,
   type FileSort,
 } from "@/data/files";
+import { canSendForReview } from "@/data/review";
 import type { AgencyProject } from "@/data/agencyProjects";
 import { cn } from "@/lib/cn";
 
@@ -41,6 +44,7 @@ export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFile
   const canManageFiles = hasPermission(profile, "files.manage");
   const {
     addDeliverable,
+    updateDeliverable,
     addVersion,
     setCurrentVersion,
     archiveVersion,
@@ -55,6 +59,7 @@ export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFile
   const [category, setCategory] = useState<DeliverableCategory | "All">("All");
   const [sort, setSort] = useState<FileSort>("updated");
   const [createOpen, setCreateOpen] = useState(false);
+  const [editingDeliverable, setEditingDeliverable] = useState<AgencyDeliverable | null>(null);
   const [versionTarget, setVersionTarget] = useState<AgencyDeliverable | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<AgencyDeliverable | null>(null);
   const [preview, setPreview] = useState<AgencyFileVersion | null>(null);
@@ -81,6 +86,7 @@ export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFile
           onPreview={openPreview}
           onMakeCurrent={(versionId) => setCurrentVersion(selected.id, versionId)}
           onArchiveVersion={(versionId) => archiveVersion(selected.id, versionId)}
+          onEdit={() => setEditingDeliverable(selected)}
           onArchiveDeliverable={() => setArchiveTarget(selected)}
           onRestore={() => restoreDeliverable(selected.id)}
           onSendForReview={() => setSendTarget(selected)}
@@ -90,8 +96,16 @@ export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFile
         />
         <FileModals
           createOpen={createOpen}
-          onCreateClose={() => setCreateOpen(false)}
+          editingDeliverable={editingDeliverable}
+          onCreateClose={() => {
+            setCreateOpen(false);
+            setEditingDeliverable(null);
+          }}
           onCreate={(draft, file) => addDeliverable(project.id, draft, file)}
+          onUpdate={async (draft) => {
+            if (!editingDeliverable) return false;
+            return updateDeliverable(editingDeliverable.id, draft);
+          }}
           versionTarget={versionTarget}
           onVersionClose={() => setVersionTarget(null)}
           onVersion={async (file, description) => {
@@ -125,8 +139,10 @@ export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFile
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Files</h2>
-          <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Project deliverables and their versions.</p>
+          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Deliverables</h2>
+          <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
+            Designs, content, assets, and documents for this website. Each item can have versions and client review.
+          </p>
         </div>
         {canManageFiles ? (
           <button
@@ -147,7 +163,7 @@ export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFile
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search files..."
+              placeholder="Search deliverables..."
               className="h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none placeholder:text-[var(--admin-muted)] focus:border-[rgb(0_80_240_/_0.45)]"
             />
           </label>
@@ -203,16 +219,30 @@ export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFile
 
       <DeliverableList
         items={visible}
+        allItems={items}
         total={items.length}
         query={query}
         status={status}
+        canManageFiles={canManageFiles}
         onView={onSelect}
+        onUploadVersion={canManageFiles ? setVersionTarget : undefined}
+        onSendForReview={canManageFiles ? setSendTarget : undefined}
+        onEdit={canManageFiles ? setEditingDeliverable : undefined}
+        onArchive={canManageFiles ? setArchiveTarget : undefined}
       />
 
       <FileModals
         createOpen={createOpen}
-        onCreateClose={() => setCreateOpen(false)}
+        editingDeliverable={editingDeliverable}
+        onCreateClose={() => {
+          setCreateOpen(false);
+          setEditingDeliverable(null);
+        }}
         onCreate={(draft, file) => addDeliverable(project.id, draft, file)}
+        onUpdate={async (draft) => {
+          if (!editingDeliverable) return false;
+          return updateDeliverable(editingDeliverable.id, draft);
+        }}
         versionTarget={versionTarget}
         onVersionClose={() => setVersionTarget(null)}
         onVersion={async (file, description) => {
@@ -244,22 +274,37 @@ export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFile
 
 function DeliverableList({
   items,
+  allItems,
   total,
   query,
   status,
+  canManageFiles,
   onView,
+  onUploadVersion,
+  onSendForReview,
+  onEdit,
+  onArchive,
 }: {
   items: AgencyDeliverable[];
+  allItems: AgencyDeliverable[];
   total: number;
   query: string;
   status: DeliverableStatus | "All";
+  canManageFiles: boolean;
   onView: (id: string) => void;
+  onUploadVersion?: (item: AgencyDeliverable) => void;
+  onSendForReview?: (item: AgencyDeliverable) => void;
+  onEdit?: (item: AgencyDeliverable) => void;
+  onArchive?: (item: AgencyDeliverable) => void;
 }) {
   if (total === 0) {
     return (
       <div className="mt-6">
         <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No deliverables yet</p>
-        <p className="mt-1 text-sm text-[var(--admin-muted)]">Add a deliverable to start organizing project work.</p>
+        <p className="mt-1 max-w-xl text-sm text-[var(--admin-muted)]">
+          Add designs, content, assets, documents, and other project deliverables here. Each deliverable can have
+          multiple versions and move through client review.
+        </p>
       </div>
     );
   }
@@ -267,58 +312,112 @@ function DeliverableList({
   if (items.length === 0) {
     const message =
       query.trim() !== ""
-        ? "No files match your search."
+        ? "No deliverables match your search."
         : status === "All"
           ? "No active deliverables."
-          : "No files match your search.";
+          : "No deliverables match these filters.";
     return <p className="mt-6 text-sm text-[var(--admin-muted)]">{message}</p>;
   }
 
+  const approved =
+    status === "All" && !query.trim()
+      ? allItems.filter((item) => item.status === "Approved")
+      : [];
+
   return (
-    <ul className="mt-5 divide-y divide-[var(--admin-line)]">
-      {items.map((item) => {
-        const current = currentVersion(item);
-        const count = item.versions.length;
-        return (
-          <li key={item.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-start gap-3">
-              <span className="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--admin-bg)] text-[var(--admin-muted)]">
-                <FileTypeIcon fileType={current?.fileType ?? "Other"} />
-              </span>
-              <div className="min-w-0">
-                <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{item.name}</p>
-                <p className="mt-0.5 text-[13px] text-[var(--admin-muted)]">
-                  {item.description || "No description yet."}
-                </p>
-                <p className="mt-2 text-[12px] text-[var(--admin-muted)]">
-                  {current ? `${versionLabel(current.versionNumber)} · ` : "No versions · "}
-                  {count} {count === 1 ? "version" : "versions"}
-                  <span aria-hidden="true"> · </span>
-                  Updated {formatFileUpdated(item.updatedAt)}
-                </p>
-                <div className="mt-2">
-                  <DeliverableStatusBadge status={item.status} />
+    <div className="mt-5 space-y-5">
+      {approved.length > 0 ? (
+        <div className="rounded-xl bg-[var(--admin-bg)] px-4 py-3">
+          <p className="font-heading text-[12px] font-semibold text-[var(--admin-ink)]">Approved for implementation</p>
+          <ul className="mt-2 space-y-1.5">
+            {approved.map((item) => {
+              const current = currentVersion(item);
+              return (
+                <li key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                  <button
+                    type="button"
+                    className="font-heading font-semibold text-[var(--admin-ink)] hover:text-[var(--admin-blue)] hover:underline"
+                    onClick={() => onView(item.id)}
+                  >
+                    {item.name}
+                  </button>
+                  <span className="text-[var(--admin-muted)]">{item.category}</span>
+                  <span className="font-heading text-[12px] font-semibold text-[var(--admin-ink)]">
+                    {current ? versionLabel(current.versionNumber) : "No version"}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+      <ul className="divide-y divide-[var(--admin-line)]">
+        {items.map((item) => {
+          const current = currentVersion(item);
+          const sendable = Boolean(onSendForReview && canSendForReview(item));
+          const archived = item.status === "Archived";
+          return (
+            <li key={item.id} className="flex flex-col gap-3 py-4">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--admin-bg)] text-[var(--admin-muted)]">
+                  <FileTypeIcon fileType={current?.fileType ?? "Other"} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{item.name}</p>
+                    <DeliverableStatusBadge status={item.status} />
+                  </div>
+                  <p className="mt-1 text-[13px] text-[var(--admin-muted)]">
+                    {item.category}
+                    <span aria-hidden="true"> · </span>
+                    {current ? versionLabel(current.versionNumber) : "No version"}
+                    <span aria-hidden="true"> · </span>
+                    Updated {formatFileHistoryDate(deliverableUpdatedAt(item))}
+                  </p>
+                  {item.description ? (
+                    <p className="mt-1 text-[13px] text-[var(--admin-muted)]">{item.description}</p>
+                  ) : null}
                 </div>
               </div>
-            </div>
-            <button
-              type="button"
-              className="inline-flex h-9 shrink-0 items-center self-start rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] sm:self-center"
-              onClick={() => onView(item.id)}
-            >
-              View
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+              <div className="flex flex-wrap gap-2 sm:pl-12">
+                <button type="button" className={actionBtn} onClick={() => onView(item.id)}>
+                  View
+                </button>
+                {canManageFiles && !archived && onUploadVersion ? (
+                  <button type="button" className={actionBtn} onClick={() => onUploadVersion(item)}>
+                    Upload Version
+                  </button>
+                ) : null}
+                {sendable ? (
+                  <button type="button" className={actionBtn} onClick={() => onSendForReview?.(item)}>
+                    Send for Review
+                  </button>
+                ) : null}
+                {canManageFiles && !archived && onEdit ? (
+                  <button type="button" className={actionBtn} onClick={() => onEdit(item)}>
+                    Edit
+                  </button>
+                ) : null}
+                {canManageFiles && !archived && onArchive ? (
+                  <button type="button" className={actionBtn} onClick={() => onArchive(item)}>
+                    Archive
+                  </button>
+                ) : null}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
 function FileModals({
   createOpen,
+  editingDeliverable,
   onCreateClose,
   onCreate,
+  onUpdate,
   versionTarget,
   onVersionClose,
   onVersion,
@@ -334,8 +433,10 @@ function FileModals({
   onSendConfirm,
 }: {
   createOpen: boolean;
+  editingDeliverable: AgencyDeliverable | null;
   onCreateClose: () => void;
-  onCreate: Parameters<typeof DeliverableFormModal>[0]["onSubmit"];
+  onCreate: (draft: DeliverableDraft, file: File | null) => Promise<boolean>;
+  onUpdate: (draft: DeliverableDraft) => Promise<boolean>;
   versionTarget: AgencyDeliverable | null;
   onVersionClose: () => void;
   onVersion: (file: File, description: string) => Promise<boolean>;
@@ -352,7 +453,12 @@ function FileModals({
 }) {
   return (
     <>
-      <DeliverableFormModal open={createOpen} onClose={onCreateClose} onSubmit={onCreate} />
+      <DeliverableFormModal
+        open={createOpen || Boolean(editingDeliverable)}
+        deliverable={editingDeliverable}
+        onClose={onCreateClose}
+        onSubmit={(draft, file) => (editingDeliverable ? onUpdate(draft) : onCreate(draft, file))}
+      />
       <VersionFormModal deliverable={versionTarget} onClose={onVersionClose} onSubmit={onVersion} />
       <ConfirmArchiveDeliverableModal
         deliverable={archiveTarget}
@@ -369,3 +475,6 @@ function FileModals({
     </>
   );
 }
+
+const actionBtn =
+  "inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[11px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]";

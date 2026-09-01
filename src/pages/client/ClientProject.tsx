@@ -7,6 +7,7 @@ import { ClientTimeline } from "@/components/client/ClientTimeline";
 import { useClientPortalAction } from "@/components/client/useClientPortalAction";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { currentMilestone } from "@/data/agencyProjects";
+import { displayMilestoneName } from "@/data/projectMilestones";
 import { timelineStagesFromProject } from "@/data/clientProjectProgress";
 
 export function ClientProject() {
@@ -36,7 +37,7 @@ export function ClientProject() {
         <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight md:text-3xl">My Project</h1>
         <p className="mt-1 text-sm text-[var(--client-muted)]">
           {project?.name ?? (onboarding.brief ? "Your project will appear here after we set it up." : "Tell us what you need first.")}
-          {milestone ? ` · Current milestone: ${milestone.name}` : ""}
+          {milestone ? ` · Current milestone: ${displayMilestoneName(milestone.name)}` : ""}
         </p>
       </header>
 

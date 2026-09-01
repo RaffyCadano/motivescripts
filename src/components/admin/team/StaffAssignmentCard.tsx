@@ -92,7 +92,7 @@ export function StaffAssignmentCard({
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
       <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
-        {kind === "client" ? "Assigned Team" : "Assigned team"}
+        {kind === "client" ? "Assigned Team" : "Assign staff"}
       </h2>
       {assigned.length === 0 ? (
         <p className="mt-3 text-sm text-[var(--admin-muted)]">No team members assigned yet.</p>

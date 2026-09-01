@@ -10,12 +10,17 @@ import { ProjectFeedbackPanel } from "@/components/admin/projects/ProjectFeedbac
 import { ProjectFilesPanel } from "@/components/admin/projects/ProjectFilesPanel";
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
 import { ProjectDevelopmentSection } from "@/components/admin/projects/ProjectDevelopmentSection";
+import { ProjectProductionPipeline } from "@/components/admin/projects/ProjectProductionPipeline";
+import { ProjectProductionTasksCard } from "@/components/admin/projects/ProjectProductionTasksCard";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
+import { ProjectTeamRoster } from "@/components/admin/projects/ProjectTeamRoster";
+import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import {
+  calculateProjectProgress,
   currentMilestone,
   formatProjectDay,
   milestoneTaskCounts,
@@ -25,6 +30,7 @@ import {
   type AgencyTask,
   type AgencyTaskStatus,
 } from "@/data/agencyProjects";
+import { displayMilestoneName } from "@/data/projectMilestones";
 import { isAssignedToMe, myOpenTaskCount, projectWorkload, teamProjectHref, type TeamWorkTask } from "@/data/teamWorkspace";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
@@ -124,6 +130,7 @@ export function TeamProjectDetails() {
   const nextMilestone = upcomingMilestone(project);
   const myOpen = myOpenTaskCount(project, profile?.id ?? "", profile?.fullName ?? "");
   const fileHref = (fileId: string) => teamProjectHref(project.id, { tab: "files", file: fileId });
+  const progress = calculateProjectProgress(project);
 
   return (
     <div className="space-y-6">
@@ -131,10 +138,25 @@ export function TeamProjectDetails() {
         <Link to="/team/projects" className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
           My Projects
         </Link>
-        <p className="mt-2 text-[12px] text-[var(--admin-muted)]">{client?.businessName ?? "Client"}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-3">
-          <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">{project.name}</h1>
-          <ProjectStatusBadge status={project.status} />
+        <h1 className="mt-2 font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">{project.name}</h1>
+        <p className="mt-1 text-sm text-[var(--admin-muted)]">
+          {client?.businessName ?? "Not set"} · {project.type}
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          <span className="inline-flex items-center gap-2">
+            <span className="text-[var(--admin-muted)]">Status</span>
+            <ProjectStatusBadge status={project.status} />
+          </span>
+          <span>
+            <span className="text-[var(--admin-muted)]">Progress</span>{" "}
+            <span className="font-heading font-semibold text-[var(--admin-ink)]">{progress}%</span>
+          </span>
+          <span>
+            <span className="text-[var(--admin-muted)]">Phase</span>{" "}
+            <span className="font-medium text-[var(--admin-ink)]">
+              {milestone ? displayMilestoneName(milestone.name) : "Not set"}
+            </span>
+          </span>
         </div>
         {canMessages && client ? (
           <Link
@@ -186,7 +208,7 @@ export function TeamProjectDetails() {
       {tab === "overview" ? (
         <TeamProjectOverview
           project={project}
-          clientName={client?.businessName ?? "Client"}
+          clientName={client?.businessName ?? "Not set"}
           work={work}
           milestone={milestone}
           nextMilestone={nextMilestone}
@@ -275,10 +297,25 @@ function TeamProjectOverview({
 }) {
   const milestoneCounts = milestone ? milestoneTaskCounts(project, milestone.id) : null;
   const files = useProjectDeliverables(project.id);
+  const team = useTeamDirectory();
+  const assignedLabels = team.data
+    ? Object.fromEntries(
+        team.data.members.flatMap((member) =>
+          member.projectAssignments
+            .filter((item) => item.entityId === project.id)
+            .map((item) => [member.id, item.label]),
+        ),
+      )
+    : {};
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
       <div className="space-y-6">
+        <ProjectProductionPipeline project={project} />
+        {team.data ? (
+          <ProjectTeamRoster members={team.data.members} projectId={project.id} assignedLabels={assignedLabels} />
+        ) : null}
+        <ProjectProductionTasksCard project={project} onOpenTasks={onOpenTasks} />
         <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
           <h2 className="font-heading text-sm font-semibold tracking-tight">Progress</h2>
           {work.total === 0 ? (
@@ -298,13 +335,13 @@ function TeamProjectOverview({
             <div className="mt-5 border-t border-[var(--admin-line)] pt-4">
               <p className="text-[12px] text-[var(--admin-muted)]">Current milestone</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <p className="font-heading text-sm font-semibold">{milestone.name}</p>
+                <p className="font-heading text-sm font-semibold">{displayMilestoneName(milestone.name)}</p>
                 <MilestoneStatusBadge status={milestone.status} />
               </div>
               <p className="mt-2 text-sm text-[var(--admin-muted)]">
                 {milestoneCounts && milestoneCounts.total > 0
                   ? `${milestoneCounts.completed} of ${milestoneCounts.total} tasks in this milestone`
-                  : "No tasks in this milestone yet."}
+                  : "No tasks yet. Tasks can be added when the project reaches this stage."}
               </p>
             </div>
           ) : null}

@@ -1,5 +1,6 @@
 import type { ClientTask, ProjectStage, ProjectStageStatus } from "@/data/clientPortal";
 import type { AgencyMilestone, AgencyProject, AgencyTask } from "@/data/agencyProjects";
+import { displayMilestoneName } from "@/data/projectMilestones";
 
 function milestoneStageStatus(milestones: AgencyMilestone[], index: number): ProjectStageStatus {
   const sorted = milestones;
@@ -15,7 +16,7 @@ export function timelineStagesFromProject(project: AgencyProject | null | undefi
   const sorted = [...project.milestones].sort((a, b) => a.order - b.order);
   return sorted.map((milestone, index) => ({
     id: milestone.id,
-    label: milestone.name,
+    label: displayMilestoneName(milestone.name),
     status: milestoneStageStatus(sorted, index),
   }));
 }
