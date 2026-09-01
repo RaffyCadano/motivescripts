@@ -365,6 +365,7 @@ export async function acceptStaffInvitation(token: string): Promise<void> {
   const client = requireClient();
   const { error } = await client.rpc("accept_staff_invitation", { p_token: token.trim().toLowerCase() });
   if (error) {
+    logDbError("accept staff invitation", error);
     throw new AgencyDbError(invitationErrorMessage(acceptErrorCode(error.message ?? "")), error);
   }
 }

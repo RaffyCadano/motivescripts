@@ -25,6 +25,7 @@ import {
   type AgencyProjectStatus,
   type AgencyTask,
 } from "@/data/agencyProjects";
+import { productionTaskAssigneeOptions } from "@/data/team";
 import { cn } from "@/lib/cn";
 
 const tabs = [
@@ -74,19 +75,10 @@ export function AdminProjectDetails() {
   const [taskOpen, setTaskOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<AgencyTask | null>(null);
   const projectId = match?.project.id ?? "";
-  const assignees = useMemo(() => {
-    const members = teamData?.members ?? [];
-    return members
-      .filter((member) => member.isActive)
-      .slice()
-      .sort((a, b) => {
-        const aOn = a.projectAssignments.some((item) => item.entityId === projectId) ? 0 : 1;
-        const bOn = b.projectAssignments.some((item) => item.entityId === projectId) ? 0 : 1;
-        if (aOn !== bOn) return aOn - bOn;
-        return (a.fullName || a.email).localeCompare(b.fullName || b.email);
-      })
-      .map((member) => ({ id: member.id, name: member.fullName || member.email }));
-  }, [projectId, teamData?.members]);
+  const assignees = useMemo(
+    () => productionTaskAssigneeOptions(teamData?.members ?? [], projectId),
+    [projectId, teamData?.members],
+  );
 
   function setTab(next: TabId) {
     const nextParams = new URLSearchParams(searchParams);

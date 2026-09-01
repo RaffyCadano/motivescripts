@@ -4,6 +4,10 @@
  */
 
 import { formatLeadDate, formatLeadSubmitted, formatLeadTimestamp } from "@/data/leads";
+import type { ProjectDevelopment } from "@/data/projectDevelopment";
+
+export type { DeploymentStatus, ProjectDevelopment } from "@/data/projectDevelopment";
+export { deploymentStatuses, emptyProjectDevelopment } from "@/data/projectDevelopment";
 
 export const projectTypes = [
   "Website",
@@ -87,6 +91,7 @@ export type AgencyProject = {
   lastActivityAt: string;
   archived: boolean;
   approvalStatus: AgencyApprovalStatus;
+  development: ProjectDevelopment;
   milestones: AgencyMilestone[];
   tasks: AgencyTask[];
   feedback: AgencyProjectFeedback[];
@@ -101,6 +106,7 @@ export type AgencyProjectDraft = {
   status: AgencyProjectStatus;
   startDate: string;
   targetLaunchDate: string;
+  development?: ProjectDevelopment;
 };
 
 export type AgencyMilestoneDraft = {

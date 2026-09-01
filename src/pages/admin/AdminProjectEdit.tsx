@@ -2,13 +2,18 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAgencyProject, useLeads } from "@/components/admin/leads/LeadsProvider";
 import {
+  deploymentStatuses,
+  emptyProjectDevelopment,
   projectStatuses,
   projectTypes,
   type AgencyProjectStatus,
   type AgencyProjectType,
+  type DeploymentStatus,
+  type ProjectDevelopment,
 } from "@/data/agencyProjects";
 import { updateProjectRecord } from "@/data/agencyRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
+import { toDatetimeLocalValue, fromDatetimeLocalValue } from "@/data/projectDevelopment";
 
 const inputClass =
   "mt-1.5 h-10 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm font-normal outline-none focus:border-[rgb(0_80_240_/_0.45)]";
@@ -26,7 +31,12 @@ export function AdminProjectEdit() {
   const [description, setDescription] = useState(project?.description ?? "");
   const [startDate, setStartDate] = useState(project?.startDate ?? "");
   const [targetLaunchDate, setTargetLaunchDate] = useState(project?.targetLaunchDate ?? "");
+  const [development, setDevelopment] = useState<ProjectDevelopment>(project?.development ?? emptyProjectDevelopment());
   const [busy, setBusy] = useState(false);
+
+  function patchDevelopment<K extends keyof ProjectDevelopment>(key: K, value: ProjectDevelopment[K]) {
+    setDevelopment((current) => ({ ...current, [key]: value }));
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -41,6 +51,7 @@ export function AdminProjectEdit() {
         status,
         startDate,
         targetLaunchDate,
+        development,
       });
       await reload();
       notify("Project updated.");
@@ -72,9 +83,9 @@ export function AdminProjectEdit() {
         {project.name}
       </Link>
       <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">Edit project</h1>
-      <p className="max-w-xl text-sm text-[var(--admin-muted)]">Update this project record.</p>
+      <p className="max-w-2xl text-sm text-[var(--admin-muted)]">Update this project record.</p>
       <form
-        className="w-full max-w-lg space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6"
+        className="w-full max-w-2xl space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6"
         onSubmit={onSubmit}
       >
         <label className="block text-sm font-semibold">
@@ -156,6 +167,90 @@ export function AdminProjectEdit() {
             />
           </label>
         </div>
+        <fieldset className="space-y-4 border-t border-[var(--admin-line)] pt-4">
+          <legend className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
+            Development
+          </legend>
+          <p className="text-sm text-[var(--admin-muted)]">
+            Manual links to GitHub and hosting. This does not change project status.
+          </p>
+          <label className="block text-sm font-semibold">
+            Repository URL
+            <input
+              type="text"
+              inputMode="url"
+              autoComplete="off"
+              value={development.repositoryUrl}
+              onChange={(event) => patchDevelopment("repositoryUrl", event.target.value)}
+              className={inputClass}
+            />
+          </label>
+          <label className="block text-sm font-semibold">
+            Branch
+            <input
+              value={development.repositoryBranch}
+              onChange={(event) => patchDevelopment("repositoryBranch", event.target.value)}
+              className={inputClass}
+            />
+          </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-semibold">
+              Staging URL
+              <input
+                type="text"
+                inputMode="url"
+                autoComplete="off"
+                value={development.stagingUrl}
+                onChange={(event) => patchDevelopment("stagingUrl", event.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="block text-sm font-semibold">
+              Production URL
+              <input
+                type="text"
+                inputMode="url"
+                autoComplete="off"
+                value={development.productionUrl}
+                onChange={(event) => patchDevelopment("productionUrl", event.target.value)}
+                className={inputClass}
+              />
+            </label>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-semibold">
+              Hosting provider
+              <input
+                value={development.hostingProvider}
+                onChange={(event) => patchDevelopment("hostingProvider", event.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="block text-sm font-semibold">
+              Deployment status
+              <select
+                value={development.deploymentStatus}
+                onChange={(event) => patchDevelopment("deploymentStatus", event.target.value as DeploymentStatus)}
+                className={inputClass}
+              >
+                {deploymentStatuses.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <label className="block text-sm font-semibold">
+            Last deployment
+            <input
+              type="datetime-local"
+              value={toDatetimeLocalValue(development.lastDeployedAt)}
+              onChange={(event) => patchDevelopment("lastDeployedAt", fromDatetimeLocalValue(event.target.value))}
+              className={inputClass}
+            />
+          </label>
+        </fieldset>
         <button
           type="submit"
           disabled={busy}

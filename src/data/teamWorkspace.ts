@@ -104,7 +104,11 @@ export function isDueSoon(task: Pick<TeamWorkTask, "status" | "dueDate">, now = 
   return diff > 0 && diff <= 7;
 }
 
-export function isAssignedToMe(task: AgencyTask, userId: string, fullName: string): boolean {
+export function isAssignedToMe(
+  task: Pick<AgencyTask, "assignedTo" | "assignee">,
+  userId: string,
+  fullName: string,
+): boolean {
   if (task.assignedTo && task.assignedTo === userId) return true;
   if (!task.assignedTo && fullName.trim() && task.assignee.trim().toLowerCase() === fullName.trim().toLowerCase()) {
     return true;

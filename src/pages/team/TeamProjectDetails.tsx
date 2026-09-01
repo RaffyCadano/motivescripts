@@ -9,6 +9,7 @@ import { ProjectApprovalsPanel } from "@/components/admin/projects/ProjectApprov
 import { ProjectFeedbackPanel } from "@/components/admin/projects/ProjectFeedbackPanel";
 import { ProjectFilesPanel } from "@/components/admin/projects/ProjectFilesPanel";
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
+import { ProjectDevelopmentSection } from "@/components/admin/projects/ProjectDevelopmentSection";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
@@ -318,6 +319,8 @@ function TeamProjectOverview({
             View tasks
           </button>
         </section>
+
+        <ProjectDevelopmentSection development={project.development} />
       </div>
       <aside className="space-y-4">
         <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">

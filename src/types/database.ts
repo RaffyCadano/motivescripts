@@ -79,8 +79,21 @@ export type ProjectRow = {
   created_by: string | null;
   last_activity_at: string;
   production_plan_generated_at: string | null;
+  staging_url: string | null;
+  production_url: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type ProjectDevelopmentRow = {
+  project_id: string;
+  repository_url: string | null;
+  repository_branch: string | null;
+  hosting_provider: string | null;
+  deployment_status: string;
+  last_deployed_at: string | null;
+  updated_at: string;
+  updated_by: string | null;
 };
 
 export type MilestoneRow = {
@@ -612,6 +625,11 @@ export type Database = {
       clients: Table<ClientRow, Partial<ClientRow> & { contact_name: string; business_name: string }>;
       client_staff_data: Table<ClientStaffDataRow, Partial<ClientStaffDataRow> & { client_id: string }>;
       projects: Table<ProjectRow, Partial<ProjectRow> & { client_id: string; name: string }>;
+      project_development: Table<
+        ProjectDevelopmentRow,
+        Partial<ProjectDevelopmentRow> & { project_id: string },
+        Partial<ProjectDevelopmentRow>
+      >;
       milestones: Table<MilestoneRow, Partial<MilestoneRow> & { project_id: string; name: string }>;
       tasks: Table<TaskRow, Partial<TaskRow> & { project_id: string; title: string }>;
       deliverables: Table<DeliverableRow, Partial<DeliverableRow> & { project_id: string; name: string }>;

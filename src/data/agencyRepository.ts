@@ -8,6 +8,7 @@ import {
   mapLead,
   mapMilestone,
   mapProject,
+  mapProjectDevelopment,
   mapTask,
   mapVersion,
   emptyToNull,
@@ -24,9 +25,11 @@ import type {
   AgencyProjectDraft,
   AgencyProjectStatus,
   AgencyTaskDraft,
+  ProjectDevelopment,
 } from "@/data/agencyProjects";
 import type { ReviewApproval, ReviewFeedback } from "@/data/review";
 import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
+import { normalizeHttpUrl } from "@/lib/safeUrl";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { ActivityRow, FileVersionRow, Json, LeadRow, ClientRow, ClientStaffDataRow, ProfileRow, Database } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -92,6 +95,7 @@ export async function fetchAgencySnapshot(role: AppRole): Promise<AgencySnapshot
     staffRes,
     profilesRes,
     projectsRes,
+    developmentRes,
     milestonesRes,
     tasksRes,
     deliverablesRes,
@@ -105,6 +109,7 @@ export async function fetchAgencySnapshot(role: AppRole): Promise<AgencySnapshot
     isAgencyRole(role) ? client.from("client_staff_data").select("*") : Promise.resolve(empty),
     isAgencyRole(role) ? client.from("profiles").select("id, email, full_name, role, client_id") : Promise.resolve(empty),
     client.from("projects").select("*").order("last_activity_at", { ascending: false }),
+    isAgencyRole(role) ? client.from("project_development").select("*") : Promise.resolve(empty),
     client.from("milestones").select("*").order("position", { ascending: true }),
     client.from("tasks").select("*").order("created_at", { ascending: false }),
     client.from("deliverables").select("*").order("updated_at", { ascending: false }),
@@ -119,6 +124,7 @@ export async function fetchAgencySnapshot(role: AppRole): Promise<AgencySnapshot
   throwIf(staffRes.error, "load clients", "Unable to load clients.");
   throwIf(profilesRes.error, "load accounts", "Unable to load client accounts.");
   throwIf(projectsRes.error, "load projects", "Unable to load projects.");
+  throwIf(developmentRes.error, "load development", "Unable to load projects.");
   throwIf(milestonesRes.error, "load milestones", "Unable to load projects.");
   throwIf(tasksRes.error, "load tasks", "Unable to load projects.");
   throwIf(deliverablesRes.error, "load deliverables", "Unable to load files.");
@@ -158,6 +164,11 @@ export async function fetchAgencySnapshot(role: AppRole): Promise<AgencySnapshot
     staffByClient.set(row.client_id, row);
   }
 
+  const developmentByProject = new Map<string, ReturnType<typeof mapProjectDevelopment>>();
+  for (const row of developmentRes.data ?? []) {
+    developmentByProject.set(row.project_id, mapProjectDevelopment(row));
+  }
+
   return {
     leads: (leadsRes.data ?? []).map(mapLead),
     clients: (clientsRes.data ?? []).map((row) => mapClient(row, staffByClient.get(row.id) ?? null)),
@@ -170,6 +181,7 @@ export async function fetchAgencySnapshot(role: AppRole): Promise<AgencySnapshot
         milestonesByProject.get(row.id) ?? [],
         tasksByProject.get(row.id) ?? [],
         activityByProject.get(row.id) ?? [],
+        developmentByProject.get(row.id) ?? null,
       ),
     ),
     deliverables: (deliverablesRes.data ?? []).map((row) => {
@@ -451,6 +463,42 @@ export async function insertProject(draft: AgencyProjectDraft): Promise<string> 
   return projectId;
 }
 
+function validatedHttpUrl(value: string, label: string): string | null {
+  if (!value.trim()) return null;
+  const href = normalizeHttpUrl(value);
+  if (!href) {
+    throw new AgencyDbError(`Enter a valid ${label} URL.`);
+  }
+  return href;
+}
+
+export async function upsertProjectDevelopment(projectId: string, development: ProjectDevelopment): Promise<void> {
+  const client = db();
+  const stagingUrl = validatedHttpUrl(development.stagingUrl, "staging");
+  const productionUrl = validatedHttpUrl(development.productionUrl, "production");
+  const repositoryUrl = validatedHttpUrl(development.repositoryUrl, "repository");
+  const { error } = await client.from("project_development").upsert(
+    {
+      project_id: projectId,
+      repository_url: repositoryUrl,
+      repository_branch: emptyToNull(development.repositoryBranch),
+      hosting_provider: emptyToNull(development.hostingProvider),
+      deployment_status: development.deploymentStatus,
+      last_deployed_at: emptyToNull(development.lastDeployedAt),
+    },
+    { onConflict: "project_id" },
+  );
+  throwIf(error, "project development", "Unable to save development information.");
+  const { error: websiteError } = await client
+    .from("projects")
+    .update({
+      staging_url: stagingUrl,
+      production_url: productionUrl,
+    })
+    .eq("id", projectId);
+  throwIf(websiteError, "project website", "Unable to save website links.");
+}
+
 export async function updateProjectRecord(id: string, edits: AgencyProjectDraft): Promise<void> {
   const client = db();
   const { error } = await client
@@ -466,6 +514,9 @@ export async function updateProjectRecord(id: string, edits: AgencyProjectDraft)
     })
     .eq("id", id);
   throwIf(error, "update project", "Unable to update project.");
+  if (edits.development) {
+    await upsertProjectDevelopment(id, edits.development);
+  }
   await addActivity(id, "status_changed", "Project details updated", "status");
 }
 

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
-import { isActiveAdmin } from "@/auth/permissions";
+import { canCoordinateAssignedWork, hasPermission } from "@/auth/permissions";
 import type { AgencyTask } from "@/data/agencyProjects";
 import { teamWorkloadCaption, type TeamMember } from "@/data/team";
 import { assignStaffToClient, assignStaffToProject, unassignStaffFromClient, unassignStaffFromProject } from "@/data/teamRepository";
@@ -30,7 +30,8 @@ export function StaffAssignmentCard({
   onChanged,
 }: StaffAssignmentCardProps) {
   const { profile } = useAuth();
-  const canManage = isActiveAdmin(profile);
+  const canManage =
+    kind === "project" ? canCoordinateAssignedWork(profile) : hasPermission(profile, "clients.manage");
   const [userId, setUserId] = useState("");
   const [label, setLabel] = useState("");
   const [busy, setBusy] = useState(false);

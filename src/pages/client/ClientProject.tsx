@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { ClientActionCard } from "@/components/client/ClientActionCard";
 import { ClientProjectCard } from "@/components/client/ClientProjectCard";
+import { ClientWebsiteSection } from "@/components/client/ClientWebsiteSection";
 import { ClientScopePrompt } from "@/components/client/ClientScopePrompt";
 import { ClientTimeline } from "@/components/client/ClientTimeline";
 import { useClientPortalAction } from "@/components/client/useClientPortalAction";
@@ -49,6 +50,8 @@ export function ClientProject() {
         project={project}
         nextLabel={action && action.kind !== "idle" ? action.title : "We’ll notify you when the next step is ready."}
       />
+
+      {project ? <ClientWebsiteSection projectName={project.name} development={project.development} /> : null}
 
       {stages.length > 0 ? <ClientTimeline stages={stages} /> : null}
 

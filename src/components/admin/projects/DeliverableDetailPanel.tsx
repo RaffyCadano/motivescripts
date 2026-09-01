@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useAuth } from "@/auth/AuthProvider";
+import { hasPermission } from "@/auth/permissions";
 import { DeliverableStatusBadge } from "@/components/admin/projects/DeliverableStatusBadge";
 import { FileTypeIcon } from "@/components/admin/projects/FileTypeIcon";
 import { useLeads, useProjectReview } from "@/components/admin/leads/LeadsProvider";
@@ -46,6 +48,9 @@ export function DeliverableDetailPanel({
   onSendForReview,
   onDownload,
 }: DeliverableDetailPanelProps) {
+  const { profile } = useAuth();
+  const canManageFiles = hasPermission(profile, "files.manage");
+  const canResolveFeedback = hasPermission(profile, "feedback.manage");
   const { resolveFeedback } = useLeads();
   const review = useProjectReview(deliverable.projectId);
   const current = currentVersion(deliverable);
@@ -79,23 +84,27 @@ export function DeliverableDetailPanel({
           </div>
           <div className="flex flex-wrap gap-2">
             {deliverable.status === "Archived" ? (
-              <button
-                type="button"
-                className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-                onClick={onRestore}
-              >
-                Restore
-              </button>
-            ) : (
-              <>
+              canManageFiles ? (
                 <button
                   type="button"
-                  className="inline-flex h-9 items-center rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white"
-                  onClick={onAddVersion}
+                  className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                  onClick={onRestore}
                 >
-                  Add Version
+                  Restore
                 </button>
-                {canSendForReview(deliverable) ? (
+              ) : null
+            ) : (
+              <>
+                {canManageFiles ? (
+                  <button
+                    type="button"
+                    className="inline-flex h-9 items-center rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white"
+                    onClick={onAddVersion}
+                  >
+                    Add Version
+                  </button>
+                ) : null}
+                {canManageFiles && canSendForReview(deliverable) ? (
                   <button
                     type="button"
                     className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
@@ -112,13 +121,15 @@ export function DeliverableDetailPanel({
                 >
                   Preview Current
                 </button>
-                <button
-                  type="button"
-                  className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-                  onClick={onArchiveDeliverable}
-                >
-                  Archive
-                </button>
+                {canManageFiles ? (
+                  <button
+                    type="button"
+                    className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                    onClick={onArchiveDeliverable}
+                  >
+                    Archive
+                  </button>
+                ) : null}
               </>
             )}
           </div>
@@ -213,7 +224,7 @@ export function DeliverableDetailPanel({
                         >
                           Preview
                         </button>
-                        {label !== "Current" ? (
+                        {label !== "Current" && canManageFiles ? (
                           <button
                             type="button"
                             className="inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] bg-white px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-hover)]"
@@ -222,7 +233,7 @@ export function DeliverableDetailPanel({
                             Make Current
                           </button>
                         ) : null}
-                        {label === "Current" ? null : version.status === "Archived" ? null : (
+                        {canManageFiles && label !== "Current" && version.status !== "Archived" ? (
                           <button
                             type="button"
                             className="inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] bg-white px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-hover)]"
@@ -230,7 +241,7 @@ export function DeliverableDetailPanel({
                           >
                             Archive Version
                           </button>
-                        )}
+                        ) : null}
                         {hasStoredFile(version) ? (
                           <button
                             type="button"
@@ -275,13 +286,15 @@ export function DeliverableDetailPanel({
                     {version ? versionLabel(version.versionNumber) : "Version"} · {formatReviewLong(item.createdAt)}
                   </p>
                   <p className="mt-1 text-sm text-[var(--admin-ink)]">“{item.message}”</p>
-                  <button
-                    type="button"
-                    className="mt-3 inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] bg-white px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-hover)]"
-                    onClick={() => resolveFeedback(item.id)}
-                  >
-                    Mark Resolved
-                  </button>
+                  {canResolveFeedback ? (
+                    <button
+                      type="button"
+                      className="mt-3 inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] bg-white px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-hover)]"
+                      onClick={() => resolveFeedback(item.id)}
+                    >
+                      Mark Resolved
+                    </button>
+                  ) : null}
                 </li>
               );
             })}

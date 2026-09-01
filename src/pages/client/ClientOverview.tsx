@@ -5,6 +5,7 @@ import { ClientActivity } from "@/components/client/ClientActivity";
 import { ClientFiles } from "@/components/client/ClientFiles";
 import { ClientPreProjectDashboard } from "@/components/client/ClientPreProjectDashboard";
 import { ClientProjectCard } from "@/components/client/ClientProjectCard";
+import { ClientWebsiteSection } from "@/components/client/ClientWebsiteSection";
 import { ClientStatusBadge } from "@/components/client/ClientStatusBadge";
 import { ClientTimeline } from "@/components/client/ClientTimeline";
 import { useClientPortalAction } from "@/components/client/useClientPortalAction";
@@ -106,6 +107,7 @@ export function ClientOverview() {
       ) : null}
 
       <ClientProjectCard nextLabel={action && action.kind !== "idle" ? action.title : "We’ll notify you when the next step is ready."} />
+      {project ? <ClientWebsiteSection projectName={project.name} development={project.development} /> : null}
       {stages.length > 0 ? <ClientTimeline stages={stages} /> : null}
 
       <div className="grid gap-6 lg:grid-cols-2">

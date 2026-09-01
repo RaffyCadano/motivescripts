@@ -46,3 +46,8 @@ export function hasPermission(
   if (profile.role === "admin") return true;
   return profile.permissions.includes(code);
 }
+
+/** Mirrors `staff_may_coordinate_project`: admin, or assigned PM-style staff with both grants. */
+export function canCoordinateAssignedWork(profile: AppProfile | null | undefined): boolean {
+  return isActiveAdmin(profile) || (hasPermission(profile, "projects.manage") && hasPermission(profile, "clients.manage"));
+}

@@ -12,6 +12,7 @@ import type {
   AgencyTaskPriority,
   AgencyTaskStatus,
 } from "@/data/agencyProjects";
+import { emptyProjectDevelopment, isDeploymentStatus, type ProjectDevelopment } from "@/data/projectDevelopment";
 import type { ReviewApproval, ReviewFeedback } from "@/data/review";
 import type {
   ActivityRow,
@@ -24,6 +25,7 @@ import type {
   Json,
   LeadRow,
   MilestoneRow,
+  ProjectDevelopmentRow,
   ProjectRow,
   TaskRow,
 } from "@/types/database";
@@ -187,12 +189,26 @@ export function mapActivity(row: ActivityRow): AgencyProjectActivity {
   };
 }
 
+export function mapProjectDevelopment(row: ProjectDevelopmentRow): ProjectDevelopment {
+  return {
+    repositoryUrl: row.repository_url ?? "",
+    repositoryBranch: row.repository_branch ?? "",
+    stagingUrl: "",
+    productionUrl: "",
+    hostingProvider: row.hosting_provider ?? "",
+    deploymentStatus: isDeploymentStatus(row.deployment_status) ? row.deployment_status : "Not deployed",
+    lastDeployedAt: row.last_deployed_at ?? "",
+  };
+}
+
 export function mapProject(
   row: ProjectRow,
   milestones: AgencyMilestone[],
   tasks: AgencyTask[],
   activity: AgencyProjectActivity[],
+  staffDevelopment?: ProjectDevelopment | null,
 ): AgencyProject {
+  const development = staffDevelopment ?? emptyProjectDevelopment();
   return {
     id: row.id,
     clientId: row.client_id,
@@ -206,6 +222,11 @@ export function mapProject(
     lastActivityAt: row.last_activity_at,
     archived: row.archived,
     approvalStatus: row.approval_status === "Approved" ? "Approved" : "Pending",
+    development: {
+      ...development,
+      stagingUrl: row.staging_url ?? "",
+      productionUrl: row.production_url ?? "",
+    },
     milestones,
     tasks,
     feedback: [],

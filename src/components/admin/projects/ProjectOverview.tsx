@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ProgressBar } from "@/components/admin/ProgressBar";
 import { useProjectDeliverables, useProjectReview } from "@/components/admin/leads/LeadsProvider";
 import { MilestoneStatusBadge } from "@/components/admin/projects/MilestoneStatusBadge";
+import { ProjectDevelopmentSection } from "@/components/admin/projects/ProjectDevelopmentSection";
 import { ProjectDocumentsCard } from "@/components/admin/projects/ProjectDocumentsCard";
 import { ProjectInvoicesCard } from "@/components/admin/projects/ProjectInvoicesCard";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
@@ -314,6 +315,11 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
           )}
         </div>
       </section>
+
+      <ProjectDevelopmentSection
+        development={project.development}
+        editHref={`/admin/projects/${project.id}/edit`}
+      />
 
       <ProjectInvoicesCard projectId={project.id} clientId={project.clientId} />
 

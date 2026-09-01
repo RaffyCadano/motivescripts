@@ -80,6 +80,27 @@ export function isStaffTemplateKey(value: string): value is StaffTemplateKey {
   return (STAFF_TEMPLATE_KEYS as readonly string[]).includes(value);
 }
 
+const NON_PRODUCTION_TASK_TEMPLATES = new Set<StaffTemplateKey>(["sales", "accounting"]);
+
+export function productionTaskAssigneeOptions(
+  members: TeamMember[],
+  projectId: string,
+): { id: string; name: string }[] {
+  return members
+    .filter((member) => member.isActive && !NON_PRODUCTION_TASK_TEMPLATES.has(member.templateKey))
+    .slice()
+    .sort((a, b) => {
+      const aProd = isProductionTeamTemplate(a.templateKey) ? 0 : 1;
+      const bProd = isProductionTeamTemplate(b.templateKey) ? 0 : 1;
+      if (aProd !== bProd) return aProd - bProd;
+      const aOn = a.projectAssignments.some((item) => item.entityId === projectId) ? 0 : 1;
+      const bOn = b.projectAssignments.some((item) => item.entityId === projectId) ? 0 : 1;
+      if (aOn !== bOn) return aOn - bOn;
+      return (a.fullName || a.email).localeCompare(b.fullName || b.email);
+    })
+    .map((member) => ({ id: member.id, name: member.fullName || member.email }));
+}
+
 export function teamStatusLabel(row: TeamListRow): string {
   if (row.kind === "invite") return "Pending invitation";
   return row.member.isActive ? "Active" : "Inactive";

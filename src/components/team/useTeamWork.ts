@@ -8,6 +8,7 @@ import { fetchMyProjectAssignmentIds, updateMyTaskStatus } from "@/data/teamRepo
 import {
   collectAssignedTasks,
   collectMyProjects,
+  isAssignedToMe,
   myWorkStats,
   sortUpcomingTasks,
   type TeamWorkTask,
@@ -59,6 +60,12 @@ export function useTeamWork() {
   const canManageTasks = hasPermission(profile, "projects.manage");
 
   async function changeTaskStatus(task: TeamWorkTask, status: AgencyTaskStatus) {
+    const mine = isAssignedToMe(task, profile?.id ?? "", profile?.fullName ?? "");
+    if (mine) {
+      await updateMyTaskStatus(task.id, status);
+      await reload();
+      return;
+    }
     const draft: AgencyTaskDraft = {
       title: task.title,
       description: task.description,
