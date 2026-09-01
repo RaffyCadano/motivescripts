@@ -33,10 +33,7 @@ export type AdminNavGroup = {
 export const adminNavGroups: AdminNavGroup[] = [
   {
     label: "Main",
-    items: [
-      { label: "Overview", href: "/admin", icon: "overview", end: true },
-      { label: "My work", href: "/team/dashboard", icon: "tasks" },
-    ],
+    items: [{ label: "Overview", href: "/admin", icon: "overview", end: true }],
   },
   {
     label: "CRM",
@@ -46,7 +43,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     ],
   },
   {
-    label: "Projects",
+    label: "Delivery",
     items: [
       { label: "Projects", href: "/admin/projects", icon: "projects" },
       { label: "Files", href: "/admin/files", icon: "files" },
@@ -162,7 +159,6 @@ export function filterAdminNavGroups(profile: AppProfile | null): AdminNavGroup[
       ...group,
       items: group.items.filter((item) => {
         if (item.href === "/admin/settings") return isActiveAdmin(profile);
-        if (item.href === "/team/dashboard") return profile?.role === "staff";
         const required = navPermission[item.href];
         if (!required) return true;
         return hasPermission(profile, required);

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
+import { isOfficeStaff } from "@/auth/roles";
 import { AgencyLoadPanel } from "@/components/admin/leads/AgencyLoadPanel";
 import { LeadToast } from "@/components/admin/leads/LeadToast";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
@@ -11,6 +13,7 @@ import "@/styles/admin.css";
 
 export function TeamLayout() {
   const { pathname } = useLocation();
+  const { profile } = useAuth();
   const { loadStatus, loadError, reload } = useLeads();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -60,6 +63,10 @@ export function TeamLayout() {
   }, [pathname]);
 
   const dockCollapsed = isLg && collapsed;
+
+  if (isOfficeStaff(profile)) {
+    return <Navigate to="/admin" replace />;
+  }
 
   return (
     <TeamDirectoryProvider>

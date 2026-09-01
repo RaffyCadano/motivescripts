@@ -37,6 +37,13 @@ export function usesTeamWorkspace(
   return profile?.role === "staff" && isProductionTeamTemplate(profile.templateKey);
 }
 
+/** PM, Sales, Accounting, and other non-production staff belong on /admin. */
+export function isOfficeStaff(
+  profile: { role?: string | null; templateKey?: string | null } | null | undefined,
+): boolean {
+  return profile?.role === "staff" && !isProductionTeamTemplate(profile.templateKey);
+}
+
 export function agencyHomePath(
   profile: { role?: string | null; templateKey?: string | null } | null | undefined,
 ): string {

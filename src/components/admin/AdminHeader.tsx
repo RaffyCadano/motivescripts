@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, CheckSquare, ChevronDown, Globe, LogOut, Menu, PanelLeft, Settings } from "lucide-react";
+import { Bell, ChevronDown, Globe, LogOut, Menu, PanelLeft, Settings } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAdmin } from "@/auth/permissions";
 import { userDisplay } from "@/auth/userDisplay";
@@ -167,17 +167,6 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
               role="menu"
               className="absolute right-0 z-50 mt-1.5 w-48 overflow-hidden rounded-lg border border-[var(--admin-line)] bg-[var(--admin-card)] py-1 shadow-[0_12px_32px_rgb(7_17_31_/_0.08)]"
             >
-              {profile?.role === "staff" ? (
-                <Link
-                  role="menuitem"
-                  to="/team/dashboard"
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <CheckSquare size={15} strokeWidth={1.75} aria-hidden="true" />
-                  My work
-                </Link>
-              ) : null}
               <Link
                 role="menuitem"
                 to="/"
