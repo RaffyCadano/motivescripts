@@ -21,9 +21,18 @@ type ProjectTasksPanelProps = {
   onEdit: (task: AgencyTask) => void;
   onToggle: (task: AgencyTask) => void;
   onOpenDiscovery?: () => void;
+  onOpenWorkspace: (task: AgencyTask) => void;
 };
 
-export function ProjectTasksPanel({ project, onAdd, onAddForMilestone, onEdit, onToggle, onOpenDiscovery }: ProjectTasksPanelProps) {
+export function ProjectTasksPanel({
+  project,
+  onAdd,
+  onAddForMilestone,
+  onEdit,
+  onToggle,
+  onOpenDiscovery,
+  onOpenWorkspace,
+}: ProjectTasksPanelProps) {
   const stats = productionTaskStats(project);
   const orderedMilestones = [...project.milestones].sort((a, b) => a.order - b.order);
   const grouped = [
@@ -93,7 +102,15 @@ export function ProjectTasksPanel({ project, onAdd, onAddForMilestone, onEdit, o
               ) : (
                 <ul className="mt-2 divide-y divide-[var(--admin-line)]">
                   {group.tasks.map((task) => (
-                    <TaskRow key={task.id} task={task} milestone={group.milestone} onEdit={onEdit} onToggle={onToggle} onOpenDiscovery={onOpenDiscovery} />
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      milestone={group.milestone}
+                      onEdit={onEdit}
+                      onToggle={onToggle}
+                      onOpenDiscovery={onOpenDiscovery}
+                      onOpenWorkspace={onOpenWorkspace}
+                    />
                   ))}
                 </ul>
               )}
@@ -111,12 +128,14 @@ function TaskRow({
   onEdit,
   onToggle,
   onOpenDiscovery,
+  onOpenWorkspace,
 }: {
   task: AgencyTask;
   milestone: AgencyMilestone | null;
   onEdit: (task: AgencyTask) => void;
   onToggle: (task: AgencyTask) => void;
   onOpenDiscovery?: () => void;
+  onOpenWorkspace: (task: AgencyTask) => void;
 }) {
   const checked = task.status === "Completed";
   const preview = taskInstructionPreview(task.title, task.description);
@@ -133,9 +152,17 @@ function TaskRow({
           aria-label={`${checked ? "Reopen" : "Complete"} ${task.title}`}
         />
         <span className="min-w-0">
-          <span className={`block text-sm font-medium ${checked ? "text-[var(--admin-muted)] line-through" : "text-[var(--admin-ink)]"}`}>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onOpenWorkspace(task);
+            }}
+            className={`block text-left text-sm font-medium hover:underline ${checked ? "text-[var(--admin-muted)] line-through" : "text-[var(--admin-ink)]"}`}
+          >
             {task.title}
-          </span>
+          </button>
           {preview ? <span className="mt-1 block text-[12px] text-[var(--admin-muted)]">{preview}</span> : null}
           <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
             <TaskStatusBadge status={task.status} />

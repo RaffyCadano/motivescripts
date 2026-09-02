@@ -16,6 +16,7 @@ import {
   TASK_RECOMMENDED_ROLE_OPTIONS,
   type TaskRecommendedRoleId,
 } from "@/data/taskRecommendedRoles";
+import { effectiveTaskType, TASK_TYPES, taskTypeLabel, type TaskType } from "@/data/taskTypes";
 
 const fieldClass =
   "mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]";
@@ -30,12 +31,18 @@ const emptyDraft: AgencyTaskDraft = {
   assignedTo: "",
   dueDate: "",
   recommendedRole: null,
+  taskType: "internal",
 };
 
 export type TaskAssigneeOption = {
   id: string;
   name: string;
+  roleLabel?: string;
 };
+
+function assigneeOptionLabel(person: TaskAssigneeOption): string {
+  return person.roleLabel ? `${person.name} — ${person.roleLabel}` : person.name;
+}
 
 type TaskFormModalProps = {
   open: boolean;
@@ -71,6 +78,7 @@ export function TaskFormModal({
         assignedTo: task.assignedTo,
         dueDate: task.dueDate,
         recommendedRole: resolveTaskRecommendedRole(task),
+        taskType: effectiveTaskType(task),
       });
       return;
     }
@@ -189,6 +197,20 @@ export function TaskFormModal({
             </select>
           </label>
           <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+            Task type
+            <select
+              className={fieldClass}
+              value={draft.taskType ?? "internal"}
+              onChange={(event) => setDraft((current) => ({ ...current, taskType: event.target.value as TaskType }))}
+            >
+              {TASK_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {taskTypeLabel(type)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
             Assignee
             {assignees.length > 0 ? (
               <select
@@ -203,7 +225,7 @@ export function TaskFormModal({
                 <option value="">Unassigned</option>
                 {assignees.map((person) => (
                   <option key={person.id} value={person.id}>
-                    {person.name}
+                    {assigneeOptionLabel(person)}
                   </option>
                 ))}
               </select>

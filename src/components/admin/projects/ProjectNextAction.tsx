@@ -68,8 +68,18 @@ export function ProjectNextAction({
                 {action.primaryLabel}
               </button>
             ) : null}
-            {showSecondary ? (
-              <Link to={action.secondaryHref!} className={`${adminGhostBtn} justify-center sm:ml-auto`}>
+            {showSecondary && action.secondaryDisabled ? (
+              <button
+                type="button"
+                disabled
+                title={action.secondaryDisabledReason}
+                className={`${adminGhostBtn} cursor-not-allowed justify-center opacity-50`}
+              >
+                {action.secondaryLabel}
+              </button>
+            ) : null}
+            {showSecondary && !action.secondaryDisabled ? (
+              <Link to={action.secondaryHref!} className={`${adminGhostBtn} justify-center`}>
                 {action.secondaryLabel}
               </Link>
             ) : null}

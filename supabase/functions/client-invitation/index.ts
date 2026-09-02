@@ -161,13 +161,20 @@ Deno.serve(async (req) => {
     .select("id, role, client_id")
     .eq("id", user.id)
     .maybeSingle();
-  if (profileError || !profile || profile.role !== "admin") {
+  if (profileError || !profile || (profile.role !== "admin" && profile.role !== "staff")) {
     return fail("not_allowed", 403);
   }
 
   try {
     if (action === "revoke") {
+      const invitation = await loadInvitationClientId(admin, body.invitationId);
+      if (!(await canManageClientInvites(admin, user.id, profile.role, invitation.clientId))) {
+        return fail("not_allowed", 403);
+      }
       return await revokeInvitation(admin, body.invitationId, json);
+    }
+    if (!body.clientId || !(await canManageClientInvites(admin, user.id, profile.role, body.clientId))) {
+      return fail("not_allowed", 403);
     }
     return await sendOrResend(admin, {
       action,
@@ -195,6 +202,51 @@ Deno.serve(async (req) => {
     return fail("server_error", 500);
   }
 });
+
+async function loadInvitationClientId(admin: ServiceClient, invitationId: string | undefined): Promise<{ clientId: string }> {
+  if (!invitationId) throw new Error("not_found");
+  const { data, error } = await admin
+    .from("client_invitations")
+    .select("client_id")
+    .eq("id", invitationId)
+    .maybeSingle();
+  if (error || !data) throw new Error("not_found");
+  return { clientId: data.client_id };
+}
+
+/** Admin, or active staff with `clients.manage` assigned to this client. Mirrors `staff_may_client` in SQL. */
+async function canManageClientInvites(
+  admin: ServiceClient,
+  userId: string,
+  role: string,
+  clientId: string,
+): Promise<boolean> {
+  if (role === "admin") return true;
+  if (role !== "staff") return false;
+
+  const { data: staffProfile } = await admin
+    .from("staff_profiles")
+    .select("is_active")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!staffProfile?.is_active) return false;
+
+  const { data: grant } = await admin
+    .from("staff_grants")
+    .select("permission_code")
+    .eq("user_id", userId)
+    .eq("permission_code", "clients.manage")
+    .maybeSingle();
+  if (!grant) return false;
+
+  const { data: assignment } = await admin
+    .from("client_staff_assignments")
+    .select("client_id")
+    .eq("user_id", userId)
+    .eq("client_id", clientId)
+    .maybeSingle();
+  return Boolean(assignment);
+}
 
 async function revokeInvitation(admin: ServiceClient, invitationId: string | undefined, json: JsonFn) {
   if (!invitationId) throw new Error("not_found");

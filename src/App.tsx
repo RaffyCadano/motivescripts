@@ -50,6 +50,7 @@ import { ClientMessages } from "@/pages/client/ClientMessages";
 import { ClientOverview } from "@/pages/client/ClientOverview";
 import { ClientProject } from "@/pages/client/ClientProject";
 import { ClientDiscovery } from "@/pages/client/ClientDiscovery";
+import { ClientTaskRequests } from "@/pages/client/ClientTaskRequests";
 import { ClientScope } from "@/pages/client/ClientScope";
 import { ClientProposalDetails } from "@/pages/client/ClientProposalDetails";
 import { ClientProposals } from "@/pages/client/ClientProposals";
@@ -164,6 +165,7 @@ export default function App() {
             <Route path="project" element={<ClientProject />} />
             <Route path="project/:projectId" element={<ClientProject />} />
             <Route path="project/:projectId/discovery" element={<ClientDiscovery />} />
+            <Route path="project/:projectId/requests" element={<ClientTaskRequests />} />
             <Route path="files" element={<ClientFilesPage />} />
             <Route path="files/:deliverableId" element={<ClientReview />} />
             <Route path="feedback" element={<ClientFeedback />} />

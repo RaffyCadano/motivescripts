@@ -4,7 +4,7 @@ import { hasPermission } from "@/auth/permissions";
 import { usesTeamWorkspace } from "@/auth/roles";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import type { AgencyTaskDraft, AgencyTaskStatus } from "@/data/agencyProjects";
-import { fetchMyProjectAssignmentIds, updateMyTaskStatus } from "@/data/teamRepository";
+import { fetchMyClientAssignmentIds, fetchMyProjectAssignmentIds, updateMyTaskStatus } from "@/data/teamRepository";
 import {
   collectAssignedTasks,
   collectMyProjects,
@@ -18,15 +18,17 @@ export function useTeamWork() {
   const { profile } = useAuth();
   const { clients, projects, deliverables, updateTask, reload, loadStatus } = useLeads();
   const [assignedProjectIds, setAssignedProjectIds] = useState<string[]>([]);
+  const [assignedClientIds, setAssignedClientIds] = useState<string[]>([]);
   const [assignmentError, setAssignmentError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!profile?.id) return;
     let active = true;
-    void fetchMyProjectAssignmentIds(profile.id)
-      .then((ids) => {
+    void Promise.all([fetchMyProjectAssignmentIds(profile.id), fetchMyClientAssignmentIds(profile.id)])
+      .then(([projectIds, clientIds]) => {
         if (!active) return;
-        setAssignedProjectIds(ids);
+        setAssignedProjectIds(projectIds);
+        setAssignedClientIds(clientIds);
         setAssignmentError(null);
       })
       .catch(() => {
@@ -52,8 +54,8 @@ export function useTeamWork() {
     if (usesTeamWorkspace(profile)) {
       return projects.filter((project) => !project.archived);
     }
-    return collectMyProjects(projects, new Set(assignedProjectIds), tasks);
-  }, [assignedProjectIds, profile, projects, tasks]);
+    return collectMyProjects(projects, new Set(assignedProjectIds), tasks, new Set(assignedClientIds));
+  }, [assignedClientIds, assignedProjectIds, profile, projects, tasks]);
 
   const stats = useMemo(() => myWorkStats(tasks), [tasks]);
   const upcoming = useMemo(() => sortUpcomingTasks(tasks), [tasks]);
@@ -76,6 +78,7 @@ export function useTeamWork() {
       assignedTo: task.assignedTo || profile?.id || "",
       dueDate: task.dueDate,
       recommendedRole: task.recommendedRole,
+      taskType: task.taskType,
     };
     if (canManageTasks) {
       await updateTask(task.projectId, task.id, draft);

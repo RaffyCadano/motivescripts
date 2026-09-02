@@ -6,6 +6,7 @@
 import { formatLeadDate, formatLeadSubmitted, formatLeadTimestamp } from "@/data/leads";
 import type { ProjectDevelopment } from "@/data/projectDevelopment";
 import type { TaskRecommendedRoleId } from "@/data/taskRecommendedRoles";
+import type { TaskType } from "@/data/taskTypes";
 
 export type { DeploymentStatus, ProjectDevelopment } from "@/data/projectDevelopment";
 export { deploymentStatuses, emptyProjectDevelopment } from "@/data/projectDevelopment";
@@ -64,6 +65,7 @@ export type AgencyTask = {
   createdAt: string;
   completedAt: string | null;
   recommendedRole: TaskRecommendedRoleId | null;
+  taskType: TaskType | null;
 };
 
 export type AgencyProjectFeedback = {
@@ -129,6 +131,7 @@ export type AgencyTaskDraft = {
   assignedTo: string;
   dueDate: string;
   recommendedRole: TaskRecommendedRoleId | null;
+  taskType: TaskType | null;
 };
 
 export function taskStatusLabel(status: AgencyTaskStatus): string {

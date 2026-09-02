@@ -110,7 +110,11 @@ export function ClientScope() {
   }
 
   async function persist(submit: boolean) {
-    if (!client?.id || busy) return;
+    if (busy) return;
+    if (!client?.id) {
+      setError("We couldn't identify your account yet. Refresh the page and try again.");
+      return;
+    }
     if (submit) {
       const invalid = validateScopeBrief(draft);
       if (invalid) {

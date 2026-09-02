@@ -85,7 +85,7 @@ const NON_PRODUCTION_TASK_TEMPLATES = new Set<StaffTemplateKey>(["sales", "accou
 export function productionTaskAssigneeOptions(
   members: TeamMember[],
   projectId: string,
-): { id: string; name: string }[] {
+): { id: string; name: string; roleLabel: string }[] {
   return members
     .filter((member) => member.isActive && !NON_PRODUCTION_TASK_TEMPLATES.has(member.templateKey))
     .slice()
@@ -98,7 +98,11 @@ export function productionTaskAssigneeOptions(
       if (aOn !== bOn) return aOn - bOn;
       return (a.fullName || a.email).localeCompare(b.fullName || b.email);
     })
-    .map((member) => ({ id: member.id, name: member.fullName || member.email }));
+    .map((member) => ({
+      id: member.id,
+      name: member.fullName || member.email,
+      roleLabel: member.jobTitle.trim() || member.templateLabel,
+    }));
 }
 
 /** Client-level assignment is the account owner (PM), not production staff. */

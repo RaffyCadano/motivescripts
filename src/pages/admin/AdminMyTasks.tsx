@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { MyTaskMobileList, MyTaskTable } from "@/components/admin/MyTaskList";
 import { useTeamWork } from "@/components/team/useTeamWork";
-import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
-import { taskPriorities, type AgencyTaskPriority } from "@/data/agencyProjects";
+import { TaskWorkspace } from "@/components/tasks/TaskWorkspace";
+import { taskPriorities, type AgencyTaskPriority, type AgencyTaskStatus } from "@/data/agencyProjects";
 import {
+  adminProjectHref,
   filterMyTasks,
   myTasksSummaryStats,
   sortMyTasks,
@@ -22,6 +24,7 @@ const statusFilters: { id: MyTasksStatusFilter; label: string }[] = [
 ];
 
 export function AdminMyTasks() {
+  const navigate = useNavigate();
   const { tasks, myProjects, deliverables, changeTaskStatus } = useTeamWork();
   const [status, setStatus] = useState<MyTasksStatusFilter>("all");
   const [projectId, setProjectId] = useState<string | "All">("All");
@@ -53,7 +56,7 @@ export function AdminMyTasks() {
     [phase, priority, projectId, search, status, tasks],
   );
 
-  async function onStatusChange(next: TeamWorkTask["status"]) {
+  async function onStatusChange(next: AgencyTaskStatus) {
     if (!openTask) return;
     setBusy(true);
     setError(null);
@@ -66,6 +69,9 @@ export function AdminMyTasks() {
       setBusy(false);
     }
   }
+
+  const openProject = openTask ? myProjects.find((project) => project.id === openTask.projectId) ?? null : null;
+  const openFullTask = openProject && openTask ? openProject.tasks.find((task) => task.id === openTask.id) ?? null : null;
 
   return (
     <div className="space-y-6">
@@ -160,12 +166,12 @@ export function AdminMyTasks() {
         </>
       )}
 
-      {openTask ? (
-        <TeamTaskDetail
-          task={openTask}
-          files={deliverables.filter((item) => item.projectId === openTask.projectId)}
-          canUpdateStatus
-          workspace="admin"
+      {openTask && openProject && openFullTask ? (
+        <TaskWorkspace
+          task={openFullTask}
+          project={openProject}
+          clientName={openTask.clientName}
+          deliverables={deliverables}
           busy={busy}
           error={error}
           onClose={() => {
@@ -173,6 +179,14 @@ export function AdminMyTasks() {
             setError(null);
           }}
           onStatusChange={(next) => void onStatusChange(next)}
+          onOpenDiscovery={() => {
+            setOpenTask(null);
+            navigate(`${adminProjectHref(openProject.id)}#project-discovery`);
+          }}
+          onOpenFiles={() => {
+            setOpenTask(null);
+            navigate(adminProjectHref(openProject.id, { tab: "files" }));
+          }}
         />
       ) : null}
     </div>

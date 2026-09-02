@@ -1,5 +1,6 @@
 import type { AppProfile } from "@/auth/loadProfile";
 import { hasPermission, isActiveAdmin, type StaffPermissionCode } from "@/auth/permissions";
+import { isProjectManager } from "@/auth/roles";
 
 export type AdminIconName =
   | "overview"
@@ -74,6 +75,38 @@ export const adminNavGroups: AdminNavGroup[] = [
       { label: "Team", href: "/admin/team", icon: "team" },
       { label: "Settings", href: "/admin/settings", icon: "settings" },
     ],
+  },
+  {
+    label: "Account",
+    items: [{ label: "Profile", href: "/admin/profile", icon: "profile" }],
+  },
+];
+
+/**
+ * PM's working set is a curated subset of the same `/admin` routes (no new routes),
+ * grouped around "my work" instead of the agency-wide CRM/Sales/Finance/Operations
+ * groupings admin sees. Still pruned by `navPermission` below, so it degrades safely
+ * if a PM's grants ever change.
+ */
+export const pmNavGroups: AdminNavGroup[] = [
+  {
+    label: "Main",
+    items: [
+      { label: "Overview", href: "/admin", icon: "overview", end: true },
+      { label: "My Tasks", href: "/admin/my-tasks", icon: "tasks" },
+    ],
+  },
+  {
+    label: "My Work",
+    items: [
+      { label: "Projects", href: "/admin/projects", icon: "projects" },
+      { label: "Clients", href: "/admin/clients", icon: "clients" },
+      { label: "Files", href: "/admin/files", icon: "files" },
+    ],
+  },
+  {
+    label: "Communication",
+    items: [{ label: "Messages", href: "/admin/messages", icon: "messages" }],
   },
   {
     label: "Account",
@@ -163,11 +196,13 @@ export const adminUnavailablePages: Record<
 };
 
 export function filterAdminNavGroups(profile: AppProfile | null): AdminNavGroup[] {
-  return adminNavGroups
+  const baseGroups = isProjectManager(profile) ? pmNavGroups : adminNavGroups;
+  return baseGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
         if (item.href === "/admin/settings") return isActiveAdmin(profile);
+        if (item.href === "/admin/my-tasks" && isActiveAdmin(profile)) return false;
         const required = navPermission[item.href];
         if (!required) return true;
         return hasPermission(profile, required);

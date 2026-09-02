@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
@@ -15,6 +15,8 @@ type TeamTaskDetailProps = {
   busy?: boolean;
   error?: string | null;
   workspace?: "team" | "admin";
+  /** Task-type-specific content (Discovery link, client-request panel, etc.), rendered after instructions. */
+  extra?: ReactNode;
   onClose: () => void;
   onStatusChange: (status: AgencyTaskStatus) => void;
 };
@@ -26,6 +28,7 @@ export function TeamTaskDetail({
   busy,
   error,
   workspace = "team",
+  extra,
   onClose,
   onStatusChange,
 }: TeamTaskDetailProps) {
@@ -143,6 +146,8 @@ export function TeamTaskDetail({
           ) : null}
 
           {error ? <p className="mt-3 text-sm text-[#b45309]">{error}</p> : null}
+
+          {extra ? <div className="mt-6">{extra}</div> : null}
 
           <section className="mt-6">
             <h3 className="font-heading text-sm font-semibold">Related files</h3>

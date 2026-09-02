@@ -247,6 +247,7 @@ export function TeamProjectDetails() {
                 milestoneId: task.milestoneId,
                 milestoneName: project.milestones.find((item) => item.id === task.milestoneId)?.name ?? "",
                 recommendedRole: task.recommendedRole,
+                taskType: task.taskType,
               },
             );
           }}

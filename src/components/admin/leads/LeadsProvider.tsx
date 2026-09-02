@@ -450,6 +450,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
               assignedTo: draft.assignedTo,
               dueDate: draft.dueDate,
               recommendedRole: draft.recommendedRole,
+              taskType: draft.taskType,
               createdAt: new Date().toISOString(),
               completedAt: draft.status === "Completed" ? new Date().toISOString() : null,
             };

@@ -4,6 +4,7 @@ import {
   contractSignedCopyStoragePath,
   discoveryIntakeStoragePath,
   projectFileStoragePath,
+  taskRequestStoragePath,
   validateSignedCopyFile,
   validateUploadFile,
 } from "@/data/fileUploadConfig";
@@ -66,6 +67,31 @@ export async function uploadDiscoveryIntakeFile(input: {
     contentType: input.file.type || "application/octet-stream",
   });
   if (error) fail("upload discovery file", error, "Unable to upload this file. Please try again.");
+  return path;
+}
+
+export async function uploadTaskRequestFile(input: {
+  projectId: string;
+  requestId: string;
+  fileId: string;
+  file: File;
+}): Promise<string> {
+  const invalid = validateUploadFile(input.file);
+  if (invalid) throw new AgencyDbError(invalid.message);
+
+  const path = taskRequestStoragePath({
+    projectId: input.projectId,
+    requestId: input.requestId,
+    fileId: input.fileId,
+    originalName: input.file.name,
+  });
+
+  const { error } = await storage().upload(path, input.file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: input.file.type || "application/octet-stream",
+  });
+  if (error) fail("upload task request file", error, "Unable to upload this file. Please try again.");
   return path;
 }
 

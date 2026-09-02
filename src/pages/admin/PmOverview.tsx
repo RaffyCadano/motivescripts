@@ -2,18 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { firstNameFrom } from "@/auth/userDisplay";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
-import { OverviewDiscoveryAttention } from "@/components/admin/OverviewDiscoveryAttention";
 import { OverviewAssignedProjects } from "@/components/admin/pm/OverviewAssignedProjects";
+import { PmDiscoveryActionCenter } from "@/components/admin/pm/PmDiscoveryActionCenter";
 import { PmClientFollowUps } from "@/components/admin/pm/PmClientFollowUps";
 import { PmNextActions } from "@/components/admin/pm/PmNextActions";
 import { PmOverviewMyTasks } from "@/components/admin/pm/PmOverviewMyTasks";
 import { PmProjectHealth } from "@/components/admin/pm/PmProjectHealth";
+import { PmTeamMembers, pmTeamMembers } from "@/components/admin/pm/PmTeamMembers";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import { fetchDiscoveryIntakes } from "@/data/discoveryIntakeRepository";
 import {
   activePmProjects,
   buildPmClientFollowUps,
+  buildPmDiscoveryBoard,
   buildPmDiscoveryItems,
   buildPmDiscoveryStats,
   buildPmNextActions,
@@ -27,6 +30,7 @@ export function PmOverview() {
   const { deliverables, feedback } = useLeads();
   const { clientsById, tasks, myProjects, assignmentError, changeTaskStatus } = useTeamWork();
   const { conversations } = useMessaging();
+  const team = useTeamDirectory();
   const [intakes, setIntakes] = useState<Awaited<ReturnType<typeof fetchDiscoveryIntakes>>>([]);
 
   useEffect(() => {
@@ -44,6 +48,11 @@ export function PmOverview() {
   }, [myProjects.length]);
 
   const projectIds = useMemo(() => new Set(myProjects.map((project) => project.id)), [myProjects]);
+  const myClientIds = useMemo(() => new Set(myProjects.map((project) => project.clientId)), [myProjects]);
+  const teamMembers = useMemo(
+    () => pmTeamMembers(team.data?.members ?? [], profile?.id ?? "", projectIds, myClientIds),
+    [myClientIds, profile?.id, projectIds, team.data?.members],
+  );
   const activeProjects = useMemo(() => activePmProjects(myProjects), [myProjects]);
   const taskStats = useMemo(() => myTasksSummaryStats(tasks), [tasks]);
   const discoveryStats = useMemo(() => buildPmDiscoveryStats(intakes, projectIds), [intakes, projectIds]);
@@ -66,6 +75,11 @@ export function PmOverview() {
         projectIds,
         limit: 12,
       }),
+    [clientsById, intakes, myProjects, projectIds],
+  );
+
+  const discoveryBoard = useMemo(
+    () => buildPmDiscoveryBoard({ intakes, projects: myProjects, clientsById, projectIds }),
     [clientsById, intakes, myProjects, projectIds],
   );
 
@@ -154,13 +168,15 @@ export function PmOverview() {
         feedbackCountByProject={feedbackCountByProject}
       />
 
-      <OverviewDiscoveryAttention projectIds={projectIds} limit={8} />
+      <PmDiscoveryActionCenter items={discoveryBoard} />
 
       <PmOverviewMyTasks tasks={tasks} deliverables={deliverables} onStatusChange={changeTaskStatus} />
 
       <PmClientFollowUps items={followUps} />
 
       <PmProjectHealth items={health} />
+
+      <PmTeamMembers members={teamMembers} />
 
       {nextActions.length > 0 ? <PmNextActions items={nextActions} /> : null}
     </div>

@@ -27,6 +27,7 @@ import { ProjectSectionNav } from "@/components/admin/projects/ProjectSectionNav
 import { ProjectStatusModal } from "@/components/admin/projects/ProjectStatusModal";
 import { ProjectTasksPanel } from "@/components/admin/projects/ProjectTasksPanel";
 import { TaskFormModal } from "@/components/admin/projects/TaskFormModal";
+import { TaskWorkspace } from "@/components/tasks/TaskWorkspace";
 import { useAgencyProject, useLeads } from "@/components/admin/leads/LeadsProvider";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import {
@@ -35,7 +36,9 @@ import {
   type AgencyMilestoneDraft,
   type AgencyProjectStatus,
   type AgencyTask,
+  type AgencyTaskStatus,
 } from "@/data/agencyProjects";
+import { AgencyDbError } from "@/lib/dbErrors";
 import { isProjectSectionTabId, projectOpenTaskCount, type ProjectSectionTabId } from "@/data/projectSectionNav";
 import { productionTaskAssigneeOptions } from "@/data/team";
 
@@ -57,6 +60,7 @@ export function AdminProjectDetails() {
     updateTask,
     toggleTaskComplete,
     portalAccounts,
+    deliverables,
   } = useLeads();
   const { profile } = useAuth();
   const { data: teamData } = useTeamDirectory();
@@ -72,6 +76,9 @@ export function AdminProjectDetails() {
   const [taskOpen, setTaskOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<AgencyTask | null>(null);
   const [taskMilestoneId, setTaskMilestoneId] = useState<string | undefined>(undefined);
+  const [workspaceTask, setWorkspaceTask] = useState<AgencyTask | null>(null);
+  const [workspaceBusy, setWorkspaceBusy] = useState(false);
+  const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const projectId = match?.project.id ?? "";
   const clientId = match?.client?.id;
   const portalLinked = clientId
@@ -100,6 +107,40 @@ export function AdminProjectDetails() {
     requestAnimationFrame(() => {
       document.getElementById("project-discovery")?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+  }
+
+  function openDiscoveryFromWorkspace() {
+    setWorkspaceTask(null);
+    openDiscovery();
+  }
+
+  function openFilesFromWorkspace() {
+    setWorkspaceTask(null);
+    setTab("files");
+  }
+
+  async function handleWorkspaceStatusChange(task: AgencyTask, status: AgencyTaskStatus) {
+    setWorkspaceBusy(true);
+    setWorkspaceError(null);
+    try {
+      await updateTask(match!.project.id, task.id, {
+        title: task.title,
+        description: task.description,
+        milestoneId: task.milestoneId,
+        status,
+        priority: task.priority,
+        assignee: task.assignee,
+        assignedTo: task.assignedTo,
+        dueDate: task.dueDate,
+        recommendedRole: task.recommendedRole,
+        taskType: task.taskType,
+      });
+      setWorkspaceTask((current) => (current ? { ...current, status } : current));
+    } catch (caught) {
+      setWorkspaceError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
+    } finally {
+      setWorkspaceBusy(false);
+    }
   }
 
   function setSelectedFile(fileId: string | null) {
@@ -227,6 +268,10 @@ export function AdminProjectDetails() {
               }}
               onToggle={(task) => toggleTaskComplete(project.id, task.id)}
               onOpenDiscovery={openDiscovery}
+              onOpenWorkspace={(task) => {
+                setWorkspaceError(null);
+                setWorkspaceTask(task);
+              }}
             />
           ) : null}
           {tab === "milestones" ? (
@@ -327,6 +372,20 @@ export function AdminProjectDetails() {
           else addTask(project.id, draft);
         }}
       />
+      {workspaceTask ? (
+        <TaskWorkspace
+          task={workspaceTask}
+          project={project}
+          clientName={client?.businessName ?? "Client"}
+          deliverables={deliverables}
+          busy={workspaceBusy}
+          error={workspaceError}
+          onClose={() => setWorkspaceTask(null)}
+          onStatusChange={(status) => void handleWorkspaceStatusChange(workspaceTask, status)}
+          onOpenDiscovery={openDiscoveryFromWorkspace}
+          onOpenFiles={openFilesFromWorkspace}
+        />
+      ) : null}
     </div>
   );
 }

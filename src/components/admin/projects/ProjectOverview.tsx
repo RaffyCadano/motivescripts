@@ -133,11 +133,7 @@ export function ProjectOverview({ project, client, workflow, onOpenTab }: Projec
               <Link to={`/admin/clients/${client.id}`} className={adminGhostBtn}>
                 Manage client
               </Link>
-              {portalLinked ? (
-                <a href="/client" target="_blank" rel="noreferrer" className={adminGhostBtn}>
-                  Open portal
-                </a>
-              ) : isActiveAdmin(profile) ? (
+              {!portalLinked && isActiveAdmin(profile) ? (
                 <button type="button" className={adminGhostBtn} onClick={() => setInviteOpen(true)}>
                   Invite
                 </button>

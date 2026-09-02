@@ -9,7 +9,7 @@ import {
   type AgencyProject,
 } from "@/data/agencyProjects";
 import type { DiscoveryAttentionItem, DiscoveryIntake } from "@/data/discoveryIntake";
-import { buildDiscoveryAttentionItems } from "@/data/discoveryIntake";
+import { buildDiscoveryAttentionItems, buildDiscoveryStatusBoard } from "@/data/discoveryIntake";
 import type { ConversationSummary } from "@/data/messaging";
 import type { AgencyDeliverable } from "@/data/files";
 import { needsAttention, type ReviewFeedback } from "@/data/review";
@@ -81,6 +81,16 @@ export function buildPmDiscoveryItems(input: {
   })
     .filter((item) => input.projectIds.has(item.projectId))
     .slice(0, input.limit ?? 8);
+}
+
+/** Full 6-status Discovery board scoped to this PM's assigned projects (includes Not Sent and Complete). */
+export function buildPmDiscoveryBoard(input: {
+  intakes: DiscoveryIntake[];
+  projects: AgencyProject[];
+  clientsById: Map<string, { businessName: string }>;
+  projectIds: Set<string>;
+}): DiscoveryAttentionItem[] {
+  return buildDiscoveryStatusBoard(input);
 }
 
 export function projectCoordinationHint(input: {

@@ -5,10 +5,10 @@ import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatC
 import { NeedsAttention } from "@/components/admin/NeedsAttention";
 import { OverviewInvoices } from "@/components/admin/OverviewInvoices";
 import { OverviewDiscoveryAttention } from "@/components/admin/OverviewDiscoveryAttention";
-import { OverviewMyTasks } from "@/components/admin/OverviewMyTasks";
 import { OverviewWorkflow } from "@/components/admin/OverviewWorkflow";
 import { RecentActivity } from "@/components/admin/RecentActivity";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission, type StaffPermissionCode } from "@/auth/permissions";
 import {
@@ -37,6 +37,7 @@ export function AdminOverview() {
   const { profile } = useAuth();
   const { leads, clients, projects, deliverables, feedback } = useLeads();
   const { conversations, unreadMessageCount } = useMessaging();
+  const team = useTeamDirectory();
   const [records, setRecords] = useState<OverviewRecords>(emptyRecords);
   const can = (code: StaffPermissionCode) => hasPermission(profile, code);
 
@@ -60,6 +61,7 @@ export function AdminOverview() {
   const newLeads = leads.filter((item) => item.status === "New").length;
   const activeClients = clients.filter((item) => item.status === "Active").length;
   const unreadConversations = conversations.filter((item) => item.unreadCount > 0).length;
+  const activeStaffCount = team.data?.members.filter((member) => member.isActive).length ?? 0;
 
   const attention = useMemo(() => {
     const items = buildOverviewAttention({
@@ -118,7 +120,7 @@ export function AdminOverview() {
       />
 
       <section aria-label="What is happening">
-        <AdminStatGrid columns={4}>
+        <AdminStatGrid columns={5}>
           {can("leads.view") ? (
             <AdminStatCard label="New leads" value={newLeads} href="/admin/leads" />
           ) : null}
@@ -131,12 +133,14 @@ export function AdminOverview() {
           {can("messages.view") ? (
             <AdminStatCard label="Unread messages" value={unreadMessageCount} href="/admin/messages" />
           ) : null}
+          {can("team.view") ? (
+            <AdminStatCard label="Active staff" value={activeStaffCount} href="/admin/team" />
+          ) : null}
         </AdminStatGrid>
       </section>
 
       <NeedsAttention items={attention} />
       {can("projects.view") ? <OverviewDiscoveryAttention /> : null}
-      {can("projects.view") ? <OverviewMyTasks /> : null}
       <OverviewWorkflow counts={pipeline} />
 
       <div className={can("invoices.view") ? "grid items-start gap-5 xl:grid-cols-[minmax(16rem,0.9fr)_minmax(0,1.1fr)]" : "grid gap-5"}>

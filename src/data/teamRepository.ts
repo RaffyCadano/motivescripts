@@ -248,6 +248,17 @@ export async function fetchMyProjectAssignmentIds(userId: string): Promise<strin
   return (data ?? []).map((row) => row.project_id);
 }
 
+/** Client-level assignments. Per `assigned_to_project` in SQL, a client assignment grants access to every project under that client. */
+export async function fetchMyClientAssignmentIds(userId: string): Promise<string[]> {
+  const client = requireClient();
+  const { data, error } = await client
+    .from("client_staff_assignments")
+    .select("client_id")
+    .eq("user_id", userId);
+  if (error) fail("load assignments", error, "Unable to load your clients.");
+  return (data ?? []).map((row) => row.client_id);
+}
+
 export async function updateMyTaskStatus(taskId: string, status: string): Promise<void> {
   const client = requireClient();
   const { error } = await client.rpc("update_my_task_status", {

@@ -3,7 +3,12 @@ import { AdminNavItem } from "@/components/admin/AdminNavItem";
 import { BrandMark } from "@/components/BrandMark";
 import { filterAdminNavGroups } from "@/data/adminNav";
 import { useAuth } from "@/auth/AuthProvider";
+import { isProjectManager } from "@/auth/roles";
 import { cn } from "@/lib/cn";
+
+function sidebarSubtitle(profile: Parameters<typeof isProjectManager>[0]): string {
+  return isProjectManager(profile) ? "Project Manager" : "Admin";
+}
 
 type AdminSidebarProps = {
   collapsed: boolean;
@@ -45,7 +50,7 @@ export function AdminSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigat
           <BrandMark className="h-7 w-auto" decorative />
           <span className={cn("min-w-0", collapsed && "lg:hidden")}>
             <span className="block font-heading text-sm font-extrabold tracking-tight">MotiveScripts</span>
-            <span className="block text-[11px] font-medium text-[var(--admin-muted)]">Admin</span>
+            <span className="block text-[11px] font-medium text-[var(--admin-muted)]">{sidebarSubtitle(profile)}</span>
           </span>
         </Link>
       </div>

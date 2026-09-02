@@ -8,6 +8,7 @@ import {
   type AgencyTaskStatus,
 } from "@/data/agencyProjects";
 import type { TaskRecommendedRoleId } from "@/data/taskRecommendedRoles";
+import type { TaskType } from "@/data/taskTypes";
 
 export type TeamWorkTask = {
   id: string;
@@ -27,6 +28,7 @@ export type TeamWorkTask = {
   milestoneId: string;
   milestoneName: string;
   recommendedRole: TaskRecommendedRoleId | null;
+  taskType: TaskType | null;
 };
 
 export type TeamAttentionItem = {
@@ -155,20 +157,29 @@ export function collectAssignedTasks(
         milestoneId: task.milestoneId,
         milestoneName: project.milestones.find((item) => item.id === task.milestoneId)?.name ?? "",
         recommendedRole: task.recommendedRole,
+        taskType: task.taskType,
       });
     }
   }
   return rows;
 }
 
+/**
+ * Mirrors the SQL `assigned_to_project` helper: a project is "mine" if I have a direct
+ * project assignment, OR I'm assigned to the project's client (client assignment implies
+ * access to all of that client's projects), OR I already have a task in it.
+ */
 export function collectMyProjects(
   projects: AgencyProject[],
   assignedProjectIds: Set<string>,
   myTasks: TeamWorkTask[],
+  assignedClientIds: Set<string> = new Set(),
 ): AgencyProject[] {
   const fromTasks = new Set(myTasks.map((task) => task.projectId));
   return projects.filter(
-    (project) => !project.archived && (assignedProjectIds.has(project.id) || fromTasks.has(project.id)),
+    (project) =>
+      !project.archived &&
+      (assignedProjectIds.has(project.id) || assignedClientIds.has(project.clientId) || fromTasks.has(project.id)),
   );
 }
 

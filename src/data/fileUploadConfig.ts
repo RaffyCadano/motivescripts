@@ -133,6 +133,24 @@ export function discoveryIntakeStoragePath(input: {
   return ["projects", input.projectId, "discovery", input.intakeId, `${input.fileId}.${safeExt}`].join("/");
 }
 
+export function taskRequestStoragePath(input: {
+  projectId: string;
+  requestId: string;
+  fileId: string;
+  originalName: string;
+}): string {
+  const ext = fileExtension(input.originalName);
+  const safeExt = allowedUploadExtensions.includes(ext as (typeof allowedUploadExtensions)[number]) ? ext : "bin";
+  return [
+    "projects",
+    input.projectId,
+    "tasks",
+    "requests",
+    input.requestId,
+    `${input.fileId}.${safeExt}`,
+  ].join("/");
+}
+
 export function hasStoredFile(version: { storagePath: string | null }): boolean {
   return Boolean(version.storagePath);
 }

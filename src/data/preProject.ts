@@ -42,6 +42,8 @@ export type AdminWorkflowAction = {
   primaryHref: string | null;
   secondaryLabel: string | null;
   secondaryHref: string | null;
+  secondaryDisabled?: boolean;
+  secondaryDisabledReason?: string;
 };
 
 const productionStatuses = new Set<AgencyProjectStatus>(["In Development", "Client Review", "Completed"]);
@@ -489,13 +491,15 @@ export function adminClientWorkflowAction(input: {
 
   return {
     title: "Waiting for Website Scope",
-    body: "No scope has been submitted yet. You can still create a project if you already have the project brief.",
+    body: "No scope has been submitted yet. Create Project unlocks once the client submits their Website Scope.",
     currentStepId: "scope",
     primaryKind: "none",
     primaryLabel: null,
     primaryHref: null,
     secondaryLabel: "Create Project",
     secondaryHref: createProject,
+    secondaryDisabled: true,
+    secondaryDisabledReason: "Waiting on the client's Website Scope submission.",
   };
 }
 

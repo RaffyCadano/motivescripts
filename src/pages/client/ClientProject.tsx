@@ -3,8 +3,10 @@ import { ClientActionCard } from "@/components/client/ClientActionCard";
 import { ClientProjectCard } from "@/components/client/ClientProjectCard";
 import { ClientWebsiteSection } from "@/components/client/ClientWebsiteSection";
 import { ClientDiscoveryCard } from "@/components/client/ClientDiscoveryCard";
+import { ClientTaskRequestsCard } from "@/components/client/ClientTaskRequestsCard";
 import { ClientScopePrompt } from "@/components/client/ClientScopePrompt";
 import { useClientDiscovery } from "@/components/client/useClientDiscovery";
+import { useClientTaskRequests } from "@/components/client/useClientTaskRequests";
 import { ClientTimeline } from "@/components/client/ClientTimeline";
 import { useClientPortalAction } from "@/components/client/useClientPortalAction";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
@@ -22,6 +24,7 @@ export function ClientProject() {
   const milestone = project ? currentMilestone(project) : null;
   const stages = timelineStagesFromProject(project);
   const discovery = useClientDiscovery(project?.id);
+  const taskRequests = useClientTaskRequests(project?.id);
 
   if (projectId && !project) {
     return (
@@ -52,6 +55,14 @@ export function ClientProject() {
           projectName={project.name}
           intake={discovery.intake}
           loading={discovery.loading}
+        />
+      ) : null}
+
+      {project ? (
+        <ClientTaskRequestsCard
+          projectId={project.id}
+          pendingCount={taskRequests.pendingCount}
+          loading={taskRequests.loading}
         />
       ) : null}
 

@@ -123,8 +123,38 @@ export type TaskRow = {
   due_date: string | null;
   completed_at: string | null;
   recommended_role: string | null;
+  task_type: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type TaskClientRequestRow = {
+  id: string;
+  task_id: string;
+  project_id: string;
+  client_id: string;
+  status: string;
+  message: string;
+  client_response: string;
+  requested_at: string | null;
+  submitted_at: string | null;
+  completed_at: string | null;
+  updated_at: string;
+  created_by: string | null;
+};
+
+export type TaskClientRequestFileRow = {
+  id: string;
+  request_id: string;
+  task_id: string;
+  project_id: string;
+  client_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  created_at: string;
+  uploaded_by: string | null;
 };
 
 export type DeliverableRow = {
@@ -774,6 +804,22 @@ export type Database = {
         DiscoveryIntakeFileRow,
         Partial<DiscoveryIntakeFileRow> & {
           intake_id: string;
+          project_id: string;
+          client_id: string;
+          file_name: string;
+          storage_path: string;
+        }
+      >;
+      task_client_requests: Table<
+        TaskClientRequestRow,
+        Partial<TaskClientRequestRow> & { task_id: string; project_id: string; client_id: string },
+        Partial<TaskClientRequestRow>
+      >;
+      task_client_request_files: Table<
+        TaskClientRequestFileRow,
+        Partial<TaskClientRequestFileRow> & {
+          request_id: string;
+          task_id: string;
           project_id: string;
           client_id: string;
           file_name: string;

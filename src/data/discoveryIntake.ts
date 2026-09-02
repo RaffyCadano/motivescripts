@@ -350,6 +350,64 @@ export function buildDiscoveryAttentionItems(input: {
   return items.sort((a, b) => a.sort - b.sort || a.projectName.localeCompare(b.projectName));
 }
 
+/**
+ * Full 6-status Discovery board for a scoped project set (e.g. a PM's assigned projects).
+ * Unlike `buildDiscoveryAttentionItems`, this includes `not_started` and `complete` so a
+ * PM can see and act on every stage, not just the ones needing attention.
+ */
+export function buildDiscoveryStatusBoard(input: {
+  intakes: DiscoveryIntake[];
+  projects: Array<{ id: string; name: string; clientId: string; archived?: boolean }>;
+  clientsById: Map<string, { businessName: string }>;
+  projectIds: Set<string>;
+}): DiscoveryAttentionItem[] {
+  const items: DiscoveryAttentionItem[] = [];
+  const statusOrder: Record<DiscoveryStatus, number> = {
+    submitted: 0,
+    more_information_needed: 1,
+    under_review: 2,
+    awaiting_client: 3,
+    not_started: 4,
+    complete: 5,
+  };
+  const actionLabels: Record<DiscoveryStatus, string> = {
+    not_started: "Send Discovery",
+    awaiting_client: "Open Discovery",
+    submitted: "Review Discovery",
+    under_review: "Continue Review",
+    more_information_needed: "Open Discovery",
+    complete: "View Discovery",
+  };
+
+  for (const intake of input.intakes) {
+    if (!input.projectIds.has(intake.projectId)) continue;
+    const project = input.projects.find((row) => row.id === intake.projectId);
+    if (!project || project.archived) continue;
+    const clientName = input.clientsById.get(project.clientId)?.businessName ?? "Client";
+    const waitingSince =
+      intake.status === "awaiting_client"
+        ? intake.sentAt
+        : intake.status === "submitted" || intake.status === "under_review"
+          ? intake.submittedAt
+          : intake.status === "complete"
+            ? intake.completedAt
+            : intake.updatedAt;
+    items.push({
+      id: intake.id,
+      projectId: intake.projectId,
+      projectName: project.name,
+      clientName,
+      status: intake.status,
+      label: discoveryStatusLabel(intake.status),
+      href: `/admin/projects/${intake.projectId}?tab=overview#project-discovery`,
+      sort: statusOrder[intake.status],
+      waitingSince,
+      actionLabel: actionLabels[intake.status],
+    });
+  }
+  return items.sort((a, b) => a.sort - b.sort || a.projectName.localeCompare(b.projectName));
+}
+
 export function discoveryClientStatusLabel(status: DiscoveryStatus): string {
   switch (status) {
     case "not_started":

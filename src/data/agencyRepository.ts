@@ -70,6 +70,7 @@ type TaskWriteFields = Partial<
     | "due_date"
     | "completed_at"
     | "recommended_role"
+    | "task_type"
   >
 >;
 
@@ -86,6 +87,7 @@ type TaskInsertFields = Pick<TaskRow, "project_id" | "title"> &
       | "due_date"
       | "completed_at"
       | "recommended_role"
+      | "task_type"
     >
   >;
 
@@ -676,6 +678,7 @@ function taskDraftWriteFields(draft: AgencyTaskDraft, completedAt: string | null
     assigned_to: emptyToNull(draft.assignedTo),
     due_date: emptyToNull(draft.dueDate),
     recommended_role: draft.recommendedRole ?? null,
+    task_type: draft.taskType ?? null,
   };
   if (completedAt !== undefined) {
     fields.completed_at = completedAt;
@@ -688,6 +691,10 @@ async function writeTaskUpdate(client: ReturnType<typeof db>, taskId: string, fi
   if (error && isSchemaColumnMissing(error, "tasks", "recommended_role") && fields.recommended_role !== undefined) {
     const { recommended_role: _ignored, ...withoutRecommendedRole } = fields;
     ({ error } = await client.from("tasks").update(withoutRecommendedRole).eq("id", taskId));
+  }
+  if (error && isSchemaColumnMissing(error, "tasks", "task_type") && fields.task_type !== undefined) {
+    const { task_type: _ignoredType, ...withoutTaskType } = fields;
+    ({ error } = await client.from("tasks").update(withoutTaskType).eq("id", taskId));
   }
   return error;
 }
@@ -707,11 +714,16 @@ export async function insertTask(projectId: string, draft: AgencyTaskDraft): Pro
     due_date: emptyToNull(draft.dueDate),
     completed_at: draft.status === "Completed" ? now : null,
     recommended_role: draft.recommendedRole ?? null,
+    task_type: draft.taskType ?? null,
   };
   let { error } = await client.from("tasks").insert(fields);
   if (error && isSchemaColumnMissing(error, "tasks", "recommended_role")) {
     const { recommended_role: _ignored, ...withoutRecommendedRole } = fields;
     ({ error } = await client.from("tasks").insert(withoutRecommendedRole));
+  }
+  if (error && isSchemaColumnMissing(error, "tasks", "task_type")) {
+    const { task_type: _ignoredType, ...withoutTaskType } = fields;
+    ({ error } = await client.from("tasks").insert(withoutTaskType));
   }
   throwIf(error, "create task", "Unable to create task.");
   await addActivity(projectId, "task_created", `Task created: ${draft.title.trim()}`, "task");
