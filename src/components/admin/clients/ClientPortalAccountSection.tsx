@@ -43,6 +43,7 @@ export function ClientPortalAccountSection({
   const [busy, setBusy] = useState(false);
   const [revokeOpen, setRevokeOpen] = useState(false);
   const [inviteMode, setInviteMode] = useState<"send" | "resend">("send");
+  const [showLink, setShowLink] = useState(false);
 
   const loadInvites = useCallback(async () => {
     try {
@@ -100,55 +101,40 @@ export function ClientPortalAccountSection({
       id="portal-account"
       className="scroll-mt-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Portal account</h2>
-          <p className="mt-1 text-[13px] text-[var(--admin-muted)]">
-            Invite a client to the portal. The invitation email is the recipient — this does not change the client’s
-            contact email.
+      <div>
+        <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Client Portal</h2>
+        <p className="mt-2 font-heading text-sm font-semibold text-[var(--admin-ink)]">
+          {status === "linked" || status === "accepted" ? "✓ Portal active" : portalStatusLabel(status)}
+        </p>
+        {status === "not_invited" ? (
+          <p className="mt-1 text-sm text-[var(--admin-muted)]">
+            This client does not have access to the MotiveScripts client portal yet.
           </p>
-        </div>
-        <span className="rounded-full bg-[var(--admin-bg)] px-2.5 py-1 font-heading text-[11px] font-semibold text-[var(--admin-ink)]">
-          {portalStatusLabel(status)}
-        </span>
+        ) : null}
+        {status === "sent" || status === "expired" || status === "revoked" ? (
+          <div className="mt-2 space-y-1 text-sm text-[var(--admin-ink)]">
+            {invitation?.email ? <p>{invitation.email}</p> : null}
+            {invitation ? (
+              <p className="text-[var(--admin-muted)]">
+                Sent {formatClientDate(invitation.createdAt)}
+                {invitation.createdAt ? ` · ${formatClientTimestamp(invitation.createdAt)}` : ""}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        {status === "linked" || status === "accepted" ? (
+          <div className="mt-2 space-y-1 text-sm text-[var(--admin-ink)]">
+            <p>{linked[0]?.email ?? invitation?.email}</p>
+            {invitation?.acceptedAt ? (
+              <p className="text-[var(--admin-muted)]">
+                Accepted {formatClientDate(invitation.acceptedAt)} · {formatClientTimestamp(invitation.acceptedAt)}
+              </p>
+            ) : linked[0] ? (
+              <p className="text-[var(--admin-muted)]">Linked to a portal account</p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
-
-      <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div>
-          <dt className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Email</dt>
-          <dd className="mt-1 text-sm text-[var(--admin-ink)]">{invitation?.email ?? linked[0]?.email ?? "—"}</dd>
-        </div>
-        <div>
-          <dt className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Status</dt>
-          <dd className="mt-1 text-sm text-[var(--admin-ink)]">{portalStatusLabel(status)}</dd>
-        </div>
-        <div>
-          <dt className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Invited</dt>
-          <dd className="mt-1 text-sm text-[var(--admin-ink)]">
-            {invitation
-              ? `${formatClientDate(invitation.createdAt)} · ${formatClientTimestamp(invitation.createdAt)}`
-              : "—"}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Accepted</dt>
-          <dd className="mt-1 text-sm text-[var(--admin-ink)]">
-            {invitation?.acceptedAt
-              ? `${formatClientDate(invitation.acceptedAt)} · ${formatClientTimestamp(invitation.acceptedAt)}`
-              : "—"}
-          </dd>
-        </div>
-        <div className="sm:col-span-2">
-          <dt className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Linked</dt>
-          <dd className="mt-1 text-sm text-[var(--admin-ink)]">
-            {linked.length > 0
-              ? linked
-                  .map((account) => `${account.fullName.trim() || "Client"} (${account.email ?? account.id})`)
-                  .join(", ")
-              : "Not linked"}
-          </dd>
-        </div>
-      </dl>
 
       <div className="mt-4 flex flex-wrap gap-2">
         {pendingForLatest ? (
@@ -213,32 +199,46 @@ export function ClientPortalAccountSection({
         ) : null}
       </div>
 
-      <form className="mt-5 border-t border-[var(--admin-line)] pt-4" onSubmit={onLink}>
-        <p className="text-[13px] text-[var(--admin-muted)]">
-          Already have an Auth user? Link it without sending a new invitation.
-        </p>
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-          <label className="sr-only" htmlFor="portal-email">
-            Account email
-          </label>
-          <input
-            id="portal-email"
-            type="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="client@company.com"
-            className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-          />
-          <button
-            type="submit"
-            disabled={busy}
-            className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60"
-          >
-            {busy ? "Linking…" : "Link account"}
-          </button>
+      {linked.length === 0 ? (
+        <div className="mt-5 border-t border-[var(--admin-line)] pt-4">
+          {showLink ? (
+            <form onSubmit={onLink}>
+              <p className="text-[13px] text-[var(--admin-muted)]">
+                Already have an Auth user? Link it without sending a new invitation.
+              </p>
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                <label className="sr-only" htmlFor="portal-email">
+                  Account email
+                </label>
+                <input
+                  id="portal-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="client@company.com"
+                  className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                />
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60"
+                >
+                  {busy ? "Linking…" : "Link account"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              type="button"
+              className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+              onClick={() => setShowLink(true)}
+            >
+              Link existing account
+            </button>
+          )}
         </div>
-      </form>
+      ) : null}
 
       <InviteClientDialog
         client={client}

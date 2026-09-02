@@ -27,14 +27,66 @@ export const PRODUCTION_TEAM_TEMPLATES = new Set<string>([
   "team_member",
 ]);
 
+export const PRODUCTION_COMMUNICATOR_TEMPLATES = new Set<string>([
+  "developer",
+  "designer",
+  "content_writer",
+]);
+
 export function isProductionTeamTemplate(templateKey: string | null | undefined): boolean {
   return PRODUCTION_TEAM_TEMPLATES.has(templateKey ?? "");
+}
+
+/** Designer, Developer, and Content Writer may message assigned project clients. Team Member may not. */
+export function isProductionCommunicator(
+  profile: { role?: string | null; templateKey?: string | null } | null | undefined,
+): boolean {
+  return profile?.role === "staff" && PRODUCTION_COMMUNICATOR_TEMPLATES.has(profile.templateKey ?? "");
 }
 
 export function usesTeamWorkspace(
   profile: { role?: string | null; templateKey?: string | null } | null | undefined,
 ): boolean {
   return profile?.role === "staff" && isProductionTeamTemplate(profile.templateKey);
+}
+
+export function isProjectManager(
+  profile:
+    | { role?: string | null; templateKey?: string | null; permissions?: string[] }
+    | null
+    | undefined,
+): boolean {
+  if (!profile || profile.role !== "staff") return false;
+  if (profile.templateKey === "project_manager") return true;
+  return hasProjectManagerPermissionFootprint(profile.permissions ?? []);
+}
+
+const PM_TEMPLATE_PERMISSIONS = [
+  "clients.view",
+  "clients.manage",
+  "projects.view",
+  "projects.manage",
+  "files.view",
+  "files.manage",
+  "feedback.manage",
+  "messages.view",
+  "messages.manage",
+  "activity.view",
+] as const;
+
+const NON_PM_TEMPLATE_PERMISSIONS = [
+  "leads.view",
+  "proposals.view",
+  "contracts.view",
+  "invoices.view",
+  "team.manage",
+] as const;
+
+export function hasProjectManagerPermissionFootprint(permissions: string[]): boolean {
+  if (permissions.length === 0) return false;
+  const granted = new Set(permissions);
+  if (NON_PM_TEMPLATE_PERMISSIONS.some((code) => granted.has(code))) return false;
+  return PM_TEMPLATE_PERMISSIONS.every((code) => granted.has(code));
 }
 
 /** PM, Sales, Accounting, and other non-production staff belong on /admin. */

@@ -2,6 +2,7 @@ import {
   PROJECT_FILES_BUCKET,
   SIGNED_URL_TTL_SECONDS,
   contractSignedCopyStoragePath,
+  discoveryIntakeStoragePath,
   projectFileStoragePath,
   validateSignedCopyFile,
   validateUploadFile,
@@ -40,6 +41,31 @@ export async function uploadContractSignedCopy(input: {
     contentType: input.file.type || "application/octet-stream",
   });
   if (error) fail("upload signed copy", error, "Unable to upload this file. Please try again.");
+  return path;
+}
+
+export async function uploadDiscoveryIntakeFile(input: {
+  projectId: string;
+  intakeId: string;
+  fileId: string;
+  file: File;
+}): Promise<string> {
+  const invalid = validateUploadFile(input.file);
+  if (invalid) throw new AgencyDbError(invalid.message);
+
+  const path = discoveryIntakeStoragePath({
+    projectId: input.projectId,
+    intakeId: input.intakeId,
+    fileId: input.fileId,
+    originalName: input.file.name,
+  });
+
+  const { error } = await storage().upload(path, input.file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: input.file.type || "application/octet-stream",
+  });
+  if (error) fail("upload discovery file", error, "Unable to upload this file. Please try again.");
   return path;
 }
 

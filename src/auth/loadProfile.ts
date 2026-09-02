@@ -49,6 +49,22 @@ function mapProfile(row: ProfileRow, context: StaffContext | null): AppProfile |
   };
 }
 
+async function loadStaffContextFallback(userId: string): Promise<StaffContext | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const [{ data: staff }, { data: grants }] = await Promise.all([
+    supabase.from("staff_profiles").select("is_active, job_title, template_key").eq("user_id", userId).maybeSingle(),
+    supabase.from("staff_grants").select("permission_code").eq("user_id", userId),
+  ]);
+  if (!staff && (!grants || grants.length === 0)) return null;
+  return {
+    is_active: staff?.is_active,
+    job_title: staff?.job_title,
+    template_key: staff?.template_key,
+    permissions: (grants ?? []).map((row) => row.permission_code),
+  };
+}
+
 export async function loadCurrentProfile(userId?: string): Promise<ProfileLoadResult> {
   const supabase = getSupabase();
   if (!supabase) return { status: "error" };
@@ -72,8 +88,21 @@ export async function loadCurrentProfile(userId?: string): Promise<ProfileLoadRe
   let context: StaffContext | null = null;
   if (isAgencyRole(data.role)) {
     const { data: ctx, error: ctxError } = await supabase.rpc("current_staff_context");
-    if (ctxError) return { status: "error" };
-    context = (ctx ?? null) as StaffContext | null;
+    if (!ctxError && ctx) {
+      context = ctx as StaffContext;
+    }
+    const fallback = await loadStaffContextFallback(id);
+    if (fallback) {
+      const rpcPermissions = permissionList(context?.permissions);
+      context = {
+        is_active: context?.is_active ?? fallback.is_active,
+        job_title: context?.job_title || fallback.job_title || "",
+        template_key: context?.template_key ?? fallback.template_key ?? null,
+        permissions: rpcPermissions.length > 0 ? rpcPermissions : fallback.permissions,
+      };
+    } else if (ctxError) {
+      context = null;
+    }
   }
 
   const profile = mapProfile(data, context);

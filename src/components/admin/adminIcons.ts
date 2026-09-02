@@ -14,6 +14,7 @@ import {
   Receipt,
   Settings,
   UserCog,
+  UserRound,
   Users,
 } from "lucide-react";
 import type { AdminIconName } from "@/data/adminNav";
@@ -34,4 +35,5 @@ export const adminIcons: Record<AdminIconName, LucideIcon> = {
   team: UserCog,
   activity: Activity,
   settings: Settings,
+  profile: UserRound,
 };

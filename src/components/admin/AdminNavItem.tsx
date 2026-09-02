@@ -3,6 +3,7 @@ import { adminIcons } from "@/components/admin/adminIcons";
 import type { AdminNavItem as AdminNavItemData } from "@/data/adminNav";
 import { cn } from "@/lib/cn";
 import { useMessaging } from "@/providers/MessagingProvider";
+import { useMyOpenTaskCount } from "@/components/admin/useMyOpenTaskCount";
 
 type AdminNavItemProps = {
   item: AdminNavItemData;
@@ -13,7 +14,9 @@ type AdminNavItemProps = {
 export function AdminNavItem({ item, collapsed, onNavigate }: AdminNavItemProps) {
   const Icon = adminIcons[item.icon];
   const { unreadMessageCount } = useMessaging();
-  const badge = item.icon === "messages" ? unreadMessageCount : 0;
+  const myTaskCount = useMyOpenTaskCount();
+  const badge =
+    item.icon === "messages" ? unreadMessageCount : item.href === "/admin/my-tasks" ? myTaskCount : 0;
 
   return (
     <NavLink

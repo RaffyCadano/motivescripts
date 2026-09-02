@@ -10,6 +10,12 @@ import {
   type AgencyTaskStatus,
 } from "@/data/agencyProjects";
 import { displayMilestoneName } from "@/data/projectMilestones";
+import {
+  recommendedRoleForTaskTitle,
+  resolveTaskRecommendedRole,
+  TASK_RECOMMENDED_ROLE_OPTIONS,
+  type TaskRecommendedRoleId,
+} from "@/data/taskRecommendedRoles";
 
 const fieldClass =
   "mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]";
@@ -23,6 +29,7 @@ const emptyDraft: AgencyTaskDraft = {
   assignee: "",
   assignedTo: "",
   dueDate: "",
+  recommendedRole: null,
 };
 
 export type TaskAssigneeOption = {
@@ -63,6 +70,7 @@ export function TaskFormModal({
         assignee: task.assignee,
         assignedTo: task.assignedTo,
         dueDate: task.dueDate,
+        recommendedRole: resolveTaskRecommendedRole(task),
       });
       return;
     }
@@ -71,6 +79,14 @@ export function TaskFormModal({
       milestoneId: defaultMilestoneId || milestones[0]?.id || "",
     });
   }, [defaultMilestoneId, milestones, open, task]);
+
+  function handleTitleChange(title: string) {
+    setDraft((current) => ({
+      ...current,
+      title,
+      recommendedRole: task ? current.recommendedRole : recommendedRoleForTaskTitle(title) ?? current.recommendedRole,
+    }));
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -91,21 +107,21 @@ export function TaskFormModal({
           <input
             required
             value={draft.title}
-            onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
+            onChange={(event) => handleTitleChange(event.target.value)}
             className={fieldClass}
           />
         </label>
         <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
           Description
           <textarea
-            rows={3}
+            rows={12}
             value={draft.description}
             onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
-            className="mt-1.5 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 py-2 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            className="mt-1.5 w-full whitespace-pre-wrap rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 py-2 text-sm leading-relaxed text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
           />
         </label>
         <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-          Milestone
+          Phase
           <select
             className={fieldClass}
             value={draft.milestoneId}
@@ -153,7 +169,27 @@ export function TaskFormModal({
             </select>
           </label>
           <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-            Assigned to
+            Recommended role
+            <select
+              className={fieldClass}
+              value={draft.recommendedRole ?? ""}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  recommendedRole: (event.target.value || null) as TaskRecommendedRoleId | null,
+                }))
+              }
+            >
+              <option value="">None</option>
+              {TASK_RECOMMENDED_ROLE_OPTIONS.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+            Assignee
             {assignees.length > 0 ? (
               <select
                 className={fieldClass}
@@ -182,7 +218,7 @@ export function TaskFormModal({
               />
             )}
           </label>
-          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+          <label className="block text-[13px] font-medium text-[var(--admin-ink)] sm:col-span-2">
             Due date
             <input
               type="date"

@@ -122,6 +122,7 @@ export type TaskRow = {
   position: number;
   due_date: string | null;
   completed_at: string | null;
+  recommended_role: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -576,6 +577,37 @@ export type ClientScopeBriefRow = {
   updated_by: string | null;
 };
 
+export type DiscoveryIntakeRow = {
+  id: string;
+  project_id: string;
+  client_id: string;
+  status: string;
+  form_data: Json;
+  section_review: Json;
+  scope_flags: Json;
+  follow_up: Json;
+  internal_notes: string;
+  sent_at: string | null;
+  submitted_at: string | null;
+  completed_at: string | null;
+  updated_at: string;
+  updated_by: string | null;
+};
+
+export type DiscoveryIntakeFileRow = {
+  id: string;
+  intake_id: string;
+  project_id: string;
+  client_id: string;
+  category: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  created_at: string;
+  uploaded_by: string | null;
+};
+
 export type AgencySettingsRow = {
   id: number;
   agency_name: string;
@@ -732,6 +764,21 @@ export type Database = {
       client_scope_briefs: Table<
         ClientScopeBriefRow,
         Partial<ClientScopeBriefRow> & { client_id: string; selected_pages: string[]; goal: string }
+      >;
+      discovery_intakes: Table<
+        DiscoveryIntakeRow,
+        Partial<DiscoveryIntakeRow> & { project_id: string; client_id: string },
+        Partial<DiscoveryIntakeRow>
+      >;
+      discovery_intake_files: Table<
+        DiscoveryIntakeFileRow,
+        Partial<DiscoveryIntakeFileRow> & {
+          intake_id: string;
+          project_id: string;
+          client_id: string;
+          file_name: string;
+          storage_path: string;
+        }
       >;
     };
     Views: Record<string, never>;

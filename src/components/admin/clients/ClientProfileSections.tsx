@@ -1,9 +1,7 @@
 import { FileText, FolderKanban, RefreshCw, StickyNote, UserCheck, UserPlus } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ProgressBar } from "@/components/admin/ProgressBar";
-import { ClientStatusBadge } from "@/components/admin/clients/ClientStatusBadge";
 import { useClientDeliverables, useClientProjects } from "@/components/admin/leads/LeadsProvider";
-import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
+import { ClientProjectsTable } from "@/components/admin/clients/ClientProjectsTable";
 import {
   formatClientDate,
   formatClientSince,
@@ -12,7 +10,6 @@ import {
   type AgencyClient,
 } from "@/data/agencyClients";
 import { currentVersion, formatFileRelative, recentDeliverables, versionLabel } from "@/data/files";
-import { calculateProjectProgress, type AgencyProject } from "@/data/agencyProjects";
 import { formatConversationTime } from "@/data/messaging";
 import { useMessaging } from "@/providers/MessagingProvider";
 
@@ -122,7 +119,12 @@ export function ClientNotesSection({ client, onAddNote }: { client: AgencyClient
         </button>
       </div>
       {client.notes.length === 0 ? (
-        <p className="mt-4 text-sm text-[var(--admin-muted)]">No internal notes yet</p>
+        <div className="mt-4">
+          <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No internal notes yet</p>
+          <p className="mt-1 text-sm text-[var(--admin-muted)]">
+            Add a note for agency staff. These stay off the client portal.
+          </p>
+        </div>
       ) : (
         <ul className="mt-4 space-y-3">
           {client.notes.map((note) => (
@@ -209,7 +211,7 @@ export function ClientProjectsSection({
         <div className="mt-4">
           <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No projects yet</p>
           <p className="mt-1 text-sm text-[var(--admin-muted)]">
-            Create a project after the scope form is in, or start one now if you already know the brief.
+            Create a project when you’re ready to begin production.
           </p>
           <Link
             to={createHref}
@@ -219,40 +221,9 @@ export function ClientProjectsSection({
           </Link>
         </div>
       ) : (
-        <ul className="mt-4 space-y-3">
-          {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
-          ))}
-        </ul>
+        <ClientProjectsTable projects={projects} />
       )}
     </section>
-  );
-}
-
-function ProjectCard({ project }: { project: AgencyProject }) {
-  return (
-    <li className="rounded-xl border border-[var(--admin-line)] px-4 py-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{project.name}</p>
-          <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{project.type}</p>
-        </div>
-        <ProjectStatusBadge status={project.status} />
-      </div>
-      <p className="mt-3 text-[12px] text-[var(--admin-muted)]">
-        Status: <span className="text-[var(--admin-ink)]">{project.status}</span>
-      </p>
-      <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Created: {formatClientSince(project.createdAt)}</p>
-      <div className="mt-3">
-        <ProgressBar value={calculateProjectProgress(project)} label="Progress" />
-      </div>
-      <Link
-        to={`/admin/projects/${project.id}`}
-        className="mt-4 inline-flex h-9 items-center rounded-lg bg-[var(--admin-blue)] px-3 font-heading text-[12px] font-semibold text-white"
-      >
-        View Project
-      </Link>
-    </li>
   );
 }
 
@@ -366,7 +337,7 @@ function websiteHref(url: string) {
 
 export function ClientHeaderMeta({ client }: { client: AgencyClient }) {
   return (
-    <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+    <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
       <div>
         <dt className="text-[12px] text-[var(--admin-muted)]">Primary contact</dt>
         <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{client.contactName}</dd>
@@ -374,12 +345,6 @@ export function ClientHeaderMeta({ client }: { client: AgencyClient }) {
       <div>
         <dt className="text-[12px] text-[var(--admin-muted)]">Industry</dt>
         <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{client.industry}</dd>
-      </div>
-      <div>
-        <dt className="text-[12px] text-[var(--admin-muted)]">Client status</dt>
-        <dd className="mt-1">
-          <ClientStatusBadge status={client.status} />
-        </dd>
       </div>
       <div>
         <dt className="text-[12px] text-[var(--admin-muted)]">Client since</dt>

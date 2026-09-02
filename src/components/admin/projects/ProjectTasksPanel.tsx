@@ -1,4 +1,5 @@
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
+import { TaskRecommendedRoleNote } from "@/components/admin/projects/TaskRecommendedRoleNote";
 import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
 import {
   formatProjectDay,
@@ -9,6 +10,9 @@ import {
   type AgencyTask,
 } from "@/data/agencyProjects";
 import { displayMilestoneName, websiteMilestonePurpose } from "@/data/projectMilestones";
+import { taskInstructionPreview } from "@/data/productionTaskInstructions";
+import { resolveTaskRecommendedRole } from "@/data/taskRecommendedRoles";
+import { isDiscoveryCoordinationTask } from "@/data/discoveryIntake";
 
 type ProjectTasksPanelProps = {
   project: AgencyProject;
@@ -16,9 +20,10 @@ type ProjectTasksPanelProps = {
   onAddForMilestone?: (milestone: AgencyMilestone) => void;
   onEdit: (task: AgencyTask) => void;
   onToggle: (task: AgencyTask) => void;
+  onOpenDiscovery?: () => void;
 };
 
-export function ProjectTasksPanel({ project, onAdd, onAddForMilestone, onEdit, onToggle }: ProjectTasksPanelProps) {
+export function ProjectTasksPanel({ project, onAdd, onAddForMilestone, onEdit, onToggle, onOpenDiscovery }: ProjectTasksPanelProps) {
   const stats = productionTaskStats(project);
   const orderedMilestones = [...project.milestones].sort((a, b) => a.order - b.order);
   const grouped = [
@@ -88,7 +93,7 @@ export function ProjectTasksPanel({ project, onAdd, onAddForMilestone, onEdit, o
               ) : (
                 <ul className="mt-2 divide-y divide-[var(--admin-line)]">
                   {group.tasks.map((task) => (
-                    <TaskRow key={task.id} task={task} milestone={group.milestone} onEdit={onEdit} onToggle={onToggle} />
+                    <TaskRow key={task.id} task={task} milestone={group.milestone} onEdit={onEdit} onToggle={onToggle} onOpenDiscovery={onOpenDiscovery} />
                   ))}
                 </ul>
               )}
@@ -105,13 +110,18 @@ function TaskRow({
   milestone,
   onEdit,
   onToggle,
+  onOpenDiscovery,
 }: {
   task: AgencyTask;
   milestone: AgencyMilestone | null;
   onEdit: (task: AgencyTask) => void;
   onToggle: (task: AgencyTask) => void;
+  onOpenDiscovery?: () => void;
 }) {
   const checked = task.status === "Completed";
+  const preview = taskInstructionPreview(task.title, task.description);
+  const recommendedRole = resolveTaskRecommendedRole(task);
+  const showDiscovery = onOpenDiscovery && isDiscoveryCoordinationTask(task.title);
   return (
     <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-start sm:justify-between">
       <label className="flex min-w-0 cursor-pointer items-start gap-3">
@@ -126,11 +136,14 @@ function TaskRow({
           <span className={`block text-sm font-medium ${checked ? "text-[var(--admin-muted)] line-through" : "text-[var(--admin-ink)]"}`}>
             {task.title}
           </span>
-          {task.description ? <span className="mt-1 block text-[12px] text-[var(--admin-muted)]">{task.description}</span> : null}
+          {preview ? <span className="mt-1 block text-[12px] text-[var(--admin-muted)]">{preview}</span> : null}
           <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
             <TaskStatusBadge status={task.status} />
             <TaskPriorityBadge priority={task.priority} />
-            <span className="text-[12px] text-[var(--admin-muted)]">{task.assignee.trim() || "Unassigned"}</span>
+            <TaskRecommendedRoleNote role={recommendedRole} />
+            <span className="text-[12px] text-[var(--admin-muted)]">
+              Assignee: <span className="text-[var(--admin-ink)]">{task.assignee.trim() || "Unassigned"}</span>
+            </span>
             <span className="text-[12px] text-[var(--admin-muted)]">Due {formatProjectDay(task.dueDate)}</span>
             {milestone ? (
               <span className="text-[12px] text-[var(--admin-muted)]">{displayMilestoneName(milestone.name)}</span>
@@ -138,13 +151,24 @@ function TaskRow({
           </span>
         </span>
       </label>
-      <button
-        type="button"
-        className="inline-flex h-8 shrink-0 items-center self-start rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[11px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-        onClick={() => onEdit(task)}
-      >
-        Edit
-      </button>
+      <div className="flex shrink-0 flex-wrap gap-2 self-start">
+        {showDiscovery ? (
+          <button
+            type="button"
+            className="inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[11px] font-semibold text-[var(--admin-blue)] hover:bg-[var(--admin-bg)]"
+            onClick={onOpenDiscovery}
+          >
+            Open Discovery
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[11px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+          onClick={() => onEdit(task)}
+        >
+          Edit
+        </button>
+      </div>
     </li>
   );
 }

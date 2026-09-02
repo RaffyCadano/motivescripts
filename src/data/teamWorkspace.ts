@@ -7,6 +7,7 @@ import {
   type AgencyTaskPriority,
   type AgencyTaskStatus,
 } from "@/data/agencyProjects";
+import type { TaskRecommendedRoleId } from "@/data/taskRecommendedRoles";
 
 export type TeamWorkTask = {
   id: string;
@@ -25,6 +26,7 @@ export type TeamWorkTask = {
   completedAt: string | null;
   milestoneId: string;
   milestoneName: string;
+  recommendedRole: TaskRecommendedRoleId | null;
 };
 
 export type TeamAttentionItem = {
@@ -42,7 +44,7 @@ export type TeamActivityItem = {
   createdAt: string;
 };
 
-export function teamProjectHref(projectId: string, options?: { tab?: string; file?: string }): string {
+function buildProjectHref(basePath: string, projectId: string, options?: { tab?: string; file?: string }): string {
   const params = new URLSearchParams();
   if (options?.file) {
     params.set("tab", "files");
@@ -51,7 +53,15 @@ export function teamProjectHref(projectId: string, options?: { tab?: string; fil
     params.set("tab", options.tab);
   }
   const query = params.toString();
-  return query ? `/team/projects/${projectId}?${query}` : `/team/projects/${projectId}`;
+  return query ? `${basePath}/${projectId}?${query}` : `${basePath}/${projectId}`;
+}
+
+export function teamProjectHref(projectId: string, options?: { tab?: string; file?: string }): string {
+  return buildProjectHref("/team/projects", projectId, options);
+}
+
+export function adminProjectHref(projectId: string, options?: { tab?: string; file?: string }): string {
+  return buildProjectHref("/admin/projects", projectId, options);
 }
 
 export type DueBucket = "overdue" | "today" | "tomorrow" | "upcoming" | "none";
@@ -144,6 +154,7 @@ export function collectAssignedTasks(
         completedAt: task.completedAt,
         milestoneId: task.milestoneId,
         milestoneName: project.milestones.find((item) => item.id === task.milestoneId)?.name ?? "",
+        recommendedRole: task.recommendedRole,
       });
     }
   }
@@ -206,6 +217,86 @@ export function myWorkStats(tasks: TeamWorkTask[]) {
     overdue: tasks.filter((task) => isTaskOverdue(task)).length,
     open: tasks.filter((task) => task.status !== "Completed").length,
   };
+}
+
+export type MyTasksStatusFilter = "all" | "todo" | "progress" | "completed";
+
+export function myTasksSummaryStats(tasks: TeamWorkTask[]) {
+  const open = tasks.filter((task) => task.status !== "Completed");
+  return {
+    overdue: open.filter((task) => dueBucket(task.dueDate) === "overdue").length,
+    dueToday: open.filter((task) => dueBucket(task.dueDate) === "today").length,
+    upcoming: open.filter((task) => {
+      const bucket = dueBucket(task.dueDate);
+      return bucket === "tomorrow" || bucket === "upcoming";
+    }).length,
+    totalOpen: open.length,
+  };
+}
+
+export function matchesTaskSearch(task: TeamWorkTask, query: string): boolean {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  return [task.title, task.projectName, task.description, task.milestoneName, task.clientName].some((value) =>
+    value.toLowerCase().includes(needle),
+  );
+}
+
+export function sortMyTasks(tasks: TeamWorkTask[]): TeamWorkTask[] {
+  function rank(task: TeamWorkTask): number {
+    if (task.status === "Completed") return 10;
+    const bucket = dueBucket(task.dueDate);
+    if (bucket === "overdue") return 0;
+    if (bucket === "today") return 1;
+    if (bucket === "tomorrow") return 2;
+    if (bucket === "upcoming" && isDueSoon(task)) return 3;
+    if (bucket === "upcoming") return 4;
+    return 5;
+  }
+  return [...tasks].sort((a, b) => {
+    const rankDiff = rank(a) - rank(b);
+    if (rankDiff !== 0) return rankDiff;
+    if (a.dueDate && b.dueDate && a.dueDate !== b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+    return a.title.localeCompare(b.title);
+  });
+}
+
+export function filterMyTasks(
+  tasks: TeamWorkTask[],
+  options: {
+    status: MyTasksStatusFilter;
+    priority: AgencyTaskPriority | "All";
+    projectId: string | "All";
+    phase: string | "All";
+    search: string;
+  },
+): TeamWorkTask[] {
+  return tasks.filter((task) => {
+    if (!matchesTaskSearch(task, options.search)) return false;
+    if (options.projectId !== "All" && task.projectId !== options.projectId) return false;
+    if (options.priority !== "All" && task.priority !== options.priority) return false;
+    if (options.phase !== "All") {
+      const label = task.milestoneName.trim() || "Ungrouped";
+      if (label !== options.phase) return false;
+    }
+    if (options.status === "all") return true;
+    if (options.status === "todo") return task.status === "Todo";
+    if (options.status === "progress") return task.status === "In Progress";
+    if (options.status === "completed") return task.status === "Completed";
+    return true;
+  });
+}
+
+export function uniqueTaskPhases(tasks: TeamWorkTask[]): string[] {
+  const phases = new Set<string>();
+  for (const task of tasks) {
+    phases.add(task.milestoneName.trim() || "Ungrouped");
+  }
+  return [...phases].sort((a, b) => a.localeCompare(b));
+}
+
+export function adminProjectTasksHref(projectId: string): string {
+  return adminProjectHref(projectId, { tab: "tasks" });
 }
 
 export function myOpenTaskCount(project: AgencyProject, userId: string, fullName: string): number {

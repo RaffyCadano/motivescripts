@@ -1,42 +1,49 @@
 import { useState } from "react";
-import { Archive, CircleOff, FolderKanban, PencilLine, RotateCcw, UserPlus } from "lucide-react";
+import {
+  Activity,
+  Archive,
+  CircleOff,
+  FileSignature,
+  FolderKanban,
+  LayoutDashboard,
+  MessageSquare,
+  Paperclip,
+  PencilLine,
+  Receipt,
+  RotateCcw,
+  UserPlus,
+} from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
 import { ClientFormModal } from "@/components/admin/clients/ClientFormModal";
 import { ClientNoteModal } from "@/components/admin/clients/ClientNoteModal";
 import {
   ClientActivitySection,
-  ClientBusinessSection,
-  ClientContactSection,
   ClientFilesSection,
   ClientHeaderMeta,
   ClientMessagesSection,
-  ClientNotesSection,
   ClientProjectsSection,
 } from "@/components/admin/clients/ClientProfileSections";
-import { ClientPortalAccountSection } from "@/components/admin/clients/ClientPortalAccountSection";
-import { ClientPreProjectStatus } from "@/components/admin/clients/ClientPreProjectStatus";
-import { ClientScopeBriefSection } from "@/components/admin/clients/ClientScopeBriefSection";
+import { ClientOperationsOverview } from "@/components/admin/clients/ClientOperationsOverview";
+import { InviteClientDialog } from "@/components/admin/clients/InviteClientDialog";
 import { ClientDocumentsSection } from "@/components/admin/clients/ClientDocumentsSection";
 import { ClientInvoicesSection } from "@/components/admin/clients/ClientInvoicesSection";
-import { StaffAssignmentCard } from "@/components/admin/team/StaffAssignmentCard";
-import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { ClientStatusBadge } from "@/components/admin/clients/ClientStatusBadge";
 import { ConfirmClientStatusModal } from "@/components/admin/clients/ConfirmClientStatusModal";
 import { useAgencyClient, useLeads } from "@/components/admin/leads/LeadsProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission, isActiveAdmin } from "@/auth/permissions";
-import type { AgencyClientStatus } from "@/data/agencyClients";
+import type { AgencyClient, AgencyClientStatus } from "@/data/agencyClients";
 import { cn } from "@/lib/cn";
 
 const tabs = [
-  { id: "overview", label: "Overview" },
-  { id: "projects", label: "Projects" },
-  { id: "agreements", label: "Agreements" },
-  { id: "files", label: "Files" },
-  { id: "invoices", label: "Invoices" },
-  { id: "messages", label: "Messages" },
-  { id: "activity", label: "Activity" },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "projects", label: "Projects", icon: FolderKanban },
+  { id: "agreements", label: "Agreements", icon: FileSignature },
+  { id: "files", label: "Files", icon: Paperclip },
+  { id: "invoices", label: "Invoices", icon: Receipt },
+  { id: "messages", label: "Messages", icon: MessageSquare },
+  { id: "activity", label: "Activity", icon: Activity },
 ] as const;
 
 type ClientTab = (typeof tabs)[number]["id"];
@@ -54,7 +61,6 @@ export function AdminClientDetails() {
   const tab: ClientTab = isClientTab(hash) ? hash : "overview";
   const { updateClient, addClientNote, setClientStatus, portalAccounts } = useLeads();
   const { profile } = useAuth();
-  const team = useTeamDirectory();
   const [editOpen, setEditOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -158,68 +164,80 @@ export function AdminClientDetails() {
         </div>
       </div>
 
-      <nav aria-label="Client sections" className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
-        {tabs.map((item) => {
-          const active = item.id === tab;
-          return (
-            <Link
-              key={item.id}
-              to={{ pathname: location.pathname, hash: item.id }}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 font-heading text-[12px] font-semibold",
-                active
-                  ? "bg-[var(--admin-navy)] text-white"
-                  : "bg-white text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)] hover:bg-[var(--admin-hover)]",
-              )}
-            >
+      <label className="block text-sm font-semibold text-[var(--admin-ink)] lg:hidden">
+        Section
+        <select
+          value={tab}
+          onChange={(event) => {
+            if (isClientTab(event.target.value)) {
+              navigate({ pathname: location.pathname, hash: event.target.value }, { replace: true });
+            }
+          }}
+          className="mt-1.5 h-10 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+        >
+          {tabs.map((item) => (
+            <option key={item.id} value={item.id}>
               {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+            </option>
+          ))}
+        </select>
+      </label>
 
-      <div className="space-y-6">
-        {tab === "overview" ? (
-          <>
-            <ClientContactSection client={client} />
-            {team.data ? (
-              <StaffAssignmentCard
-                kind="client"
-                entityId={client.id}
-                members={team.data.members}
-                assignedUserIds={team.data.members
-                  .filter((member) => member.clientAssignments.some((item) => item.entityId === client.id))
-                  .map((member) => member.id)}
-                assignedLabels={Object.fromEntries(
-                  team.data.members.flatMap((member) =>
-                    member.clientAssignments
-                      .filter((item) => item.entityId === client.id)
-                      .map((item) => [member.id, item.label]),
-                  ),
-                )}
-                onChanged={() => void team.reload()}
-              />
-            ) : null}
-            <ClientPreProjectStatus client={client} />
-            <ClientPortalAccountSection
+      <div className="grid gap-6 lg:grid-cols-[15.5rem_minmax(0,1fr)]">
+        <nav
+          aria-label="Client sections"
+          className="hidden rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-3 lg:sticky lg:top-0 lg:block lg:self-start"
+        >
+          <p className="px-2.5 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">
+            Sections
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {tabs.map((item) => {
+              const Icon = item.icon;
+              const active = item.id === tab;
+              return (
+                <Link
+                  key={item.id}
+                  to={{ pathname: location.pathname, hash: item.id }}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium tracking-tight",
+                    active
+                      ? "bg-[var(--admin-hover)] text-[var(--admin-blue)]"
+                      : "text-[var(--admin-ink)]/75 hover:bg-[var(--admin-bg)] hover:text-[var(--admin-ink)]",
+                  )}
+                >
+                  <Icon
+                    size={18}
+                    strokeWidth={1.75}
+                    className={active ? "text-[var(--admin-blue)]" : "text-[var(--admin-muted)]"}
+                    aria-hidden="true"
+                  />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+
+        <div className="min-w-0 space-y-6">
+          {tab === "overview" ? (
+            <ClientOverviewTab
               client={client}
-              inviteOpen={inviteOpen}
-              onInviteOpenChange={setInviteOpen}
+              canManageProjects={canManageProjects}
+              onInvite={() => setInviteOpen(true)}
+              onAddNote={() => setNoteOpen(true)}
             />
-            <ClientScopeBriefSection client={client} />
-            <ClientBusinessSection client={client} onEdit={() => setEditOpen(true)} />
-            <ClientNotesSection client={client} onAddNote={() => setNoteOpen(true)} />
-          </>
-        ) : null}
-        {tab === "projects" ? (
-          <ClientProjectsSection client={client} createHref={`/admin/projects/new?client=${client.id}`} />
-        ) : null}
-        {tab === "agreements" ? <ClientDocumentsSection client={client} /> : null}
-        {tab === "files" ? <ClientFilesSection client={client} /> : null}
-        {tab === "invoices" ? <ClientInvoicesSection client={client} /> : null}
-        {tab === "messages" ? <ClientMessagesSection client={client} /> : null}
-        {tab === "activity" ? <ClientActivitySection items={client.activity} /> : null}
+          ) : null}
+          {tab === "projects" ? (
+            <ClientProjectsSection client={client} createHref={`/admin/projects/new?client=${client.id}`} />
+          ) : null}
+          {tab === "agreements" ? <ClientDocumentsSection client={client} /> : null}
+          {tab === "files" ? <ClientFilesSection client={client} /> : null}
+          {tab === "invoices" ? <ClientInvoicesSection client={client} /> : null}
+          {tab === "messages" ? <ClientMessagesSection client={client} /> : null}
+          {tab === "activity" ? <ClientActivitySection items={client.activity} /> : null}
+        </div>
       </div>
 
       <ClientFormModal
@@ -238,6 +256,35 @@ export function AdminClientDetails() {
           setPendingStatus(null);
         }}
       />
+      <InviteClientDialog
+        client={client}
+        open={inviteOpen}
+        mode="send"
+        onClose={() => setInviteOpen(false)}
+        onSent={() => setInviteOpen(false)}
+      />
     </div>
+  );
+}
+
+function ClientOverviewTab({
+  client,
+  canManageProjects,
+  onInvite,
+  onAddNote,
+}: {
+  client: AgencyClient;
+  canManageProjects: boolean;
+  onInvite: () => void;
+  onAddNote: () => void;
+}) {
+  return (
+    <ClientOperationsOverview
+      client={client}
+      canManageProjects={canManageProjects}
+      createHref={`/admin/projects/new?client=${client.id}`}
+      onInvite={onInvite}
+      onAddNote={onAddNote}
+    />
   );
 }

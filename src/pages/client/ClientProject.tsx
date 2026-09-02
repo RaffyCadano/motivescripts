@@ -2,7 +2,9 @@ import { Link, useParams } from "react-router-dom";
 import { ClientActionCard } from "@/components/client/ClientActionCard";
 import { ClientProjectCard } from "@/components/client/ClientProjectCard";
 import { ClientWebsiteSection } from "@/components/client/ClientWebsiteSection";
+import { ClientDiscoveryCard } from "@/components/client/ClientDiscoveryCard";
 import { ClientScopePrompt } from "@/components/client/ClientScopePrompt";
+import { useClientDiscovery } from "@/components/client/useClientDiscovery";
 import { ClientTimeline } from "@/components/client/ClientTimeline";
 import { useClientPortalAction } from "@/components/client/useClientPortalAction";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
@@ -19,6 +21,7 @@ export function ClientProject() {
     : session.project;
   const milestone = project ? currentMilestone(project) : null;
   const stages = timelineStagesFromProject(project);
+  const discovery = useClientDiscovery(project?.id);
 
   if (projectId && !project) {
     return (
@@ -42,6 +45,15 @@ export function ClientProject() {
       </header>
 
       <ClientScopePrompt brief={onboarding.brief} hasProject={Boolean(project)} />
+
+      {project ? (
+        <ClientDiscoveryCard
+          projectId={project.id}
+          projectName={project.name}
+          intake={discovery.intake}
+          loading={discovery.loading}
+        />
+      ) : null}
 
       {project ? (
         <ClientActionCard action={action} loading={loading} />

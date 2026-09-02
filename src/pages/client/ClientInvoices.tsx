@@ -57,7 +57,7 @@ export function ClientInvoices() {
                   <th className="px-5 py-3">Amount</th>
                   <th className="px-5 py-3">Amount due</th>
                   <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3"> </th>
+                  <th className="px-5 py-3">Action</th>
                 </tr>
               </thead>
               <tbody>

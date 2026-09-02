@@ -53,6 +53,26 @@ export function friendlyDbError(error: unknown, fallback: string): string {
   return fallback;
 }
 
+export function isSchemaColumnMissing(error: unknown, _table: string, column: string): boolean {
+  const message =
+    error && typeof error === "object" && "message" in error && typeof error.message === "string"
+      ? error.message
+      : "";
+  const code =
+    error && typeof error === "object" && "code" in error && typeof error.code === "string" ? error.code : "";
+  const lower = message.toLowerCase();
+  if (code === "PGRST204") {
+    return lower.includes(column.toLowerCase());
+  }
+  if (code === "42703") {
+    return lower.includes(column.toLowerCase()) || lower.includes("does not exist");
+  }
+  return (
+    lower.includes(column.toLowerCase()) &&
+    (lower.includes("schema cache") || lower.includes("does not exist") || lower.includes("could not find"))
+  );
+}
+
 export function logDbError(context: string, error: unknown) {
   const code =
     error && typeof error === "object" && "code" in error && typeof error.code === "string" ? error.code : undefined;

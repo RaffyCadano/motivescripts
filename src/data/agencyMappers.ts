@@ -12,6 +12,7 @@ import type {
   AgencyTaskPriority,
   AgencyTaskStatus,
 } from "@/data/agencyProjects";
+import { parseStoredRecommendedRole } from "@/data/taskRecommendedRoles";
 import { emptyProjectDevelopment, isDeploymentStatus, type ProjectDevelopment } from "@/data/projectDevelopment";
 import type { ReviewApproval, ReviewFeedback } from "@/data/review";
 import type {
@@ -171,6 +172,7 @@ export function mapTask(row: TaskRow): AgencyTask {
     dueDate: dateField(row.due_date),
     createdAt: row.created_at,
     completedAt: row.completed_at,
+    recommendedRole: parseStoredRecommendedRole(row.recommended_role),
   };
 }
 

@@ -37,7 +37,7 @@ export type AdminWorkflowAction = {
   title: string;
   body: string;
   currentStepId: string;
-  primaryKind: "link" | "start_project" | "none";
+  primaryKind: "link" | "start_project" | "invite" | "none";
   primaryLabel: string | null;
   primaryHref: string | null;
   secondaryLabel: string | null;
@@ -329,6 +329,53 @@ export function adminFunnelCurrentId(items: AdminFunnelItem[]): string {
   return items.find((item) => !item.done)?.id ?? items[items.length - 1]?.id ?? "invited";
 }
 
+const clientCommandLabels: Record<string, string> = {
+  client: "Client",
+  invited: "Portal Invited",
+  scope: "Scope Submitted",
+  project: "Project Created",
+  proposal: "Proposal",
+  contract: "Contract Signed",
+  invoice: "Invoice Paid",
+  started: "Project Started",
+};
+
+/** Compact neutral labels for commercial progress trackers. */
+export const commercialStageLabels: Record<string, string> = {
+  client: "Client",
+  invited: "Portal",
+  scope: "Scope",
+  project: "Project",
+  proposal: "Proposal",
+  contract: "Contract",
+  invoice: "Invoice",
+  started: "Start",
+  lead: "Lead",
+  payment: "Payment",
+};
+
+/** Same commercial funnel as deriveAdminFunnel, with a completed Client step for the account page. */
+export function clientCommandFunnel(input: Parameters<typeof deriveAdminFunnel>[0]): AdminFunnelItem[] {
+  return [
+    { id: "client", label: clientCommandLabels.client, done: true },
+    ...deriveAdminFunnel(input).map((item) => ({
+      ...item,
+      label: clientCommandLabels[item.id] ?? item.label,
+    })),
+  ];
+}
+
+/** Full commercial funnel for a project workspace — uses live portal/scope/project records. */
+export function projectCommandFunnel(input: Parameters<typeof deriveAdminFunnel>[0]): AdminFunnelItem[] {
+  return [
+    { id: "client", label: commercialStageLabels.client, done: true },
+    ...deriveAdminFunnel(input).map((item) => ({
+      ...item,
+      label: commercialStageLabels[item.id] ?? item.label,
+    })),
+  ];
+}
+
 export function adminClientWorkflowAction(input: {
   clientId: string;
   portalInvited: boolean;
@@ -429,11 +476,11 @@ export function adminClientWorkflowAction(input: {
 
   if (!input.portalInvited) {
     return {
-      title: "Invite this client",
-      body: "Send a portal invitation so they can complete the Website Scope. You can still create a project if you already have the brief.",
+      title: "Invite client to portal",
+      body: "Send the client a portal invitation so they can complete the Website Scope.",
       currentStepId: "invited",
-      primaryKind: "none",
-      primaryLabel: null,
+      primaryKind: "invite",
+      primaryLabel: "Invite Client",
       primaryHref: null,
       secondaryLabel: "Create Project",
       secondaryHref: createProject,
@@ -483,29 +530,24 @@ export function clientCommercialStage(flags: ReturnType<typeof salesFlags>): Cli
 }
 
 export function projectWorkspaceFunnel(input: {
+  portalInvited: boolean;
   hasScope: boolean;
   proposalAccepted: boolean;
   contractAccepted: boolean;
   invoicePaid: boolean;
   projectStarted: boolean;
 }): AdminFunnelItem[] {
-  return deriveAdminFunnel({
-    portalInvited: true,
+  return projectCommandFunnel({
+    portalInvited: input.portalInvited,
     hasScope: input.hasScope,
     hasProject: true,
     proposalAccepted: input.proposalAccepted,
     contractAccepted: input.contractAccepted,
     invoicePaid: input.invoicePaid,
     projectStarted: input.projectStarted,
-  }).filter((item) => item.id !== "invited");
+  });
 }
 
 export function projectWorkspaceStepLabel(item: AdminFunnelItem): string {
-  if (item.id === "scope") return item.done ? "Scope Submitted" : "Scope";
-  if (item.id === "project") return "Project";
-  if (item.id === "proposal") return "Proposal";
-  if (item.id === "contract") return "Contract";
-  if (item.id === "invoice") return "Invoice";
-  if (item.id === "started") return "Production";
-  return item.label;
+  return commercialStageLabels[item.id] ?? item.label;
 }

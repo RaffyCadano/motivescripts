@@ -21,7 +21,9 @@ import { AdminLeadDetails } from "@/pages/admin/AdminLeadDetails";
 import { AdminLeadNew } from "@/pages/admin/AdminLeadNew";
 import { AdminLeads } from "@/pages/admin/AdminLeads";
 import { AdminMessages } from "@/pages/admin/AdminMessages";
-import { AdminOverview } from "@/pages/admin/AdminOverview";
+import { AdminMyTasks } from "@/pages/admin/AdminMyTasks";
+import { AdminHome } from "@/pages/admin/AdminHome";
+import { AdminProfile } from "@/pages/admin/AdminProfile";
 import { AdminPlaceholder } from "@/pages/admin/AdminPlaceholder";
 import { AdminSettings } from "@/pages/admin/AdminSettings";
 import { AdminProjectDetails } from "@/pages/admin/AdminProjectDetails";
@@ -47,6 +49,7 @@ import { ClientFilesPage } from "@/pages/client/ClientFilesPage";
 import { ClientMessages } from "@/pages/client/ClientMessages";
 import { ClientOverview } from "@/pages/client/ClientOverview";
 import { ClientProject } from "@/pages/client/ClientProject";
+import { ClientDiscovery } from "@/pages/client/ClientDiscovery";
 import { ClientScope } from "@/pages/client/ClientScope";
 import { ClientProposalDetails } from "@/pages/client/ClientProposalDetails";
 import { ClientProposals } from "@/pages/client/ClientProposals";
@@ -75,7 +78,7 @@ import { TeamProjectDetails } from "@/pages/team/TeamProjectDetails";
 import { TeamTasks } from "@/pages/team/TeamTasks";
 import { MessagingProvider } from "@/providers/MessagingProvider";
 
-const adminUnavailablePaths = ["tasks", "notifications", "activity"] as const;
+const adminUnavailablePaths = ["notifications", "activity"] as const;
 
 export default function App() {
   return (
@@ -94,7 +97,8 @@ export default function App() {
             }
           >
             <Route element={<LeadsOutlet />}>
-              <Route index element={<AdminOverview />} />
+              <Route index element={<AdminHome />} />
+              <Route path="my-tasks" element={<AdminMyTasks />} />
               <Route path="leads" element={<AdminLeads />} />
               <Route path="leads/new" element={<AdminLeadNew />} />
               <Route path="leads/:id" element={<AdminLeadDetails />} />
@@ -122,6 +126,7 @@ export default function App() {
               <Route path="team/invite/:invitationId" element={<AdminTeamInviteDetails />} />
               <Route path="team/:id" element={<AdminTeamDetails />} />
               <Route path="settings" element={<AdminSettings />} />
+              <Route path="profile" element={<AdminProfile />} />
               <Route path="payments" element={<Navigate to="/admin/invoices" replace />} />
               {adminUnavailablePaths.map((path) => (
                 <Route key={path} path={path} element={<AdminPlaceholder />} />
@@ -158,6 +163,7 @@ export default function App() {
             <Route path="scope" element={<ClientScope />} />
             <Route path="project" element={<ClientProject />} />
             <Route path="project/:projectId" element={<ClientProject />} />
+            <Route path="project/:projectId/discovery" element={<ClientDiscovery />} />
             <Route path="files" element={<ClientFilesPage />} />
             <Route path="files/:deliverableId" element={<ClientReview />} />
             <Route path="feedback" element={<ClientFeedback />} />

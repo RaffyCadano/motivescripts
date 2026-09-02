@@ -29,10 +29,10 @@ import type {
 } from "@/data/agencyProjects";
 import { defaultWebsiteMilestones } from "@/data/projectMilestones";
 import type { ReviewApproval, ReviewFeedback } from "@/data/review";
-import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
+import { AgencyDbError, friendlyDbError, isSchemaColumnMissing, logDbError } from "@/lib/dbErrors";
 import { normalizeHttpUrl } from "@/lib/safeUrl";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
-import type { ActivityRow, FileVersionRow, Json, LeadRow, ClientRow, ClientStaffDataRow, ProfileRow, Database } from "@/types/database";
+import type { ActivityRow, FileVersionRow, Json, LeadRow, ClientRow, ClientStaffDataRow, ProfileRow, Database, TaskRow } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { AppRole } from "@/auth/roles";
 import { isAgencyRole } from "@/auth/roles";
@@ -56,6 +56,38 @@ export type AgencySnapshot = {
 };
 
 export { AgencyDbError };
+
+type TaskWriteFields = Partial<
+  Pick<
+    TaskRow,
+    | "title"
+    | "description"
+    | "milestone_id"
+    | "status"
+    | "priority"
+    | "assignee"
+    | "assigned_to"
+    | "due_date"
+    | "completed_at"
+    | "recommended_role"
+  >
+>;
+
+type TaskInsertFields = Pick<TaskRow, "project_id" | "title"> &
+  Partial<
+    Pick<
+      TaskRow,
+      | "description"
+      | "milestone_id"
+      | "status"
+      | "priority"
+      | "assignee"
+      | "assigned_to"
+      | "due_date"
+      | "completed_at"
+      | "recommended_role"
+    >
+  >;
 
 function db(): SupabaseClient<Database> {
   if (!isSupabaseConfigured()) {
@@ -133,6 +165,26 @@ export async function fetchAgencySnapshot(role: AppRole): Promise<AgencySnapshot
   throwIf(approvalsRes.error, "load approvals", "Unable to load approvals.");
   throwIf(activityRes.error, "load activity", "Unable to load projects.");
 
+  const projectRows = [...(projectsRes.data ?? [])];
+  const seenProjectIds = new Set(projectRows.map((row) => row.id));
+  const missingProjectIds = [
+    ...new Set(
+      (tasksRes.data ?? [])
+        .map((row) => row.project_id)
+        .filter((projectId): projectId is string => Boolean(projectId) && !seenProjectIds.has(projectId)),
+    ),
+  ];
+  if (missingProjectIds.length > 0) {
+    const extraProjects = await client.from("projects").select("*").in("id", missingProjectIds);
+    if (!extraProjects.error) {
+      for (const row of extraProjects.data ?? []) {
+        if (seenProjectIds.has(row.id)) continue;
+        projectRows.push(row);
+        seenProjectIds.add(row.id);
+      }
+    }
+  }
+
   const milestonesByProject = new Map<string, ReturnType<typeof mapMilestone>[]>();
   for (const row of milestonesRes.data ?? []) {
     const list = milestonesByProject.get(row.project_id) ?? [];
@@ -177,7 +229,7 @@ export async function fetchAgencySnapshot(role: AppRole): Promise<AgencySnapshot
     portalAccounts: ((profilesRes.data ?? []) as Pick<ProfileRow, "id" | "email" | "full_name" | "role" | "client_id">[]).map(
       mapPortalAccount,
     ),
-    projects: (projectsRes.data ?? []).map((row) =>
+    projects: projectRows.map((row) =>
       mapProject(
         row,
         milestonesByProject.get(row.id) ?? [],
@@ -613,41 +665,61 @@ export async function deleteMilestone(projectId: string, milestoneId: string, na
   await addActivity(projectId, "milestone_updated", `Milestone removed: ${name}`, "milestone");
 }
 
+function taskDraftWriteFields(draft: AgencyTaskDraft, completedAt: string | null | undefined): TaskWriteFields {
+  const fields: TaskWriteFields = {
+    title: draft.title.trim(),
+    description: draft.description.trim(),
+    milestone_id: emptyToNull(draft.milestoneId),
+    status: draft.status,
+    priority: draft.priority,
+    assignee: draft.assignee.trim(),
+    assigned_to: emptyToNull(draft.assignedTo),
+    due_date: emptyToNull(draft.dueDate),
+    recommended_role: draft.recommendedRole ?? null,
+  };
+  if (completedAt !== undefined) {
+    fields.completed_at = completedAt;
+  }
+  return fields;
+}
+
+async function writeTaskUpdate(client: ReturnType<typeof db>, taskId: string, fields: TaskWriteFields): Promise<unknown> {
+  let { error } = await client.from("tasks").update(fields).eq("id", taskId);
+  if (error && isSchemaColumnMissing(error, "tasks", "recommended_role") && fields.recommended_role !== undefined) {
+    const { recommended_role: _ignored, ...withoutRecommendedRole } = fields;
+    ({ error } = await client.from("tasks").update(withoutRecommendedRole).eq("id", taskId));
+  }
+  return error;
+}
+
 export async function insertTask(projectId: string, draft: AgencyTaskDraft): Promise<void> {
   const client = db();
   const now = new Date().toISOString();
-  const { error } = await client.from("tasks").insert({
+  const fields: TaskInsertFields = {
     project_id: projectId,
-    milestone_id: emptyToNull(draft.milestoneId),
     title: draft.title.trim(),
     description: draft.description.trim(),
+    milestone_id: emptyToNull(draft.milestoneId),
     status: draft.status,
     priority: draft.priority,
     assignee: draft.assignee.trim(),
     assigned_to: emptyToNull(draft.assignedTo),
     due_date: emptyToNull(draft.dueDate),
     completed_at: draft.status === "Completed" ? now : null,
-  });
+    recommended_role: draft.recommendedRole ?? null,
+  };
+  let { error } = await client.from("tasks").insert(fields);
+  if (error && isSchemaColumnMissing(error, "tasks", "recommended_role")) {
+    const { recommended_role: _ignored, ...withoutRecommendedRole } = fields;
+    ({ error } = await client.from("tasks").insert(withoutRecommendedRole));
+  }
   throwIf(error, "create task", "Unable to create task.");
   await addActivity(projectId, "task_created", `Task created: ${draft.title.trim()}`, "task");
 }
 
 export async function updateTaskRecord(projectId: string, taskId: string, draft: AgencyTaskDraft, completedAt: string | null): Promise<void> {
   const client = db();
-  const { error } = await client
-    .from("tasks")
-    .update({
-      title: draft.title.trim(),
-      description: draft.description.trim(),
-      milestone_id: emptyToNull(draft.milestoneId),
-      status: draft.status,
-      priority: draft.priority,
-      assignee: draft.assignee.trim(),
-      assigned_to: emptyToNull(draft.assignedTo),
-      due_date: emptyToNull(draft.dueDate),
-      completed_at: completedAt,
-    })
-    .eq("id", taskId);
+  const error = await writeTaskUpdate(client, taskId, taskDraftWriteFields(draft, completedAt));
   throwIf(error, "update task", "Unable to update task.");
   await addActivity(projectId, "task_updated", `Task updated: ${draft.title.trim()}`, "task");
 }

@@ -31,6 +31,7 @@ import {
   type AgencyTaskStatus,
 } from "@/data/agencyProjects";
 import { displayMilestoneName } from "@/data/projectMilestones";
+import { taskInstructionPreview } from "@/data/productionTaskInstructions";
 import { isAssignedToMe, myOpenTaskCount, projectWorkload, teamProjectHref, type TeamWorkTask } from "@/data/teamWorkspace";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
@@ -138,34 +139,38 @@ export function TeamProjectDetails() {
         <Link to="/team/projects" className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
           My Projects
         </Link>
-        <h1 className="mt-2 font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">{project.name}</h1>
-        <p className="mt-1 text-sm text-[var(--admin-muted)]">
-          {client?.businessName ?? "Not set"} · {project.type}
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-          <span className="inline-flex items-center gap-2">
-            <span className="text-[var(--admin-muted)]">Status</span>
-            <ProjectStatusBadge status={project.status} />
-          </span>
-          <span>
-            <span className="text-[var(--admin-muted)]">Progress</span>{" "}
-            <span className="font-heading font-semibold text-[var(--admin-ink)]">{progress}%</span>
-          </span>
-          <span>
-            <span className="text-[var(--admin-muted)]">Phase</span>{" "}
-            <span className="font-medium text-[var(--admin-ink)]">
-              {milestone ? displayMilestoneName(milestone.name) : "Not set"}
-            </span>
-          </span>
+        <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">{project.name}</h1>
+            <p className="mt-1 text-sm text-[var(--admin-muted)]">
+              {client?.businessName ?? "Not set"} · {project.type}
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <span className="inline-flex items-center gap-2">
+                <span className="text-[var(--admin-muted)]">Status</span>
+                <ProjectStatusBadge status={project.status} />
+              </span>
+              <span>
+                <span className="text-[var(--admin-muted)]">Progress</span>{" "}
+                <span className="font-heading font-semibold text-[var(--admin-ink)]">{progress}%</span>
+              </span>
+              <span>
+                <span className="text-[var(--admin-muted)]">Phase</span>{" "}
+                <span className="font-medium text-[var(--admin-ink)]">
+                  {milestone ? displayMilestoneName(milestone.name) : "Not set"}
+                </span>
+              </span>
+            </div>
+          </div>
+          {canMessages && client ? (
+            <Link
+              to={`/team/messages?client=${client.id}&project=${project.id}`}
+              className="inline-flex h-8 shrink-0 items-center rounded-lg border border-[var(--admin-line)] bg-white px-3 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:bg-[var(--admin-bg)]"
+            >
+              Open messages
+            </Link>
+          ) : null}
         </div>
-        {canMessages && client ? (
-          <Link
-            to={`/team/messages?client=${client.id}&project=${project.id}`}
-            className="mt-3 inline-flex font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-          >
-            Open messages
-          </Link>
-        ) : null}
       </div>
 
       {project.status === "Planning" && project.tasks.length > 0 ? (
@@ -241,6 +246,7 @@ export function TeamProjectDetails() {
                 completedAt: task.completedAt,
                 milestoneId: task.milestoneId,
                 milestoneName: project.milestones.find((item) => item.id === task.milestoneId)?.name ?? "",
+                recommendedRole: task.recommendedRole,
               },
             );
           }}
@@ -313,7 +319,12 @@ function TeamProjectOverview({
       <div className="space-y-6">
         <ProjectProductionPipeline project={project} />
         {team.data ? (
-          <ProjectTeamRoster members={team.data.members} projectId={project.id} assignedLabels={assignedLabels} />
+          <ProjectTeamRoster
+            members={team.data.members}
+            projectId={project.id}
+            clientId={project.clientId}
+            assignedLabels={assignedLabels}
+          />
         ) : null}
         <ProjectProductionTasksCard project={project} onOpenTasks={onOpenTasks} />
         <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
@@ -432,15 +443,14 @@ function TeamProjectTasks({
                 <ul className="mt-2 divide-y divide-[var(--admin-line)]">
                   {group.tasks.map((task) => {
                     const mine = isAssignedToMe(task, userId, fullName);
+                    const preview = taskInstructionPreview(task.title, task.description);
                     return (
                       <li key={task.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="min-w-0">
                           <p className={cn("text-sm font-medium", task.status === "Completed" && "text-[var(--admin-muted)] line-through")}>
                             {task.title}
                           </p>
-                          {task.description ? (
-                            <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{task.description}</p>
-                          ) : null}
+                          {preview ? <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{preview}</p> : null}
                           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <TaskStatusBadge status={task.status} />
                             <TaskPriorityBadge priority={task.priority} />
@@ -450,15 +460,13 @@ function TeamProjectTasks({
                             <span className="text-[12px] text-[var(--admin-muted)]">Due {formatProjectDay(task.dueDate)}</span>
                           </div>
                         </div>
-                        {mine ? (
-                          <button
-                            type="button"
-                            className="inline-flex h-8 shrink-0 items-center self-start rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[11px] font-semibold hover:bg-[var(--admin-bg)]"
-                            onClick={() => onOpenTask(task)}
-                          >
-                            Update
-                          </button>
-                        ) : null}
+                        <button
+                          type="button"
+                          className="inline-flex h-8 shrink-0 items-center self-start rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[11px] font-semibold hover:bg-[var(--admin-bg)]"
+                          onClick={() => onOpenTask(task)}
+                        >
+                          {mine ? "Update" : "View"}
+                        </button>
                       </li>
                     );
                   })}

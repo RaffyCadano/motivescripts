@@ -1,7 +1,18 @@
 import { useMemo, useState } from "react";
-import { Archive, MessageSquare, Pause, PencilLine, RefreshCw, Trash2 } from "lucide-react";
+import {
+  Archive,
+  MessageSquare,
+  Pause,
+  PencilLine,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
 import { AdminActionsMenu } from "@/components/admin/AdminActionsMenu";
+import { adminPrimaryBtn } from "@/components/admin/adminActionStyles";
+import { canInviteClient, workflowPrimaryAllowed } from "@/components/admin/projects/workflowPermissions";
+import { useProjectWorkflowState } from "@/components/admin/projects/useProjectWorkflowState";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { ConfirmArchiveProjectModal } from "@/components/admin/projects/ConfirmArchiveProjectModal";
 import { ConfirmRemoveMilestoneModal } from "@/components/admin/projects/ConfirmRemoveMilestoneModal";
@@ -12,7 +23,7 @@ import { ProjectFeedbackPanel } from "@/components/admin/projects/ProjectFeedbac
 import { ProjectFilesPanel } from "@/components/admin/projects/ProjectFilesPanel";
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
 import { ProjectOverview } from "@/components/admin/projects/ProjectOverview";
-import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
+import { ProjectSectionNav } from "@/components/admin/projects/ProjectSectionNav";
 import { ProjectStatusModal } from "@/components/admin/projects/ProjectStatusModal";
 import { ProjectTasksPanel } from "@/components/admin/projects/ProjectTasksPanel";
 import { TaskFormModal } from "@/components/admin/projects/TaskFormModal";
@@ -20,34 +31,13 @@ import { useAgencyProject, useLeads } from "@/components/admin/leads/LeadsProvid
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import {
   calculateProjectProgress,
-  currentMilestone,
-  formatProjectDay,
-  formatProductionTaskStats,
-  productionTaskStats,
   type AgencyMilestone,
   type AgencyMilestoneDraft,
   type AgencyProjectStatus,
   type AgencyTask,
 } from "@/data/agencyProjects";
-import { displayMilestoneName } from "@/data/projectMilestones";
+import { isProjectSectionTabId, projectOpenTaskCount, type ProjectSectionTabId } from "@/data/projectSectionNav";
 import { productionTaskAssigneeOptions } from "@/data/team";
-import { cn } from "@/lib/cn";
-
-const tabs = [
-  { id: "overview", label: "Overview" },
-  { id: "tasks", label: "Tasks" },
-  { id: "milestones", label: "Milestones" },
-  { id: "files", label: "Files" },
-  { id: "feedback", label: "Feedback" },
-  { id: "approvals", label: "Approvals" },
-  { id: "activity", label: "Activity" },
-] as const;
-
-type TabId = (typeof tabs)[number]["id"];
-
-function isTabId(value: string | null): value is TabId {
-  return tabs.some((item) => item.id === value);
-}
 
 export function AdminProjectDetails() {
   const { id } = useParams();
@@ -66,10 +56,12 @@ export function AdminProjectDetails() {
     addTask,
     updateTask,
     toggleTaskComplete,
+    portalAccounts,
   } = useLeads();
+  const { profile } = useAuth();
   const { data: teamData } = useTeamDirectory();
   const tabParam = searchParams.get("tab");
-  const tab: TabId = isTabId(tabParam) ? tabParam : "overview";
+  const tab: ProjectSectionTabId = isProjectSectionTabId(tabParam) ? tabParam : "overview";
   const selectedFileId = searchParams.get("file");
   const [statusOpen, setStatusOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -81,17 +73,33 @@ export function AdminProjectDetails() {
   const [editingTask, setEditingTask] = useState<AgencyTask | null>(null);
   const [taskMilestoneId, setTaskMilestoneId] = useState<string | undefined>(undefined);
   const projectId = match?.project.id ?? "";
+  const clientId = match?.client?.id;
+  const portalLinked = clientId
+    ? portalAccounts.some((account) => account.clientId === clientId && account.role === "client")
+    : false;
+  const workflow = useProjectWorkflowState(match?.project ?? null, match?.client ?? null, portalLinked);
   const assignees = useMemo(
     () => productionTaskAssigneeOptions(teamData?.members ?? [], projectId),
     [projectId, teamData?.members],
   );
+  const openTaskCount = useMemo(
+    () => (match?.project ? projectOpenTaskCount(match.project.tasks) : 0),
+    [match?.project],
+  );
 
-  function setTab(next: TabId) {
+  function setTab(next: ProjectSectionTabId) {
     const nextParams = new URLSearchParams(searchParams);
     if (next === "overview") nextParams.delete("tab");
     else nextParams.set("tab", next);
     if (next !== "files") nextParams.delete("file");
     setSearchParams(nextParams, { replace: true });
+  }
+
+  function openDiscovery() {
+    setTab("overview");
+    requestAnimationFrame(() => {
+      document.getElementById("project-discovery")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   function setSelectedFile(fileId: string | null) {
@@ -119,8 +127,13 @@ export function AdminProjectDetails() {
 
   const { project, client } = match;
   const progress = calculateProjectProgress(project);
-  const phase = currentMilestone(project);
-  const stats = productionTaskStats(project);
+  const headerAction = workflow.action;
+  const showHeaderAction =
+    headerAction &&
+    headerAction.primaryKind === "link" &&
+    headerAction.primaryLabel &&
+    headerAction.primaryHref &&
+    workflowPrimaryAllowed(headerAction, profile, canInviteClient(profile));
 
   return (
     <div className="space-y-6">
@@ -132,35 +145,21 @@ export function AdminProjectDetails() {
           <div>
             <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">{project.name}</h1>
             <p className="mt-1 text-sm text-[var(--admin-muted)]">
-              {client ? (
-                <Link to={`/admin/clients/${client.id}`} className="hover:text-[var(--admin-blue)] hover:underline">
-                  {client.businessName}
-                </Link>
-              ) : (
-                "Not set"
-              )}
-              {" · "}
               {project.type}
+              {" · "}
+              {project.status}
+              {" · "}
+              {progress}%
               {project.archived ? " · Archived" : ""}
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              <span className="inline-flex items-center gap-2">
-                <span className="text-[var(--admin-muted)]">Status</span>
-                <ProjectStatusBadge status={project.status} />
-              </span>
-              <span>
-                <span className="text-[var(--admin-muted)]">Progress</span>{" "}
-                <span className="font-heading font-semibold text-[var(--admin-ink)]">{progress}%</span>
-              </span>
-              <span>
-                <span className="text-[var(--admin-muted)]">Phase</span>{" "}
-                <span className="font-medium text-[var(--admin-ink)]">
-                  {phase ? displayMilestoneName(phase.name) : "Not set"}
-                </span>
-              </span>
-            </div>
           </div>
-          <AdminActionsMenu
+          <div className="flex flex-wrap items-center gap-2">
+            {showHeaderAction ? (
+              <Link to={headerAction.primaryHref!} className={`${adminPrimaryBtn} justify-center`}>
+                {headerAction.primaryLabel}
+              </Link>
+            ) : null}
+            <AdminActionsMenu
             ariaLabel={`Actions for ${project.name}`}
             items={[
               { id: "edit", label: "Edit Project", icon: PencilLine, href: `/admin/projects/${project.id}/edit` },
@@ -198,30 +197,17 @@ export function AdminProjectDetails() {
               },
             ]}
           />
+          </div>
         </div>
       </div>
 
-      <nav aria-label="Project sections" className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
-        {tabs.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setTab(item.id)}
-            className={cn(
-              "shrink-0 rounded-full px-3 py-1.5 font-heading text-[12px] font-semibold",
-              tab === item.id
-                ? "bg-[var(--admin-navy)] text-white"
-                : "bg-white text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)] hover:bg-[var(--admin-hover)]",
-            )}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
+      <div className="grid gap-6 lg:grid-cols-[15.5rem_minmax(0,1fr)]">
+        <ProjectSectionNav tab={tab} taskCount={openTaskCount} onSelect={setTab} />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
-        <div>
-          {tab === "overview" ? <ProjectOverview project={project} client={client} onOpenTab={(next) => setTab(next as TabId)} /> : null}
+        <div className="min-w-0">
+          {tab === "overview" ? (
+            <ProjectOverview project={project} client={client} workflow={workflow} onOpenTab={(next) => setTab(next as ProjectSectionTabId)} />
+          ) : null}
           {tab === "tasks" ? (
             <ProjectTasksPanel
               project={project}
@@ -240,6 +226,7 @@ export function AdminProjectDetails() {
                 setTaskOpen(true);
               }}
               onToggle={(task) => toggleTaskComplete(project.id, task.id)}
+              onOpenDiscovery={openDiscovery}
             />
           ) : null}
           {tab === "milestones" ? (
@@ -272,58 +259,6 @@ export function AdminProjectDetails() {
           {tab === "approvals" ? <ProjectApprovalsPanel project={project} /> : null}
           {tab === "activity" ? <ProjectActivityPanel project={project} /> : null}
         </div>
-
-        <aside className="space-y-4">
-          <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-            <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Details</h2>
-            <dl className="mt-4 space-y-3 text-sm">
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Client</dt>
-                <dd className="mt-0.5">
-                  {client ? (
-                    <Link className="font-medium text-[var(--admin-blue)] hover:underline" to={`/admin/clients/${client.id}`}>
-                      {client.businessName}
-                    </Link>
-                  ) : (
-                    "Unknown client"
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Status</dt>
-                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{project.status}</dd>
-              </div>
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Phase</dt>
-                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">
-                  {phase ? displayMilestoneName(phase.name) : "Not set"}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Progress</dt>
-                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{progress}%</dd>
-              </div>
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Started</dt>
-                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{formatProjectDay(project.startDate)}</dd>
-              </div>
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Target launch</dt>
-                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{formatProjectDay(project.targetLaunchDate)}</dd>
-              </div>
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Approval</dt>
-                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{project.approvalStatus || "Not set"}</dd>
-              </div>
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Tasks</dt>
-                <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">
-                  {formatProductionTaskStats(stats)}
-                </dd>
-              </div>
-            </dl>
-          </section>
-        </aside>
       </div>
 
       <ProjectStatusModal

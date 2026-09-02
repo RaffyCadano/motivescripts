@@ -101,7 +101,33 @@ export function productionTaskAssigneeOptions(
     .map((member) => ({ id: member.id, name: member.fullName || member.email }));
 }
 
+/** Client-level assignment is the account owner (PM), not production staff. */
+export function clientProjectManagerCandidates(
+  members: TeamMember[],
+  assignedUserIds: string[],
+): TeamMember[] {
+  return members
+    .filter((member) => {
+      if (!member.isActive) return false;
+      if (assignedUserIds.includes(member.id)) return false;
+      return member.templateKey === "project_manager";
+    })
+    .slice()
+    .sort((a, b) => (a.fullName || a.email).localeCompare(b.fullName || b.email));
+}
+
 export function productionProjectCandidates(
+  members: TeamMember[],
+  assignedUserIds: string[],
+  clientId?: string,
+): TeamMember[] {
+  return projectTeamCandidates(members, assignedUserIds, clientId).filter((member) =>
+    isProductionTeamTemplate(member.templateKey),
+  );
+}
+
+/** PM plus production staff — the people who belong on a project roster. */
+export function projectTeamCandidates(
   members: TeamMember[],
   assignedUserIds: string[],
   clientId?: string,
@@ -110,7 +136,7 @@ export function productionProjectCandidates(
     .filter((member) => {
       if (!member.isActive) return false;
       if (assignedUserIds.includes(member.id)) return false;
-      if (!isProductionTeamTemplate(member.templateKey)) return false;
+      if (member.templateKey !== "project_manager" && !isProductionTeamTemplate(member.templateKey)) return false;
       if (clientId) {
         const clientIds = new Set(member.clientAssignments.map((item) => item.entityId));
         if (clientIds.size > 0 && !clientIds.has(clientId)) return false;
@@ -118,17 +144,36 @@ export function productionProjectCandidates(
       return true;
     })
     .slice()
-    .sort((a, b) => (a.fullName || a.email).localeCompare(b.fullName || b.email));
+    .sort(compareProjectTeamMembers);
 }
 
 export function assignedProjectMembers(members: TeamMember[], projectId: string): TeamMember[] {
-  return members.filter((member) => member.projectAssignments.some((item) => item.entityId === projectId));
+  return members
+    .filter((member) => member.projectAssignments.some((item) => item.entityId === projectId))
+    .slice()
+    .sort(compareProjectTeamMembers);
+}
+
+function compareProjectTeamMembers(a: TeamMember, b: TeamMember): number {
+  const aPm = a.templateKey === "project_manager" ? 0 : 1;
+  const bPm = b.templateKey === "project_manager" ? 0 : 1;
+  if (aPm !== bPm) return aPm - bPm;
+  return (a.fullName || a.email).localeCompare(b.fullName || b.email);
 }
 
 export function memberRoleLabel(member: TeamMember, assignmentLabel?: string): string {
   const extra = assignmentLabel?.trim();
   if (extra) return extra;
   return member.templateLabel || member.jobTitle || "Team Member";
+}
+
+/** Agency role/template only — never a free-text assignment label. */
+export function memberStaffRoleLabel(member: TeamMember): string {
+  return member.templateLabel || member.jobTitle || (member.role === "admin" ? "Admin" : "Team Member");
+}
+
+export function staffMemberPickerLabel(member: TeamMember): string {
+  return `${member.fullName || member.email} — ${memberStaffRoleLabel(member)}`;
 }
 
 export function teamStatusLabel(row: TeamListRow): string {

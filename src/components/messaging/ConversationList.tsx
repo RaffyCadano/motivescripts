@@ -12,6 +12,7 @@ type ConversationListProps = {
   emptyTitle: string;
   emptyDescription: string;
   showClient: boolean;
+  canCompose?: boolean;
   onNew: () => void;
 };
 
@@ -24,6 +25,7 @@ export function ConversationList({
   emptyTitle,
   emptyDescription,
   showClient,
+  canCompose = true,
   onNew,
 }: ConversationListProps) {
   const styles = messagingClasses(tone);
@@ -32,16 +34,18 @@ export function ConversationList({
     <aside className={cn("flex min-h-0 flex-col border-b lg:border-b-0 lg:border-r", styles.line)}>
       <div className={cn("flex items-center justify-between gap-2 border-b px-4 py-3", styles.line)}>
         <p className={cn("text-[11px] font-semibold uppercase tracking-[0.14em]", styles.muted)}>Inbox</p>
-        <button
-          type="button"
-          className={cn(
-            "inline-flex h-8 items-center whitespace-nowrap rounded-lg px-2.5 font-heading text-[12px] font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
-            styles.blueBtn,
-          )}
-          onClick={onNew}
-        >
-          New message
-        </button>
+        {canCompose ? (
+          <button
+            type="button"
+            className={cn(
+              "inline-flex h-8 items-center whitespace-nowrap rounded-lg px-2.5 font-heading text-[12px] font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2",
+              styles.blueBtn,
+            )}
+            onClick={onNew}
+          >
+            New message
+          </button>
+        ) : null}
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-2">
         {loading ? (

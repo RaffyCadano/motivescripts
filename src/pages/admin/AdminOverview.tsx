@@ -4,6 +4,8 @@ import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
 import { NeedsAttention } from "@/components/admin/NeedsAttention";
 import { OverviewInvoices } from "@/components/admin/OverviewInvoices";
+import { OverviewDiscoveryAttention } from "@/components/admin/OverviewDiscoveryAttention";
+import { OverviewMyTasks } from "@/components/admin/OverviewMyTasks";
 import { OverviewWorkflow } from "@/components/admin/OverviewWorkflow";
 import { RecentActivity } from "@/components/admin/RecentActivity";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
@@ -133,6 +135,8 @@ export function AdminOverview() {
       </section>
 
       <NeedsAttention items={attention} />
+      {can("projects.view") ? <OverviewDiscoveryAttention /> : null}
+      {can("projects.view") ? <OverviewMyTasks /> : null}
       <OverviewWorkflow counts={pipeline} />
 
       <div className={can("invoices.view") ? "grid items-start gap-5 xl:grid-cols-[minmax(16rem,0.9fr)_minmax(0,1.1fr)]" : "grid gap-5"}>

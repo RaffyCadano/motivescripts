@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, ChevronDown, Globe, LogOut, Menu, PanelLeft, Settings } from "lucide-react";
+import { Bell, ChevronDown, Globe, LogOut, Menu, PanelLeft, Settings, UserRound } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAdmin } from "@/auth/permissions";
 import { userDisplay } from "@/auth/userDisplay";
@@ -175,6 +175,15 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
               >
                 <Globe size={15} strokeWidth={1.75} aria-hidden="true" />
                 View website
+              </Link>
+              <Link
+                role="menuitem"
+                to="/admin/profile"
+                className="flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                onClick={() => setMenuOpen(false)}
+              >
+                <UserRound size={15} strokeWidth={1.75} aria-hidden="true" />
+                Profile
               </Link>
               {isActiveAdmin(profile) ? (
                 <Link

@@ -10,6 +10,7 @@ import { useMessaging } from "@/providers/MessagingProvider";
 import { fetchConversationById } from "@/data/messagingRepository";
 import { findPrimaryConversation, type ConversationSummary, type MessagingTone } from "@/data/messaging";
 import { hasPermission } from "@/auth/permissions";
+import { isProductionCommunicator, usesTeamWorkspace } from "@/auth/roles";
 import { cn } from "@/lib/cn";
 
 type MessagingWorkspaceProps = {
@@ -54,19 +55,36 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
     const clientId = queryClientId || undefined;
     const projectId = queryProjectId || undefined;
     if (clientId || projectId) {
-      const match = findPrimaryConversation(messaging.conversations, { clientId, projectId });
+      const match = findPrimaryConversation(messaging.conversations, {
+        clientId,
+        projectId,
+        matchProject: isProductionCommunicator(profile),
+      });
       if (match) {
         navigate(`${basePath}/${match.id}`, { replace: true });
         return;
       }
-      setComposeOpen(true);
+      if (tone === "client" || hasPermission(profile, "messages.manage")) {
+        setComposeOpen(true);
+      }
       return;
     }
 
-    if (composeFlag === "new") {
+    if (composeFlag === "new" && (tone === "client" || hasPermission(profile, "messages.manage"))) {
       setComposeOpen(true);
     }
-  }, [basePath, composeFlag, conversationId, messaging.conversations, messaging.loadStatus, navigate, queryClientId, queryProjectId]);
+  }, [
+    basePath,
+    composeFlag,
+    conversationId,
+    messaging.conversations,
+    messaging.loadStatus,
+    navigate,
+    profile,
+    queryClientId,
+    queryProjectId,
+    tone,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +124,17 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
   const showList = isLg || !conversationId;
   const showThread = isLg || Boolean(conversationId);
   const canPickClient = tone === "admin";
+  const canView = tone === "client" || hasPermission(profile, "messages.view");
+  const canManage = tone === "client" || hasPermission(profile, "messages.manage");
+  const canClose = canManage && !isProductionCommunicator(profile) && tone === "admin";
+  const requireProject = isProductionCommunicator(profile);
+  const composeClients = clients.map((item) => ({ id: item.id, businessName: item.businessName }));
+  const composeProjects = projects.map((item) => ({ id: item.id, name: item.name, clientId: item.clientId }));
+  const defaultProjectId =
+    queryProjectId ||
+    ((requireProject || tone === "client") && composeProjects.length === 1 ? composeProjects[0].id : "");
+  const defaultClientId =
+    queryClientId || (requireProject && composeProjects.length === 1 ? composeProjects[0].clientId : "");
 
   const markConversationRead = messaging.markConversationRead;
   const markRead = useCallback(async () => {
@@ -117,11 +146,29 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
     queryClientId && !conversationId
       ? messaging.conversations.filter((item) => item.clientId === queryClientId)
       : messaging.conversations;
+  const teamWorkspace = usesTeamWorkspace(profile);
   const emptyTitle = tone === "admin" ? "No conversations yet" : "No messages yet";
-  const emptyDescription =
-    tone === "admin"
+  const emptyDescription = requireProject
+    ? "Start a conversation for a project you’re assigned to. Pricing, contracts, scope changes, and billing stay with the project manager."
+    : tone === "admin"
       ? "Messages are for client questions that do not belong to a proposal, contract, invoice, review, or file."
       : "Have a question about your project? Start a conversation with MotiveScripts.";
+  const headingDescription = requireProject
+    ? "Ask assigned-project questions and reply to client feedback. Send pricing, contracts, scope changes, and billing to the project manager."
+    : tone === "admin"
+      ? "Client questions that do not belong to a proposal, contract, invoice, review, or file."
+      : "Questions and communication with MotiveScripts. Proposals, contracts, invoices, and file review stay in their own sections.";
+
+  if (teamWorkspace && !canView) {
+    return (
+      <div className={cn("border px-5 py-10 text-center", styles.radius, styles.line, styles.card)}>
+        <p className={cn("font-heading text-sm font-semibold", styles.ink)}>Client messages aren’t part of this role</p>
+        <p className={cn("mt-1 text-sm", styles.muted)}>
+          Report QA issues on the project tasks. The project manager handles client communication.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-0 flex-col gap-4">
@@ -130,11 +177,7 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
           <h1 className={cn("font-heading text-[1.5rem] font-semibold tracking-tight md:text-[1.65rem]", styles.ink)}>
             Messages
           </h1>
-          <p className={cn("mt-1 text-sm", styles.muted)}>
-            {tone === "admin"
-              ? "Client questions that do not belong to a proposal, contract, invoice, review, or file."
-              : "Questions and communication with MotiveScripts. Proposals, contracts, invoices, and file review stay in their own sections."}
-          </p>
+          <p className={cn("mt-1 text-sm", styles.muted)}>{headingDescription}</p>
         </header>
       ) : null}
 
@@ -169,6 +212,7 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
               emptyTitle={emptyTitle}
               emptyDescription={emptyDescription}
               showClient={tone === "admin"}
+              canCompose={canManage}
               onNew={() => setComposeOpen(true)}
             />
           ) : null}
@@ -203,14 +247,14 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
                   return created;
                 }}
                 onCloseConversation={
-                  hasPermission(profile, "messages.manage")
+                  canClose
                     ? () => {
                         void messaging.setConversationStatus(active.id, "closed");
                       }
                     : undefined
                 }
                 onReopenConversation={
-                  hasPermission(profile, "messages.manage")
+                  canClose
                     ? () => {
                         void messaging.setConversationStatus(active.id, "open");
                       }
@@ -221,8 +265,9 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
               <div className="hidden flex-1 flex-col items-center justify-center px-6 py-10 text-center lg:flex">
                 <p className={cn("font-heading text-sm font-semibold", styles.ink)}>Select a conversation</p>
                 <p className={cn("mt-1 max-w-sm text-sm", styles.muted)}>
-                  Or start one for questions like when you need content, whether a blog can be added later, or if a login
-                  email bounced.
+                  {requireProject
+                    ? "Or start one for an assigned-project question. Route pricing, contracts, and scope changes to the project manager."
+                    : "Or start one for questions like when you need content, whether a blog can be added later, or if a login email bounced."}
                 </p>
               </div>
             )
@@ -235,10 +280,11 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
         tone={tone}
         canPickClient={canPickClient}
         conversations={messaging.conversations}
-        clients={clients.map((item) => ({ id: item.id, businessName: item.businessName }))}
-        projects={projects.map((item) => ({ id: item.id, name: item.name, clientId: item.clientId }))}
-        initialClientId={queryClientId}
-        initialProjectId={queryProjectId}
+        clients={composeClients}
+        projects={composeProjects}
+        initialClientId={defaultClientId}
+        initialProjectId={defaultProjectId}
+        requireProject={requireProject}
         busy={composeBusy}
         onClose={() => {
           setComposeOpen(false);
@@ -258,6 +304,7 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
                 ? findPrimaryConversation(messaging.conversations, {
                     clientId: canPickClient ? draft.clientId : undefined,
                     projectId: draft.projectId || undefined,
+                    matchProject: requireProject,
                   })
                 : null;
             if (existing) {

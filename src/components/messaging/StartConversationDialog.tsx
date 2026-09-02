@@ -30,6 +30,7 @@ type StartConversationDialogProps = {
   projects: ProjectOption[];
   initialClientId?: string;
   initialProjectId?: string;
+  requireProject?: boolean;
   busy: boolean;
   onClose: () => void;
   onSubmit: (draft: ConversationDraft) => Promise<boolean>;
@@ -44,6 +45,7 @@ export function StartConversationDialog({
   projects,
   initialClientId = "",
   initialProjectId = "",
+  requireProject = false,
   busy,
   onClose,
   onSubmit,
@@ -71,13 +73,15 @@ export function StartConversationDialog({
       ? findPrimaryConversation(conversations, {
           clientId: canPickClient ? clientId : undefined,
           projectId: projectId || undefined,
+          matchProject: requireProject,
         })
       : null;
   const valid =
     (Boolean(existing) || (subject.trim().length > 0 && subject.trim().length <= SUBJECT_MAX_LENGTH)) &&
     body.trim().length > 0 &&
     body.trim().length <= MESSAGE_MAX_LENGTH &&
-    (!canPickClient || Boolean(clientId));
+    (!canPickClient || Boolean(clientId)) &&
+    (!requireProject || Boolean(projectId));
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -123,10 +127,11 @@ export function StartConversationDialog({
       ) : null}
       <div>
         <label htmlFor={`${titleId}-project`} className={cn("block font-heading text-sm font-semibold", styles.ink)}>
-          Project <span className={styles.muted}>(optional)</span>
+          Project {requireProject ? null : <span className={styles.muted}>(optional)</span>}
         </label>
         <select
           id={`${titleId}-project`}
+          required={requireProject}
           value={projectId}
           disabled={busy || (canPickClient && !clientId)}
           onChange={(event) => {
@@ -138,7 +143,7 @@ export function StartConversationDialog({
           }}
           className={cn(styles.control, styles.controlBorder, styles.ink, "mt-1.5")}
         >
-          <option value="">No project</option>
+          <option value="">{requireProject ? "Select a project" : "No project"}</option>
           {projectOptions.map((item) => (
             <option key={item.id} value={item.id}>
               {item.name}
@@ -208,7 +213,9 @@ export function StartConversationDialog({
   const adminTitle = existing ? "Continue conversation" : "New conversation";
   const adminDescription = existing
     ? "This client already has a conversation. Your message will be added there."
-    : "Ask this client a question. File feedback, approvals, and document updates stay on their own pages.";
+    : requireProject
+      ? "Ask a question about this assigned project. Send pricing, contracts, scope changes, and billing to the project manager."
+      : "Ask this client a question. File feedback, approvals, and document updates stay on their own pages.";
   const clientTitle = existing ? "Continue conversation" : "New message";
   const clientDescription = existing
     ? "Continue your conversation with MotiveScripts."

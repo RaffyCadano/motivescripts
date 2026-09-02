@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAgencyProject, useLeads } from "@/components/admin/leads/LeadsProvider";
 import {
   deploymentStatuses,
@@ -18,21 +18,51 @@ import { toDatetimeLocalValue, fromDatetimeLocalValue } from "@/data/projectDeve
 const inputClass =
   "mt-1.5 h-10 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm font-normal outline-none focus:border-[rgb(0_80_240_/_0.45)]";
 
+type EditLocationState = {
+  returnTo?: string;
+  focus?: string;
+};
+
 export function AdminProjectEdit() {
   const { id = "" } = useParams();
   const match = useAgencyProject(id);
   const { clients, notify, reload } = useLeads();
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = (location.state as EditLocationState | null) ?? {};
   const project = match?.project;
-  const [name, setName] = useState(project?.name ?? "");
-  const [clientId, setClientId] = useState(project?.clientId ?? "");
-  const [type, setType] = useState<AgencyProjectType>(project?.type ?? "Website");
-  const [status, setStatus] = useState<AgencyProjectStatus>(project?.status ?? "Planning");
-  const [description, setDescription] = useState(project?.description ?? "");
-  const [startDate, setStartDate] = useState(project?.startDate ?? "");
-  const [targetLaunchDate, setTargetLaunchDate] = useState(project?.targetLaunchDate ?? "");
-  const [development, setDevelopment] = useState<ProjectDevelopment>(project?.development ?? emptyProjectDevelopment());
+  const client = match?.client;
+  const returnTo = locationState.returnTo ?? (project ? `/admin/projects/${project.id}` : "/admin/projects");
+  const backLabel = returnTo.includes("/admin/clients/") ? (client?.businessName ?? "Client") : (project?.name ?? "Project");
+  const [name, setName] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [type, setType] = useState<AgencyProjectType>("Website");
+  const [status, setStatus] = useState<AgencyProjectStatus>("Planning");
+  const [description, setDescription] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [targetLaunchDate, setTargetLaunchDate] = useState("");
+  const [development, setDevelopment] = useState<ProjectDevelopment>(emptyProjectDevelopment());
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!project) return;
+    setName(project.name);
+    setClientId(project.clientId);
+    setType(project.type);
+    setStatus(project.status);
+    setDescription(project.description);
+    setStartDate(project.startDate);
+    setTargetLaunchDate(project.targetLaunchDate);
+    setDevelopment(project.development);
+  }, [project]);
+
+  useEffect(() => {
+    if (!project || locationState.focus !== "development") return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("project-development")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [locationState.focus, project]);
 
   function patchDevelopment<K extends keyof ProjectDevelopment>(key: K, value: ProjectDevelopment[K]) {
     setDevelopment((current) => ({ ...current, [key]: value }));
@@ -55,7 +85,7 @@ export function AdminProjectEdit() {
       });
       await reload();
       notify("Project updated.");
-      navigate(`/admin/projects/${project.id}`);
+      navigate(returnTo);
     } catch (error) {
       notify(error instanceof AgencyDbError ? error.message : "Unable to update this project.");
       setBusy(false);
@@ -76,11 +106,8 @@ export function AdminProjectEdit() {
 
   return (
     <div className="space-y-6">
-      <Link
-        to={`/admin/projects/${project.id}`}
-        className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline"
-      >
-        {project.name}
+      <Link to={returnTo} className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
+        {backLabel}
       </Link>
       <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">Edit project</h1>
       <p className="max-w-2xl text-sm text-[var(--admin-muted)]">Update this project record.</p>
@@ -103,9 +130,9 @@ export function AdminProjectEdit() {
             <option value="" disabled>
               Select a client
             </option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.businessName}
+            {clients.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.businessName}
               </option>
             ))}
           </select>
@@ -167,7 +194,7 @@ export function AdminProjectEdit() {
             />
           </label>
         </div>
-        <fieldset className="space-y-4 border-t border-[var(--admin-line)] pt-4">
+        <fieldset id="project-development" className="scroll-mt-6 space-y-4 border-t border-[var(--admin-line)] pt-4">
           <legend className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
             Development
           </legend>

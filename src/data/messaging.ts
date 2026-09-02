@@ -209,7 +209,7 @@ export function sortMessages(items: ConversationMessage[]): ConversationMessage[
 /** Prefer one open thread per client, then a matching project, then the latest thread. */
 export function findPrimaryConversation(
   conversations: ConversationSummary[],
-  filter: { clientId?: string; projectId?: string },
+  filter: { clientId?: string; projectId?: string; matchProject?: boolean },
 ): ConversationSummary | null {
   const scoped = conversations.filter((item) => !filter.clientId || item.clientId === filter.clientId);
   if (scoped.length === 0) return null;
@@ -223,9 +223,7 @@ export function findPrimaryConversation(
     return (
       byRecency.find((item) => item.projectId === filter.projectId && item.status === "open") ??
       byRecency.find((item) => item.projectId === filter.projectId) ??
-      byRecency.find((item) => item.status === "open") ??
-      byRecency[0] ??
-      null
+      (filter.matchProject ? null : byRecency.find((item) => item.status === "open") ?? byRecency[0] ?? null)
     );
   }
 

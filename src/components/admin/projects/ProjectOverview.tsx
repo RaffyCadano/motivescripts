@@ -1,141 +1,67 @@
-import { useEffect, useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ProgressBar } from "@/components/admin/ProgressBar";
-import { useProjectDeliverables, useProjectReview } from "@/components/admin/leads/LeadsProvider";
-import { DeliverableStatusBadge } from "@/components/admin/projects/DeliverableStatusBadge";
-import { MilestoneStatusBadge } from "@/components/admin/projects/MilestoneStatusBadge";
-import { ProjectDevelopmentSection } from "@/components/admin/projects/ProjectDevelopmentSection";
-import { ProjectDocumentsCard } from "@/components/admin/projects/ProjectDocumentsCard";
-import { ProjectInvoicesCard } from "@/components/admin/projects/ProjectInvoicesCard";
-import { ProjectProductionPath } from "@/components/admin/projects/ProjectProductionPath";
-import { ProjectProductionPipeline } from "@/components/admin/projects/ProjectProductionPipeline";
-import { ProjectProductionTasksCard } from "@/components/admin/projects/ProjectProductionTasksCard";
+import { useAuth } from "@/auth/AuthProvider";
+import { isActiveAdmin } from "@/auth/permissions";
+import { adminGhostBtn } from "@/components/admin/adminActionStyles";
+import { InviteClientDialog } from "@/components/admin/clients/InviteClientDialog";
+import { ClientNoteModal } from "@/components/admin/clients/ClientNoteModal";
+import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { EditWebsiteUrlsModal } from "@/components/admin/projects/EditWebsiteUrlsModal";
+import { ProjectDiscoveryPanel } from "@/components/admin/projects/ProjectDiscoveryPanel";
+import { ProjectCommercialProgress } from "@/components/admin/projects/ProjectCommercialProgress";
+import { ProjectNextAction } from "@/components/admin/projects/ProjectNextAction";
+import { ProjectOverviewTeam } from "@/components/admin/projects/ProjectOverviewTeam";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
-import { ProjectTeamRoster } from "@/components/admin/projects/ProjectTeamRoster";
-import { ProjectWorkflow } from "@/components/admin/projects/ProjectWorkflow";
-import { deriveProductionPath } from "@/data/projectWorkspace";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
+import type { ProjectWorkflowState } from "@/components/admin/projects/useProjectWorkflowState";
 import type { AgencyClient } from "@/data/agencyClients";
-import { currentVersion, formatFileRelative, recentDeliverables, versionLabel } from "@/data/files";
-import { fetchContractSummaries, fetchProposalSummaries, type ContractSummary, type ProposalSummary } from "@/data/documentsRepository";
-import { fetchInvoiceSummaries, type InvoiceSummary } from "@/data/invoicesRepository";
-import {
-  isProductionProject,
-  projectWorkspaceFunnel,
-  salesFlags,
-  type AdminFunnelItem,
-} from "@/data/preProject";
-import { awaitingReview, latestFeedback, needsAttention } from "@/data/review";
+import { formatClientDate, formatClientTimestamp } from "@/data/agencyClients";
+import { adminStatusLabel } from "@/data/documents";
+import { adminInvoiceStatusLabel } from "@/data/invoices";
+import { portalStatusLabel } from "@/data/invitation";
 import {
   calculateProjectProgress,
-  currentMilestone,
   formatProjectDate,
   formatProjectDay,
-  milestoneTaskCounts,
-  taskCounts,
   type AgencyProject,
 } from "@/data/agencyProjects";
-import { displayMilestoneName } from "@/data/projectMilestones";
-import type { ClientScopeBrief } from "@/data/scopeBriefs";
-import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
+import { scopeStatus } from "@/data/scopeBriefs";
+import { displayHttpHost, safeHttpHref } from "@/lib/safeUrl";
 
 type ProjectOverviewProps = {
   project: AgencyProject;
   client: AgencyClient | null;
+  workflow: ProjectWorkflowState;
   onOpenTab: (tab: string) => void;
 };
 
-function shortenGoal(value: string, max = 160) {
-  const text = value.trim();
-  if (text.length <= max) return text;
-  const cut = text.slice(0, max);
-  const space = cut.lastIndexOf(" ");
-  return `${(space > 80 ? cut.slice(0, space) : cut).trim()}…`;
+function summaryValue(value: string) {
+  return value.trim() || "Not set";
 }
 
-function forProject<T extends { projectId: string | null }>(rows: T[], projectId: string) {
-  return rows.filter((row) => row.projectId === projectId);
-}
-
-export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewProps) {
-  const progress = calculateProjectProgress(project);
-  const counts = taskCounts(project);
-  const milestone = currentMilestone(project);
-  const milestoneCounts = milestone ? milestoneTaskCounts(project, milestone.id) : null;
-  const deliverables = useProjectDeliverables(project.id);
-  const recentFiles = recentDeliverables(deliverables);
-  const review = useProjectReview(project.id);
+export function ProjectOverview({ project, client, workflow, onOpenTab }: ProjectOverviewProps) {
+  const { profile } = useAuth();
+  const { addClientNote, portalAccounts, reload } = useLeads();
   const team = useTeamDirectory();
-  const waiting = awaitingReview(deliverables);
-  const attention = needsAttention(deliverables);
-  const openFeedback = review.feedback.filter((item) => item.status === "Open");
-  const resolvedFeedback = review.feedback.filter((item) => item.status === "Resolved");
-  const latest = latestFeedback(review.feedback);
-  const approvedCount = deliverables.filter((item) => item.status === "Approved").length;
-  const latestDeliverable = latest ? deliverables.find((item) => item.id === latest.deliverableId) : null;
-  const latestVersion = latest
-    ? latestDeliverable?.versions.find((entry) => entry.id === latest.versionId)
-    : undefined;
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [scopeOpen, setScopeOpen] = useState(false);
+  const [editUrlsOpen, setEditUrlsOpen] = useState(false);
 
-  const [recordsLoading, setRecordsLoading] = useState(true);
-  const [brief, setBrief] = useState<ClientScopeBrief | null>(null);
-  const [proposal, setProposal] = useState<ProposalSummary | null>(null);
-  const [contract, setContract] = useState<ContractSummary | null>(null);
-  const [workflow, setWorkflow] = useState<AdminFunnelItem[] | null>(null);
-  const [invoicePaid, setInvoicePaid] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    setRecordsLoading(true);
-    void Promise.all([
-      fetchClientScopeBrief(project.clientId).catch(() => null),
-      fetchProposalSummaries(project.clientId).catch(() => [] as ProposalSummary[]),
-      fetchContractSummaries(project.clientId).catch(() => [] as ContractSummary[]),
-      fetchInvoiceSummaries(project.clientId).catch(() => [] as InvoiceSummary[]),
-    ]).then(([nextBrief, proposals, contracts, nextInvoices]) => {
-      if (!active) return;
-      const projectProposals = forProject(proposals, project.id);
-      const projectContracts = forProject(contracts, project.id);
-      const projectInvoices = forProject(nextInvoices, project.id);
-      const flags = salesFlags({
-        brief: nextBrief,
-        project,
-        proposals: projectProposals,
-        contracts: projectContracts,
-        invoices: projectInvoices,
-      });
-      setBrief(nextBrief);
-      setProposal(projectProposals[0] ?? null);
-      setContract(projectContracts[0] ?? null);
-      setInvoicePaid(flags.invoicePaid);
-      setWorkflow(
-        projectWorkspaceFunnel({
-          hasScope: flags.hasScope,
-          proposalAccepted: flags.proposalAccepted,
-          contractAccepted: flags.contractAccepted,
-          invoicePaid: flags.invoicePaid,
-          projectStarted: isProductionProject(flags.projectStatus),
-        }),
-      );
-      setRecordsLoading(false);
-    }).catch(() => {
-      if (active) setRecordsLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, [project.clientId, project.id, project.status]);
-
+  const progress = calculateProjectProgress(project);
+  const brief = workflow.brief;
   const pageCount = brief
     ? brief.selectedPages.filter((item) => item !== "Other").length + (brief.otherPages.trim() ? 1 : 0)
     : 0;
   const featureCount = brief
     ? brief.features.filter((item) => item !== "Other").length + (brief.otherFeatures.trim() ? 1 : 0)
     : 0;
-  const styles = brief
-    ? [...brief.designStyles.filter((item) => item !== "Other"), brief.otherStyle.trim()].filter(Boolean)
-    : [];
-  const goal = brief?.goal.trim() ?? "";
+  const stagingHref = safeHttpHref(project.development.stagingUrl);
+  const productionHref = safeHttpHref(project.development.productionUrl);
+  const portalLinked = client
+    ? portalAccounts.some((account) => account.clientId === client.id && account.role === "client")
+    : false;
+  const portalStatus = portalLinked ? "linked" : workflow.portalInvited ? "sent" : "not_invited";
   const assignedLabels = team.data
     ? Object.fromEntries(
         team.data.members.flatMap((member) =>
@@ -145,234 +71,219 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
         ),
       )
     : {};
-  const assignedUserIds = team.data
-    ? team.data.members
-        .filter((member) => member.projectAssignments.some((item) => item.entityId === project.id))
-        .map((member) => member.id)
-    : [];
-  const productionPath = deriveProductionPath({
-    invoicePaid,
-    project,
-    staffAssigned: assignedUserIds.length > 0,
-    awaitingReview: waiting.length > 0,
-    approvedDeliverables: approvedCount,
-    openFeedback: openFeedback.length,
-  });
 
   return (
     <div className="space-y-6">
-      {invoicePaid && !isProductionProject(project.status) ? (
-        <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-4 py-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
-            Payment received ✓
-          </p>
-          <h2 className="mt-1 font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
-            Production ready
-          </h2>
-          <p className="mt-1 text-sm text-[var(--admin-muted)]">
-            The initial production task plan is on the Tasks tab. Start production when you are ready — that sets the
-            project to In Development.
-          </p>
-          <button
-            type="button"
-            className="mt-3 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-            onClick={() => onOpenTab("tasks")}
-          >
-            View tasks
-          </button>
-        </section>
-      ) : null}
+      <ProjectCommercialProgress items={workflow.items} loading={workflow.loading} />
+      <ProjectNextAction
+        project={project}
+        action={workflow.action}
+        loading={workflow.loading}
+        onInvite={client && isActiveAdmin(profile) ? () => setInviteOpen(true) : undefined}
+      />
 
-      {attention.length > 0 ? (
-        <p className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-4 py-3 text-sm text-[var(--admin-ink)]">
-          {attention.length} deliverable{attention.length === 1 ? "" : "s"} need{attention.length === 1 ? "s" : ""} attention
-        </p>
-      ) : null}
+      {client ? <ProjectDiscoveryPanel projectId={project.id} clientId={client.id} projectName={project.name} brief={brief} /> : null}
 
-      <ProjectProductionPipeline project={project} />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <SummaryCard title="Project">
+          <SummaryRow label="Status" value={<ProjectStatusBadge status={project.status} />} />
+          <SummaryRow label="Progress" value={`${progress}%`} />
+          <SummaryRow label="Type" value={project.type} />
+          <SummaryRow label="Pages" value={brief ? String(pageCount) : "—"} />
+          <SummaryRow label="Features" value={brief ? String(featureCount) : "—"} />
+          <SummaryRow
+            label="Staging"
+            value={
+              stagingHref ? (
+                <a className="text-[var(--admin-blue)] hover:underline" href={stagingHref} target="_blank" rel="noreferrer">
+                  {displayHttpHost(stagingHref)}
+                </a>
+              ) : (
+                <span className="text-[var(--admin-muted)]">Not available yet</span>
+              )
+            }
+          />
+          <SummaryRow
+            label="Production"
+            value={
+              productionHref ? (
+                <a className="text-[var(--admin-blue)] hover:underline" href={productionHref} target="_blank" rel="noreferrer">
+                  {displayHttpHost(productionHref)}
+                </a>
+              ) : (
+                <span className="text-[var(--admin-muted)]">Not available yet</span>
+              )
+            }
+          />
+        </SummaryCard>
 
-      <ProjectProductionPath steps={productionPath} />
+        {client ? (
+          <SummaryCard title="Client">
+            <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{client.contactName}</p>
+            <p className="mt-2 text-sm">
+              <a className="text-[var(--admin-blue)] hover:underline" href={`mailto:${client.email}`}>
+                {client.email}
+              </a>
+            </p>
+            <p className="mt-1 text-sm text-[var(--admin-ink)]">{client.phone !== "—" ? client.phone : "Not provided"}</p>
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">
+              Portal <span className="text-[var(--admin-ink)]">● {portalStatusLabel(portalStatus)}</span>
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link to={`/admin/clients/${client.id}`} className={adminGhostBtn}>
+                Manage client
+              </Link>
+              {portalLinked ? (
+                <a href="/client" target="_blank" rel="noreferrer" className={adminGhostBtn}>
+                  Open portal
+                </a>
+              ) : isActiveAdmin(profile) ? (
+                <button type="button" className={adminGhostBtn} onClick={() => setInviteOpen(true)}>
+                  Invite
+                </button>
+              ) : null}
+            </div>
+          </SummaryCard>
+        ) : null}
+
+        <SummaryCard title="Website scope">
+          {workflow.loading ? (
+            <p className="text-sm text-[var(--admin-muted)]">Loading…</p>
+          ) : brief && scopeStatus(brief) !== "not_started" ? (
+            <>
+              <p className="text-sm text-[var(--admin-ink)]">
+                {pageCount} page{pageCount === 1 ? "" : "s"}
+              </p>
+              <p className="mt-1 text-sm text-[var(--admin-ink)]">
+                {featureCount} feature{featureCount === 1 ? "" : "s"}
+              </p>
+              <p className="mt-2 text-[12px] text-[var(--admin-muted)]">
+                {brief.submittedAt ? `Submitted ${formatClientDate(brief.submittedAt)}` : "Draft saved"}
+              </p>
+              <button type="button" className={`${adminGhostBtn} mt-4`} onClick={() => setScopeOpen((open) => !open)}>
+                {scopeOpen ? "Hide scope" : "View scope"}
+              </button>
+              {scopeOpen ? (
+                <div className="mt-4 space-y-2 border-t border-[var(--admin-line)] pt-4 text-sm text-[var(--admin-muted)]">
+                  {brief.goal.trim() ? <p>{brief.goal.trim()}</p> : null}
+                  {client ? (
+                    <Link to={`/admin/clients/${client.id}#website-scope`} className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
+                      Open full scope on client
+                    </Link>
+                  ) : null}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p className="text-sm text-[var(--admin-muted)]">No scope submitted yet.</p>
+          )}
+        </SummaryCard>
+      </div>
 
       {team.data ? (
-        <ProjectTeamRoster
+        <ProjectOverviewTeam
           members={team.data.members}
           projectId={project.id}
           clientId={project.clientId}
           assignedLabels={assignedLabels}
           onChanged={() => void team.reload()}
-          onOpenTasks={() => onOpenTab("tasks")}
         />
       ) : null}
 
-      <ProjectProductionTasksCard project={project} onOpenTasks={() => onOpenTab("tasks")} />
-
-      <ProjectDevelopmentSection
-        development={project.development}
-        editHref={`/admin/projects/${project.id}/edit`}
-      />
-
-      <ProjectWorkflow items={workflow} />
-      <ProjectDocumentsCard
-        projectId={project.id}
-        clientId={project.clientId}
-        proposal={proposal}
-        contract={contract}
-        loading={recordsLoading}
-      />
-
       <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Project Progress</h2>
-        {counts.total === 0 ? (
-          <p className="mt-3 text-sm text-[var(--admin-muted)]">Add tasks to start tracking project progress.</p>
-        ) : (
-          <>
-            <p className="mt-3 font-heading text-3xl font-semibold tracking-tight text-[var(--admin-ink)]">{progress}%</p>
-            <p className="mt-1 text-sm text-[var(--admin-muted)]">
-              {counts.completed} of {counts.total} tasks completed
-            </p>
-            <div className="mt-4">
-              <ProgressBar value={progress} />
-            </div>
-          </>
-        )}
-        {milestone ? (
-          <div className="mt-5 border-t border-[var(--admin-line)] pt-4">
-            <p className="text-[12px] text-[var(--admin-muted)]">Current milestone</p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
-                {displayMilestoneName(milestone.name)}
-              </p>
-              <MilestoneStatusBadge status={milestone.status} />
-            </div>
-            <p className="mt-2 text-sm text-[var(--admin-muted)]">
-              {milestoneCounts && milestoneCounts.total > 0
-                ? `${milestoneCounts.completed} of ${milestoneCounts.total} tasks in this milestone`
-                : "No tasks yet. Add tasks when the project reaches this stage."}
-            </p>
-          </div>
-        ) : (
-          <p className="mt-4 text-sm text-[var(--admin-muted)]">No milestones yet</p>
-        )}
-        <button
-          type="button"
-          className="mt-4 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-          onClick={() => onOpenTab("tasks")}
-        >
-          View tasks
+        <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Documents</h2>
+        <dl className="mt-4 divide-y divide-[var(--admin-line)] text-sm">
+          <DocumentRow
+            label="Proposal"
+            value={workflow.proposal ? adminStatusLabel(workflow.proposal.effectiveStatus) : "Not created"}
+            href={workflow.proposal ? `/admin/proposals/${workflow.proposal.id}` : undefined}
+          />
+          <DocumentRow
+            label="Contract"
+            value={workflow.contract ? adminStatusLabel(workflow.contract.effectiveStatus) : "Not created"}
+            href={workflow.contract ? `/admin/contracts/${workflow.contract.id}` : undefined}
+          />
+          <DocumentRow
+            label="Invoice"
+            value={
+              workflow.invoices[0]
+                ? adminInvoiceStatusLabel(workflow.invoices[0].effectiveStatus)
+                : "Not created"
+            }
+            href={workflow.invoices[0] ? `/admin/invoices/${workflow.invoices[0].id}` : undefined}
+          />
+        </dl>
+        <button type="button" className="mt-4 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline" onClick={() => onOpenTab("files")}>
+          View project files
         </button>
       </section>
 
       <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Project summary</h2>
-          {client ? (
-            <Link
-              to={`/admin/clients/${client.id}`}
-              className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-            >
-              View Full Scope
-            </Link>
-          ) : null}
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Website</h2>
+            <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Staging, production, and deliverables.</p>
+          </div>
+          <button type="button" className={adminGhostBtn} onClick={() => setEditUrlsOpen(true)}>
+            Edit URLs
+          </button>
         </div>
-        <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-          <div>
-            <dt className="text-[12px] text-[var(--admin-muted)]">Client</dt>
-            <dd className="mt-1">
-              {client ? (
-                <Link className="text-sm font-medium text-[var(--admin-blue)] hover:underline" to={`/admin/clients/${client.id}`}>
-                  {client.businessName}
-                </Link>
-              ) : (
-                <span className="text-sm text-[var(--admin-muted)]">Not set</span>
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-[12px] text-[var(--admin-muted)]">Type</dt>
-            <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{project.type}</dd>
-          </div>
-          <div>
-            <dt className="text-[12px] text-[var(--admin-muted)]">Status</dt>
-            <dd className="mt-1">
-              <ProjectStatusBadge status={project.status} />
-            </dd>
-          </div>
-          <div>
-            <dt className="text-[12px] text-[var(--admin-muted)]">Current phase</dt>
-            <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{milestone?.name ?? "Not set"}</dd>
-          </div>
-          <div>
-            <dt className="text-[12px] text-[var(--admin-muted)]">Progress</dt>
-            <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{progress}%</dd>
-          </div>
-          <div>
-            <dt className="text-[12px] text-[var(--admin-muted)]">Approval</dt>
-            <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{project.approvalStatus || "Not set"}</dd>
-          </div>
-          <div>
-            <dt className="text-[12px] text-[var(--admin-muted)]">Started</dt>
-            <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{formatProjectDay(project.startDate)}</dd>
-          </div>
-          <div>
-            <dt className="text-[12px] text-[var(--admin-muted)]">Target launch</dt>
-            <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{formatProjectDay(project.targetLaunchDate)}</dd>
-          </div>
+        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+          <SummaryRow label="Staging" value={stagingHref ? displayHttpHost(stagingHref) : "Not available yet"} />
+          <SummaryRow label="Production" value={productionHref ? displayHttpHost(productionHref) : "Not available yet"} />
+          <SummaryRow label="Target launch" value={summaryValue(formatProjectDay(project.targetLaunchDate))} />
+          <SummaryRow label="Started" value={summaryValue(formatProjectDay(project.startDate))} />
         </dl>
-        <div className="mt-5 border-t border-[var(--admin-line)] pt-4">
-          <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Website Scope</p>
-          {recordsLoading ? (
-            <p className="mt-2 text-sm text-[var(--admin-muted)]">Loading scope…</p>
-          ) : brief ? (
-            <dl className="mt-3 grid gap-4 sm:grid-cols-3">
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Pages</dt>
-                <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">
-                  {pageCount} selected
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Features</dt>
-                <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">
-                  {featureCount} selected
-                </dd>
-              </div>
-              {styles.length > 0 ? (
-                <div className="sm:col-span-1">
-                  <dt className="text-[12px] text-[var(--admin-muted)]">Style</dt>
-                  <dd className="mt-1 text-sm font-medium text-[var(--admin-ink)]">{styles.join(" · ")}</dd>
-                </div>
-              ) : null}
-              {goal ? (
-                <div className="sm:col-span-3">
-                  <dt className="text-[12px] text-[var(--admin-muted)]">Goal</dt>
-                  <dd className="mt-1 text-sm leading-6 text-[var(--admin-ink)]">{shortenGoal(goal)}</dd>
-                </div>
-              ) : null}
-            </dl>
-          ) : (
-            <p className="mt-2 text-sm text-[var(--admin-muted)]">No Website Scope has been saved for this client yet.</p>
-          )}
-        </div>
+        <button type="button" className="mt-4 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline" onClick={() => onOpenTab("files")}>
+          View deliverables
+        </button>
       </section>
 
-      <ProjectInvoicesCard projectId={project.id} clientId={project.clientId} />
+      {client ? (
+        <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Internal notes</h2>
+              <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Agency only — never shown in the Client Portal.</p>
+            </div>
+            <button type="button" className={adminGhostBtn} onClick={() => setNoteOpen(true)}>
+              Add note
+            </button>
+          </div>
+          {client.notes.length === 0 ? (
+            <p className="mt-4 text-sm text-[var(--admin-muted)]">No internal notes yet.</p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {client.notes.slice(0, 3).map((note) => (
+                <li key={note.id} className="border-t border-[var(--admin-line)] pt-3 first:border-t-0 first:pt-0">
+                  <p className="text-sm text-[var(--admin-ink)]">{note.body}</p>
+                  <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
+                    {note.author} · {formatClientTimestamp(note.createdAt)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+          {client.notes.length > 3 ? (
+            <Link to={`/admin/clients/${client.id}#overview`} className="mt-3 inline-flex font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
+              View all notes on client
+            </Link>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
         <div className="flex items-start justify-between gap-3">
           <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Recent activity</h2>
-          <button
-            type="button"
-            className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-            onClick={() => onOpenTab("activity")}
-          >
-            View activity
+          <button type="button" className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline" onClick={() => onOpenTab("activity")}>
+            View all
           </button>
         </div>
         {project.activity.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--admin-muted)]">No activity yet</p>
+          <p className="mt-3 text-sm text-[var(--admin-muted)]">No activity yet.</p>
         ) : (
           <ul className="mt-3 space-y-3">
-            {project.activity.slice(0, 3).map((item) => (
+            {project.activity.slice(0, 5).map((item) => (
               <li key={item.id}>
                 <p className="text-sm text-[var(--admin-ink)]">{item.description}</p>
                 <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">{formatProjectDate(item.createdAt)}</p>
@@ -382,146 +293,60 @@ export function ProjectOverview({ project, client, onOpenTab }: ProjectOverviewP
         )}
       </section>
 
-      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Recent deliverables</h2>
-          <button
-            type="button"
-            className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-            onClick={() => onOpenTab("files")}
-          >
-            View All Files
-          </button>
-        </div>
-        {recentFiles.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--admin-muted)]">No deliverables yet.</p>
-        ) : (
-          <ul className="mt-3 space-y-3">
-            {recentFiles.map((item) => {
-              const current = currentVersion(item);
-              return (
-                <li key={item.id}>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-medium text-[var(--admin-ink)]">{item.name}</p>
-                    <DeliverableStatusBadge status={item.status} />
-                  </div>
-                  <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                    {item.category}
-                    <span aria-hidden="true"> · </span>
-                    {current ? versionLabel(current.versionNumber) : "No version"}
-                    <span aria-hidden="true"> · </span>
-                    {formatFileRelative(item.updatedAt)}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+      {client ? (
+        <>
+          <InviteClientDialog
+            client={client}
+            open={inviteOpen}
+            mode="send"
+            onClose={() => setInviteOpen(false)}
+            onSent={() => setInviteOpen(false)}
+          />
+          <ClientNoteModal open={noteOpen} onClose={() => setNoteOpen(false)} onSave={(body) => addClientNote(client.id, body)} />
+        </>
+      ) : null}
 
-      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Client Review</h2>
-          <button
-            type="button"
-            className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-            onClick={() => onOpenTab("approvals")}
-          >
-            View
-          </button>
-        </div>
-        {waiting.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--admin-muted)]">Nothing waiting for client review.</p>
-        ) : (
-          <>
-            <p className="mt-3 text-sm text-[var(--admin-ink)]">
-              {waiting.length} item{waiting.length === 1 ? "" : "s"} awaiting review
-            </p>
-            <ul className="mt-3 space-y-3">
-              {waiting.slice(0, 3).map((item) => {
-                const current = currentVersion(item);
-                return (
-                  <li key={item.id}>
-                    <p className="text-sm font-medium text-[var(--admin-ink)]">{item.name}</p>
-                    <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                      {current ? versionLabel(current.versionNumber) : "No version"} · In Review
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
-      </section>
+      <EditWebsiteUrlsModal
+        project={project}
+        open={editUrlsOpen}
+        onClose={() => setEditUrlsOpen(false)}
+        onSaved={() => void reload()}
+      />
+    </div>
+  );
+}
 
-      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Approvals</h2>
-          <button
-            type="button"
-            className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-            onClick={() => onOpenTab("approvals")}
-          >
-            View Approvals
-          </button>
-        </div>
-        <p className="mt-3 text-sm text-[var(--admin-ink)]">
-          {approvedCount} approved · {waiting.length} awaiting review
-        </p>
-        <ul className="mt-3 space-y-3">
-          {waiting.slice(0, 2).map((item) => {
-            const current = currentVersion(item);
-            return (
-              <li key={item.id}>
-                <p className="text-sm font-medium text-[var(--admin-ink)]">{item.name}</p>
-                <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                  {current ? versionLabel(current.versionNumber) : "No version"} · Awaiting Review
-                </p>
-              </li>
-            );
-          })}
-          {deliverables
-            .filter((item) => item.status === "Approved")
-            .slice(0, 2)
-            .map((item) => {
-              const current = currentVersion(item);
-              return (
-                <li key={item.id}>
-                  <p className="text-sm font-medium text-[var(--admin-ink)]">{item.name}</p>
-                  <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                    {current ? versionLabel(current.versionNumber) : "No version"} · Approved
-                  </p>
-                </li>
-              );
-            })}
-        </ul>
-      </section>
+function SummaryCard({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+      <h2 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">{title}</h2>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
 
-      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Feedback</h2>
-          <button
-            type="button"
-            className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-            onClick={() => onOpenTab("feedback")}
-          >
-            View Feedback
-          </button>
-        </div>
-        {latest ? (
-          <>
-            <p className="mt-3 text-sm text-[var(--admin-ink)]">
-              {openFeedback.length} open · {resolvedFeedback.length} resolved
-            </p>
-            <p className="mt-2 text-sm font-medium text-[var(--admin-ink)]">
-              {latestDeliverable?.name ?? "Deliverable"} {latestVersion ? versionLabel(latestVersion.versionNumber) : ""}
-            </p>
-            <p className="mt-1 text-sm text-[var(--admin-muted)]">“{latest.message}”</p>
-          </>
+function SummaryRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-3 py-1.5">
+      <dt className="text-[12px] text-[var(--admin-muted)]">{label}</dt>
+      <dd className="text-right text-sm font-medium text-[var(--admin-ink)]">{value}</dd>
+    </div>
+  );
+}
+
+function DocumentRow({ label, value, href }: { label: string; value: string; href?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+      <dt className="text-[var(--admin-muted)]">{label}</dt>
+      <dd>
+        {href ? (
+          <Link to={href} className="font-medium text-[var(--admin-blue)] hover:underline">
+            {value}
+          </Link>
         ) : (
-          <p className="mt-3 text-sm text-[var(--admin-muted)]">No feedback yet.</p>
+          <span className="text-[var(--admin-ink)]">{value}</span>
         )}
-      </section>
+      </dd>
     </div>
   );
 }

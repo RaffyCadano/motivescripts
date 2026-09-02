@@ -6,7 +6,7 @@ import { PRODUCTION_PROJECT_SLOT_IDS, projectTeamSlots } from "@/data/projectWor
 import {
   assignedProjectMembers,
   memberRoleLabel,
-  productionProjectCandidates,
+  projectTeamCandidates,
   type TeamMember,
 } from "@/data/team";
 import { assignStaffToProject, unassignStaffFromProject } from "@/data/teamRepository";
@@ -34,14 +34,16 @@ export function ProjectTeamRoster({
   const canManage = canManageProjectTeam(profile, members, projectId, clientId);
   const slots = projectTeamSlots(members, projectId, assignedLabels);
   const openSlots = slots.filter(
-    (slot) => slot.names.length === 0 && PRODUCTION_PROJECT_SLOT_IDS.has(slot.id),
+    (slot) =>
+      slot.names.length === 0 &&
+      (slot.id === "project_manager" || PRODUCTION_PROJECT_SLOT_IDS.has(slot.id)),
   );
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const eligible = useMemo(
-    () => productionProjectCandidates(members, assigned.map((member) => member.id), clientId),
+    () => projectTeamCandidates(members, assigned.map((member) => member.id), clientId),
     [assigned, clientId, members],
   );
 
@@ -101,7 +103,7 @@ export function ProjectTeamRoster({
         <div className="mt-4">
           <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No team members assigned yet.</p>
           <p className="mt-1 max-w-xl text-sm text-[var(--admin-muted)]">
-            Assign a Developer, Designer, Content Writer, or Team Member to begin production.
+            Assign a Project Manager, Developer, Designer, Content Writer, or Team Member to begin production.
           </p>
         </div>
       ) : (
@@ -151,7 +153,7 @@ export function ProjectTeamRoster({
         <div className="mt-4 border-t border-[var(--admin-line)] pt-4">
           <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Assign team member</h3>
           <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
-            Production staff only. Sales and Accounting stay on their own work.
+            Project Manager and production staff. Sales and Accounting stay on their own work.
           </p>
           {eligible.length === 0 ? (
             <p className="mt-3 text-sm text-[var(--admin-muted)]">No production staff available to assign.</p>

@@ -315,7 +315,7 @@ export async function unassignStaffFromClient(clientId: string, userId: string):
     p_client_id: clientId,
     p_user_id: userId,
   });
-  if (error) fail("unassign staff", error, "Unable to assign this team member.");
+  if (error) fail("unassign staff", error, "Unable to remove this team member.");
 }
 
 export async function assignStaffToProject(projectId: string, userId: string, label = ""): Promise<void> {

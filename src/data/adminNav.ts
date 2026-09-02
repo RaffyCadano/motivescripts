@@ -16,7 +16,8 @@ export type AdminIconName =
   | "notifications"
   | "team"
   | "activity"
-  | "settings";
+  | "settings"
+  | "profile";
 
 export type AdminNavItem = {
   label: string;
@@ -33,7 +34,10 @@ export type AdminNavGroup = {
 export const adminNavGroups: AdminNavGroup[] = [
   {
     label: "Main",
-    items: [{ label: "Overview", href: "/admin", icon: "overview", end: true }],
+    items: [
+      { label: "Overview", href: "/admin", icon: "overview", end: true },
+      { label: "My Tasks", href: "/admin/my-tasks", icon: "tasks" },
+    ],
   },
   {
     label: "CRM",
@@ -71,6 +75,10 @@ export const adminNavGroups: AdminNavGroup[] = [
       { label: "Settings", href: "/admin/settings", icon: "settings" },
     ],
   },
+  {
+    label: "Account",
+    items: [{ label: "Profile", href: "/admin/profile", icon: "profile" }],
+  },
 ];
 
 export function getAdminPageMeta(pathname: string) {
@@ -87,6 +95,9 @@ export function getAdminPageMeta(pathname: string) {
   }
   if (pathname === "/admin/messages" || pathname.startsWith("/admin/messages/")) {
     return items.find((item) => item.href === "/admin/messages") ?? items[0];
+  }
+  if (pathname === "/admin/my-tasks") {
+    return items.find((item) => item.href === "/admin/my-tasks") ?? items[0];
   }
   if (pathname.startsWith("/admin/projects/")) {
     return items.find((item) => item.href === "/admin/projects") ?? items[0];
@@ -106,6 +117,9 @@ export function getAdminPageMeta(pathname: string) {
   if (pathname === "/admin/settings" || pathname.startsWith("/admin/settings/")) {
     return items.find((item) => item.href === "/admin/settings") ?? items[0];
   }
+  if (pathname === "/admin/profile") {
+    return items.find((item) => item.href === "/admin/profile") ?? items[0];
+  }
   const exact = items.find((item) => item.href === pathname);
   if (exact) return exact;
   return items.find((item) => item.end && pathname === item.href) ?? items[0];
@@ -115,8 +129,8 @@ const navPermission: Record<string, StaffPermissionCode | null> = {
   "/admin": null,
   "/admin/leads": "leads.view",
   "/admin/clients": "clients.view",
+  "/admin/my-tasks": "projects.view",
   "/admin/projects": "projects.view",
-  "/admin/tasks": "projects.view",
   "/admin/files": "files.view",
   "/admin/proposals": "proposals.view",
   "/admin/contracts": "contracts.view",
@@ -127,18 +141,13 @@ const navPermission: Record<string, StaffPermissionCode | null> = {
   "/admin/team": "team.view",
   "/admin/activity": "activity.view",
   "/admin/settings": null,
+  "/admin/profile": null,
 };
 
 export const adminUnavailablePages: Record<
   string,
   { label: string; icon: AdminIconName; description: string; hint: string }
 > = {
-  "/admin/tasks": {
-    label: "Tasks",
-    icon: "tasks",
-    description: "A dedicated tasks workspace is not available in this release.",
-    hint: "Open a project to add, assign, and update tasks there.",
-  },
   "/admin/notifications": {
     label: "Notifications",
     icon: "notifications",
