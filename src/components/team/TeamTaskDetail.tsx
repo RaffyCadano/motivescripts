@@ -7,6 +7,7 @@ import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
 import { TaskAttachmentsSection } from "@/components/tasks/TaskAttachmentsSection";
 import { TaskChecklistSection } from "@/components/tasks/TaskChecklistSection";
 import { TaskCommentsSection } from "@/components/tasks/TaskCommentsSection";
+import { TaskDeliverableSection } from "@/components/tasks/TaskDeliverableSection";
 import { TaskInstructions } from "@/components/tasks/TaskInstructions";
 import { formatProjectDay, taskStatuses, type AgencyTaskStatus } from "@/data/agencyProjects";
 import type { AgencyDeliverable } from "@/data/files";
@@ -178,6 +179,13 @@ export function TeamTaskDetail({
           {error ? <p className="mt-3 text-sm text-[#b45309]">{error}</p> : null}
 
           {extra ? <div className="mt-6">{extra}</div> : null}
+
+          <TaskDeliverableSection
+            taskId={task.id}
+            deliverableId={task.deliverableId}
+            taskStatus={task.status}
+            deliverables={files}
+          />
 
           <TaskChecklistSection taskId={task.id} projectId={task.projectId} />
 

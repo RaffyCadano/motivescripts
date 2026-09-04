@@ -71,6 +71,7 @@ export type AgencyTask = {
   taskType: TaskType | null;
   referenceUrl: string;
   estimatedHours: number | null;
+  deliverableId: string | null;
 };
 
 export type AgencyProjectFeedback = {

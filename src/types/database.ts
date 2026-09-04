@@ -129,6 +129,7 @@ export type TaskRow = {
   task_type: string | null;
   reference_url: string | null;
   estimated_hours: number | null;
+  deliverable_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -1335,6 +1336,10 @@ export type Database = {
       update_my_task_status: {
         Args: { p_task_id: string; p_status: string };
         Returns: null;
+      };
+      set_task_deliverable: {
+        Args: { p_task_id: string; p_deliverable_id: string | null };
+        Returns: void;
       };
     };
     Enums: Record<string, never>;

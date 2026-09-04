@@ -30,6 +30,8 @@ Your Overview page is the real starting point each day — it pulls together, in
 
 Day to day: you create projects, assign staff to clients/projects, manage milestones and tasks, review client discovery submissions, and handle feedback/approvals. You do **not** see Payroll (admin-only) or Leads/Proposals/Contracts/Invoices unless specifically granted — your template is scoped to delivery, not sales or finance.
 
+A project's overview shows **Deliverables: X/Y approved** alongside its task-completion progress — the two are separate numbers on purpose. 100% task completion doesn't mean the client has actually approved the work; it means staff checked their tasks off. If you try to mark a project **Completed** while any deliverable isn't Approved, you'll get a reminder (not a block) in the status dialog. Staff link a task to the deliverable it produces from the task's own detail panel — nothing does this automatically.
+
 ## Sales
 
 Home page: `/admin`. Sidebar (per your `sales` template grants): Leads, Clients, Proposals, Contracts, Messages.
@@ -67,6 +69,8 @@ Task status you control: **Not Started → In Progress → In Review → Complet
 Tasks like "Prepare/deploy staging" and "Address requested revisions" show an **"Open Files & Feedback"** shortcut right in the task panel — it jumps straight to that project's Files tab instead of you hunting for it. (Two other task types — Discovery and Content Collection — have a similar richer workspace on the PM/admin side; those specific tasks are recommended to Project Manager, since the extra actions there require the `clients.manage` grant no production template has, so you won't see them here even if one lands on your list.)
 
 **You can log time** against a task from the same detail panel if the project bills hourly — this feeds both client invoicing and (if your pay rate is set) your own payroll, independently of each other. **My Time** in your sidebar lists everything you've logged across every project, with edit/delete on any entry that hasn't been billed or paid yet, plus a running "not yet paid" total and an estimate of what you're owed if an admin has set your hourly rate.
+
+Each task detail panel also has a **Linked deliverable** picker — pick which of the project's deliverables this task actually produces (optional; not every task has one, e.g. QA/setup tasks). This is what lets progress mean something beyond "someone clicked a checkbox": if you mark a task Completed while its linked deliverable is still Draft or Needs Changes, the panel flags the mismatch right there.
 
 Each task detail panel also has a **Checklist** (break the task into steps, check them off — visible to anyone else on the task, not just you), **Attachments** (working files for that task only — screenshots, reference docs; not client-visible, and separate from the project's client-reviewable Files), and **Comments** at the bottom (a lightweight note thread on that one task, distinct from project-wide Messages — the task's assignee gets notified when someone else comments).
 

@@ -32,6 +32,7 @@ export type TeamWorkTask = {
   taskType: TaskType | null;
   referenceUrl: string;
   estimatedHours: number | null;
+  deliverableId: string | null;
 };
 
 export type TeamAttentionItem = {
@@ -163,6 +164,7 @@ export function collectAssignedTasks(
         taskType: task.taskType,
         referenceUrl: task.referenceUrl,
         estimatedHours: task.estimatedHours,
+        deliverableId: task.deliverableId,
       });
     }
   }

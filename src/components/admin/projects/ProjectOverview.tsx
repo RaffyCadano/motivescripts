@@ -5,7 +5,7 @@ import { isActiveAdmin } from "@/auth/permissions";
 import { adminGhostBtn } from "@/components/admin/adminActionStyles";
 import { InviteClientDialog } from "@/components/admin/clients/InviteClientDialog";
 import { ClientNoteModal } from "@/components/admin/clients/ClientNoteModal";
-import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { useLeads, useProjectDeliverables } from "@/components/admin/leads/LeadsProvider";
 import { EditWebsiteUrlsModal } from "@/components/admin/projects/EditWebsiteUrlsModal";
 import { ProjectDiscoveryPanel } from "@/components/admin/projects/ProjectDiscoveryPanel";
 import { ProjectCommercialProgress } from "@/components/admin/projects/ProjectCommercialProgress";
@@ -17,6 +17,7 @@ import type { ProjectWorkflowState } from "@/components/admin/projects/useProjec
 import type { AgencyClient } from "@/data/agencyClients";
 import { formatClientDate, formatClientTimestamp } from "@/data/agencyClients";
 import { adminStatusLabel } from "@/data/documents";
+import { deliverableApprovalStats } from "@/data/files";
 import { adminInvoiceStatusLabel } from "@/data/invoices";
 import { portalStatusLabel } from "@/data/invitation";
 import {
@@ -49,6 +50,8 @@ export function ProjectOverview({ project, client, workflow, onOpenTab }: Projec
   const [editUrlsOpen, setEditUrlsOpen] = useState(false);
 
   const progress = calculateProjectProgress(project);
+  const deliverables = useProjectDeliverables(project.id);
+  const deliverableStats = deliverableApprovalStats(deliverables);
   const brief = workflow.brief;
   const pageCount = brief
     ? brief.selectedPages.filter((item) => item !== "Other").length + (brief.otherPages.trim() ? 1 : 0)
@@ -88,6 +91,9 @@ export function ProjectOverview({ project, client, workflow, onOpenTab }: Projec
         <SummaryCard title="Project">
           <SummaryRow label="Status" value={<ProjectStatusBadge status={project.status} />} />
           <SummaryRow label="Progress" value={`${progress}%`} />
+          {deliverableStats.total > 0 ? (
+            <SummaryRow label="Deliverables" value={`${deliverableStats.approved}/${deliverableStats.total} approved`} />
+          ) : null}
           <SummaryRow label="Type" value={project.type} />
           <SummaryRow label="Pages" value={brief ? String(pageCount) : "—"} />
           <SummaryRow label="Features" value={brief ? String(featureCount) : "—"} />

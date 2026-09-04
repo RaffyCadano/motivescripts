@@ -33,6 +33,7 @@ import {
   type AgencyTask,
   type AgencyTaskStatus,
 } from "@/data/agencyProjects";
+import { deliverableApprovalStats } from "@/data/files";
 import { displayMilestoneName } from "@/data/projectMilestones";
 import { taskInstructionPreview } from "@/data/productionTaskInstructions";
 import { effectiveTaskType } from "@/data/taskTypes";
@@ -256,6 +257,7 @@ export function TeamProjectDetails() {
                 taskType: task.taskType,
                 referenceUrl: task.referenceUrl,
                 estimatedHours: task.estimatedHours,
+                deliverableId: task.deliverableId,
               },
             );
           }}
@@ -326,6 +328,7 @@ function TeamProjectOverview({
   const [devEditorOpen, setDevEditorOpen] = useState(false);
   const milestoneCounts = milestone ? milestoneTaskCounts(project, milestone.id) : null;
   const files = useProjectDeliverables(project.id);
+  const deliverableStats = deliverableApprovalStats(files);
   const team = useTeamDirectory();
   const assignedLabels = team.data
     ? Object.fromEntries(
@@ -365,6 +368,11 @@ function TeamProjectOverview({
               </div>
             </>
           )}
+          {deliverableStats.total > 0 ? (
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">
+              Deliverables: {deliverableStats.approved} of {deliverableStats.total} approved
+            </p>
+          ) : null}
           {milestone ? (
             <div className="mt-5 border-t border-[var(--admin-line)] pt-4">
               <p className="text-[12px] text-[var(--admin-muted)]">Current milestone</p>

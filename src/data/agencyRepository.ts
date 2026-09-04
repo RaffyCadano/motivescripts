@@ -790,6 +790,15 @@ export async function setTaskCompletion(
   );
 }
 
+export async function setTaskDeliverable(taskId: string, deliverableId: string | null): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("set_task_deliverable", {
+    p_task_id: taskId,
+    p_deliverable_id: deliverableId,
+  });
+  throwIf(error, "link task to deliverable", "Unable to update the linked deliverable.");
+}
+
 export async function insertDeliverable(
   projectId: string,
   draft: DeliverableDraft,

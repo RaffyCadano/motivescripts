@@ -177,6 +177,7 @@ export function mapTask(row: TaskRow): AgencyTask {
     taskType: isTaskType(row.task_type) ? row.task_type : null,
     referenceUrl: row.reference_url ?? "",
     estimatedHours: row.estimated_hours ?? null,
+    deliverableId: row.deliverable_id ?? null,
   };
 }
 

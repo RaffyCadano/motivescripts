@@ -312,6 +312,7 @@ export function AdminProjectDetails() {
 
       <ProjectStatusModal
         project={statusOpen ? project : null}
+        deliverables={deliverables.filter((item) => item.projectId === project.id)}
         onClose={() => setStatusOpen(false)}
         onSave={(status: AgencyProjectStatus) => {
           setProjectStatus(project.id, status);

@@ -53,6 +53,12 @@ export type AgencyDeliverable = {
   versions: AgencyFileVersion[];
 };
 
+/** Archived deliverables are excluded from the denominator -- they're no longer part of what needs approval. */
+export function deliverableApprovalStats(deliverables: AgencyDeliverable[]): { approved: number; total: number } {
+  const active = deliverables.filter((item) => item.status !== "Archived");
+  return { approved: active.filter((item) => item.status === "Approved").length, total: active.length };
+}
+
 export type DeliverableDraft = {
   name: string;
   description: string;
