@@ -81,6 +81,9 @@ export type ProjectRow = {
   production_plan_generated_at: string | null;
   staging_url: string | null;
   production_url: string | null;
+  billing_mode: string;
+  hourly_rate_cents: number | null;
+  budgeted_hours: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -124,8 +127,40 @@ export type TaskRow = {
   completed_at: string | null;
   recommended_role: string | null;
   task_type: string | null;
+  reference_url: string | null;
+  estimated_hours: number | null;
   created_at: string;
   updated_at: string;
+};
+
+export type TimeEntryRow = {
+  id: string;
+  project_id: string;
+  task_id: string | null;
+  staff_id: string;
+  entry_date: string;
+  hours: number;
+  note: string;
+  billed_at: string | null;
+  invoice_id: string | null;
+  created_at: string;
+  created_by: string;
+};
+
+export type PinCommentRow = {
+  id: string;
+  version_id: string;
+  deliverable_id: string;
+  project_id: string;
+  client_id: string | null;
+  x_pct: number;
+  y_pct: number;
+  body: string;
+  status: string;
+  created_by: string;
+  created_at: string;
+  resolved_at: string | null;
+  resolved_by: string | null;
 };
 
 export type TaskClientRequestRow = {
@@ -826,6 +861,16 @@ export type Database = {
           storage_path: string;
         }
       >;
+      time_entries: Table<
+        TimeEntryRow,
+        Partial<TimeEntryRow> & { project_id: string; staff_id: string; hours: number },
+        Partial<TimeEntryRow>
+      >;
+      pin_comments: Table<
+        PinCommentRow,
+        Partial<PinCommentRow> & { version_id: string; deliverable_id: string; project_id: string; body: string },
+        Partial<PinCommentRow>
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -1058,6 +1103,18 @@ export type Database = {
           p_notes?: string;
         };
         Returns: string;
+      };
+      generate_invoice_items_from_time_entries: {
+        Args: { p_invoice_id: string; p_through_date?: string };
+        Returns: number;
+      };
+      client_submit_pin_comment: {
+        Args: { p_version_id: string; p_x_pct: number; p_y_pct: number; p_body: string };
+        Returns: string;
+      };
+      resolve_pin_comment: {
+        Args: { p_pin_id: string };
+        Returns: void;
       };
       prepare_project_production_from_paid_invoice: {
         Args: { p_invoice_id: string };

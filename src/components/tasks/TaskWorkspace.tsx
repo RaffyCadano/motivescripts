@@ -60,6 +60,8 @@ export function TaskWorkspace({
     milestoneName: milestone?.name ?? "",
     recommendedRole: task.recommendedRole,
     taskType: task.taskType,
+    referenceUrl: task.referenceUrl,
+    estimatedHours: task.estimatedHours,
   };
 
   const projectFiles = deliverables.filter((item) => item.projectId === project.id);

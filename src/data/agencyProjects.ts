@@ -42,6 +42,9 @@ export type AgencyTaskPriority = (typeof taskPriorities)[number];
 export const projectApprovalStatuses = ["Pending", "Approved"] as const;
 export type AgencyApprovalStatus = (typeof projectApprovalStatuses)[number];
 
+export const projectBillingModes = ["fixed", "hourly"] as const;
+export type ProjectBillingMode = (typeof projectBillingModes)[number];
+
 export type AgencyMilestone = {
   id: string;
   name: string;
@@ -66,6 +69,8 @@ export type AgencyTask = {
   completedAt: string | null;
   recommendedRole: TaskRecommendedRoleId | null;
   taskType: TaskType | null;
+  referenceUrl: string;
+  estimatedHours: number | null;
 };
 
 export type AgencyProjectFeedback = {
@@ -96,6 +101,9 @@ export type AgencyProject = {
   archived: boolean;
   approvalStatus: AgencyApprovalStatus;
   development: ProjectDevelopment;
+  billingMode: ProjectBillingMode;
+  hourlyRateCents: number | null;
+  budgetedHours: number | null;
   milestones: AgencyMilestone[];
   tasks: AgencyTask[];
   feedback: AgencyProjectFeedback[];
@@ -111,6 +119,9 @@ export type AgencyProjectDraft = {
   startDate: string;
   targetLaunchDate: string;
   development?: ProjectDevelopment;
+  billingMode?: ProjectBillingMode;
+  hourlyRateCents?: number | null;
+  budgetedHours?: number | null;
 };
 
 export type AgencyMilestoneDraft = {
@@ -132,6 +143,8 @@ export type AgencyTaskDraft = {
   dueDate: string;
   recommendedRole: TaskRecommendedRoleId | null;
   taskType: TaskType | null;
+  referenceUrl: string;
+  estimatedHours: number | null;
 };
 
 export function taskStatusLabel(status: AgencyTaskStatus): string {

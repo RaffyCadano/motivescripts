@@ -3,6 +3,7 @@ import {
   Activity,
   BadgeCheck,
   CheckSquare,
+  Clock,
   Flag,
   LayoutDashboard,
   MessageSquare,
@@ -14,6 +15,7 @@ export const projectSectionTabs = [
   { id: "tasks", label: "Tasks", icon: CheckSquare },
   { id: "milestones", label: "Milestones", icon: Flag },
   { id: "files", label: "Files", icon: Paperclip },
+  { id: "time", label: "Time", icon: Clock },
   { id: "feedback", label: "Feedback", icon: MessageSquare },
   { id: "approvals", label: "Approvals", icon: BadgeCheck },
   { id: "activity", label: "Activity", icon: Activity },
@@ -41,7 +43,7 @@ export const projectSectionNavGroups: ProjectSectionNavGroup[] = [
   },
   {
     label: "Delivery",
-    items: [tabById.get("milestones")!, tabById.get("files")!],
+    items: [tabById.get("milestones")!, tabById.get("files")!, tabById.get("time")!],
   },
   {
     label: "Communication",

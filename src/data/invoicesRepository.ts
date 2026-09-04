@@ -6,6 +6,7 @@ import {
   invoiceItemIsBillable,
   invoiceItemsFromSnapshot,
   invoiceRpcErrorCode,
+  roundQuantity,
   type EffectiveInvoiceStatus,
   type InvoiceSnapshotItem,
   type LineItemDraft,
@@ -247,7 +248,7 @@ export async function saveInvoiceDraft(input: {
     .map((item, index) => ({
       name: invoiceItemClientDescription(item),
       description: item.description.trim(),
-      quantity: Math.max(1, Math.floor(item.quantity) || 1),
+      quantity: roundQuantity(item.quantity),
       unit_price_cents: Math.max(0, Math.floor(item.unitPriceCents) || 0),
       sort_order: index,
     }));
@@ -382,6 +383,19 @@ export async function reverseInvoicePayment(paymentId: string): Promise<void> {
   const client = db();
   const { error } = await client.rpc("reverse_invoice_payment", { p_payment_id: paymentId });
   throwIf(error, "reverse payment", "Unable to reverse this payment.");
+}
+
+export async function generateInvoiceItemsFromTimeEntries(input: {
+  invoiceId: string;
+  throughDate?: string;
+}): Promise<number> {
+  const client = db();
+  const { data, error } = await client.rpc("generate_invoice_items_from_time_entries", {
+    p_invoice_id: input.invoiceId,
+    p_through_date: input.throughDate ?? new Date().toISOString().slice(0, 10),
+  });
+  throwIf(error, "generate invoice items", "Unable to generate invoice items from time entries.");
+  return (data as number) ?? 0;
 }
 
 export function invoiceLineDrafts(detail: InvoiceDetail): LineItemDraft[] {

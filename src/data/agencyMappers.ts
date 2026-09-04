@@ -175,6 +175,8 @@ export function mapTask(row: TaskRow): AgencyTask {
     completedAt: row.completed_at,
     recommendedRole: parseStoredRecommendedRole(row.recommended_role),
     taskType: isTaskType(row.task_type) ? row.task_type : null,
+    referenceUrl: row.reference_url ?? "",
+    estimatedHours: row.estimated_hours ?? null,
   };
 }
 
@@ -231,6 +233,9 @@ export function mapProject(
       stagingUrl: row.staging_url ?? "",
       productionUrl: row.production_url ?? "",
     },
+    billingMode: row.billing_mode === "hourly" ? "hourly" : "fixed",
+    hourlyRateCents: row.hourly_rate_cents ?? null,
+    budgetedHours: row.budgeted_hours ?? null,
     milestones,
     tasks,
     feedback: [],

@@ -16,6 +16,7 @@ export type AdminIconName =
   | "messages"
   | "notifications"
   | "team"
+  | "capacity"
   | "activity"
   | "settings"
   | "profile";
@@ -73,6 +74,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     label: "Operations",
     items: [
       { label: "Team", href: "/admin/team", icon: "team" },
+      { label: "Capacity", href: "/admin/capacity", icon: "capacity" },
       { label: "Settings", href: "/admin/settings", icon: "settings" },
     ],
   },
@@ -102,6 +104,7 @@ export const pmNavGroups: AdminNavGroup[] = [
       { label: "Projects", href: "/admin/projects", icon: "projects" },
       { label: "Clients", href: "/admin/clients", icon: "clients" },
       { label: "Files", href: "/admin/files", icon: "files" },
+      { label: "Capacity", href: "/admin/capacity", icon: "capacity" },
     ],
   },
   {
@@ -156,6 +159,7 @@ const navPermission: Record<string, StaffPermissionCode | null> = {
   "/admin/messages": "messages.view",
   "/admin/notifications": null,
   "/admin/team": "team.view",
+  "/admin/capacity": "projects.view",
   "/admin/activity": "activity.view",
   "/admin/settings": null,
   "/admin/profile": null,

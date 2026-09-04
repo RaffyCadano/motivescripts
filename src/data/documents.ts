@@ -212,7 +212,7 @@ export function draftsFromItems(items: ProposalItemRow[] | SnapshotItem[]): Line
 }
 
 export function lineItemTotalCents(item: LineItemDraft): number {
-  return item.quantity * item.unitPriceCents;
+  return Math.round(item.quantity * item.unitPriceCents);
 }
 
 export function lineItemsTotalCents(items: LineItemDraft[]): number {

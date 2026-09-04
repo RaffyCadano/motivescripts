@@ -71,6 +71,8 @@ type TaskWriteFields = Partial<
     | "completed_at"
     | "recommended_role"
     | "task_type"
+    | "reference_url"
+    | "estimated_hours"
   >
 >;
 
@@ -88,6 +90,8 @@ type TaskInsertFields = Pick<TaskRow, "project_id" | "title"> &
       | "completed_at"
       | "recommended_role"
       | "task_type"
+      | "reference_url"
+      | "estimated_hours"
     >
   >;
 
@@ -493,6 +497,9 @@ export async function insertProject(draft: AgencyProjectDraft): Promise<string> 
       due_date: emptyToNull(draft.targetLaunchDate),
       archived: false,
       approval_status: "Pending",
+      billing_mode: draft.billingMode ?? "fixed",
+      hourly_rate_cents: draft.hourlyRateCents ?? null,
+      budgeted_hours: draft.budgetedHours ?? null,
     })
     .select("id")
     .single();
@@ -561,6 +568,9 @@ export async function updateProjectRecord(id: string, edits: AgencyProjectDraft)
       status: edits.status,
       start_date: emptyToNull(edits.startDate),
       due_date: emptyToNull(edits.targetLaunchDate),
+      billing_mode: edits.billingMode ?? "fixed",
+      hourly_rate_cents: edits.hourlyRateCents ?? null,
+      budgeted_hours: edits.budgetedHours ?? null,
     })
     .eq("id", id);
   throwIf(error, "update project", "Unable to update project.");
@@ -679,6 +689,8 @@ function taskDraftWriteFields(draft: AgencyTaskDraft, completedAt: string | null
     due_date: emptyToNull(draft.dueDate),
     recommended_role: draft.recommendedRole ?? null,
     task_type: draft.taskType ?? null,
+    reference_url: emptyToNull(draft.referenceUrl),
+    estimated_hours: draft.estimatedHours ?? null,
   };
   if (completedAt !== undefined) {
     fields.completed_at = completedAt;
@@ -695,6 +707,14 @@ async function writeTaskUpdate(client: ReturnType<typeof db>, taskId: string, fi
   if (error && isSchemaColumnMissing(error, "tasks", "task_type") && fields.task_type !== undefined) {
     const { task_type: _ignoredType, ...withoutTaskType } = fields;
     ({ error } = await client.from("tasks").update(withoutTaskType).eq("id", taskId));
+  }
+  if (error && isSchemaColumnMissing(error, "tasks", "reference_url") && fields.reference_url !== undefined) {
+    const { reference_url: _ignoredUrl, ...withoutReferenceUrl } = fields;
+    ({ error } = await client.from("tasks").update(withoutReferenceUrl).eq("id", taskId));
+  }
+  if (error && isSchemaColumnMissing(error, "tasks", "estimated_hours") && fields.estimated_hours !== undefined) {
+    const { estimated_hours: _ignoredHours, ...withoutEstimatedHours } = fields;
+    ({ error } = await client.from("tasks").update(withoutEstimatedHours).eq("id", taskId));
   }
   return error;
 }
@@ -715,6 +735,8 @@ export async function insertTask(projectId: string, draft: AgencyTaskDraft): Pro
     completed_at: draft.status === "Completed" ? now : null,
     recommended_role: draft.recommendedRole ?? null,
     task_type: draft.taskType ?? null,
+    reference_url: emptyToNull(draft.referenceUrl),
+    estimated_hours: draft.estimatedHours ?? null,
   };
   let { error } = await client.from("tasks").insert(fields);
   if (error && isSchemaColumnMissing(error, "tasks", "recommended_role")) {
@@ -724,6 +746,14 @@ export async function insertTask(projectId: string, draft: AgencyTaskDraft): Pro
   if (error && isSchemaColumnMissing(error, "tasks", "task_type")) {
     const { task_type: _ignoredType, ...withoutTaskType } = fields;
     ({ error } = await client.from("tasks").insert(withoutTaskType));
+  }
+  if (error && isSchemaColumnMissing(error, "tasks", "reference_url")) {
+    const { reference_url: _ignoredUrl, ...withoutReferenceUrl } = fields;
+    ({ error } = await client.from("tasks").insert(withoutReferenceUrl));
+  }
+  if (error && isSchemaColumnMissing(error, "tasks", "estimated_hours")) {
+    const { estimated_hours: _ignoredHours, ...withoutEstimatedHours } = fields;
+    ({ error } = await client.from("tasks").insert(withoutEstimatedHours));
   }
   throwIf(error, "create task", "Unable to create task.");
   await addActivity(projectId, "task_created", `Task created: ${draft.title.trim()}`, "task");

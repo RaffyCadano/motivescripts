@@ -15,13 +15,18 @@ export type InvoiceSnapshotItem = {
   sort_order: number;
 };
 
+/** Quantities are fractional (e.g. hourly line items), clamped to two decimal places. */
+export function roundQuantity(value: number): number {
+  return Math.round(Math.max(0.01, value || 1) * 100) / 100;
+}
+
 export function invoiceItemsFromSnapshot(value: unknown): InvoiceSnapshotItem[] {
   if (!Array.isArray(value)) return [];
   const items: InvoiceSnapshotItem[] = [];
   value.forEach((entry, index) => {
     if (!entry || typeof entry !== "object") return;
     const row = entry as Record<string, unknown>;
-    const quantity = typeof row.quantity === "number" && row.quantity > 0 ? Math.floor(row.quantity) : 1;
+    const quantity = typeof row.quantity === "number" && row.quantity > 0 ? roundQuantity(row.quantity) : 1;
     const unit = typeof row.unit_price_cents === "number" ? Math.max(0, Math.floor(row.unit_price_cents)) : 0;
     const description =
       typeof row.description === "string" && row.description.trim()
@@ -34,7 +39,7 @@ export function invoiceItemsFromSnapshot(value: unknown): InvoiceSnapshotItem[] 
       description,
       quantity,
       unit_price_cents: unit,
-      total_cents: typeof row.total_cents === "number" ? Math.floor(row.total_cents) : quantity * unit,
+      total_cents: typeof row.total_cents === "number" ? Math.floor(row.total_cents) : Math.round(quantity * unit),
       sort_order: typeof row.sort_order === "number" ? row.sort_order : index,
     });
   });
@@ -52,13 +57,13 @@ export function invoiceItemClientDescription(item: LineItemDraft): string {
 
 export function previewInvoiceDraftItems(items: LineItemDraft[]): InvoiceSnapshotItem[] {
   return items.filter(invoiceItemIsBillable).map((item, index) => {
-    const quantity = Math.max(1, Math.floor(item.quantity) || 1);
+    const quantity = roundQuantity(item.quantity);
     const unit = Math.max(0, Math.floor(item.unitPriceCents) || 0);
     return {
       description: invoiceItemClientDescription(item),
       quantity,
       unit_price_cents: unit,
-      total_cents: quantity * unit,
+      total_cents: Math.round(quantity * unit),
       sort_order: index,
     };
   });
@@ -439,6 +444,10 @@ export function invoiceErrorMessage(code: string): string {
       return "This invoice could not be found.";
     case "CLIENT_NOT_FOUND":
       return "That client record could not be found.";
+    case "NOT_HOURLY":
+      return "This invoice's project isn’t billed hourly, so there’s no time to generate items from.";
+    case "PROJECT_REQUIRED":
+      return "Link this invoice to a project before generating items from time entries.";
     case "email_failed":
       return "The invoice was saved, but the email could not be sent.";
     case "no_recipient":
@@ -470,6 +479,8 @@ export function invoiceRpcErrorCode(message: string): string {
   if (upper.includes("INVALID_STATUS")) return "INVALID_STATUS";
   if (upper.includes("NOT_FOUND")) return "NOT_FOUND";
   if (upper.includes("CLIENT_NOT_FOUND")) return "CLIENT_NOT_FOUND";
+  if (upper.includes("NOT_HOURLY")) return "NOT_HOURLY";
+  if (upper.includes("PROJECT_REQUIRED")) return "PROJECT_REQUIRED";
   if (message.toLowerCase().includes("failed to fetch") || message.toLowerCase().includes("network")) {
     return "network";
   }

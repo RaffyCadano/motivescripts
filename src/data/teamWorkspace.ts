@@ -9,6 +9,7 @@ import {
 } from "@/data/agencyProjects";
 import type { TaskRecommendedRoleId } from "@/data/taskRecommendedRoles";
 import type { TaskType } from "@/data/taskTypes";
+import type { TeamMember } from "@/data/team";
 
 export type TeamWorkTask = {
   id: string;
@@ -29,6 +30,8 @@ export type TeamWorkTask = {
   milestoneName: string;
   recommendedRole: TaskRecommendedRoleId | null;
   taskType: TaskType | null;
+  referenceUrl: string;
+  estimatedHours: number | null;
 };
 
 export type TeamAttentionItem = {
@@ -158,6 +161,8 @@ export function collectAssignedTasks(
         milestoneName: project.milestones.find((item) => item.id === task.milestoneId)?.name ?? "",
         recommendedRole: task.recommendedRole,
         taskType: task.taskType,
+        referenceUrl: task.referenceUrl,
+        estimatedHours: task.estimatedHours,
       });
     }
   }
@@ -243,6 +248,103 @@ export function myTasksSummaryStats(tasks: TeamWorkTask[]) {
     }).length,
     totalOpen: open.length,
   };
+}
+
+function isoDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/** Monday of the local calendar week containing `date`, as a date-only ISO string. */
+function mondayOf(date: Date): string {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const weekday = start.getDay(); // 0 = Sunday .. 6 = Saturday
+  const offsetToMonday = weekday === 0 ? -6 : 1 - weekday;
+  start.setDate(start.getDate() + offsetToMonday);
+  return isoDate(start);
+}
+
+export type StaffWorkloadWeek = {
+  weekStart: string;
+  hours: number;
+  taskCount: number;
+};
+
+export type StaffWorkload = {
+  staffId: string;
+  fullName: string;
+  weeks: StaffWorkloadWeek[];
+  overdueHours: number;
+  overdueTaskCount: number;
+  unscheduledHours: number;
+  unscheduledTaskCount: number;
+};
+
+/**
+ * Forward-looking staffing load: every open, assigned task's `estimatedHours`,
+ * bucketed by the ISO (Monday-start) week of its due date. Unlike `collectAssignedTasks`,
+ * this is agency-wide (every assignee, not just one person) and un-filtered by
+ * `isAssignedToMe` -- pass the full, unscoped `projects` list (e.g. `useLeads().projects`),
+ * not `useTeamWork().myProjects`. Staff with zero assigned tasks still appear at 0h so
+ * under-allocation is visible, not just overload.
+ */
+export function collectStaffWorkload(
+  projects: AgencyProject[],
+  members: TeamMember[],
+  weekCount: number,
+  now = new Date(),
+): StaffWorkload[] {
+  const weekStarts: string[] = [];
+  for (let i = 0; i < weekCount; i += 1) {
+    const weekDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i * 7);
+    weekStarts.push(mondayOf(weekDate));
+  }
+  const weekIndex = new Map(weekStarts.map((week, index) => [week, index]));
+
+  const byStaff = new Map<string, StaffWorkload>();
+  for (const member of members) {
+    if (!member.isActive) continue;
+    byStaff.set(member.id, {
+      staffId: member.id,
+      fullName: member.fullName,
+      weeks: weekStarts.map((weekStart) => ({ weekStart, hours: 0, taskCount: 0 })),
+      overdueHours: 0,
+      overdueTaskCount: 0,
+      unscheduledHours: 0,
+      unscheduledTaskCount: 0,
+    });
+  }
+
+  for (const project of projects) {
+    if (project.archived) continue;
+    for (const task of project.tasks) {
+      if (!task.assignedTo || task.status === "Completed") continue;
+      const workload = byStaff.get(task.assignedTo);
+      if (!workload) continue; // not an active staff member (e.g. deactivated since assignment)
+      const hours = task.estimatedHours ?? 0;
+
+      if (!task.dueDate) {
+        workload.unscheduledHours += hours;
+        workload.unscheduledTaskCount += 1;
+        continue;
+      }
+      const bucket = dueBucket(task.dueDate, now);
+      if (bucket === "overdue") {
+        workload.overdueHours += hours;
+        workload.overdueTaskCount += 1;
+        continue;
+      }
+      const week = mondayOf(new Date(`${task.dueDate}T00:00:00`));
+      const index = weekIndex.get(week);
+      if (index === undefined) continue; // due date is beyond the requested window
+      workload.weeks[index].hours += hours;
+      workload.weeks[index].taskCount += 1;
+    }
+  }
+
+  return [...byStaff.values()].sort((a, b) => a.fullName.localeCompare(b.fullName));
 }
 
 export function matchesTaskSearch(task: TeamWorkTask, query: string): boolean {

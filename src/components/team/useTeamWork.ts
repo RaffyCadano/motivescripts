@@ -79,6 +79,8 @@ export function useTeamWork() {
       dueDate: task.dueDate,
       recommendedRole: task.recommendedRole,
       taskType: task.taskType,
+      referenceUrl: task.referenceUrl,
+      estimatedHours: task.estimatedHours,
     };
     if (canManageTasks) {
       await updateTask(task.projectId, task.id, draft);
