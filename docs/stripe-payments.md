@@ -115,7 +115,7 @@ supabase functions deploy document-email
 2. Developers → API keys → Secret key (`sk_test_…`). Store only as `STRIPE_SECRET_KEY`. This phase does not need a publishable key in the browser (Checkout is hosted).
 3. Developers → Webhooks → Add endpoint:
    - URL: `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`
-   - Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`
+   - Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded` (recurring billing later adds three more subscription events to this same endpoint — see [service-plans.md](./service-plans.md))
 4. Open the endpoint → Signing secret → `whsec_…` → set `STRIPE_WEBHOOK_SECRET`.
 5. Test with card `4242 4242 4242 4242` and any future expiry / CVC.
 
@@ -174,7 +174,7 @@ Use Stripe test cards (`4242…`) and two Auth users. SQL Editor bypasses RLS.
 
 ## Out of scope
 
-PayPal, GCash, subscriptions, payment plans, Stripe Connect, custom card elements. Invoice PDFs: [invoice-pdf.md](./invoice-pdf.md). Proposal and contract PDFs: [proposal-contract-pdf.md](./proposal-contract-pdf.md).
+PayPal, GCash, payment plans, Stripe Connect, custom card elements. Recurring/subscription billing is a separate later phase on the same webhook: [service-plans.md](./service-plans.md). Invoice PDFs: [invoice-pdf.md](./invoice-pdf.md). Proposal and contract PDFs: [proposal-contract-pdf.md](./proposal-contract-pdf.md).
 
 ## Known limitations
 
