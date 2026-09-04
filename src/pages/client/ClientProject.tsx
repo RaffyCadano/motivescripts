@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import { ClientActionCard } from "@/components/client/ClientActionCard";
 import { ClientProjectCard } from "@/components/client/ClientProjectCard";
+import { ClientProjectSwitcher } from "@/components/client/ClientProjectSwitcher";
 import { ClientWebsiteSection } from "@/components/client/ClientWebsiteSection";
 import { ClientDiscoveryCard } from "@/components/client/ClientDiscoveryCard";
 import { ClientTaskRequestsCard } from "@/components/client/ClientTaskRequestsCard";
@@ -46,6 +47,8 @@ export function ClientProject() {
           {milestone ? ` · Current milestone: ${displayMilestoneName(milestone.name)}` : ""}
         </p>
       </header>
+
+      <ClientProjectSwitcher projects={session.projects} activeId={project?.id ?? null} />
 
       <ClientScopePrompt brief={onboarding.brief} hasProject={Boolean(project)} />
 
