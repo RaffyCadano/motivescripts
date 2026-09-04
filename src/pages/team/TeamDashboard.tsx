@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { firstNameFrom } from "@/auth/userDisplay";
 import { hasPermission } from "@/auth/permissions";
+import { ClientReviewLinkOut } from "@/components/tasks/TaskWorkspace";
 import { TeamProjectCard } from "@/components/team/TeamProjectCard";
 import { TeamTaskCard } from "@/components/team/TeamTaskCard";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import { formatProjectDay } from "@/data/agencyProjects";
+import { effectiveTaskType } from "@/data/taskTypes";
 import {
   collectRecentProjectActivity,
   collectTeamAttention,
@@ -21,6 +23,7 @@ import { AgencyDbError } from "@/lib/dbErrors";
 import { useMessaging } from "@/providers/MessagingProvider";
 
 export function TeamDashboard() {
+  const navigate = useNavigate();
   const { profile, clientsById, tasks, myProjects, deliverables, stats, upcoming, assignmentError, changeTaskStatus } =
     useTeamWork();
   const { unreadMessageCount, conversations } = useMessaging();
@@ -240,6 +243,17 @@ export function TeamDashboard() {
           canUpdateStatus
           busy={busy}
           error={error}
+          extra={
+            effectiveTaskType(openTask) === "client_review" ? (
+              <ClientReviewLinkOut
+                onOpenFiles={() => {
+                  const projectId = openTask.projectId;
+                  setOpenTask(null);
+                  navigate(teamProjectHref(projectId, { tab: "files" }));
+                }}
+              />
+            ) : undefined
+          }
           onClose={() => {
             setOpenTask(null);
             setError(null);

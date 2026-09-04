@@ -71,7 +71,7 @@ export function adminProjectHref(projectId: string, options?: { tab?: string; fi
 
 export type DueBucket = "overdue" | "today" | "tomorrow" | "upcoming" | "none";
 
-export type TeamTaskFilter = "all" | "todo" | "progress" | "review" | "completed" | "overdue";
+export type TeamTaskFilter = "all" | "todo" | "progress" | "review" | "completed" | "blocked" | "overdue";
 
 export function greetingFor(now = new Date()): string {
   const hour = now.getHours();
@@ -220,6 +220,7 @@ export function filterTeamTasks(
     if (filter === "progress") return task.status === "In Progress";
     if (filter === "review") return task.status === "In Review";
     if (filter === "completed") return task.status === "Completed";
+    if (filter === "blocked") return task.status === "Blocked";
     return isTaskOverdue(task);
   });
 }

@@ -107,7 +107,7 @@ function DiscoveryLinkOut({ onOpenDiscovery }: { onOpenDiscovery: () => void }) 
   );
 }
 
-function ClientReviewLinkOut({ onOpenFiles }: { onOpenFiles: () => void }) {
+export function ClientReviewLinkOut({ onOpenFiles }: { onOpenFiles: () => void }) {
   return (
     <section className="rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4">
       <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Client Review</h3>

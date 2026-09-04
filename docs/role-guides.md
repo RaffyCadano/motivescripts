@@ -62,7 +62,9 @@ Your dashboard shows, in priority order: **overdue tasks**, **due soon**, **assi
 
 **Every task has structured instructions** (Objective, What to do, Before starting, Deliverable, Done when) generated from the client's accepted proposal — you don't need to guess what "Build homepage" means or hunt for scope details; open the task and read it. If a task doesn't have generated instructions (a custom, one-off task a PM created by hand), its plain description is all there is.
 
-Task status you control: **Not Started → In Progress → In Review → Completed**. Move it to **In Review** when you're done and want PM/client eyes on it, not straight to Completed — In Review is how the PM knows to check your work.
+Task status you control: **Not Started → In Progress → In Review → Completed** (or **Blocked**, if something outside your control is stopping you). Move it to **In Review** when you're done and want PM/client eyes on it, not straight to Completed — In Review is how the PM knows to check your work. My Tasks has a filter chip for each status, including Blocked.
+
+Tasks like "Prepare/deploy staging" and "Address requested revisions" show an **"Open Files & Feedback"** shortcut right in the task panel — it jumps straight to that project's Files tab instead of you hunting for it. (Two other task types — Discovery and Content Collection — have a similar richer workspace on the PM/admin side; those specific tasks are recommended to Project Manager, since the extra actions there require the `clients.manage` grant no production template has, so you won't see them here even if one lands on your list.)
 
 **You can log time** against a task from the same detail panel if the project bills hourly — this feeds both client invoicing and (if your pay rate is set) your own payroll, independently of each other. **My Time** in your sidebar lists everything you've logged across every project, with edit/delete on any entry that hasn't been billed or paid yet, plus a running "not yet paid" total and an estimate of what you're owed if an admin has set your hourly rate.
 

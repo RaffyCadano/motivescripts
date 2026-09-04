@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { ClientReviewLinkOut } from "@/components/tasks/TaskWorkspace";
 import { TeamTaskCard } from "@/components/team/TeamTaskCard";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import { taskPriorities, type AgencyTaskPriority } from "@/data/agencyProjects";
-import { filterTeamTasks, type TeamTaskFilter, type TeamWorkTask } from "@/data/teamWorkspace";
+import { effectiveTaskType } from "@/data/taskTypes";
+import { filterTeamTasks, teamProjectHref, type TeamTaskFilter, type TeamWorkTask } from "@/data/teamWorkspace";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 const filters: { id: TeamTaskFilter; label: string }[] = [
@@ -12,10 +15,12 @@ const filters: { id: TeamTaskFilter; label: string }[] = [
   { id: "progress", label: "In Progress" },
   { id: "review", label: "In Review" },
   { id: "completed", label: "Completed" },
+  { id: "blocked", label: "Blocked" },
   { id: "overdue", label: "Overdue" },
 ];
 
 export function TeamTasks() {
+  const navigate = useNavigate();
   const { tasks, myProjects, deliverables, changeTaskStatus } = useTeamWork();
   const [filter, setFilter] = useState<TeamTaskFilter>("all");
   const [projectId, setProjectId] = useState<string | "All">("All");
@@ -121,6 +126,17 @@ export function TeamTasks() {
           canUpdateStatus
           busy={busy}
           error={error}
+          extra={
+            effectiveTaskType(openTask) === "client_review" ? (
+              <ClientReviewLinkOut
+                onOpenFiles={() => {
+                  const projectId = openTask.projectId;
+                  setOpenTask(null);
+                  navigate(teamProjectHref(projectId, { tab: "files" }));
+                }}
+              />
+            ) : undefined
+          }
           onClose={() => {
             setOpenTask(null);
             setError(null);

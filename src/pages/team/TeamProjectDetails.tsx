@@ -19,6 +19,7 @@ import { ProjectTeamRoster } from "@/components/admin/projects/ProjectTeamRoster
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
+import { ClientReviewLinkOut } from "@/components/tasks/TaskWorkspace";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import {
@@ -34,6 +35,7 @@ import {
 } from "@/data/agencyProjects";
 import { displayMilestoneName } from "@/data/projectMilestones";
 import { taskInstructionPreview } from "@/data/productionTaskInstructions";
+import { effectiveTaskType } from "@/data/taskTypes";
 import { isAssignedToMe, myOpenTaskCount, projectWorkload, teamProjectHref, type TeamWorkTask } from "@/data/teamWorkspace";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
@@ -281,6 +283,16 @@ export function TeamProjectDetails() {
           )}
           busy={busy}
           error={error}
+          extra={
+            effectiveTaskType(openTask) === "client_review" ? (
+              <ClientReviewLinkOut
+                onOpenFiles={() => {
+                  setOpenTask(null);
+                  setTab("files");
+                }}
+              />
+            ) : undefined
+          }
           onClose={() => {
             setOpenTask(null);
             setError(null);
