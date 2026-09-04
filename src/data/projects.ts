@@ -20,7 +20,7 @@ export type Project = {
 
 export const projects: Project[] = [
   {
-    slug: "koala-trees",
+    slug: "live-oak-tree-co",
     name: "Live Oak Tree Co.",
     industry: "Tree Services",
     services: "Website Design / Development",
