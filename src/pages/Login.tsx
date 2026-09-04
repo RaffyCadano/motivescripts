@@ -4,7 +4,7 @@ import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { site } from "@/data/site";
 import { useAuth } from "@/auth/AuthProvider";
-import { publicAuthLinkError, publicSignInError, publicSignInNotFound } from "@/auth/authErrors";
+import { publicAuthLinkError, publicSignInError } from "@/auth/authErrors";
 import { cn } from "@/lib/cn";
 
 const welcomeNotes = [
@@ -13,7 +13,7 @@ const welcomeNotes = [
   "Reach the team without starting from scratch.",
 ];
 
-type LoginStatus = "idle" | "sending" | "sent" | "not_found" | "rate_limit" | "error";
+type LoginStatus = "idle" | "sending" | "sent" | "rate_limit" | "error";
 
 export function LoginPage() {
   const { configured, user, signInWithEmail, signOut } = useAuth();
@@ -38,9 +38,6 @@ export function LoginPage() {
         title: "Check your email.",
         body: "If that address has access, we sent a sign-in link. It expires after a short time.",
       };
-    }
-    if (status === "not_found") {
-      return publicSignInNotFound();
     }
     if (status === "rate_limit") {
       return {
@@ -79,12 +76,9 @@ export function LoginPage() {
     setErrorMessage(null);
 
     const result = await signInWithEmail(email);
-    if (result.ok) {
+    if (result.ok || result.reason === "not_found") {
+      // Same response either way -- do not reveal whether this email has an account.
       setStatus("sent");
-      return;
-    }
-    if (result.reason === "not_found") {
-      setStatus("not_found");
       return;
     }
     if (result.reason === "rate_limit") {
@@ -155,13 +149,7 @@ export function LoginPage() {
                 />
 
                 {alert ? (
-                  <div
-                    className={cn(
-                      "mt-5 border-l-2 pl-4",
-                      status === "not_found" ? "border-[var(--color-line-strong)]" : "border-cyan",
-                    )}
-                    role="status"
-                  >
+                  <div className="mt-5 border-l-2 border-cyan pl-4" role="status">
                     <p className="font-heading text-base font-semibold text-ink">{alert.title}</p>
                     <p className="mt-2 text-sm leading-relaxed text-muted">{alert.body}</p>
                   </div>
