@@ -496,6 +496,58 @@ const EXACT_INSTRUCTIONS: Record<string, string> = {
   }),
   "implement e-commerce functionality": implementFeatureInstructions("e-commerce functionality"),
   "implement online store": implementFeatureInstructions("e-commerce functionality"),
+  "design brand identity / logo": sectioned({
+    Objective: "Create the logo and brand identity included in the accepted proposal.",
+    "What to do": [
+      "- Review the client's industry, audience, and any existing brand materials.",
+      "- Explore concepts for a logo mark and/or wordmark.",
+      "- Define the core brand palette and typography.",
+      "- Prepare the logo in the file formats needed for the website and other uses.",
+      "- Keep the identity appropriate for the client's business.",
+    ].join("\n"),
+    "Before starting": "The accepted proposal should include branding/logo design. Any existing brand materials should be available, or missing items should already be flagged.",
+    Deliverable: "Logo files and a brand palette/typography reference.",
+    "Done when": "The logo and brand basics are complete and ready for use across the website design.",
+  }),
+  "accessibility audit (ada/wcag)": sectioned({
+    Objective: "Audit the staging website against WCAG 2.1 AA and document required fixes.",
+    "What to do": [
+      "- Review the staging website's structure, contrast, and keyboard navigation.",
+      "- Check headings, alt text, form labels, and focus states.",
+      "- Test with a screen reader or accessibility checker tool.",
+      "- Document each issue found, with its WCAG criterion and severity.",
+      "- Hand the list of required fixes to the PM.",
+    ].join("\n"),
+    "Before starting": "The accepted proposal should include an accessibility audit. Staging should be available.",
+    Deliverable: "A documented list of WCAG 2.1 AA issues and recommended fixes.",
+    "Done when": "The staging website has been audited and all findings are documented for the team to address.",
+  }),
+  "set up ad campaign": sectioned({
+    Objective: "Set up the Google/Meta ad campaign included in the accepted proposal.",
+    "What to do": [
+      "- Confirm the ad platform(s), budget, and goals from the accepted proposal.",
+      "- Set up or confirm access to the client's ad account.",
+      "- Create the initial campaign structure, ad groups, and creative.",
+      "- Use approved branding, copy, and destination links.",
+      "- Confirm tracking/conversion setup where applicable.",
+    ].join("\n"),
+    "Before starting": "The accepted proposal should include ad campaign setup. Ad account access and creative assets should be available, or missing items should already be flagged.",
+    Deliverable: "A live or ready-to-launch ad campaign matching the accepted proposal.",
+    "Done when": "The campaign is set up, uses approved content, and is ready for the client to launch or approve.",
+  }),
+  "set up social media & content calendar": sectioned({
+    Objective: "Set up social profiles and an initial content calendar included in the accepted proposal.",
+    "What to do": [
+      "- Confirm which social platforms are included in the accepted proposal.",
+      "- Set up or confirm access to the client's social profiles.",
+      "- Apply consistent branding, bio, and contact details across profiles.",
+      "- Draft an initial content calendar covering the first weeks of posts.",
+      "- Hand the calendar to the client/PM for review.",
+    ].join("\n"),
+    "Before starting": "The accepted proposal should include social media setup. Social account access and branding should be available, or missing items should already be flagged.",
+    Deliverable: "Set-up social profiles and an initial content calendar.",
+    "Done when": "Profiles are branded and consistent, and an initial content calendar is ready for review.",
+  }),
 };
 
 function subjectAfterPrefix(title: string, prefix: string): string | null {

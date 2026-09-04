@@ -39,7 +39,17 @@ export const PROPOSAL_ADDITIONAL_UNPAID = [
   "Security Setup",
 ] as const;
 
-export const PROPOSAL_ADDITIONAL_PAID = ["Hosting Setup", "Booking Form", "Business Email", "Domain"] as const;
+export const PROPOSAL_ADDITIONAL_PAID = [
+  "Hosting Setup",
+  "Booking Form",
+  "Business Email",
+  "Domain",
+  "Branding / Logo Design",
+  "Accessibility Audit",
+  "Ads Campaign Setup",
+  "Social Media Setup",
+  "Copywriting",
+] as const;
 
 const LEGACY_SCOPE_PLACEHOLDER =
   "Use the Scope buttons above to list the pages and setup included in this build, or write the scope here.";
@@ -147,6 +157,11 @@ export const PROPOSAL_PAID_ADDONS_CENTS: Record<string, number> = {
   "Business Email": 10_000,
   Domain: 2_500,
   "Hosting Setup": 15_000,
+  "Branding / Logo Design": 50_000,
+  "Accessibility Audit": 30_000,
+  "Ads Campaign Setup": 25_000,
+  "Social Media Setup": 20_000,
+  Copywriting: 30_000,
 };
 
 function addonCentsLookup(key: string, overrides?: Partial<Record<string, number>>): number | undefined {
@@ -181,6 +196,11 @@ export const PROPOSAL_LINE_DESCRIPTIONS: Record<string, string> = {
   "Hosting Setup": "Set up hosting so the finished website can go live.",
   "SEO Setup": "Search engine setup so the new website can be found and tracked.",
   Analytics: "Install analytics so the business can see how visitors use the site.",
+  "Branding / Logo Design": "A logo and brand identity for the business.",
+  "Accessibility Audit": "An accessibility (WCAG) audit of the finished website with a list of required fixes.",
+  "Ads Campaign Setup": "Set up a Google or Meta ad campaign for the business.",
+  "Social Media Setup": "Set up social profiles and an initial content calendar.",
+  Copywriting: "Professionally written copy for the pages included in this proposal.",
 };
 
 export function proposalLineDescription(name: string): string {

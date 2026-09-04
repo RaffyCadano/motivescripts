@@ -1,5 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useLeads, usePortalIdentity } from "@/components/admin/leads/LeadsProvider";
+import { formatUsdFromCents } from "@/data/money";
+import { SERVICE_PLAN_STATUS_LABELS, SERVICE_PLAN_TYPE_LABELS, type ServicePlan } from "@/data/servicePlans";
+import { listServicePlans } from "@/data/servicePlansRepository";
+import { AgencyDbError } from "@/lib/dbErrors";
 
 const PREFS_KEY = "motivescripts.client.device-notification-prefs";
 
@@ -28,11 +32,32 @@ export function ClientSettings() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [projectUpdates, setProjectUpdates] = useState(true);
   const [saved, setSaved] = useState(false);
+  const [plans, setPlans] = useState<ServicePlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [plansError, setPlansError] = useState<string | null>(null);
 
   useEffect(() => {
     const prefs = loadPrefs();
     setEmailNotifications(prefs.emailNotifications);
     setProjectUpdates(prefs.projectUpdates);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    setPlansLoading(true);
+    listServicePlans()
+      .then((rows) => {
+        if (active) setPlans(rows.filter((plan) => plan.status !== "canceled"));
+      })
+      .catch((caught) => {
+        if (active) setPlansError(caught instanceof AgencyDbError ? caught.message : "Unable to load your plans.");
+      })
+      .finally(() => {
+        if (active) setPlansLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -66,6 +91,39 @@ export function ClientSettings() {
           <ProfileItem label="Phone" value={identity.phone || "—"} />
         </dl>
       </section>
+
+      {plansLoading || plansError || plans.length > 0 ? (
+        <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
+          <h2 className="font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">Active plans</h2>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">
+            Recurring services billed monthly. Charges appear in your Invoices as they happen.
+          </p>
+          {plansLoading ? (
+            <div className="mt-4 h-16 animate-pulse rounded-lg bg-[var(--client-line)]/20" />
+          ) : plansError ? (
+            <p className="mt-4 text-sm text-[#b45309]">{plansError}</p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {plans.map((plan) => (
+                <li
+                  key={plan.id}
+                  className="flex items-center justify-between gap-3 rounded-[var(--client-radius)] border border-[var(--client-line)] px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-[var(--client-ink)]">{plan.label}</p>
+                    <p className="mt-0.5 text-[12px] text-[var(--client-muted)]">
+                      {SERVICE_PLAN_TYPE_LABELS[plan.planType]} · {formatUsdFromCents(plan.amountCents)}/mo
+                    </p>
+                  </div>
+                  <span className="text-[12px] font-semibold text-[var(--client-muted)]">
+                    {SERVICE_PLAN_STATUS_LABELS[plan.status]}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
 
       <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
         <h2 className="font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">Notifications</h2>

@@ -12,6 +12,7 @@ import {
   Receipt,
   RotateCcw,
   UserPlus,
+  Wallet,
 } from "lucide-react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
@@ -28,6 +29,7 @@ import { ClientOperationsOverview } from "@/components/admin/clients/ClientOpera
 import { InviteClientDialog } from "@/components/admin/clients/InviteClientDialog";
 import { ClientDocumentsSection } from "@/components/admin/clients/ClientDocumentsSection";
 import { ClientInvoicesSection } from "@/components/admin/clients/ClientInvoicesSection";
+import { ClientRecurringPlansSection } from "@/components/admin/clients/ClientRecurringPlansSection";
 import { ClientStatusBadge } from "@/components/admin/clients/ClientStatusBadge";
 import { ConfirmClientStatusModal } from "@/components/admin/clients/ConfirmClientStatusModal";
 import { useAgencyClient, useLeads } from "@/components/admin/leads/LeadsProvider";
@@ -42,6 +44,7 @@ const tabs = [
   { id: "agreements", label: "Agreements", icon: FileSignature },
   { id: "files", label: "Files", icon: Paperclip },
   { id: "invoices", label: "Invoices", icon: Receipt },
+  { id: "plans", label: "Plans", icon: Wallet },
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "activity", label: "Activity", icon: Activity },
 ] as const;
@@ -235,6 +238,7 @@ export function AdminClientDetails() {
           {tab === "agreements" ? <ClientDocumentsSection client={client} /> : null}
           {tab === "files" ? <ClientFilesSection client={client} /> : null}
           {tab === "invoices" ? <ClientInvoicesSection client={client} /> : null}
+          {tab === "plans" ? <ClientRecurringPlansSection client={client} /> : null}
           {tab === "messages" ? <ClientMessagesSection client={client} /> : null}
           {tab === "activity" ? <ClientActivitySection items={client.activity} /> : null}
         </div>

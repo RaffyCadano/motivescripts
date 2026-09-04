@@ -493,6 +493,7 @@ export type InvoiceRow = {
   project_id: string | null;
   contract_id: string | null;
   proposal_id: string | null;
+  service_plan_id: string | null;
   status: InvoiceStatus;
   issue_date: string;
   due_date: string;
@@ -544,7 +545,27 @@ export type PaymentRow = {
   stripe_checkout_session_id: string | null;
   stripe_payment_intent_id: string | null;
   stripe_event_id: string | null;
+  stripe_invoice_id: string | null;
   created_at: string;
+};
+
+export type ServicePlanType = "care" | "seo_retainer" | "hosting" | "custom";
+export type ServicePlanStatus = "pending" | "active" | "past_due" | "canceled";
+
+export type ServicePlanRow = {
+  id: string;
+  client_id: string;
+  project_id: string | null;
+  plan_type: ServicePlanType;
+  label: string;
+  amount_cents: number;
+  status: ServicePlanStatus;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  stripe_checkout_session_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  canceled_at: string | null;
 };
 
 export type InvoiceAdminNoteRow = {
@@ -789,6 +810,10 @@ export type Database = {
       invoice_items: Table<InvoiceItemRow, Partial<InvoiceItemRow> & { invoice_id: string; description: string }>;
       payments: Table<PaymentRow, Partial<PaymentRow> & { invoice_id: string; amount_cents: number; payment_method: PaymentMethod }>;
       invoice_admin_notes: Table<InvoiceAdminNoteRow, Partial<InvoiceAdminNoteRow> & { invoice_id: string }>;
+      service_plans: Table<
+        ServicePlanRow,
+        Partial<ServicePlanRow> & { client_id: string; plan_type: ServicePlanType; label: string; amount_cents: number }
+      >;
       stripe_checkout_sessions: Table<
         {
           id: string;
@@ -1159,6 +1184,28 @@ export type Database = {
           p_event_id?: string | null;
         };
         Returns: Json;
+      };
+      create_service_plan: {
+        Args: { p_client_id: string; p_project_id: string | null; p_plan_type: string; p_label: string; p_amount_cents: number };
+        Returns: string;
+      };
+      record_recurring_invoice_payment: {
+        Args: {
+          p_service_plan_id: string;
+          p_stripe_invoice_id: string;
+          p_amount_cents: number;
+          p_period_start: string;
+          p_period_end: string;
+        };
+        Returns: Json;
+      };
+      activate_service_plan: {
+        Args: { p_stripe_checkout_session_id: string; p_stripe_subscription_id: string; p_stripe_customer_id: string };
+        Returns: void;
+      };
+      set_service_plan_status_by_subscription: {
+        Args: { p_stripe_subscription_id: string; p_status: string };
+        Returns: void;
       };
       current_staff_context: {
         Args: Record<string, never>;
