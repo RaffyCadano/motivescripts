@@ -54,10 +54,9 @@ The Edge Function, not React, decides the charge:
 2. Invoice `client_id` must match
 3. Status not `draft`, `cancelled`, or `paid`
 4. `amount_due_cents > 0`
-5. Requested cents (optional) must be `> 0` and `≤ amount_due`
-6. Minimum online charge: **50 cents** (Stripe card floor for USD)
+5. Minimum online charge: **50 cents** (Stripe card floor for USD)
 
-Partial payments: the client may pay less than amount due. A later Checkout (or a manual payment) can pay the rest. Stripe amount cannot exceed current amount due at session create. The webhook records `least(stripe_amount, stored session amount, amount_due)` so a race with a manual payment cannot drive `amount_paid` over `total`. After a confirmed Checkout, other **open** sessions for that invoice are expired so a second tab cannot over-collect.
+There is no client-specified amount. Checkout always charges the invoice's full `amount_due_cents` at session-create time — the request body only carries `invoiceId`. Progress toward paying off an invoice across multiple payments still works, just not by choosing a partial amount inside one Checkout: a manual payment (or a first Checkout, once it's paid) reduces `amount_due_cents`, and the next Checkout — manual or Stripe — charges whatever is due at that point. Stripe amount cannot exceed current amount due at session create. The webhook still records `least(stripe_amount, stored session amount, amount_due)` so a race with a manual payment recorded after the session was created (but before the client pays) cannot drive `amount_paid` over `total` — see Failure handling below for that case. After a confirmed Checkout, other **open** sessions for that invoice are expired so a second tab cannot over-collect.
 
 ## Idempotency
 
@@ -134,7 +133,7 @@ Use the CLI `whsec_` as `STRIPE_WEBHOOK_SECRET` for local functions.
 | --- | --- |
 | Client pays another invoice id | Function returns `not_allowed` |
 | Draft / cancelled / paid / zero due | `not_payable` |
-| Amount over due or ≤ 0 | `invalid_amount` |
+| Amount due below the 50-cent Stripe floor | `amount_too_small` |
 | Bad webhook signature | HTTP 400, no ledger write |
 | Duplicate webhook | HTTP 200, no second payment |
 | Email / Resend down | Payment remains; log only |
@@ -153,8 +152,8 @@ Use Stripe test cards (`4242…`) and two Auth users. SQL Editor bypasses RLS.
 | 3 | Checkout for another client’s invoice id is denied |
 | 4 | Cancelled invoice cannot be paid |
 | 5 | Paid invoice has no Pay Online |
-| 6 | Checkout `unit_amount` equals server `amount_due` (or the validated lesser amount) |
-| 7 | Partial Checkout leaves `partially_paid` and remaining due |
+| 6 | Checkout `unit_amount` always equals server `amount_due` at session-create time |
+| 7 | A manual partial payment recorded before Checkout leaves `partially_paid`; the next Checkout charges only the remaining due |
 | 8 | Paying the remainder sets `paid` |
 | 9 | Row appears in `payments` with `provider = stripe` |
 | 10 | Replaying the webhook does not duplicate the row |
@@ -169,7 +168,7 @@ Use Stripe test cards (`4242…`) and two Auth users. SQL Editor bypasses RLS.
 | 20 | Client only sees own history; no PaymentIntent id |
 | 21 | Admin sees `pi_…` |
 | 22 | Production JS bundle has no `sk_live` / `sk_test` / `whsec_` |
-| 23 | Tampered `amountCents` above due is rejected |
+| 23 | A manual payment recorded after a Checkout session is opened, before the client pays, is capped correctly (webhook caps at remaining due; see Failure handling) |
 | 24 | Refresh keeps the payment |
 | 25 | Second Checkout can pay the remaining balance |
 

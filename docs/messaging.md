@@ -79,25 +79,38 @@ Anonymous: no table grants, no RPC execute.
 | Caller | Conversations | Messages | Notifications |
 | --- | --- | --- | --- |
 | Admin | SELECT all agency threads | SELECT all messages | Own inbox only |
+| Staff | SELECT where `staff_may_conversation(id, 'messages.view')` — see Staff messaging access below | Same | Own inbox only |
 | Client | SELECT where `client_id = current_client_id()` | SELECT where `owns_conversation(conversation_id)` | Own inbox only |
 | Client A vs B | Denied | Denied | Denied |
 
 Mutations go through RPCs (`search_path = public`):
 
-- `start_conversation(subject, body, project_id, client_id)` — admin must pass a real `client_id`; clients **ignore** submitted `client_id` and use `current_client_id()`
-- `send_message(conversation_id, body)` — sender is `auth.uid()`; client must own the thread
-- `mark_conversation_read(conversation_id)` — only incoming messages (`sender_user_id <> auth.uid()`)
-- `set_conversation_status` — admin only
+- `start_conversation(subject, body, project_id, client_id)` — admin/office staff must pass a real `client_id` (checked with `assert_client_perm`); clients **ignore** submitted `client_id` and use `current_client_id()`; production communicators must pass a `project_id` they're directly assigned to
+- `send_message(conversation_id, body)` — sender is `auth.uid()`; caller must own the thread (`owns_conversation`) or pass `staff_may_conversation(id, 'messages.manage')`
+- `mark_conversation_read(conversation_id)` — only incoming messages (`sender_user_id <> auth.uid()`); same ownership/`staff_may_conversation` check
+- `set_conversation_status` — admin or office messaging staff with `messages.manage` on that client
 - `mark_notification_read` / `mark_all_notifications_read` — `user_id = auth.uid()` only
 
 Authenticated roles have **SELECT** on the three tables. They do not have INSERT/UPDATE/DELETE grants. That blocks PostgREST from forging `sender_user_id`, `client_id`, or `user_id`.
 
+## Staff messaging access
+
+Added by `supabase/migrations/20260901210000_production_project_messaging.sql`, on top of the Phase 13 model above. Staff are not one bucket — access depends on `staff_profiles.template_key`:
+
+| Template | Access |
+| --- | --- |
+| Developer, Designer, Content Writer (`is_production_communicator`) | Only conversations whose `project_id` they're directly assigned to (`project_staff_assignments`), and only with the `messages.view`/`messages.manage` grant |
+| Team Member | **No client messaging at all.** `messages.view` / `messages.manage` are actively removed from this template's grants — not just hidden in the UI |
+| Admin, PM, Sales, and other office staff (`is_office_messaging_staff`) | The original client-assignment model: any conversation for a client they're assigned to (`client_staff_assignments`, or a project assignment that maps to that client) |
+
+`staff_may_conversation(conversation_id, perm)` is the single helper both the RLS policies and the `send_message` / `mark_conversation_read` RPCs check — so this isn't just a read restriction, a production communicator can't write into a thread on a project they aren't assigned to either.
+
 ## Notification triggers
 
-**New message** (after INSERT on `messages`):
+**New message** (after INSERT on `messages`, via `notify_admins` → `notify_agency`):
 
-- Sender role `client` → every `profiles.role = admin` except the sender
-- Sender role `admin` → portal users with `profiles.client_id = conversation.client_id`, except the sender
+- Sender role `client` → all active admins, always. Non-admin staff only if they pass the same Staff messaging access rule above (production communicators: assigned to that message's project; office staff: assigned to that client; team members: never) — except the sender
+- Sender role `admin`/staff → portal users with `profiles.client_id = conversation.client_id`, except the sender
 
 **Phase 9 activity** (after INSERT on `activity`, not on `feedback` — that would double-notify):
 
@@ -202,9 +215,9 @@ TEST 20 — Anonymous `/admin/messages` or `/client/messages` → `/login`.
 
 - **RLS verification not performed** against a live project in this implementation pass. Confirm TEST 8–10 with two client Auth users.
 - **Realtime verification not performed.** Enable Realtime on those tables in the Supabase dashboard if events do not arrive.
-- Apply `supabase/migrations/20260828160000_messaging_notifications.sql` after Phase 12. Do not edit older migrations.
+- Apply `supabase/migrations/20260828160000_messaging_notifications.sql` after Phase 12, and `20260901210000_production_project_messaging.sql` after Phase 20 (team management) for the staff-tier access in the section above. Do not edit older migrations.
 - Future email/SMS/WhatsApp notifications are out of scope.
-- Multiple admins all receive client-message notifications; there is no per-project assignee.
+- Multiple admins all receive every client-message notification regardless of assignment; there is no per-project admin assignee. (Non-admin staff *are* scoped by assignment — see Staff messaging access.)
 - Unread is “the other party opened the thread,” not per-admin read state.
 
 ## Production
