@@ -6,10 +6,18 @@ type LineItemsEditorProps = {
   items: LineItemDraft[];
   disabled?: boolean;
   showSubtotal?: boolean;
+  /** Invoices allow fractional quantities (e.g. hourly line items). Proposals/contracts stay whole numbers. */
+  allowFractionalQuantity?: boolean;
   onChange: (items: LineItemDraft[]) => void;
 };
 
-export function LineItemsEditor({ items, disabled, showSubtotal = true, onChange }: LineItemsEditorProps) {
+export function LineItemsEditor({
+  items,
+  disabled,
+  showSubtotal = true,
+  allowFractionalQuantity = false,
+  onChange,
+}: LineItemsEditorProps) {
   function update(index: number, patch: Partial<LineItemDraft>) {
     onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   }
@@ -50,12 +58,18 @@ export function LineItemsEditor({ items, disabled, showSubtotal = true, onChange
             <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Quantity</span>
             <input
               type="number"
-              min={1}
+              min={allowFractionalQuantity ? 0.01 : 1}
               max={9999}
-              step={1}
+              step={allowFractionalQuantity ? 0.25 : 1}
               disabled={disabled}
               value={item.quantity}
-              onChange={(event) => update(index, { quantity: Math.max(1, Math.floor(Number(event.target.value) || 1)) })}
+              onChange={(event) => {
+                const raw = Number(event.target.value) || 1;
+                const quantity = allowFractionalQuantity
+                  ? Math.max(0.01, Math.round(raw * 100) / 100)
+                  : Math.max(1, Math.floor(raw));
+                update(index, { quantity });
+              }}
               className={inputClass}
             />
           </label>

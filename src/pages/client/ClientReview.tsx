@@ -24,6 +24,9 @@ import {
 } from "@/data/review";
 import { cn } from "@/lib/cn";
 import { hasStoredFile } from "@/data/fileUploadConfig";
+import type { PinComment } from "@/data/pinComments";
+import { listPinComments, submitPinComment } from "@/data/pinCommentsRepository";
+import { AgencyDbError } from "@/lib/dbErrors";
 
 export function ClientReview() {
   const { deliverableId } = useParams();
@@ -36,6 +39,11 @@ export function ClientReview() {
   const [changesOpen, setChangesOpen] = useState(false);
   const [approveOpen, setApproveOpen] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [pins, setPins] = useState<PinComment[]>([]);
+  const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
+  const [pinBody, setPinBody] = useState("");
+  const [pinBusy, setPinBusy] = useState(false);
+  const [pinError, setPinError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!preview) return;
@@ -45,6 +53,19 @@ export function ClientReview() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [preview]);
+
+  useEffect(() => {
+    if (!preview || !current) return;
+    let active = true;
+    void listPinComments(current.id)
+      .then((rows) => {
+        if (active) setPins(rows);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [preview, current]);
 
   if (!file) {
     return (
@@ -286,9 +307,79 @@ export function ClientReview() {
             <p className="mt-1 text-sm text-[var(--client-muted)]">
               {versionLabel(current.versionNumber)} · CURRENT VERSION
             </p>
+            {feedbackable ? (
+              <p className="mt-2 text-[12px] text-[var(--client-muted)]">
+                Click a spot on the image to leave a comment pinned there.
+              </p>
+            ) : null}
             <div className="mt-4 overflow-hidden rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-bg)]">
-              <StoredFilePreview version={current} />
+              <StoredFilePreview
+                version={current}
+                pins={pins}
+                onImageClick={
+                  feedbackable
+                    ? (x, y) => {
+                        setPendingPin({ x, y });
+                        setPinBody("");
+                        setPinError(null);
+                      }
+                    : undefined
+                }
+              />
             </div>
+            {pendingPin ? (
+              <form
+                className="mt-3 space-y-2 rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-bg)] p-3"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!pinBody.trim() || !current) return;
+                  setPinBusy(true);
+                  setPinError(null);
+                  void submitPinComment({ versionId: current.id, xPct: pendingPin.x, yPct: pendingPin.y, body: pinBody })
+                    .then(() => listPinComments(current.id))
+                    .then((rows) => {
+                      setPins(rows);
+                      setPendingPin(null);
+                      setPinBody("");
+                    })
+                    .catch((error: unknown) => {
+                      setPinError(error instanceof AgencyDbError ? error.message : "Unable to add this pin.");
+                    })
+                    .finally(() => setPinBusy(false));
+                }}
+              >
+                <label className="block font-heading text-[12px] font-semibold text-[var(--client-ink)]">
+                  Comment on pin {pins.length + 1}
+                  <textarea
+                    autoFocus
+                    required
+                    rows={2}
+                    value={pinBody}
+                    disabled={pinBusy}
+                    onChange={(event) => setPinBody(event.target.value)}
+                    className="mt-1.5 w-full rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-3 py-2 text-sm text-[var(--client-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                  />
+                </label>
+                {pinError ? <p className="text-sm text-[#b45309]">{pinError}</p> : null}
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={pinBusy || !pinBody.trim()}
+                    className="inline-flex h-9 items-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-[13px] font-semibold text-white disabled:opacity-50"
+                  >
+                    {pinBusy ? "Saving…" : "Save pin"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pinBusy}
+                    className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-4 font-heading text-[13px] font-semibold text-[var(--client-ink)]"
+                    onClick={() => setPendingPin(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : null}
             <div className="mt-4 flex flex-wrap gap-2">
               {hasStoredFile(current) ? (
                 <button

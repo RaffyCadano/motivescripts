@@ -242,7 +242,13 @@ export function InvoiceDraftForm({
           {lineItemsHelper ??
             "This invoice bills the amount shown here. If payment terms are a deposit and a remainder, label this charge (for example “Website Design & Development — 50% Deposit”) and set that amount. Create another invoice later for the rest."}
         </p>
-        <LineItemsEditor items={items} disabled={disabled} showSubtotal={false} onChange={onItemsChange} />
+        <LineItemsEditor
+          items={items}
+          disabled={disabled}
+          showSubtotal={false}
+          allowFractionalQuantity
+          onChange={onItemsChange}
+        />
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm font-semibold">
             Tax

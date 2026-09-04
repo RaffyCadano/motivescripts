@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import { FileTypeIcon } from "@/components/admin/projects/FileTypeIcon";
 import { signedUrlForPath } from "@/data/fileStorage";
 import { canPreviewAsImage, canPreviewAsPdf, hasStoredFile } from "@/data/fileUploadConfig";
 import type { AgencyFileVersion } from "@/data/files";
+import type { PinComment } from "@/data/pinComments";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 type PreviewState =
@@ -46,10 +47,23 @@ export function useSignedFilePreview(version: AgencyFileVersion | null): Preview
 type StoredFilePreviewProps = {
   version: AgencyFileVersion;
   className?: string;
+  /** Pin comments to render as markers over the image. Images only -- never wired up for PDFs. */
+  pins?: PinComment[];
+  /** Called with the click position as a 0-100 percentage of the image, for placing a new pin. */
+  onImageClick?: (xPct: number, yPct: number) => void;
+  renderPinMarker?: (pin: PinComment, index: number) => ReactNode;
 };
 
-export function StoredFilePreview({ version, className }: StoredFilePreviewProps) {
+export function StoredFilePreview({ version, className, pins, onImageClick, renderPinMarker }: StoredFilePreviewProps) {
   const preview = useSignedFilePreview(version);
+
+  function handleImageClick(event: MouseEvent<HTMLImageElement>) {
+    if (!onImageClick) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const xPct = ((event.clientX - rect.left) / rect.width) * 100;
+    const yPct = ((event.clientY - rect.top) / rect.height) * 100;
+    onImageClick(Math.max(0, Math.min(100, xPct)), Math.max(0, Math.min(100, yPct)));
+  }
 
   if (preview.status === "loading") {
     return (
@@ -71,12 +85,40 @@ export function StoredFilePreview({ version, className }: StoredFilePreviewProps
   }
 
   if (preview.status === "ready" && preview.kind === "image") {
+    if (!pins && !onImageClick) {
+      return (
+        <img
+          src={preview.url}
+          alt={`Preview of ${version.fileName}`}
+          className="mx-auto max-h-80 object-contain"
+        />
+      );
+    }
+
     return (
-      <img
-        src={preview.url}
-        alt={`Preview of ${version.fileName}`}
-        className="mx-auto max-h-80 object-contain"
-      />
+      <div className="relative mx-auto w-fit">
+        <img
+          src={preview.url}
+          alt={`Preview of ${version.fileName}`}
+          className={onImageClick ? "max-h-80 cursor-crosshair object-contain" : "max-h-80 object-contain"}
+          onClick={onImageClick ? handleImageClick : undefined}
+        />
+        {(pins ?? []).map((pin, index) => (
+          <div
+            key={pin.id}
+            className="absolute -translate-x-1/2 -translate-y-1/2"
+            style={{ left: `${pin.xPct}%`, top: `${pin.yPct}%` }}
+          >
+            {renderPinMarker ? (
+              renderPinMarker(pin, index)
+            ) : (
+              <span className="flex size-6 items-center justify-center rounded-full bg-[var(--admin-blue)] text-[11px] font-semibold text-white shadow">
+                {index + 1}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
     );
   }
 

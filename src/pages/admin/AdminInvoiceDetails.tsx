@@ -3,6 +3,7 @@ import { Ban, Download, Mail, PencilLine, RotateCcw, Send, Trash2 } from "lucide
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
 import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
+import { AdminDialog } from "@/components/admin/leads/AdminDialog";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { InvoiceDocumentView } from "@/components/invoices/InvoiceDocumentView";
 import { InvoiceDraftForm, type InvoiceDraftFormValue } from "@/components/invoices/InvoiceDraftForm";
@@ -38,6 +39,7 @@ import {
   deleteInvoice,
   downloadInvoicePdf,
   fetchInvoiceDetail,
+  generateInvoiceItemsFromTimeEntries,
   invoiceLineDrafts,
   recordInvoicePayment,
   reopenInvoiceDraft,
@@ -68,6 +70,8 @@ export function AdminInvoiceDetails() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const [generateTimeOpen, setGenerateTimeOpen] = useState(false);
+  const [generateThroughDate, setGenerateThroughDate] = useState(isoCalendarDate());
   const [reverseId, setReverseId] = useState<string | null>(null);
   const [items, setItems] = useState<LineItemDraft[]>([emptyLineItem()]);
   const [form, setForm] = useState<InvoiceDraftFormValue>({
@@ -351,6 +355,14 @@ export function AdminInvoiceDetails() {
       label: "Record Payment",
       disabled: busy,
       onSelect: () => setPayOpen(true),
+    });
+  }
+  if (isDraft && project?.billingMode === "hourly") {
+    invoiceActions.push({
+      id: "generate-time",
+      label: "Generate from time entries",
+      disabled: busy,
+      onSelect: () => setGenerateTimeOpen(true),
     });
   }
   if (canCancelInvoice(current.effectiveStatus, hasPayments)) {
@@ -795,6 +807,57 @@ export function AdminInvoiceDetails() {
           }
         }}
       />
+      <AdminDialog
+        open={generateTimeOpen}
+        title="Generate items from time entries"
+        description="Adds one line item per staff member, grouped from unbilled time logged on this project through the date below, at the project's hourly rate. Those entries are then marked billed."
+        busy={busy}
+        onClose={() => setGenerateTimeOpen(false)}
+      >
+        <label className="block text-sm font-semibold">
+          Through date
+          <input
+            type="date"
+            value={generateThroughDate}
+            onChange={(event) => setGenerateThroughDate(event.target.value)}
+            className="mt-1.5 h-10 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+          />
+        </label>
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            className="inline-flex h-10 items-center justify-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+            disabled={busy}
+            onClick={() => setGenerateTimeOpen(false)}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-10 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white disabled:opacity-60"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const count = await generateInvoiceItemsFromTimeEntries({
+                  invoiceId: current.invoice.id,
+                  throughDate: generateThroughDate,
+                });
+                notify(count > 0 ? `Added ${count} line item${count === 1 ? "" : "s"} from time entries.` : "No unbilled time entries found for this project.");
+                setGenerateTimeOpen(false);
+                await load();
+                await reload();
+              } catch (error) {
+                notify(error instanceof AgencyDbError ? error.message : "Unable to generate invoice items from time entries.");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {busy ? "Generating…" : "Generate items"}
+          </button>
+        </div>
+      </AdminDialog>
       <ConfirmDocumentModal
         open={Boolean(reverseId)}
         busy={busy}

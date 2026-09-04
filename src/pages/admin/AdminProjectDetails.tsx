@@ -21,6 +21,7 @@ import { ProjectActivityPanel } from "@/components/admin/projects/ProjectSupport
 import { ProjectApprovalsPanel } from "@/components/admin/projects/ProjectApprovalsPanel";
 import { ProjectFeedbackPanel } from "@/components/admin/projects/ProjectFeedbackPanel";
 import { ProjectFilesPanel } from "@/components/admin/projects/ProjectFilesPanel";
+import { ProjectTimePanel } from "@/components/admin/projects/ProjectTimePanel";
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
 import { ProjectOverview } from "@/components/admin/projects/ProjectOverview";
 import { ProjectSectionNav } from "@/components/admin/projects/ProjectSectionNav";
@@ -134,6 +135,8 @@ export function AdminProjectDetails() {
         dueDate: task.dueDate,
         recommendedRole: task.recommendedRole,
         taskType: task.taskType,
+        referenceUrl: task.referenceUrl,
+        estimatedHours: task.estimatedHours,
       });
       setWorkspaceTask((current) => (current ? { ...current, status } : current));
     } catch (caught) {
@@ -300,6 +303,7 @@ export function AdminProjectDetails() {
           {tab === "files" ? (
             <ProjectFilesPanel project={project} selectedId={selectedFileId} onSelect={setSelectedFile} />
           ) : null}
+          {tab === "time" ? <ProjectTimePanel project={project} /> : null}
           {tab === "feedback" ? <ProjectFeedbackPanel project={project} /> : null}
           {tab === "approvals" ? <ProjectApprovalsPanel project={project} /> : null}
           {tab === "activity" ? <ProjectActivityPanel project={project} /> : null}

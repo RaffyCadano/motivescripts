@@ -11,6 +11,7 @@ import { ClientLayout } from "@/components/client/ClientLayout";
 import { Layout } from "@/components/Layout";
 import { routerBasename } from "@/lib/appUrl";
 import { AboutPage } from "@/pages/About";
+import { AdminCapacity } from "@/pages/admin/AdminCapacity";
 import { AdminClientDetails } from "@/pages/admin/AdminClientDetails";
 import { AdminClientNew } from "@/pages/admin/AdminClientNew";
 import { AdminClients } from "@/pages/admin/AdminClients";
@@ -112,6 +113,7 @@ export default function App() {
                 <Route path="projects/new" element={<AdminProjectNew />} />
                 <Route path="projects/:id/edit" element={<AdminProjectEdit />} />
                 <Route path="projects/:id" element={<AdminProjectDetails />} />
+                <Route path="capacity" element={<AdminCapacity />} />
                 <Route path="files" element={<AdminFiles />} />
                 <Route path="messages" element={<AdminMessages />} />
                 <Route path="messages/:conversationId" element={<AdminMessages />} />

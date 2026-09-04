@@ -4,13 +4,16 @@ import { useAgencyProject, useLeads } from "@/components/admin/leads/LeadsProvid
 import {
   deploymentStatuses,
   emptyProjectDevelopment,
+  projectBillingModes,
   projectStatuses,
   projectTypes,
   type AgencyProjectStatus,
   type AgencyProjectType,
   type DeploymentStatus,
+  type ProjectBillingMode,
   type ProjectDevelopment,
 } from "@/data/agencyProjects";
+import { centsInputValue, parseDollarsToCents } from "@/data/money";
 import { updateProjectRecord } from "@/data/agencyRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { toDatetimeLocalValue, fromDatetimeLocalValue } from "@/data/projectDevelopment";
@@ -42,6 +45,9 @@ export function AdminProjectEdit() {
   const [startDate, setStartDate] = useState("");
   const [targetLaunchDate, setTargetLaunchDate] = useState("");
   const [development, setDevelopment] = useState<ProjectDevelopment>(emptyProjectDevelopment());
+  const [billingMode, setBillingMode] = useState<ProjectBillingMode>("fixed");
+  const [hourlyRateInput, setHourlyRateInput] = useState("");
+  const [budgetedHoursInput, setBudgetedHoursInput] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -53,6 +59,9 @@ export function AdminProjectEdit() {
     setDescription(project.description);
     setStartDate(project.startDate);
     setTargetLaunchDate(project.targetLaunchDate);
+    setBillingMode(project.billingMode);
+    setHourlyRateInput(project.hourlyRateCents != null ? centsInputValue(project.hourlyRateCents) : "");
+    setBudgetedHoursInput(project.budgetedHours != null ? String(project.budgetedHours) : "");
     setDevelopment(project.development);
   }, [project]);
 
@@ -71,6 +80,18 @@ export function AdminProjectEdit() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!project || !clientId || busy) return;
+
+    const hourlyRateCents = hourlyRateInput.trim() ? parseDollarsToCents(hourlyRateInput) : null;
+    if (hourlyRateInput.trim() && hourlyRateCents === null) {
+      notify("Enter a valid hourly rate.");
+      return;
+    }
+    const budgetedHours = budgetedHoursInput.trim() ? Number(budgetedHoursInput) : null;
+    if (budgetedHoursInput.trim() && (budgetedHours === null || Number.isNaN(budgetedHours) || budgetedHours < 0)) {
+      notify("Enter a valid number of budgeted hours.");
+      return;
+    }
+
     setBusy(true);
     try {
       await updateProjectRecord(project.id, {
@@ -82,6 +103,9 @@ export function AdminProjectEdit() {
         startDate,
         targetLaunchDate,
         development,
+        billingMode,
+        hourlyRateCents,
+        budgetedHours,
       });
       await reload();
       notify("Project updated.");
@@ -194,6 +218,54 @@ export function AdminProjectEdit() {
             />
           </label>
         </div>
+        <fieldset className="space-y-4 border-t border-[var(--admin-line)] pt-4">
+          <legend className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
+            Billing
+          </legend>
+          <p className="text-sm text-[var(--admin-muted)]">
+            Fixed projects can carry an optional hours budget to compare against logged time. Hourly projects use a
+            rate to generate invoice line items from logged time.
+          </p>
+          <label className="block text-sm font-semibold">
+            Billing mode
+            <select
+              value={billingMode}
+              onChange={(event) => setBillingMode(event.target.value as ProjectBillingMode)}
+              className={inputClass}
+            >
+              {projectBillingModes.map((mode) => (
+                <option key={mode} value={mode}>
+                  {mode === "fixed" ? "Fixed fee" : "Hourly"}
+                </option>
+              ))}
+            </select>
+          </label>
+          {billingMode === "hourly" ? (
+            <label className="block text-sm font-semibold">
+              Hourly rate (USD)
+              <input
+                inputMode="decimal"
+                value={hourlyRateInput}
+                onChange={(event) => setHourlyRateInput(event.target.value)}
+                className={inputClass}
+                placeholder="0.00"
+              />
+            </label>
+          ) : (
+            <label className="block text-sm font-semibold">
+              Budgeted hours
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={budgetedHoursInput}
+                onChange={(event) => setBudgetedHoursInput(event.target.value)}
+                className={inputClass}
+                placeholder="Optional"
+              />
+            </label>
+          )}
+        </fieldset>
         <fieldset id="project-development" className="scroll-mt-6 space-y-4 border-t border-[var(--admin-line)] pt-4">
           <legend className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
             Development

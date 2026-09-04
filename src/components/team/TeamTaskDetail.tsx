@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
@@ -7,6 +7,9 @@ import { TaskInstructions } from "@/components/tasks/TaskInstructions";
 import { formatProjectDay, taskStatuses, type AgencyTaskStatus } from "@/data/agencyProjects";
 import type { AgencyDeliverable } from "@/data/files";
 import { dueLabel, adminProjectHref, teamProjectHref, type TeamWorkTask } from "@/data/teamWorkspace";
+import { isoCalendarDate } from "@/data/invoices";
+import { logTimeEntry } from "@/data/timeEntriesRepository";
+import { AgencyDbError } from "@/lib/dbErrors";
 
 type TeamTaskDetailProps = {
   task: TeamWorkTask;
@@ -119,10 +122,31 @@ export function TeamTaskDetail({
               <dt className="text-[12px] text-[var(--admin-muted)]">Created</dt>
               <dd className="mt-1 text-sm">{formatProjectDay(task.createdAt)}</dd>
             </div>
+            {task.estimatedHours != null ? (
+              <div>
+                <dt className="text-[12px] text-[var(--admin-muted)]">Estimated</dt>
+                <dd className="mt-1 text-sm">{task.estimatedHours}h</dd>
+              </div>
+            ) : null}
             {task.completedAt ? (
               <div>
                 <dt className="text-[12px] text-[var(--admin-muted)]">Completed</dt>
                 <dd className="mt-1 text-sm">{formatProjectDay(task.completedAt)}</dd>
+              </div>
+            ) : null}
+            {task.referenceUrl ? (
+              <div>
+                <dt className="text-[12px] text-[var(--admin-muted)]">Reference link</dt>
+                <dd className="mt-1 text-sm">
+                  <a
+                    href={task.referenceUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="font-medium text-[var(--admin-blue)] hover:underline"
+                  >
+                    Open link ↗
+                  </a>
+                </dd>
               </div>
             ) : null}
           </dl>
@@ -148,6 +172,8 @@ export function TeamTaskDetail({
           {error ? <p className="mt-3 text-sm text-[#b45309]">{error}</p> : null}
 
           {extra ? <div className="mt-6">{extra}</div> : null}
+
+          <LogTimeSection projectId={task.projectId} taskId={task.id} />
 
           <section className="mt-6">
             <h3 className="font-heading text-sm font-semibold">Related files</h3>
@@ -181,5 +207,86 @@ export function TeamTaskDetail({
       </div>
     </div>,
     document.body,
+  );
+}
+
+/** Self-contained: logs against the current user via RLS (staff_id = auth.uid()), so no identity is passed in. */
+function LogTimeSection({ projectId, taskId }: { projectId: string; taskId: string }) {
+  const [hours, setHours] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [logged, setLogged] = useState(false);
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    const parsed = Number(hours);
+    if (!hours.trim() || Number.isNaN(parsed) || parsed <= 0) {
+      setError("Enter hours greater than 0.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await logTimeEntry({
+        projectId,
+        taskId,
+        hours: parsed,
+        note,
+        entryDate: isoCalendarDate(),
+      });
+      setHours("");
+      setNote("");
+      setLogged(true);
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to log time.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4">
+      <h3 className="font-heading text-sm font-semibold">Log time</h3>
+      <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={(event) => void onSubmit(event)}>
+        <label className="text-[13px] font-medium text-[var(--admin-ink)]">
+          Hours
+          <input
+            type="number"
+            min="0.25"
+            step="0.25"
+            value={hours}
+            disabled={busy}
+            onChange={(event) => {
+              setHours(event.target.value);
+              setLogged(false);
+            }}
+            className="mt-1.5 h-10 w-24 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+          />
+        </label>
+        <label className="min-w-[10rem] flex-1 text-[13px] font-medium text-[var(--admin-ink)]">
+          Note
+          <input
+            value={note}
+            disabled={busy}
+            onChange={(event) => {
+              setNote(event.target.value);
+              setLogged(false);
+            }}
+            placeholder="Optional"
+            className="mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={busy}
+          className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {busy ? "Logging…" : "Log time"}
+        </button>
+      </form>
+      {error ? <p className="mt-2 text-sm text-[#b45309]">{error}</p> : null}
+      {logged ? <p className="mt-2 text-sm text-[#0f7a56]">Time logged for today.</p> : null}
+    </section>
   );
 }

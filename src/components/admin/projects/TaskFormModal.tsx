@@ -32,6 +32,8 @@ const emptyDraft: AgencyTaskDraft = {
   dueDate: "",
   recommendedRole: null,
   taskType: "internal",
+  referenceUrl: "",
+  estimatedHours: null,
 };
 
 export type TaskAssigneeOption = {
@@ -79,6 +81,8 @@ export function TaskFormModal({
         dueDate: task.dueDate,
         recommendedRole: resolveTaskRecommendedRole(task),
         taskType: effectiveTaskType(task),
+        referenceUrl: task.referenceUrl,
+        estimatedHours: task.estimatedHours,
       });
       return;
     }
@@ -126,6 +130,16 @@ export function TaskFormModal({
             value={draft.description}
             onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
             className="mt-1.5 w-full whitespace-pre-wrap rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 py-2 text-sm leading-relaxed text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+          />
+        </label>
+        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+          Reference link
+          <input
+            type="url"
+            value={draft.referenceUrl}
+            onChange={(event) => setDraft((current) => ({ ...current, referenceUrl: event.target.value }))}
+            className={fieldClass}
+            placeholder="https://figma.com/… or https://github.com/…"
           />
         </label>
         <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
@@ -209,6 +223,23 @@ export function TaskFormModal({
                 </option>
               ))}
             </select>
+          </label>
+          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+            Estimated hours
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={draft.estimatedHours ?? ""}
+              onChange={(event) =>
+                setDraft((current) => ({
+                  ...current,
+                  estimatedHours: event.target.value === "" ? null : Number(event.target.value),
+                }))
+              }
+              className={fieldClass}
+              placeholder="Optional"
+            />
           </label>
           <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
             Assignee
