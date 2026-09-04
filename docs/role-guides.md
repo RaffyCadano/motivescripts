@@ -68,6 +68,10 @@ Tasks like "Prepare/deploy staging" and "Address requested revisions" show an **
 
 **You can log time** against a task from the same detail panel if the project bills hourly — this feeds both client invoicing and (if your pay rate is set) your own payroll, independently of each other. **My Time** in your sidebar lists everything you've logged across every project, with edit/delete on any entry that hasn't been billed or paid yet, plus a running "not yet paid" total and an estimate of what you're owed if an admin has set your hourly rate.
 
+Each task detail panel also has a **Checklist** (break the task into steps, check them off — visible to anyone else on the task, not just you), **Attachments** (working files for that task only — screenshots, reference docs; not client-visible, and separate from the project's client-reviewable Files), and **Comments** at the bottom (a lightweight note thread on that one task, distinct from project-wide Messages — the task's assignee gets notified when someone else comments).
+
+**My Tasks** also has a **Board** view next to List — drag a card between status columns to change its status. Drag only works with a mouse; on touch devices, open the card and use the status dropdown instead.
+
 **You can message the client directly** (Messages in your sidebar) — but only on threads tied to a project you're directly assigned to, not just any client you happen to work with. Developer, Designer, and Content Writer are the only production roles with this ability (Team Member doesn't have it at all — see below). Use it for clarifying questions on your own work; broader project/timeline conversations should still go through the PM.
 
 On a project's own page (`/team/projects/:id`), the tabs are: Overview, Tasks, Milestones, Files, Time, Feedback, Approvals, Activity — Files/Feedback/Approvals require the `files.view` grant your template already includes. The Time tab scopes to your own logged hours on that project only (RLS hides teammates' entries unless you also hold `invoices.manage`, which no production template does) — for everything you've logged across every project, use My Time in the sidebar instead.
@@ -78,7 +82,7 @@ After you deploy, click **Edit** on the Development card (Overview tab) to updat
 
 ## Team Member
 
-Same `/team` workspace and dashboard as Developer/Designer/Content Writer above — same tasks, same instructions, same project tabs, same time logging and My Time page.
+Same `/team` workspace and dashboard as Developer/Designer/Content Writer above — same tasks, same instructions, same project tabs, same time logging and My Time page, same task checklist/attachments/comments, same Board view.
 
 The one difference: **you don't have Messages at all.** It's not in your sidebar — by design, Team Member has no client-messaging permission, so there's nothing to open. Client-facing communication on your tasks goes through your PM instead. Everything else works the same.
 

@@ -4,6 +4,7 @@ import {
   contractSignedCopyStoragePath,
   discoveryIntakeStoragePath,
   projectFileStoragePath,
+  taskAttachmentStoragePath,
   taskRequestStoragePath,
   validateSignedCopyFile,
   validateUploadFile,
@@ -92,6 +93,31 @@ export async function uploadTaskRequestFile(input: {
     contentType: input.file.type || "application/octet-stream",
   });
   if (error) fail("upload task request file", error, "Unable to upload this file. Please try again.");
+  return path;
+}
+
+export async function uploadTaskAttachmentFile(input: {
+  projectId: string;
+  taskId: string;
+  fileId: string;
+  file: File;
+}): Promise<string> {
+  const invalid = validateUploadFile(input.file);
+  if (invalid) throw new AgencyDbError(invalid.message);
+
+  const path = taskAttachmentStoragePath({
+    projectId: input.projectId,
+    taskId: input.taskId,
+    fileId: input.fileId,
+    originalName: input.file.name,
+  });
+
+  const { error } = await storage().upload(path, input.file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: input.file.type || "application/octet-stream",
+  });
+  if (error) fail("upload task attachment", error, "Unable to upload this file. Please try again.");
   return path;
 }
 

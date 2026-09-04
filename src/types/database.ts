@@ -200,6 +200,39 @@ export type TaskClientRequestFileRow = {
   uploaded_by: string | null;
 };
 
+export type TaskCommentRow = {
+  id: string;
+  task_id: string;
+  project_id: string;
+  author_id: string | null;
+  author_label: string;
+  body: string;
+  created_at: string;
+};
+
+export type TaskChecklistItemRow = {
+  id: string;
+  task_id: string;
+  project_id: string;
+  label: string;
+  done: boolean;
+  position: number;
+  created_at: string;
+  created_by: string | null;
+};
+
+export type TaskAttachmentRow = {
+  id: string;
+  task_id: string;
+  project_id: string;
+  file_name: string;
+  file_size: number;
+  storage_path: string;
+  uploaded_by: string | null;
+  uploaded_by_label: string;
+  created_at: string;
+};
+
 export type DeliverableRow = {
   id: string;
   project_id: string;
@@ -894,6 +927,18 @@ export type Database = {
           file_name: string;
           storage_path: string;
         }
+      >;
+      task_comments: Table<
+        TaskCommentRow,
+        Partial<TaskCommentRow> & { task_id: string; project_id: string; body: string }
+      >;
+      task_checklist_items: Table<
+        TaskChecklistItemRow,
+        Partial<TaskChecklistItemRow> & { task_id: string; project_id: string; label: string }
+      >;
+      task_attachments: Table<
+        TaskAttachmentRow,
+        Partial<TaskAttachmentRow> & { task_id: string; project_id: string; file_name: string; storage_path: string }
       >;
       time_entries: Table<
         TimeEntryRow,

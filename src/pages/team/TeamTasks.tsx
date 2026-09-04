@@ -1,13 +1,17 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClientReviewLinkOut } from "@/components/tasks/TaskWorkspace";
+import { TeamTaskBoard } from "@/components/team/TeamTaskBoard";
 import { TeamTaskCard } from "@/components/team/TeamTaskCard";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
-import { taskPriorities, type AgencyTaskPriority } from "@/data/agencyProjects";
+import { taskPriorities, type AgencyTaskPriority, type AgencyTaskStatus } from "@/data/agencyProjects";
 import { effectiveTaskType } from "@/data/taskTypes";
 import { filterTeamTasks, teamProjectHref, type TeamTaskFilter, type TeamWorkTask } from "@/data/teamWorkspace";
 import { AgencyDbError } from "@/lib/dbErrors";
+import { cn } from "@/lib/cn";
+
+type ViewMode = "list" | "board";
 
 const filters: { id: TeamTaskFilter; label: string }[] = [
   { id: "all", label: "All" },
@@ -28,11 +32,22 @@ export function TeamTasks() {
   const [openTask, setOpenTask] = useState<TeamWorkTask | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<ViewMode>("list");
+  const [boardError, setBoardError] = useState<string | null>(null);
 
   const visible = useMemo(
     () => filterTeamTasks(tasks, filter, projectId, priority),
     [filter, priority, projectId, tasks],
   );
+
+  async function onBoardStatusChange(task: TeamWorkTask, status: AgencyTaskStatus) {
+    setBoardError(null);
+    try {
+      await changeTaskStatus(task, status);
+    } catch (caught) {
+      setBoardError(caught instanceof AgencyDbError ? caught.message : "Unable to move this task.");
+    }
+  }
 
   async function onStatusChange(status: TeamWorkTask["status"]) {
     if (!openTask) return;
@@ -50,9 +65,33 @@ export function TeamTasks() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">My Tasks</h1>
-        <p className="mt-1 text-sm text-[var(--admin-muted)]">Only tasks assigned to you.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">My Tasks</h1>
+          <p className="mt-1 text-sm text-[var(--admin-muted)]">Only tasks assigned to you.</p>
+        </div>
+        <div className="inline-flex rounded-lg border border-[var(--admin-line)] bg-white p-0.5">
+          <button
+            type="button"
+            className={cn(
+              "h-8 rounded-md px-3 font-heading text-[12px] font-semibold",
+              view === "list" ? "bg-[var(--admin-navy)] text-white" : "text-[var(--admin-ink)]",
+            )}
+            onClick={() => setView("list")}
+          >
+            List
+          </button>
+          <button
+            type="button"
+            className={cn(
+              "h-8 rounded-md px-3 font-heading text-[12px] font-semibold",
+              view === "board" ? "bg-[var(--admin-navy)] text-white" : "text-[var(--admin-ink)]",
+            )}
+            onClick={() => setView("board")}
+          >
+            Board
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -111,6 +150,11 @@ export function TeamTasks() {
           <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No tasks match these filters.</p>
           <p className="mt-1 text-sm text-[var(--admin-muted)]">Try another status, project, or priority.</p>
         </div>
+      ) : view === "board" ? (
+        <>
+          {boardError ? <p className="text-sm text-[#b45309]">{boardError}</p> : null}
+          <TeamTaskBoard tasks={visible} onOpen={setOpenTask} onStatusChange={onBoardStatusChange} />
+        </>
       ) : (
         <div className="grid gap-3 lg:grid-cols-2">
           {visible.map((task) => (

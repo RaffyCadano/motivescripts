@@ -1,8 +1,12 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
+import { TaskAttachmentsSection } from "@/components/tasks/TaskAttachmentsSection";
+import { TaskChecklistSection } from "@/components/tasks/TaskChecklistSection";
+import { TaskCommentsSection } from "@/components/tasks/TaskCommentsSection";
 import { TaskInstructions } from "@/components/tasks/TaskInstructions";
 import { formatProjectDay, taskStatuses, type AgencyTaskStatus } from "@/data/agencyProjects";
 import type { AgencyDeliverable } from "@/data/files";
@@ -35,6 +39,8 @@ export function TeamTaskDetail({
   onClose,
   onStatusChange,
 }: TeamTaskDetailProps) {
+  const { profile } = useAuth();
+  const displayLabel = profile?.fullName?.trim() || "Team";
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
@@ -173,7 +179,11 @@ export function TeamTaskDetail({
 
           {extra ? <div className="mt-6">{extra}</div> : null}
 
+          <TaskChecklistSection taskId={task.id} projectId={task.projectId} />
+
           <LogTimeSection projectId={task.projectId} taskId={task.id} />
+
+          <TaskAttachmentsSection taskId={task.id} projectId={task.projectId} uploadedByLabel={displayLabel} />
 
           <section className="mt-6">
             <h3 className="font-heading text-sm font-semibold">Related files</h3>
@@ -194,6 +204,8 @@ export function TeamTaskDetail({
               </ul>
             )}
           </section>
+
+          <TaskCommentsSection taskId={task.id} projectId={task.projectId} authorLabel={displayLabel} />
         </div>
 
         <div className="shrink-0 border-t border-[var(--admin-line)] px-5 py-4">
