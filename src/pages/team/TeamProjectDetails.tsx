@@ -10,6 +10,7 @@ import { ProjectFeedbackPanel } from "@/components/admin/projects/ProjectFeedbac
 import { ProjectFilesPanel } from "@/components/admin/projects/ProjectFilesPanel";
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
 import { ProjectDevelopmentSection } from "@/components/admin/projects/ProjectDevelopmentSection";
+import { ProjectTimePanel } from "@/components/admin/projects/ProjectTimePanel";
 import { ProjectProductionPipeline } from "@/components/admin/projects/ProjectProductionPipeline";
 import { ProjectProductionTasksCard } from "@/components/admin/projects/ProjectProductionTasksCard";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
@@ -41,6 +42,7 @@ const tabs = [
   { id: "tasks", label: "Tasks" },
   { id: "milestones", label: "Milestones" },
   { id: "files", label: "Files", permission: "files.view" },
+  { id: "time", label: "Time" },
   { id: "feedback", label: "Feedback", permission: "files.view" },
   { id: "approvals", label: "Approvals", permission: "files.view" },
   { id: "activity", label: "Activity", permission: "activity.view" },
@@ -259,6 +261,7 @@ export function TeamProjectDetails() {
       {tab === "files" ? (
         <ProjectFilesPanel project={project} selectedId={selectedFileId} onSelect={setSelectedFile} />
       ) : null}
+      {tab === "time" ? <ProjectTimePanel project={project} /> : null}
       {tab === "feedback" ? <ProjectFeedbackPanel project={project} fileHref={fileHref} /> : null}
       {tab === "approvals" ? <ProjectApprovalsPanel project={project} fileHref={fileHref} /> : null}
       {tab === "activity" ? <ProjectActivityPanel project={project} /> : null}

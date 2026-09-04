@@ -68,7 +68,7 @@ Task status you control: **Not Started → In Progress → In Review → Complet
 
 **You can message the client directly** (Messages in your sidebar) — but only on threads tied to a project you're directly assigned to, not just any client you happen to work with. Developer, Designer, and Content Writer are the only production roles with this ability (Team Member doesn't have it at all — see below). Use it for clarifying questions on your own work; broader project/timeline conversations should still go through the PM.
 
-On a project's own page (`/team/projects/:id`), the tabs are: Overview, Tasks, Milestones, Files, Feedback, Approvals, Activity — Files/Feedback/Approvals require the `files.view` grant your template already includes.
+On a project's own page (`/team/projects/:id`), the tabs are: Overview, Tasks, Milestones, Files, Time, Feedback, Approvals, Activity — Files/Feedback/Approvals require the `files.view` grant your template already includes. The Time tab scopes to your own logged hours on that project only (RLS hides teammates' entries unless you also hold `invoices.manage`, which no production template does) — for everything you've logged across every project, use My Time in the sidebar instead.
 
 **Hosting stays external.** Deployment/staging/production tasks explicitly say MotiveScripts doesn't perform the actual hosting — that happens on whatever infrastructure the agency uses outside this app. Your job on those tasks is preparing the build and confirming it's live, not provisioning a server.
 
