@@ -72,6 +72,8 @@ On a project's own page (`/team/projects/:id`), the tabs are: Overview, Tasks, M
 
 **Hosting stays external.** Deployment/staging/production tasks explicitly say MotiveScripts doesn't perform the actual hosting — that happens on whatever infrastructure the agency uses outside this app. Your job on those tasks is preparing the build and confirming it's live, not provisioning a server.
 
+After you deploy, click **Edit** on the Development card (Overview tab) to update the repository/branch, staging and production URLs, hosting provider, and deployment status yourself — it's a small scoped form, not the full project edit page, so it can't touch anything else about the project.
+
 ## Team Member
 
 Same `/team` workspace and dashboard as Developer/Designer/Content Writer above — same tasks, same instructions, same project tabs, same time logging and My Time page.

@@ -77,9 +77,10 @@ function Field({
 type ProjectDevelopmentSectionProps = {
   development: ProjectDevelopment;
   editHref?: string;
+  onEditClick?: () => void;
 };
 
-export function ProjectDevelopmentSection({ development, editHref }: ProjectDevelopmentSectionProps) {
+export function ProjectDevelopmentSection({ development, editHref, onEditClick }: ProjectDevelopmentSectionProps) {
   const repoHref = safeHttpHref(development.repositoryUrl);
   const stagingHref = safeHttpHref(development.stagingUrl);
   const productionHref = safeHttpHref(development.productionUrl);
@@ -92,6 +93,14 @@ export function ProjectDevelopmentSection({ development, editHref }: ProjectDeve
           <Link to={editHref} className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
             Edit
           </Link>
+        ) : onEditClick ? (
+          <button
+            type="button"
+            onClick={onEditClick}
+            className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+          >
+            Edit
+          </button>
         ) : null}
       </div>
       <dl className="mt-4 grid gap-4 sm:grid-cols-2">

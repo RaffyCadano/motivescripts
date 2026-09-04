@@ -11,6 +11,7 @@ import { ProjectFilesPanel } from "@/components/admin/projects/ProjectFilesPanel
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
 import { ProjectDevelopmentSection } from "@/components/admin/projects/ProjectDevelopmentSection";
 import { ProjectTimePanel } from "@/components/admin/projects/ProjectTimePanel";
+import { TeamDevelopmentEditor } from "@/components/team/TeamDevelopmentEditor";
 import { ProjectProductionPipeline } from "@/components/admin/projects/ProjectProductionPipeline";
 import { ProjectProductionTasksCard } from "@/components/admin/projects/ProjectProductionTasksCard";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
@@ -58,7 +59,7 @@ export function TeamProjectDetails() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const match = useAgencyProject(id);
-  const { profile, tasks, deliverables, changeTaskStatus } = useTeamWork();
+  const { profile, tasks, deliverables, changeTaskStatus, reload } = useTeamWork();
   const [openTask, setOpenTask] = useState<TeamWorkTask | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -221,6 +222,7 @@ export function TeamProjectDetails() {
           nextMilestone={nextMilestone}
           myOpen={myOpen}
           onOpenTasks={() => setTab("tasks")}
+          onDevelopmentSaved={reload}
         />
       ) : null}
       {tab === "tasks" ? (
@@ -298,6 +300,7 @@ function TeamProjectOverview({
   nextMilestone,
   myOpen,
   onOpenTasks,
+  onDevelopmentSaved,
 }: {
   project: AgencyProject;
   clientName: string;
@@ -306,7 +309,9 @@ function TeamProjectOverview({
   nextMilestone: AgencyMilestone | null;
   myOpen: number;
   onOpenTasks: () => void;
+  onDevelopmentSaved: () => void;
 }) {
+  const [devEditorOpen, setDevEditorOpen] = useState(false);
   const milestoneCounts = milestone ? milestoneTaskCounts(project, milestone.id) : null;
   const files = useProjectDeliverables(project.id);
   const team = useTeamDirectory();
@@ -374,8 +379,16 @@ function TeamProjectOverview({
           </button>
         </section>
 
-        <ProjectDevelopmentSection development={project.development} />
+        <ProjectDevelopmentSection development={project.development} onEditClick={() => setDevEditorOpen(true)} />
       </div>
+      {devEditorOpen ? (
+        <TeamDevelopmentEditor
+          projectId={project.id}
+          development={project.development}
+          onClose={() => setDevEditorOpen(false)}
+          onSaved={onDevelopmentSaved}
+        />
+      ) : null}
       <aside className="space-y-4">
         <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
           <h2 className="font-heading text-sm font-semibold tracking-tight">Details</h2>
