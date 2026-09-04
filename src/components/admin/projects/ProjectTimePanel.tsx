@@ -3,7 +3,7 @@ import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { formatProjectDay, type AgencyProject } from "@/data/agencyProjects";
 import { isoCalendarDate } from "@/data/invoices";
 import { sumHours, unbilledEntries, type TimeEntry } from "@/data/timeEntries";
-import { deleteTimeEntry, listTimeEntriesForProject, logTimeEntry } from "@/data/timeEntriesRepository";
+import { deleteTimeEntry, listTimeEntriesForProject, logTimeEntry, updateTimeEntry } from "@/data/timeEntriesRepository";
 import { formatUsdFromCents } from "@/data/money";
 import { AgencyDbError } from "@/lib/dbErrors";
 
@@ -16,6 +16,10 @@ export function ProjectTimePanel({ project }: { project: AgencyProject }) {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editHours, setEditHours] = useState("");
+  const [editNote, setEditNote] = useState("");
+  const [editDate, setEditDate] = useState("");
 
   const staffName = useMemo(() => {
     const byId = new Map((data?.members ?? []).map((member) => [member.id, member.fullName]));
@@ -76,6 +80,33 @@ export function ProjectTimePanel({ project }: { project: AgencyProject }) {
       await reload();
     } catch (caught) {
       setFormError(caught instanceof AgencyDbError ? caught.message : "Unable to delete this entry.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startEdit(entry: TimeEntry) {
+    setEditingId(entry.id);
+    setEditHours(String(entry.hours));
+    setEditNote(entry.note);
+    setEditDate(entry.entryDate);
+    setFormError(null);
+  }
+
+  async function onSaveEdit(id: string) {
+    const parsed = Number(editHours);
+    if (!editHours.trim() || Number.isNaN(parsed) || parsed <= 0) {
+      setFormError("Enter hours greater than 0.");
+      return;
+    }
+    setBusy(true);
+    setFormError(null);
+    try {
+      await updateTimeEntry(id, { hours: parsed, note: editNote, entryDate: editDate });
+      setEditingId(null);
+      await reload();
+    } catch (caught) {
+      setFormError(caught instanceof AgencyDbError ? caught.message : "Unable to update this entry.");
     } finally {
       setBusy(false);
     }
@@ -156,30 +187,92 @@ export function ProjectTimePanel({ project }: { project: AgencyProject }) {
           <p className="text-sm text-[var(--admin-muted)]">No time logged on this project yet.</p>
         ) : (
           <ul className="divide-y divide-[var(--admin-line)]">
-            {entries.map((entry) => (
-              <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                <div>
-                  <p className="text-sm text-[var(--admin-ink)]">
-                    {staffName(entry.staffId)} — {entry.hours}h
-                    {entry.note ? ` · ${entry.note}` : ""}
-                  </p>
-                  <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                    {formatProjectDay(entry.entryDate)}
-                    {entry.billedAt ? " · Billed" : " · Unbilled"}
-                  </p>
-                </div>
-                {!entry.billedAt ? (
+            {entries.map((entry) =>
+              editingId === entry.id ? (
+                <li key={entry.id} className="flex flex-wrap items-end gap-2 py-2.5">
+                  <label className="text-[12px] font-medium text-[var(--admin-ink)]">
+                    Hours
+                    <input
+                      type="number"
+                      min="0.25"
+                      step="0.25"
+                      value={editHours}
+                      disabled={busy}
+                      onChange={(event) => setEditHours(event.target.value)}
+                      className="mt-1 h-9 w-20 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                    />
+                  </label>
+                  <label className="min-w-[8rem] flex-1 text-[12px] font-medium text-[var(--admin-ink)]">
+                    Note
+                    <input
+                      value={editNote}
+                      disabled={busy}
+                      onChange={(event) => setEditNote(event.target.value)}
+                      className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                    />
+                  </label>
+                  <label className="text-[12px] font-medium text-[var(--admin-ink)]">
+                    Date
+                    <input
+                      type="date"
+                      value={editDate}
+                      disabled={busy}
+                      onChange={(event) => setEditDate(event.target.value)}
+                      className="mt-1 h-9 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                    />
+                  </label>
                   <button
                     type="button"
                     disabled={busy}
-                    className="text-[12px] font-semibold text-[var(--admin-muted)] hover:text-[var(--admin-ink)] disabled:opacity-40"
-                    onClick={() => void onDelete(entry.id)}
+                    className="h-9 rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-60"
+                    onClick={() => void onSaveEdit(entry.id)}
                   >
-                    Delete
+                    Save
                   </button>
-                ) : null}
-              </li>
-            ))}
+                  <button
+                    type="button"
+                    disabled={busy}
+                    className="h-9 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)]"
+                    onClick={() => setEditingId(null)}
+                  >
+                    Cancel
+                  </button>
+                </li>
+              ) : (
+                <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                  <div>
+                    <p className="text-sm text-[var(--admin-ink)]">
+                      {staffName(entry.staffId)} — {entry.hours}h
+                      {entry.note ? ` · ${entry.note}` : ""}
+                    </p>
+                    <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
+                      {formatProjectDay(entry.entryDate)}
+                      {entry.billedAt ? " · Billed" : " · Unbilled"}
+                    </p>
+                  </div>
+                  {!entry.billedAt ? (
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="text-[12px] font-semibold text-[var(--admin-blue)] hover:underline disabled:opacity-40"
+                        onClick={() => startEdit(entry)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="text-[12px] font-semibold text-[var(--admin-muted)] hover:text-[var(--admin-ink)] disabled:opacity-40"
+                        onClick={() => void onDelete(entry.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ) : null}
+                </li>
+              ),
+            )}
           </ul>
         )}
       </div>
