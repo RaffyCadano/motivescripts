@@ -4,7 +4,7 @@ This is a plain-language guide to what each staff role actually sees and does da
 
 There are two separate workspaces:
 
-- **`/admin`** — Project Manager, Sales, Accounting, and Admin. A CRM-style panel: clients, projects, proposals, contracts, invoices.
+- **`/admin`** — Project Manager, Sales, Accounting, generalist Staff, and Admin. A CRM-style panel: clients, projects, proposals, contracts, invoices.
 - **`/team`** — Developer, Designer, Content Writer, and Team Member. A simpler "what do I need to work on" workspace built around assigned tasks.
 
 Which one you land on after login is automatic, based on your staff template — you don't choose it. If you're on `/team` and also have office-side permissions (rare), an **Admin** link appears at the bottom of your sidebar to switch over.
@@ -45,6 +45,14 @@ You create and send invoices, record manual payments (bank transfer, cash, check
 **Recurring plans (Website Care, SEO retainers, hosting billing) are admin-only**, even though you can manage invoices — creating or canceling a plan on a client's Plans tab requires the `admin` role specifically, not just `invoices.manage`. This is deliberate: a recurring plan commits the agency to an ongoing Stripe subscription, which is treated as a bigger decision than a one-time invoice. If you need a plan created, ask an admin.
 
 You do not see Payroll — that's staff pay rates, kept separate from client billing and visible to admins only.
+
+## Staff (generalist)
+
+Home page: `/admin`. Sidebar: Overview, My Tasks, Leads, Clients, Projects, Files, Proposals, Contracts, Invoices, Messages, Capacity, Profile — essentially the full admin nav minus **Team** and **Payroll** (and Settings, which is admin-only regardless of role).
+
+This is the catch-all template: it holds every permission except `team.view`/`team.manage`, so it's meant for someone doing more than one job at a small agency, or as a starting point before an admin narrows someone into a more specific template (PM, Sales, Accounting). If that's you, you're not missing a "real" role — you genuinely have broad access, and what you actually work on day to day depends on what your admin has you doing, not a fixed workflow like the other templates below.
+
+One thing this template can't do that Admin can: manage the team itself (invite staff, change roles/grants, deactivate someone) and see company-wide Settings or Payroll.
 
 ## Developer / Designer / Content Writer
 
