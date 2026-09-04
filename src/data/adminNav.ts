@@ -17,6 +17,7 @@ export type AdminIconName =
   | "notifications"
   | "team"
   | "capacity"
+  | "payroll"
   | "activity"
   | "settings"
   | "profile";
@@ -64,7 +65,10 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
   {
     label: "Finance",
-    items: [{ label: "Invoices", href: "/admin/invoices", icon: "invoices" }],
+    items: [
+      { label: "Invoices", href: "/admin/invoices", icon: "invoices" },
+      { label: "Payroll", href: "/admin/payroll", icon: "payroll" },
+    ],
   },
   {
     label: "Communication",
@@ -160,6 +164,7 @@ const navPermission: Record<string, StaffPermissionCode | null> = {
   "/admin/notifications": null,
   "/admin/team": "team.view",
   "/admin/capacity": "projects.view",
+  "/admin/payroll": null,
   "/admin/activity": "activity.view",
   "/admin/settings": null,
   "/admin/profile": null,
@@ -195,6 +200,7 @@ export function filterAdminNavGroups(profile: AppProfile | null): AdminNavGroup[
       ...group,
       items: group.items.filter((item) => {
         if (item.href === "/admin/settings") return isActiveAdmin(profile);
+        if (item.href === "/admin/payroll") return isActiveAdmin(profile);
         if (item.href === "/admin/my-tasks" && isActiveAdmin(profile)) return false;
         const required = navPermission[item.href];
         if (!required) return true;

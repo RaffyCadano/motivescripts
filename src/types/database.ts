@@ -143,8 +143,16 @@ export type TimeEntryRow = {
   note: string;
   billed_at: string | null;
   invoice_id: string | null;
+  payroll_paid_at: string | null;
   created_at: string;
   created_by: string;
+};
+
+export type StaffPayRateRow = {
+  user_id: string;
+  pay_rate_cents: number;
+  updated_at: string;
+  updated_by: string | null;
 };
 
 export type PinCommentRow = {
@@ -871,6 +879,11 @@ export type Database = {
         Partial<PinCommentRow> & { version_id: string; deliverable_id: string; project_id: string; body: string },
         Partial<PinCommentRow>
       >;
+      staff_pay_rates: Table<
+        StaffPayRateRow,
+        Partial<StaffPayRateRow> & { user_id: string; pay_rate_cents: number },
+        Partial<StaffPayRateRow>
+      >;
     };
     Views: Record<string, never>;
     Functions: {
@@ -1115,6 +1128,14 @@ export type Database = {
       staff_submit_pin_comment: {
         Args: { p_version_id: string; p_x_pct: number; p_y_pct: number; p_body: string };
         Returns: string;
+      };
+      set_staff_pay_rate: {
+        Args: { p_user_id: string; p_pay_rate_cents: number };
+        Returns: void;
+      };
+      mark_time_entries_paid: {
+        Args: { p_staff_id: string; p_through_date?: string };
+        Returns: number;
       };
       resolve_pin_comment: {
         Args: { p_pin_id: string };

@@ -34,6 +34,7 @@ function mapTimeEntry(row: TimeEntryRow): TimeEntry {
     note: row.note,
     billedAt: row.billed_at,
     invoiceId: row.invoice_id,
+    payrollPaidAt: row.payroll_paid_at,
     createdAt: row.created_at,
   };
 }
@@ -91,4 +92,14 @@ export async function deleteTimeEntry(id: string): Promise<void> {
   const client = db();
   const { error } = await client.from("time_entries").delete().eq("id", id);
   throwIf(error, "delete time entry", "Unable to delete this time entry.");
+}
+
+export async function markTimeEntriesPaid(staffId: string, throughDate?: string): Promise<number> {
+  const client = db();
+  const { data, error } = await client.rpc("mark_time_entries_paid", {
+    p_staff_id: staffId,
+    p_through_date: throughDate ?? new Date().toISOString().slice(0, 10),
+  });
+  throwIf(error, "mark time entries paid", "Unable to mark these entries as paid.");
+  return (data as number) ?? 0;
 }

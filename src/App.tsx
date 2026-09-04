@@ -12,6 +12,7 @@ import { Layout } from "@/components/Layout";
 import { routerBasename } from "@/lib/appUrl";
 import { AboutPage } from "@/pages/About";
 import { AdminCapacity } from "@/pages/admin/AdminCapacity";
+import { AdminPayroll } from "@/pages/admin/AdminPayroll";
 import { AdminClientDetails } from "@/pages/admin/AdminClientDetails";
 import { AdminClientNew } from "@/pages/admin/AdminClientNew";
 import { AdminClients } from "@/pages/admin/AdminClients";
@@ -126,6 +127,7 @@ export default function App() {
                 <Route path="invoices" element={<AdminInvoices />} />
                 <Route path="invoices/new" element={<AdminInvoiceNew />} />
                 <Route path="invoices/:id" element={<AdminInvoiceDetails />} />
+                <Route path="payroll" element={<AdminPayroll />} />
                 <Route path="team" element={<AdminTeam />} />
                 <Route path="team/new" element={<AdminTeamInviteNew />} />
                 <Route path="team/invite/:invitationId" element={<AdminTeamInviteDetails />} />

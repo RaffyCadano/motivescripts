@@ -8,6 +8,7 @@ export type TimeEntry = {
   note: string;
   billedAt: string | null;
   invoiceId: string | null;
+  payrollPaidAt: string | null;
   createdAt: string;
 };
 
@@ -25,4 +26,12 @@ export function sumHours(entries: TimeEntry[]): number {
 
 export function unbilledEntries(entries: TimeEntry[]): TimeEntry[] {
   return entries.filter((entry) => !entry.billedAt);
+}
+
+export function unpaidEntries(entries: TimeEntry[]): TimeEntry[] {
+  return entries.filter((entry) => !entry.payrollPaidAt);
+}
+
+export function amountOwedCents(entries: TimeEntry[], payRateCents: number): number {
+  return Math.round(sumHours(unpaidEntries(entries)) * payRateCents);
 }
