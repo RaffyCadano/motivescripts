@@ -9,9 +9,12 @@ export type ServicePlan = {
   label: string;
   amountCents: number;
   status: ServicePlanStatus;
+  domain: string | null;
   createdAt: string;
   canceledAt: string | null;
 };
+
+export type DomainAvailability = "available" | "taken" | "unknown";
 
 export const SERVICE_PLAN_TYPE_LABELS: Record<ServicePlanType, string> = {
   care: "Website Care",
@@ -45,6 +48,8 @@ export function servicePlanErrorMessage(code: string): string {
       return "You don’t have permission to do that.";
     case "missing_site_url":
       return "The site is not configured for checkout yet.";
+    case "invalid_domain":
+      return "Enter a valid domain name (e.g. example.com).";
     case "network":
       return "We couldn’t reach the server. Check your connection and try again.";
     default:

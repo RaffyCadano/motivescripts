@@ -3,14 +3,17 @@ import { useClientProjects } from "@/components/admin/leads/LeadsProvider";
 import {
   SERVICE_PLAN_STATUS_LABELS,
   SERVICE_PLAN_TYPE_LABELS,
+  type DomainAvailability,
   type ServicePlan,
   type ServicePlanType,
 } from "@/data/servicePlans";
 import {
   cancelServicePlan,
+  checkDomainAvailability,
   createServicePlan,
   createServicePlanCheckoutUrl,
   listServicePlans,
+  setServicePlanDomain,
 } from "@/data/servicePlansRepository";
 import { formatUsdFromCents, parseDollarsToCents } from "@/data/money";
 import { AgencyDbError } from "@/lib/dbErrors";
@@ -25,6 +28,18 @@ const statusBadgeClass: Record<ServicePlan["status"], string> = {
   canceled: "border-[var(--admin-line)] text-[var(--admin-muted)]",
 };
 
+const availabilityLabel: Record<DomainAvailability, string> = {
+  available: "Available",
+  taken: "Already registered",
+  unknown: "Couldn't check — verify with your registrar",
+};
+
+const availabilityClass: Record<DomainAvailability, string> = {
+  available: "text-emerald-700",
+  taken: "text-[#b45309]",
+  unknown: "text-[var(--admin-muted)]",
+};
+
 export function ClientRecurringPlansSection({ client }: { client: AgencyClient }) {
   const projects = useClientProjects(client.id);
   const [plans, setPlans] = useState<ServicePlan[]>([]);
@@ -33,6 +48,10 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Map<string, string>>(new Map());
   const [checkoutUrl, setCheckoutUrl] = useState<Map<string, string>>(new Map());
+  const [domainDrafts, setDomainDrafts] = useState<Map<string, string>>(new Map());
+  const [domainBusyId, setDomainBusyId] = useState<string | null>(null);
+  const [domainStatus, setDomainStatus] = useState<Map<string, DomainAvailability>>(new Map());
+  const [domainError, setDomainError] = useState<Map<string, string>>(new Map());
 
   const [formOpen, setFormOpen] = useState(false);
   const [planType, setPlanType] = useState<ServicePlanType>("care");
@@ -128,6 +147,46 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
       );
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function onSaveDomain(planId: string) {
+    const draft = domainDrafts.get(planId) ?? "";
+    setDomainBusyId(planId);
+    setDomainError((current) => {
+      const next = new Map(current);
+      next.delete(planId);
+      return next;
+    });
+    try {
+      await setServicePlanDomain(planId, draft);
+      await reload();
+    } catch (caught) {
+      setDomainError((current) =>
+        new Map(current).set(planId, caught instanceof AgencyDbError ? caught.message : "Unable to save the domain."),
+      );
+    } finally {
+      setDomainBusyId(null);
+    }
+  }
+
+  async function onCheckDomain(planId: string) {
+    const draft = domainDrafts.get(planId) ?? "";
+    setDomainBusyId(planId);
+    setDomainError((current) => {
+      const next = new Map(current);
+      next.delete(planId);
+      return next;
+    });
+    try {
+      const status = await checkDomainAvailability(draft);
+      setDomainStatus((current) => new Map(current).set(planId, status));
+    } catch (caught) {
+      setDomainError((current) =>
+        new Map(current).set(planId, caught instanceof AgencyDbError ? caught.message : "Unable to check that domain."),
+      );
+    } finally {
+      setDomainBusyId(null);
     }
   }
 
@@ -269,11 +328,82 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
                   <p className="mt-2 break-all text-[12px] text-[var(--admin-blue)]">{url}</p>
                 ) : null}
                 {error ? <p className="mt-2 text-[12px] text-[#b45309]">{error}</p> : null}
+                {plan.planType === "hosting" ? (
+                  <DomainField
+                    plan={plan}
+                    draft={domainDrafts.get(plan.id) ?? plan.domain ?? ""}
+                    busy={domainBusyId === plan.id}
+                    status={domainStatus.get(plan.id)}
+                    error={domainError.get(plan.id)}
+                    onDraftChange={(value) => setDomainDrafts((current) => new Map(current).set(plan.id, value))}
+                    onSave={() => void onSaveDomain(plan.id)}
+                    onCheck={() => void onCheckDomain(plan.id)}
+                  />
+                ) : null}
               </li>
             );
           })}
         </ul>
       )}
     </section>
+  );
+}
+
+function DomainField({
+  plan,
+  draft,
+  busy,
+  status,
+  error,
+  onDraftChange,
+  onSave,
+  onCheck,
+}: {
+  plan: ServicePlan;
+  draft: string;
+  busy: boolean;
+  status: DomainAvailability | undefined;
+  error: string | undefined;
+  onDraftChange: (value: string) => void;
+  onSave: () => void;
+  onCheck: () => void;
+}) {
+  const dirty = draft.trim().toLowerCase() !== (plan.domain ?? "");
+  return (
+    <div className="mt-3 border-t border-[var(--admin-line)] pt-3">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Domain</p>
+      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+        <input
+          value={draft}
+          disabled={busy}
+          onChange={(event) => onDraftChange(event.target.value)}
+          placeholder="example.com"
+          className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+        />
+        <button
+          type="button"
+          disabled={busy || !draft.trim()}
+          className="h-9 rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-50"
+          onClick={onCheck}
+        >
+          Check availability
+        </button>
+        {dirty ? (
+          <button
+            type="button"
+            disabled={busy}
+            className="h-9 rounded-lg bg-[var(--admin-navy)] px-2.5 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
+            onClick={onSave}
+          >
+            Save
+          </button>
+        ) : null}
+      </div>
+      <p className="mt-1 text-[11px] text-[var(--admin-muted)]">
+        Reference only — nothing is registered here. Check with your registrar before relying on this.
+      </p>
+      {status ? <p className={`mt-1 text-[12px] font-semibold ${availabilityClass[status]}`}>{availabilityLabel[status]}</p> : null}
+      {error ? <p className="mt-1 text-[12px] text-[#b45309]">{error}</p> : null}
+    </div>
   );
 }

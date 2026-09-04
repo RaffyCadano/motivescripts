@@ -1,4 +1,9 @@
-import { servicePlanErrorCode, servicePlanErrorMessage, type ServicePlan } from "@/data/servicePlans";
+import {
+  servicePlanErrorCode,
+  servicePlanErrorMessage,
+  type DomainAvailability,
+  type ServicePlan,
+} from "@/data/servicePlans";
 import { AgencyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { ServicePlanRow } from "@/types/database";
@@ -43,6 +48,7 @@ function mapServicePlan(row: ServicePlanRow): ServicePlan {
     label: row.label,
     amountCents: Number(row.amount_cents),
     status: row.status,
+    domain: row.domain,
     createdAt: row.created_at,
     canceledAt: row.canceled_at,
   };
@@ -99,6 +105,29 @@ export async function createServicePlanCheckoutUrl(planId: string): Promise<stri
     throw new AgencyDbError(servicePlanErrorMessage("not_payable"));
   }
   return payload.url;
+}
+
+export async function setServicePlanDomain(planId: string, domain: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("set_service_plan_domain", { p_plan_id: planId, p_domain: domain });
+  if (error) fail("set plan domain", error);
+}
+
+export async function checkDomainAvailability(domain: string): Promise<DomainAvailability> {
+  const client = db();
+  const { data, error } = await client.functions.invoke("check-domain-availability", {
+    body: { domain },
+  });
+  if (error) {
+    const code = await functionErrorCode(error);
+    if (code) throw new AgencyDbError(servicePlanErrorMessage(code), error);
+    throw new AgencyDbError(servicePlanErrorMessage("error"), error);
+  }
+  const payload = data as { ok?: boolean; status?: DomainAvailability; error?: string } | null;
+  if (!payload?.ok || !payload.status) {
+    throw new AgencyDbError(servicePlanErrorMessage(payload?.error ?? "invalid_domain"));
+  }
+  return payload.status;
 }
 
 export async function cancelServicePlan(planId: string): Promise<void> {

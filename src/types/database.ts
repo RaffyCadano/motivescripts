@@ -563,6 +563,7 @@ export type ServicePlanRow = {
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   stripe_checkout_session_id: string | null;
+  domain: string | null;
   created_by: string | null;
   created_at: string;
   canceled_at: string | null;
@@ -1205,6 +1206,10 @@ export type Database = {
       };
       set_service_plan_status_by_subscription: {
         Args: { p_stripe_subscription_id: string; p_status: string };
+        Returns: void;
+      };
+      set_service_plan_domain: {
+        Args: { p_plan_id: string; p_domain: string };
         Returns: void;
       };
       current_staff_context: {
