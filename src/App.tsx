@@ -3,6 +3,7 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthRedirectHandler } from "@/auth/AuthRedirectHandler";
 import { GuestOnly, RequireAdmin, RequireClient } from "@/auth/guards";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { RequireAdminPermission } from "@/components/admin/RequireAdminPermission";
 import { TeamLayout } from "@/components/team/TeamLayout";
 import { LeadsOutlet } from "@/components/admin/leads/LeadsOutlet";
 import { LeadsProvider } from "@/components/admin/leads/LeadsProvider";
@@ -97,41 +98,43 @@ export default function App() {
               </RequireAdmin>
             }
           >
-            <Route element={<LeadsOutlet />}>
-              <Route index element={<AdminHome />} />
-              <Route path="my-tasks" element={<AdminMyTasks />} />
-              <Route path="leads" element={<AdminLeads />} />
-              <Route path="leads/new" element={<AdminLeadNew />} />
-              <Route path="leads/:id" element={<AdminLeadDetails />} />
-              <Route path="clients" element={<AdminClients />} />
-              <Route path="clients/new" element={<AdminClientNew />} />
-              <Route path="clients/:id" element={<AdminClientDetails />} />
-              <Route path="projects" element={<AdminProjects />} />
-              <Route path="projects/new" element={<AdminProjectNew />} />
-              <Route path="projects/:id/edit" element={<AdminProjectEdit />} />
-              <Route path="projects/:id" element={<AdminProjectDetails />} />
-              <Route path="files" element={<AdminFiles />} />
-              <Route path="messages" element={<AdminMessages />} />
-              <Route path="messages/:conversationId" element={<AdminMessages />} />
-              <Route path="proposals" element={<AdminProposals />} />
-              <Route path="proposals/new" element={<AdminProposalNew />} />
-              <Route path="proposals/:id" element={<AdminProposalDetails />} />
-              <Route path="contracts" element={<AdminContracts />} />
-              <Route path="contracts/new" element={<AdminContractNew />} />
-              <Route path="contracts/:id" element={<AdminContractDetails />} />
-              <Route path="invoices" element={<AdminInvoices />} />
-              <Route path="invoices/new" element={<AdminInvoiceNew />} />
-              <Route path="invoices/:id" element={<AdminInvoiceDetails />} />
-              <Route path="team" element={<AdminTeam />} />
-              <Route path="team/new" element={<AdminTeamInviteNew />} />
-              <Route path="team/invite/:invitationId" element={<AdminTeamInviteDetails />} />
-              <Route path="team/:id" element={<AdminTeamDetails />} />
-              <Route path="settings" element={<AdminSettings />} />
-              <Route path="profile" element={<AdminProfile />} />
-              <Route path="payments" element={<Navigate to="/admin/invoices" replace />} />
-              {adminUnavailablePaths.map((path) => (
-                <Route key={path} path={path} element={<AdminPlaceholder />} />
-              ))}
+            <Route element={<RequireAdminPermission />}>
+              <Route element={<LeadsOutlet />}>
+                <Route index element={<AdminHome />} />
+                <Route path="my-tasks" element={<AdminMyTasks />} />
+                <Route path="leads" element={<AdminLeads />} />
+                <Route path="leads/new" element={<AdminLeadNew />} />
+                <Route path="leads/:id" element={<AdminLeadDetails />} />
+                <Route path="clients" element={<AdminClients />} />
+                <Route path="clients/new" element={<AdminClientNew />} />
+                <Route path="clients/:id" element={<AdminClientDetails />} />
+                <Route path="projects" element={<AdminProjects />} />
+                <Route path="projects/new" element={<AdminProjectNew />} />
+                <Route path="projects/:id/edit" element={<AdminProjectEdit />} />
+                <Route path="projects/:id" element={<AdminProjectDetails />} />
+                <Route path="files" element={<AdminFiles />} />
+                <Route path="messages" element={<AdminMessages />} />
+                <Route path="messages/:conversationId" element={<AdminMessages />} />
+                <Route path="proposals" element={<AdminProposals />} />
+                <Route path="proposals/new" element={<AdminProposalNew />} />
+                <Route path="proposals/:id" element={<AdminProposalDetails />} />
+                <Route path="contracts" element={<AdminContracts />} />
+                <Route path="contracts/new" element={<AdminContractNew />} />
+                <Route path="contracts/:id" element={<AdminContractDetails />} />
+                <Route path="invoices" element={<AdminInvoices />} />
+                <Route path="invoices/new" element={<AdminInvoiceNew />} />
+                <Route path="invoices/:id" element={<AdminInvoiceDetails />} />
+                <Route path="team" element={<AdminTeam />} />
+                <Route path="team/new" element={<AdminTeamInviteNew />} />
+                <Route path="team/invite/:invitationId" element={<AdminTeamInviteDetails />} />
+                <Route path="team/:id" element={<AdminTeamDetails />} />
+                <Route path="settings" element={<AdminSettings />} />
+                <Route path="profile" element={<AdminProfile />} />
+                <Route path="payments" element={<Navigate to="/admin/invoices" replace />} />
+                {adminUnavailablePaths.map((path) => (
+                  <Route key={path} path={path} element={<AdminPlaceholder />} />
+                ))}
+              </Route>
             </Route>
           </Route>
           <Route

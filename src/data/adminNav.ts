@@ -114,47 +114,31 @@ export const pmNavGroups: AdminNavGroup[] = [
   },
 ];
 
+/** Collapses a sub-route (e.g. "/admin/leads/42") back to its canonical nav path ("/admin/leads"). */
+function resolveAdminNavPath(pathname: string): string {
+  if (pathname === "/admin/leads" || pathname.startsWith("/admin/leads/")) return "/admin/leads";
+  if (pathname === "/admin/clients" || pathname.startsWith("/admin/clients/")) return "/admin/clients";
+  if (pathname === "/admin/messages" || pathname.startsWith("/admin/messages/")) return "/admin/messages";
+  if (pathname === "/admin/my-tasks") return "/admin/my-tasks";
+  if (pathname === "/admin/projects" || pathname.startsWith("/admin/projects/")) return "/admin/projects";
+  if (pathname === "/admin/proposals" || pathname.startsWith("/admin/proposals/")) return "/admin/proposals";
+  if (pathname === "/admin/contracts" || pathname.startsWith("/admin/contracts/")) return "/admin/contracts";
+  if (pathname === "/admin/invoices" || pathname.startsWith("/admin/invoices/")) return "/admin/invoices";
+  if (pathname === "/admin/team" || pathname.startsWith("/admin/team/")) return "/admin/team";
+  if (pathname === "/admin/settings" || pathname.startsWith("/admin/settings/")) return "/admin/settings";
+  if (pathname === "/admin/profile") return "/admin/profile";
+  return pathname;
+}
+
 export function getAdminPageMeta(pathname: string) {
   const unavailable = adminUnavailablePages[pathname];
   if (unavailable) {
     return { label: unavailable.label, href: pathname, icon: unavailable.icon };
   }
   const items = adminNavGroups.flatMap((group) => group.items);
-  if (pathname === "/admin/leads" || pathname.startsWith("/admin/leads/")) {
-    return items.find((item) => item.href === "/admin/leads") ?? items[0];
-  }
-  if (pathname === "/admin/clients" || pathname.startsWith("/admin/clients/")) {
-    return items.find((item) => item.href === "/admin/clients") ?? items[0];
-  }
-  if (pathname === "/admin/messages" || pathname.startsWith("/admin/messages/")) {
-    return items.find((item) => item.href === "/admin/messages") ?? items[0];
-  }
-  if (pathname === "/admin/my-tasks") {
-    return items.find((item) => item.href === "/admin/my-tasks") ?? items[0];
-  }
-  if (pathname.startsWith("/admin/projects/")) {
-    return items.find((item) => item.href === "/admin/projects") ?? items[0];
-  }
-  if (pathname === "/admin/proposals" || pathname.startsWith("/admin/proposals/")) {
-    return items.find((item) => item.href === "/admin/proposals") ?? items[0];
-  }
-  if (pathname === "/admin/contracts" || pathname.startsWith("/admin/contracts/")) {
-    return items.find((item) => item.href === "/admin/contracts") ?? items[0];
-  }
-  if (pathname === "/admin/invoices" || pathname.startsWith("/admin/invoices/")) {
-    return items.find((item) => item.href === "/admin/invoices") ?? items[0];
-  }
-  if (pathname === "/admin/team" || pathname.startsWith("/admin/team/")) {
-    return items.find((item) => item.href === "/admin/team") ?? items[0];
-  }
-  if (pathname === "/admin/settings" || pathname.startsWith("/admin/settings/")) {
-    return items.find((item) => item.href === "/admin/settings") ?? items[0];
-  }
-  if (pathname === "/admin/profile") {
-    return items.find((item) => item.href === "/admin/profile") ?? items[0];
-  }
-  const exact = items.find((item) => item.href === pathname);
-  if (exact) return exact;
+  const canonical = resolveAdminNavPath(pathname);
+  const match = items.find((item) => item.href === canonical);
+  if (match) return match;
   return items.find((item) => item.end && pathname === item.href) ?? items[0];
 }
 
@@ -176,6 +160,11 @@ const navPermission: Record<string, StaffPermissionCode | null> = {
   "/admin/settings": null,
   "/admin/profile": null,
 };
+
+/** The permission code required to view this route, or null if any active agency user may. */
+export function getRequiredAdminPermission(pathname: string): StaffPermissionCode | null {
+  return navPermission[resolveAdminNavPath(pathname)] ?? null;
+}
 
 export const adminUnavailablePages: Record<
   string,
