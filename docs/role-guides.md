@@ -70,7 +70,7 @@ Tasks like "Prepare/deploy staging" and "Address requested revisions" show an **
 
 Each task detail panel also has a **Checklist** (break the task into steps, check them off — visible to anyone else on the task, not just you), **Attachments** (working files for that task only — screenshots, reference docs; not client-visible, and separate from the project's client-reviewable Files), and **Comments** at the bottom (a lightweight note thread on that one task, distinct from project-wide Messages — the task's assignee gets notified when someone else comments).
 
-**My Tasks** also has a **Board** view next to List — drag a card between status columns to change its status. Drag only works with a mouse; on touch devices, open the card and use the status dropdown instead.
+**My Tasks** also has a **Board** view next to List — drag a card between status columns to change its status. Drag only works with a mouse; on touch devices, open the card and use the status dropdown instead. A search box filters by title, description, project, client, or milestone as you type.
 
 **You can message the client directly** (Messages in your sidebar) — but only on threads tied to a project you're directly assigned to, not just any client you happen to work with. Developer, Designer, and Content Writer are the only production roles with this ability (Team Member doesn't have it at all — see below). Use it for clarifying questions on your own work; broader project/timeline conversations should still go through the PM.
 

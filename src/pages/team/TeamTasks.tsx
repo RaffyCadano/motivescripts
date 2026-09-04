@@ -7,7 +7,13 @@ import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import { taskPriorities, type AgencyTaskPriority, type AgencyTaskStatus } from "@/data/agencyProjects";
 import { effectiveTaskType } from "@/data/taskTypes";
-import { filterTeamTasks, teamProjectHref, type TeamTaskFilter, type TeamWorkTask } from "@/data/teamWorkspace";
+import {
+  filterTeamTasks,
+  matchesTaskSearch,
+  teamProjectHref,
+  type TeamTaskFilter,
+  type TeamWorkTask,
+} from "@/data/teamWorkspace";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
 
@@ -34,10 +40,11 @@ export function TeamTasks() {
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("list");
   const [boardError, setBoardError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const visible = useMemo(
-    () => filterTeamTasks(tasks, filter, projectId, priority),
-    [filter, priority, projectId, tasks],
+    () => filterTeamTasks(tasks, filter, projectId, priority).filter((task) => matchesTaskSearch(task, search)),
+    [filter, priority, projectId, search, tasks],
   );
 
   async function onBoardStatusChange(task: TeamWorkTask, status: AgencyTaskStatus) {
@@ -112,6 +119,12 @@ export function TeamTasks() {
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
+        <input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search tasks…"
+          className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+        />
         <select
           value={projectId}
           onChange={(event) => setProjectId(event.target.value)}
