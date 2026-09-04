@@ -80,6 +80,7 @@ import { TeamProfile } from "@/pages/team/TeamProfile";
 import { TeamProjects } from "@/pages/team/TeamProjects";
 import { TeamProjectDetails } from "@/pages/team/TeamProjectDetails";
 import { TeamTasks } from "@/pages/team/TeamTasks";
+import { TeamTime } from "@/pages/team/TeamTime";
 import { MessagingProvider } from "@/providers/MessagingProvider";
 
 const adminUnavailablePaths = ["notifications", "activity"] as const;
@@ -157,6 +158,7 @@ export default function App() {
             <Route path="messages" element={<TeamMessages />} />
             <Route path="messages/:conversationId" element={<TeamMessages />} />
             <Route path="files" element={<TeamFiles />} />
+            <Route path="time" element={<TeamTime />} />
             <Route path="profile" element={<TeamProfile />} />
           </Route>
           <Route

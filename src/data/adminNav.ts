@@ -18,6 +18,7 @@ export type AdminIconName =
   | "team"
   | "capacity"
   | "payroll"
+  | "time"
   | "activity"
   | "settings"
   | "profile";

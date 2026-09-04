@@ -56,7 +56,7 @@ One thing this template can't do that Admin can: manage the team itself (invite 
 
 ## Developer / Designer / Content Writer
 
-Home page: `/team/dashboard`. Sidebar: Dashboard, My Tasks, My Projects, Files, Messages, Profile.
+Home page: `/team/dashboard`. Sidebar: Dashboard, My Tasks, My Projects, Files, My Time, Messages, Profile.
 
 Your dashboard shows, in priority order: **overdue tasks**, **due soon**, **assigned tasks**, **my projects**, then recent activity across those projects. Click any task card to open the task detail panel — that's where the actual work instructions live.
 
@@ -64,7 +64,7 @@ Your dashboard shows, in priority order: **overdue tasks**, **due soon**, **assi
 
 Task status you control: **Not Started → In Progress → In Review → Completed**. Move it to **In Review** when you're done and want PM/client eyes on it, not straight to Completed — In Review is how the PM knows to check your work.
 
-**You can log time** against a task from the same detail panel if the project bills hourly — this feeds both client invoicing and (if your pay rate is set) your own payroll, independently of each other.
+**You can log time** against a task from the same detail panel if the project bills hourly — this feeds both client invoicing and (if your pay rate is set) your own payroll, independently of each other. **My Time** in your sidebar lists everything you've logged across every project, with edit/delete on any entry that hasn't been billed or paid yet, plus a running "not yet paid" total and an estimate of what you're owed if an admin has set your hourly rate.
 
 **You can message the client directly** (Messages in your sidebar) — but only on threads tied to a project you're directly assigned to, not just any client you happen to work with. Developer, Designer, and Content Writer are the only production roles with this ability (Team Member doesn't have it at all — see below). Use it for clarifying questions on your own work; broader project/timeline conversations should still go through the PM.
 
@@ -74,7 +74,7 @@ On a project's own page (`/team/projects/:id`), the tabs are: Overview, Tasks, M
 
 ## Team Member
 
-Same `/team` workspace and dashboard as Developer/Designer/Content Writer above — same tasks, same instructions, same project tabs, same time logging.
+Same `/team` workspace and dashboard as Developer/Designer/Content Writer above — same tasks, same instructions, same project tabs, same time logging and My Time page.
 
 The one difference: **you don't have Messages at all.** It's not in your sidebar — by design, Team Member has no client-messaging permission, so there's nothing to open. Client-facing communication on your tasks goes through your PM instead. Everything else works the same.
 

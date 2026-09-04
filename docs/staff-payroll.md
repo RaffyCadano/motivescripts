@@ -52,7 +52,9 @@ Table: staff name, editable hourly rate, unpaid hours, computed amount owed, "Ma
 
 ## Out of scope
 
-Rate history (a rate change applies to the next "Mark paid" pass over currently-unpaid hours; it does not retroactively separate already-paid history from a rate at the time it was earned — for a small team, settle up before changing someone's rate if that distinction matters to you). Salaried (non-hourly) staff. A self-service "my earnings" view for staff (their own row is already readable via RLS, so this is a UI-only follow-up if wanted later, not a schema change). Automatic payroll runs or integration with an actual payroll processor — this only tracks what's owed and lets an admin mark it settled by hand.
+Rate history (a rate change applies to the next "Mark paid" pass over currently-unpaid hours; it does not retroactively separate already-paid history from a rate at the time it was earned — for a small team, settle up before changing someone's rate if that distinction matters to you). Salaried (non-hourly) staff. Automatic payroll runs or integration with an actual payroll processor — this only tracks what's owed and lets an admin mark it settled by hand.
+
+A lightweight self-service view now exists: `/team/time` (see [role-guides.md](./role-guides.md)) shows a staff member their own logged entries and an unpaid-hours estimate using `listStaffPayRates()`, which RLS already narrows to their own row. It's a current-total estimate, not a full earnings history or pay-stub equivalent.
 
 ## Apply
 

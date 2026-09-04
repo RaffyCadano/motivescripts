@@ -25,6 +25,7 @@ export const teamNavGroups: TeamNavGroup[] = [
       { label: "My Tasks", href: "/team/tasks", icon: "tasks" },
       { label: "My Projects", href: "/team/projects", icon: "projects" },
       { label: "Files", href: "/team/files", icon: "files" },
+      { label: "My Time", href: "/team/time", icon: "time" },
     ],
   },
   {
