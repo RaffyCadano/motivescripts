@@ -169,6 +169,10 @@ Optional **DEVELOPMENT ONLY** invoice rows live at the end of `20260829100000_in
 
 Stripe Checkout is layered on this ledger. Manual bank/cash/check/other recording is unchanged. See [stripe-payments.md](./stripe-payments.md).
 
+## Hourly invoices from logged time
+
+Added later, on top of this ledger: `invoice_items.quantity` became fractional, and a `generate_invoice_items_from_time_entries` RPC turns unbilled staff time into draft invoice line items for hourly-billed projects. See [time-tracking.md](./time-tracking.md).
+
 ## Test checklist
 
 Use two real Auth users. The SQL editor bypasses RLS.
