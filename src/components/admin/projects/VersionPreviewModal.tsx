@@ -4,7 +4,7 @@ import { AdminDialog } from "@/components/admin/leads/AdminDialog";
 import { formatFileLong, formatFileSize, versionLabel, type AgencyFileVersion } from "@/data/files";
 import { hasStoredFile } from "@/data/fileUploadConfig";
 import type { PinComment } from "@/data/pinComments";
-import { listPinComments, resolvePinComment } from "@/data/pinCommentsRepository";
+import { listPinComments, resolvePinComment, submitStaffPinComment } from "@/data/pinCommentsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
 
@@ -27,6 +27,10 @@ export function VersionPreviewModal({
   const [pins, setPins] = useState<PinComment[]>([]);
   const [pinError, setPinError] = useState<string | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [addingPin, setAddingPin] = useState(false);
+  const [pendingPin, setPendingPin] = useState<{ x: number; y: number } | null>(null);
+  const [pinBody, setPinBody] = useState("");
+  const [pinBusy, setPinBusy] = useState(false);
 
   useEffect(() => {
     if (!version) {
@@ -45,6 +49,12 @@ export function VersionPreviewModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [version?.id]);
 
+  useEffect(() => {
+    setAddingPin(false);
+    setPendingPin(null);
+    setPinBody("");
+  }, [version?.id]);
+
   async function onResolve(pinId: string) {
     setResolvingId(pinId);
     setPinError(null);
@@ -58,6 +68,23 @@ export function VersionPreviewModal({
     }
   }
 
+  async function onSavePin() {
+    if (!version || !pendingPin || !pinBody.trim()) return;
+    setPinBusy(true);
+    setPinError(null);
+    try {
+      await submitStaffPinComment({ versionId: version.id, xPct: pendingPin.x, yPct: pendingPin.y, body: pinBody });
+      setPins(await listPinComments(version.id));
+      setPendingPin(null);
+      setPinBody("");
+      setAddingPin(false);
+    } catch (error) {
+      setPinError(error instanceof AgencyDbError ? error.message : "Unable to add this pin.");
+    } finally {
+      setPinBusy(false);
+    }
+  }
+
   return (
     <AdminDialog
       open={Boolean(version)}
@@ -68,10 +95,31 @@ export function VersionPreviewModal({
     >
       {version ? (
         <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="font-heading text-[12px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+              Pin comments
+            </p>
+            <button
+              type="button"
+              className={cn(
+                "inline-flex h-8 items-center rounded-lg px-3 font-heading text-[12px] font-semibold",
+                addingPin
+                  ? "bg-[var(--admin-navy)] text-white"
+                  : "border border-[var(--admin-line)] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]",
+              )}
+              onClick={() => {
+                setAddingPin((value) => !value);
+                setPendingPin(null);
+              }}
+            >
+              {addingPin ? "Cancel" : "Add pin"}
+            </button>
+          </div>
           <div className="overflow-hidden rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-bg)]">
             <StoredFilePreview
               version={version}
               pins={pins}
+              onImageClick={addingPin ? (x, y) => setPendingPin({ x, y }) : undefined}
               renderPinMarker={(pin, index) => (
                 <span
                   className={cn(
@@ -85,11 +133,41 @@ export function VersionPreviewModal({
               )}
             />
           </div>
+          {pendingPin ? (
+            <div className="space-y-2 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white p-3">
+              <label className="block font-heading text-[12px] font-semibold text-[var(--admin-ink)]">
+                Comment on this pin
+                <textarea
+                  autoFocus
+                  rows={2}
+                  value={pinBody}
+                  disabled={pinBusy}
+                  onChange={(event) => setPinBody(event.target.value)}
+                  className="mt-1.5 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 py-2 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                />
+              </label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={pinBusy || !pinBody.trim()}
+                  className="inline-flex h-9 items-center rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
+                  onClick={() => void onSavePin()}
+                >
+                  {pinBusy ? "Saving…" : "Save pin"}
+                </button>
+                <button
+                  type="button"
+                  disabled={pinBusy}
+                  className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)]"
+                  onClick={() => setPendingPin(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : null}
           {pins.length > 0 ? (
             <div className="space-y-2 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white p-3">
-              <p className="font-heading text-[12px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
-                Pin comments
-              </p>
               <ul className="space-y-2">
                 {pins.map((pin, index) => (
                   <li key={pin.id} className="flex items-start justify-between gap-3 text-sm">

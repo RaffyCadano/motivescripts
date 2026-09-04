@@ -1112,6 +1112,10 @@ export type Database = {
         Args: { p_version_id: string; p_x_pct: number; p_y_pct: number; p_body: string };
         Returns: string;
       };
+      staff_submit_pin_comment: {
+        Args: { p_version_id: string; p_x_pct: number; p_y_pct: number; p_body: string };
+        Returns: string;
+      };
       resolve_pin_comment: {
         Args: { p_pin_id: string };
         Returns: void;

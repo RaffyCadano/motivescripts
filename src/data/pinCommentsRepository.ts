@@ -64,6 +64,23 @@ export async function submitPinComment(input: {
   return data as string;
 }
 
+export async function submitStaffPinComment(input: {
+  versionId: string;
+  xPct: number;
+  yPct: number;
+  body: string;
+}): Promise<string> {
+  const client = db();
+  const { data, error } = await client.rpc("staff_submit_pin_comment", {
+    p_version_id: input.versionId,
+    p_x_pct: input.xPct,
+    p_y_pct: input.yPct,
+    p_body: input.body,
+  });
+  if (error) fail("submit pin comment", error);
+  return data as string;
+}
+
 export async function resolvePinComment(pinId: string): Promise<void> {
   const client = db();
   const { error } = await client.rpc("resolve_pin_comment", { p_pin_id: pinId });
