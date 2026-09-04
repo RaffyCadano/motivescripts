@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAdmin } from "@/auth/permissions";
 import { AdminInfoTip } from "@/components/admin/AdminInfoTip";
+import { ConfirmSignOutModal } from "@/components/admin/ConfirmSignOutModal";
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
 import { adminDangerBtn, adminDangerSolidBtn, adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
@@ -71,6 +72,8 @@ export function AdminSettings() {
   const [purgeTyped, setPurgeTyped] = useState("");
   const [purgeBusy, setPurgeBusy] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [saveNotice, setSaveNotice] = useState<SaveNotice | null>(null);
   const [agencyFieldErrors, setAgencyFieldErrors] = useState<Partial<Record<"agencyName" | "businessEmail" | "supportEmail" | "website", string>>>({});
   const [clock, setClock] = useState(() => Date.now());
@@ -1136,9 +1139,7 @@ export function AdminSettings() {
                 <button
                   type="button"
                   className={adminGhostBtn}
-                  onClick={() => {
-                    void signOut().then(() => navigate("/login"));
-                  }}
+                  onClick={() => setConfirmSignOut(true)}
                 >
                   Sign out
                 </button>
@@ -1283,6 +1284,20 @@ export function AdminSettings() {
           </div>
         ) : null}
       </AdminDialog>
+
+      <ConfirmSignOutModal
+        open={confirmSignOut}
+        busy={signingOut}
+        onClose={() => {
+          if (signingOut) return;
+          setConfirmSignOut(false);
+        }}
+        onConfirm={() => {
+          if (signingOut) return;
+          setSigningOut(true);
+          void signOut().then(() => navigate("/login"));
+        }}
+      />
 
       <ConfirmDocumentModal
         open={pendingSection !== null}

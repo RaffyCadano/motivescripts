@@ -4,6 +4,7 @@ import { Bell, ChevronDown, Globe, LogOut, Menu, PanelLeft, Settings, UserRound 
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAdmin } from "@/auth/permissions";
 import { userDisplay } from "@/auth/userDisplay";
+import { ConfirmSignOutModal } from "@/components/admin/ConfirmSignOutModal";
 import { NotificationPanel } from "@/components/messaging/NotificationPanel";
 import { getAdminPageMeta } from "@/data/adminNav";
 import { cn } from "@/lib/cn";
@@ -24,6 +25,8 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
   const page = getAdminPageMeta(pathname);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const notesRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -202,7 +205,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
                 onClick={() => {
                   setMenuOpen(false);
-                  void signOut().then(() => navigate("/login"));
+                  setConfirmSignOut(true);
                 }}
               >
                 <LogOut size={15} strokeWidth={1.75} aria-hidden="true" />
@@ -212,6 +215,20 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
           ) : null}
         </div>
       </div>
+
+      <ConfirmSignOutModal
+        open={confirmSignOut}
+        busy={signingOut}
+        onClose={() => {
+          if (signingOut) return;
+          setConfirmSignOut(false);
+        }}
+        onConfirm={() => {
+          if (signingOut) return;
+          setSigningOut(true);
+          void signOut().then(() => navigate("/login"));
+        }}
+      />
     </header>
   );
 }
