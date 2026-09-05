@@ -68,6 +68,8 @@ Task status you control: **Not Started → In Progress → In Review → Complet
 
 If a task sits in a later stage (say, Development) while an earlier one (Design) still has open tasks, the task panel shows a heads-up — **not a block**. You can still work on it; it's just flagging that something upstream might not be finished yet, in case that changes what you're about to build.
 
+Tasks now come with a real due date, not blank — derived from the project's target launch date, split across the five stages. If the project has no target launch date set, your tasks stay undated, same as before.
+
 Tasks like "Prepare/deploy staging" and "Address requested revisions" show an **"Open Files & Feedback"** shortcut right in the task panel — it jumps straight to that project's Files tab instead of you hunting for it. (Two other task types — Discovery and Content Collection — have a similar richer workspace on the PM/admin side; those specific tasks are recommended to Project Manager, since the extra actions there require the `clients.manage` grant no production template has, so you won't see them here even if one lands on your list.)
 
 **You can log time** against a task from the same detail panel if the project bills hourly — this feeds both client invoicing and (if your pay rate is set) your own payroll, independently of each other. **My Time** in your sidebar lists everything you've logged across every project, with edit/delete on any entry that hasn't been billed or paid yet, plus a running "not yet paid" total, an estimate of what you're owed, and a **Payment history** of what's actually been paid — amount, hours, date, and method — once an admin records it.

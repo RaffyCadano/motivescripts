@@ -70,6 +70,8 @@ No RPC for logging time itself — `time_entries` INSERT/UPDATE/DELETE go straig
 
 `/admin/capacity`: a staff × week grid, highlighted amber at 80%+ and red over a flat 32h/week threshold (hardcoded for v1 — no per-staff configurable target). Gated on `projects.view`, in the route-permission guard already covering `/admin/*`. In both `pmNavGroups` and `adminNavGroups`.
 
+Since the grid buckets by the *week of the due date*, a task with no due date has no week to land in. As of `20260916000000_task_default_due_dates.sql`, `tasks.due_date` gets a default too (see `production-task-generation` note in that migration and `sync_project_milestone_dates`) — auto-generated tasks inherit their milestone's due date, itself derived from the project's target launch date split 10/20/40/20/10 across Discovery/Design/Development/Review/Launch. A project with no target launch date still leaves its tasks undated, same as before — this only fills in blanks where there's something real to anchor to.
+
 ## UI
 
 - **Log time**: `TeamTaskDetail.tsx`'s "Log time" section (any task, any workspace it's opened from — admin, PM, `/team`) logs against that specific task. The project **Time** tab (`ProjectTimePanel.tsx`, `src/pages/admin/AdminProjectDetails.tsx`) has its own log-time form for hours not tied to a specific task, plus a rollup (total/unbilled hours, budget-vs-actual bar for fixed projects) and an editable/deletable list of unbilled entries.

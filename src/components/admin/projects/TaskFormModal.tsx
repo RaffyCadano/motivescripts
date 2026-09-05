@@ -102,6 +102,15 @@ export function TaskFormModal({
     }));
   }
 
+  function handleMilestoneChange(milestoneId: string) {
+    const milestoneDueDate = milestones.find((item) => item.id === milestoneId)?.dueDate ?? "";
+    setDraft((current) => ({
+      ...current,
+      milestoneId,
+      dueDate: task || current.dueDate ? current.dueDate : milestoneDueDate,
+    }));
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     onSubmit(draft);
@@ -149,7 +158,7 @@ export function TaskFormModal({
           <select
             className={fieldClass}
             value={draft.milestoneId}
-            onChange={(event) => setDraft((current) => ({ ...current, milestoneId: event.target.value }))}
+            onChange={(event) => handleMilestoneChange(event.target.value)}
           >
             <option value="">Ungrouped</option>
             {milestones.map((milestone) => (
