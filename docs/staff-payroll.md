@@ -6,7 +6,7 @@ What the agency owes each staff member for logged hours — separate from [time-
 Admin sets a staff member's hourly pay rate
   → staff logs hours (already existed, see time-tracking.md)
   → Payroll page: unpaid hours x rate = amount owed, per staff member
-  → admin marks hours paid (own settlement flag, independent of client billing)
+  → admin records the payment (method/reference/notes) → payroll_payments row + entries marked paid
 ```
 
 ## Why this is a separate table, not a column on `staff_profiles`
@@ -25,22 +25,34 @@ Migration: `20260908000000_staff_payroll.sql`.
 | `pay_rate_cents` | `bigint >= 0`. Hourly rate paid **to** the staff member |
 | `updated_at` / `updated_by` | Set on every change |
 
-`time_entries.payroll_paid_at` — nullable timestamp, added to the existing table from time-tracking.md. Independent of `billed_at`/`invoice_id` (client billing). Once set, the entry locks for the staff member the same way a billed entry does — `time_entries_update`/`time_entries_delete` both require `billed_at is null and payroll_paid_at is null` for a non-admin's own rows.
+`time_entries.payroll_paid_at` — nullable timestamp, added to the existing table from time-tracking.md. Independent of `billed_at`/`invoice_id` (client billing). Once set, the entry locks for the staff member the same way a billed entry does — `time_entries_update`/`time_entries_delete` both require `billed_at is null and payroll_paid_at is null` for a non-admin's own rows. `time_entries.payroll_payment_id` (added in `20260914000000_payroll_payments.sql`) links a paid entry to the specific payment that covered it.
+
+`payroll_payments` (added in `20260914000000_payroll_payments.sql`) — one row per "Mark paid" run for one staff member, mirroring the shape client `payments` already have instead of `mark_time_entries_paid` being a bare timestamp flip:
+
+| Column | Notes |
+| --- | --- |
+| `staff_id` | Who was paid |
+| `amount_cents` / `hours` / `pay_rate_cents` | Frozen at payment time — a later `staff_pay_rates` change never rewrites what a past payment "was for" |
+| `through_date` | Entries with `entry_date <= through_date` were included |
+| `payment_date`, `method`, `reference`, `notes` | `method` is `bank_transfer`/`zelle`/`paypal`/`cash`/`check`/`other` — a separate, wider set than invoice `payments`' methods (no `stripe`; staff are never paid through the client-facing Stripe flow, and client payments don't offer Zelle/PayPal) |
+| `recorded_by` / `recorded_by_label` | Which admin recorded it |
+
+This only records that a payment happened — it does not move money. The actual transfer (bank transfer, cash, check) happens outside the app, same as manual client payments.
 
 ## RLS
 
-| Caller | `staff_pay_rates` select | Write |
-| --- | --- | --- |
-| Admin | All rows | Via `set_staff_pay_rate` only |
-| Staff, own row | Own rate only | No write access, not even to their own rate |
-| Staff, anyone else's row | Denied | Denied |
+| Caller | `staff_pay_rates` select | `payroll_payments` select | Write |
+| --- | --- | --- | --- |
+| Admin | All rows | All rows | Via `set_staff_pay_rate` / `mark_time_entries_paid` only |
+| Staff, own row | Own rate only | Own payments only | No write access to either table, not even their own |
+| Staff, anyone else's row | Denied | Denied | Denied |
 
-No table grants for INSERT/UPDATE on `staff_pay_rates` — every write goes through `set_staff_pay_rate`, which is `is_admin()`-gated, so there is no path (RLS policy or otherwise) for a staff member to set any rate, including their own.
+No table grants for INSERT/UPDATE/DELETE on either table — every write goes through the two RPCs below, both `is_admin()`-gated, so there is no path (RLS policy or otherwise) for a staff member to set a rate or record a payment, including their own.
 
 ## RPCs
 
 - `set_staff_pay_rate(p_user_id, p_pay_rate_cents)` — admin only. Upserts the rate.
-- `mark_time_entries_paid(p_staff_id, p_through_date default today)` — admin only. Marks all of that staff member's unpaid (`payroll_paid_at is null`) entries through the given date as paid, in one update. Mirrors `generate_invoice_items_from_time_entries`'s shape but settles payroll instead of generating an invoice.
+- `mark_time_entries_paid(p_staff_id, p_through_date default today, p_method default 'bank_transfer', p_reference default '', p_notes default '')` — admin only. Requires a pay rate to already be set (`NO_PAY_RATE` if not) and unpaid hours to exist through that date (`NOTHING_TO_PAY` if not). Computes the total from unpaid hours × the staff member's *current* rate, inserts one `payroll_payments` row recording that amount/rate/hours, then marks the covered `time_entries` paid and links them to that payment row. Returns `{ payment_id, amount_cents, hours, entries }`.
 
 ## UI
 
@@ -48,14 +60,14 @@ No table grants for INSERT/UPDATE on `staff_pay_rates` — every write goes thro
 
 Not in `pmNavGroups` at all — a Project Manager, even with broad grants, does not see Payroll in their nav or get past the page's own admin check.
 
-Table: staff name, editable hourly rate, unpaid hours, computed amount owed, "Mark paid" action. Reuses `listMyTimeEntries(staffId)` (from time-tracking.md) for each staff member — safe for an admin to call for any `staffId` since `is_admin()` already grants full `time_entries` visibility regardless of whose id is queried.
+Table: staff name, editable hourly rate, unpaid hours, computed amount owed, "Mark paid" action. Reuses `listMyTimeEntries(staffId)` (from time-tracking.md) for each staff member — safe for an admin to call for any `staffId` since `is_admin()` already grants full `time_entries` visibility regardless of whose id is queried. "Mark paid" opens `RecordPayrollPaymentModal` (method/reference/notes — the amount is computed server-side, not entered) instead of firing immediately.
+
+`/team/time` shows the staff member's own **Payment history** (amount, hours × rate, date, method, reference) alongside their unpaid-hours estimate — a real record now, not just a live-computed number that changes as the rate does.
 
 ## Out of scope
 
-Rate history (a rate change applies to the next "Mark paid" pass over currently-unpaid hours; it does not retroactively separate already-paid history from a rate at the time it was earned — for a small team, settle up before changing someone's rate if that distinction matters to you). Salaried (non-hourly) staff. Automatic payroll runs or integration with an actual payroll processor — this only tracks what's owed and lets an admin mark it settled by hand.
-
-A lightweight self-service view now exists: `/team/time` (see [role-guides.md](./role-guides.md)) shows a staff member their own logged entries and an unpaid-hours estimate using `listStaffPayRates()`, which RLS already narrows to their own row. It's a current-total estimate, not a full earnings history or pay-stub equivalent.
+Rate history beyond what a payment row freezes (a rate change applies to the next "Mark paid" pass over currently-unpaid hours; past `payroll_payments` rows keep the rate that was actually paid, but there's no view of "rate over time" beyond that). Salaried (non-hourly) staff. Automatic payroll runs or integration with an actual payroll processor — this only tracks what's owed, records that a payment happened, and lets an admin do both by hand.
 
 ## Apply
 
-Migration `20260908000000_staff_payroll.sql`, after `20260907000000`. No Edge Function changes, no new secrets.
+Migrations `20260908000000_staff_payroll.sql` (after `20260907000000`) and `20260914000000_payroll_payments.sql`. No Edge Function changes, no new secrets.

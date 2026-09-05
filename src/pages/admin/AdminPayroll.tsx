@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAdmin } from "@/auth/permissions";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
+import { RecordPayrollPaymentModal } from "@/components/admin/payroll/RecordPayrollPaymentModal";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { amountOwedCents, sumHours, unpaidEntries, type TimeEntry } from "@/data/timeEntries";
-import { listMyTimeEntries, markTimeEntriesPaid } from "@/data/timeEntriesRepository";
-import { listStaffPayRates, setStaffPayRate } from "@/data/payrollRepository";
-import { type StaffPayRate } from "@/data/payroll";
+import { listMyTimeEntries } from "@/data/timeEntriesRepository";
+import { listStaffPayRates, markTimeEntriesPaid, setStaffPayRate } from "@/data/payrollRepository";
+import { type PayrollPaymentMethod, type StaffPayRate } from "@/data/payroll";
 import { centsInputValue, formatUsdFromCents, parseDollarsToCents } from "@/data/money";
 import { AgencyDbError } from "@/lib/dbErrors";
 
@@ -21,6 +22,7 @@ export function AdminPayroll() {
   const [rateDrafts, setRateDrafts] = useState<Map<string, string>>(new Map());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Map<string, string>>(new Map());
+  const [payModalFor, setPayModalFor] = useState<string | null>(null);
 
   const members = useMemo(() => (data?.members ?? []).filter((member) => member.isActive), [data?.members]);
 
@@ -87,7 +89,10 @@ export function AdminPayroll() {
     }
   }
 
-  async function onMarkPaid(userId: string) {
+  async function onRecordPayment(
+    userId: string,
+    input: { method: PayrollPaymentMethod; reference: string; notes: string },
+  ) {
     setBusyId(userId);
     setRowError((current) => {
       const next = new Map(current);
@@ -95,11 +100,12 @@ export function AdminPayroll() {
       return next;
     });
     try {
-      await markTimeEntriesPaid(userId);
+      await markTimeEntriesPaid(userId, input);
+      setPayModalFor(null);
       await reload();
     } catch (caught) {
       setRowError((current) =>
-        new Map(current).set(userId, caught instanceof AgencyDbError ? caught.message : "Unable to mark hours paid."),
+        new Map(current).set(userId, caught instanceof AgencyDbError ? caught.message : "Unable to record this payment."),
       );
     } finally {
       setBusyId(null);
@@ -177,9 +183,9 @@ export function AdminPayroll() {
                     <td className="px-3 py-2.5">
                       <button
                         type="button"
-                        disabled={busy || unpaidHours <= 0}
+                        disabled={busy || unpaidHours <= 0 || !rate}
                         className="h-9 rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-40"
-                        onClick={() => void onMarkPaid(member.id)}
+                        onClick={() => setPayModalFor(member.id)}
                       >
                         Mark paid
                       </button>
@@ -192,6 +198,27 @@ export function AdminPayroll() {
           </table>
         </div>
       )}
+
+      {payModalFor
+        ? (() => {
+            const member = members.find((item) => item.id === payModalFor);
+            const rate = rates.get(payModalFor);
+            const entries = entriesByStaff.get(payModalFor) ?? [];
+            const unpaidHours = sumHours(unpaidEntries(entries));
+            const owedCents = rate ? amountOwedCents(entries, rate.payRateCents) : 0;
+            return (
+              <RecordPayrollPaymentModal
+                open
+                busy={busyId === payModalFor}
+                staffName={member?.fullName ?? "this staff member"}
+                unpaidHours={unpaidHours}
+                owedCents={owedCents}
+                onClose={() => setPayModalFor(null)}
+                onConfirm={(input) => void onRecordPayment(payModalFor, input)}
+              />
+            );
+          })()
+        : null}
     </div>
   );
 }

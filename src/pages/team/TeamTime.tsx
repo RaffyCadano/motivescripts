@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import { formatProjectDay } from "@/data/agencyProjects";
 import { formatUsdFromCents } from "@/data/money";
-import { listStaffPayRates } from "@/data/payrollRepository";
+import { listPayrollPayments, listStaffPayRates } from "@/data/payrollRepository";
+import { payrollMethodLabel, type PayrollPayment } from "@/data/payroll";
 import { amountOwedCents, sumHours, unpaidEntries, type TimeEntry } from "@/data/timeEntries";
 import { deleteTimeEntry, listMyTimeEntries, updateTimeEntry } from "@/data/timeEntriesRepository";
 import { teamProjectHref } from "@/data/teamWorkspace";
@@ -13,6 +14,7 @@ export function TeamTime() {
   const { profile, myProjects } = useTeamWork();
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [payRateCents, setPayRateCents] = useState<number | null>(null);
+  const [payments, setPayments] = useState<PayrollPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -40,9 +42,14 @@ export function TeamTime() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [rows, rates] = await Promise.all([listMyTimeEntries(profile.id), listStaffPayRates()]);
+      const [rows, rates, paymentRows] = await Promise.all([
+        listMyTimeEntries(profile.id),
+        listStaffPayRates(),
+        listPayrollPayments(),
+      ]);
       setEntries(rows);
       setPayRateCents(rates[0]?.payRateCents ?? null);
+      setPayments(paymentRows);
     } catch (caught) {
       setLoadError(caught instanceof AgencyDbError ? caught.message : "Unable to load your time entries.");
     } finally {
@@ -123,6 +130,27 @@ export function TeamTime() {
           </article>
         ) : null}
       </section>
+
+      {payments.length > 0 ? (
+        <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Payment history</h2>
+          <ul className="mt-3 divide-y divide-[var(--admin-line)]">
+            {payments.map((payment) => (
+              <li key={payment.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                <div>
+                  <p className="text-sm text-[var(--admin-ink)]">
+                    {formatUsdFromCents(payment.amountCents)} · {payment.hours}h at {formatUsdFromCents(payment.payRateCents)}/hr
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
+                    {formatProjectDay(payment.paymentDate)} · {payrollMethodLabel(payment.method)}
+                    {payment.reference ? ` · ${payment.reference}` : ""}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {loading ? (
         <div className="h-36 animate-pulse rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]" />
