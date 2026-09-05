@@ -1,6 +1,8 @@
 export type StaffPayRate = {
   userId: string;
   payRateCents: number;
+  zelleContact: string | null;
+  paypalEmail: string | null;
   updatedAt: string;
 };
 

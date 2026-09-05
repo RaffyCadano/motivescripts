@@ -31,6 +31,8 @@ function mapPayRate(row: StaffPayRateRow): StaffPayRate {
   return {
     userId: row.user_id,
     payRateCents: Number(row.pay_rate_cents),
+    zelleContact: row.zelle_contact,
+    paypalEmail: row.paypal_email,
     updatedAt: row.updated_at,
   };
 }
@@ -43,11 +45,17 @@ export async function listStaffPayRates(): Promise<StaffPayRate[]> {
   return (data ?? []).map((row) => mapPayRate(row as StaffPayRateRow));
 }
 
-export async function setStaffPayRate(userId: string, payRateCents: number): Promise<void> {
+export async function setStaffPayRate(
+  userId: string,
+  payRateCents: number,
+  payout?: { zelleContact?: string; paypalEmail?: string },
+): Promise<void> {
   const client = db();
   const { error } = await client.rpc("set_staff_pay_rate", {
     p_user_id: userId,
     p_pay_rate_cents: payRateCents,
+    p_zelle_contact: payout?.zelleContact ?? "",
+    p_paypal_email: payout?.paypalEmail ?? "",
   });
   if (error) fail("set pay rate", error);
 }

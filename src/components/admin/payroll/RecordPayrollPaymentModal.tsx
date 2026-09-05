@@ -12,6 +12,8 @@ export function RecordPayrollPaymentModal({
   staffName,
   unpaidHours,
   owedCents,
+  zelleContact,
+  paypalEmail,
   onClose,
   onConfirm,
 }: {
@@ -20,6 +22,8 @@ export function RecordPayrollPaymentModal({
   staffName: string;
   unpaidHours: number;
   owedCents: number;
+  zelleContact?: string | null;
+  paypalEmail?: string | null;
   onClose: () => void;
   onConfirm: (input: { method: PayrollPaymentMethod; reference: string; notes: string }) => void;
 }) {
@@ -53,6 +57,17 @@ export function RecordPayrollPaymentModal({
             ))}
           </select>
         </label>
+        {method === "zelle" || method === "paypal" ? (
+          <p className="rounded-lg bg-[var(--admin-bg)] px-3 py-2 text-[13px] text-[var(--admin-ink)]">
+            {method === "zelle"
+              ? zelleContact
+                ? <>Zelle contact on file: <span className="font-semibold">{zelleContact}</span></>
+                : "No Zelle contact on file for this staff member yet — add one on the Payroll table."
+              : paypalEmail
+                ? <>PayPal email on file: <span className="font-semibold">{paypalEmail}</span></>
+                : "No PayPal email on file for this staff member yet — add one on the Payroll table."}
+          </p>
+        ) : null}
         <label className="block text-sm font-semibold">
           Reference
           <input value={reference} onChange={(event) => setReference(event.target.value)} className={fieldClass} />

@@ -27,6 +27,8 @@ Migration: `20260908000000_staff_payroll.sql`.
 
 `time_entries.payroll_paid_at` — nullable timestamp, added to the existing table from time-tracking.md. Independent of `billed_at`/`invoice_id` (client billing). Once set, the entry locks for the staff member the same way a billed entry does — `time_entries_update`/`time_entries_delete` both require `billed_at is null and payroll_paid_at is null` for a non-admin's own rows. `time_entries.payroll_payment_id` (added in `20260914000000_payroll_payments.sql`) links a paid entry to the specific payment that covered it.
 
+`staff_pay_rates.zelle_contact` / `paypal_email` — nullable, added in `20260918000000_payroll_notify_and_contact.sql`. Optional payout contact info so the admin doesn't have to already know it from outside the app every time "Zelle" or "PayPal" is picked as the method. Set alongside the rate via the same `set_staff_pay_rate` call (now 4 args); shown as a reference line in `RecordPayrollPaymentModal` when that method is selected.
+
 `payroll_payments` (added in `20260914000000_payroll_payments.sql`) — one row per "Mark paid" run for one staff member, mirroring the shape client `payments` already have instead of `mark_time_entries_paid` being a bare timestamp flip:
 
 | Column | Notes |
@@ -52,7 +54,7 @@ No table grants for INSERT/UPDATE/DELETE on either table — every write goes th
 ## RPCs
 
 - `set_staff_pay_rate(p_user_id, p_pay_rate_cents)` — admin only. Upserts the rate.
-- `mark_time_entries_paid(p_staff_id, p_through_date default today, p_method default 'bank_transfer', p_reference default '', p_notes default '')` — admin only. Requires a pay rate to already be set (`NO_PAY_RATE` if not) and unpaid hours to exist through that date (`NOTHING_TO_PAY` if not). Computes the total from unpaid hours × the staff member's *current* rate, inserts one `payroll_payments` row recording that amount/rate/hours, then marks the covered `time_entries` paid and links them to that payment row. Returns `{ payment_id, amount_cents, hours, entries }`.
+- `mark_time_entries_paid(p_staff_id, p_through_date default today, p_method default 'bank_transfer', p_reference default '', p_notes default '')` — admin only. Requires a pay rate to already be set (`NO_PAY_RATE` if not) and unpaid hours to exist through that date (`NOTHING_TO_PAY` if not). Computes the total from unpaid hours × the staff member's *current* rate, inserts one `payroll_payments` row recording that amount/rate/hours, then marks the covered `time_entries` paid and links them to that payment row. As of `20260918000000_payroll_notify_and_contact.sql`, also inserts a `payroll_paid` notification for the staff member ("Payment recorded", amount/hours/through-date) — previously this was the one money-adjacent event in the app that notified nobody. Returns `{ payment_id, amount_cents, hours, entries }`.
 
 ## UI
 
@@ -70,4 +72,4 @@ Rate history beyond what a payment row freezes (a rate change applies to the nex
 
 ## Apply
 
-Migrations `20260908000000_staff_payroll.sql` (after `20260907000000`) and `20260914000000_payroll_payments.sql`. No Edge Function changes, no new secrets.
+Migrations `20260908000000_staff_payroll.sql` (after `20260907000000`), `20260914000000_payroll_payments.sql`, and `20260918000000_payroll_notify_and_contact.sql`. No Edge Function changes, no new secrets.

@@ -20,6 +20,8 @@ export function AdminPayroll() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [rateDrafts, setRateDrafts] = useState<Map<string, string>>(new Map());
+  const [zelleDrafts, setZelleDrafts] = useState<Map<string, string>>(new Map());
+  const [paypalDrafts, setPaypalDrafts] = useState<Map<string, string>>(new Map());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Map<string, string>>(new Map());
   const [payModalFor, setPayModalFor] = useState<string | null>(null);
@@ -66,6 +68,9 @@ export function AdminPayroll() {
       setRowError((current) => new Map(current).set(userId, "Enter a valid pay rate."));
       return;
     }
+    const rate = rates.get(userId);
+    const zelleContact = zelleDrafts.has(userId) ? zelleDrafts.get(userId)! : rate?.zelleContact ?? "";
+    const paypalEmail = paypalDrafts.has(userId) ? paypalDrafts.get(userId)! : rate?.paypalEmail ?? "";
     setBusyId(userId);
     setRowError((current) => {
       const next = new Map(current);
@@ -73,9 +78,19 @@ export function AdminPayroll() {
       return next;
     });
     try {
-      await setStaffPayRate(userId, cents);
+      await setStaffPayRate(userId, cents, { zelleContact, paypalEmail });
       await reload();
       setRateDrafts((current) => {
+        const next = new Map(current);
+        next.delete(userId);
+        return next;
+      });
+      setZelleDrafts((current) => {
+        const next = new Map(current);
+        next.delete(userId);
+        return next;
+      });
+      setPaypalDrafts((current) => {
         const next = new Map(current);
         next.delete(userId);
         return next;
@@ -135,6 +150,7 @@ export function AdminPayroll() {
               <tr className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
                 <th className="px-3 py-2.5">Staff</th>
                 <th className="px-3 py-2.5">Hourly rate</th>
+                <th className="px-3 py-2.5">Payout contact (Zelle / PayPal)</th>
                 <th className="px-3 py-2.5">Unpaid hours</th>
                 <th className="px-3 py-2.5">Amount owed</th>
                 <th className="px-3 py-2.5" />
@@ -176,6 +192,28 @@ export function AdminPayroll() {
                         </button>
                       </div>
                     </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex flex-col gap-1.5">
+                        <input
+                          placeholder="Zelle phone/email"
+                          disabled={busy}
+                          value={zelleDrafts.has(member.id) ? zelleDrafts.get(member.id)! : rate?.zelleContact ?? ""}
+                          onChange={(event) =>
+                            setZelleDrafts((current) => new Map(current).set(member.id, event.target.value))
+                          }
+                          className="h-8 w-44 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-[12px] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                        />
+                        <input
+                          placeholder="PayPal email"
+                          disabled={busy}
+                          value={paypalDrafts.has(member.id) ? paypalDrafts.get(member.id)! : rate?.paypalEmail ?? ""}
+                          onChange={(event) =>
+                            setPaypalDrafts((current) => new Map(current).set(member.id, event.target.value))
+                          }
+                          className="h-8 w-44 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-[12px] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                        />
+                      </div>
+                    </td>
                     <td className="px-3 py-2.5 text-sm text-[var(--admin-ink)]">{unpaidHours}h</td>
                     <td className="px-3 py-2.5 text-sm font-semibold text-[var(--admin-ink)]">
                       {rate ? formatUsdFromCents(owedCents) : "—"}
@@ -213,6 +251,8 @@ export function AdminPayroll() {
                 staffName={member?.fullName ?? "this staff member"}
                 unpaidHours={unpaidHours}
                 owedCents={owedCents}
+                zelleContact={rate?.zelleContact}
+                paypalEmail={rate?.paypalEmail}
                 onClose={() => setPayModalFor(null)}
                 onConfirm={(input) => void onRecordPayment(payModalFor, input)}
               />
