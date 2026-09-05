@@ -114,6 +114,72 @@ export function normalizeProductionTaskTitle(title: string): string {
     .replace(/^install the /, "install ");
 }
 
+const EXACT_ESTIMATED_HOURS: Record<string, number> = {
+  "review approved scope": 0.5,
+  "confirm sitemap and requirements": 1,
+  "collect/confirm client content and assets": 1,
+  "prepare contact information": 0.5,
+  "migrate approved content": 2,
+  "establish design direction": 3,
+  "design brand identity / logo": 4,
+  "design responsive/mobile layouts": 2,
+  "implement responsive layouts": 3,
+  "integrate approved content": 2,
+  "prepare/deploy staging": 1,
+  "prepare staging for client review": 0.5,
+  "address requested revisions": 2,
+  "test staging website": 1.5,
+  "test responsive layouts": 1,
+  "accessibility audit (ada/wcag)": 2,
+  "deploy production": 1,
+  "verify production website": 0.5,
+  "set up ad campaign": 2,
+  "set up social media & content calendar": 2,
+  "final qa": 1,
+  "write homepage copy": 2,
+  "design homepage": 4,
+  "build homepage": 5,
+  "implement e-commerce functionality": 8,
+  "implement online store": 8,
+  "implement customer login": 4,
+  "implement online payments": 3,
+  "implement booking / appointment form": 2,
+  "implement quote request form": 1.5,
+  "implement contact form": 1,
+  "set up seo": 2,
+  "set up hosting": 1,
+  "set up business email": 0.5,
+  "add newsletter signup": 1,
+  "add live chat": 1,
+  "performance optimization": 2,
+  "security setup": 1,
+};
+
+/**
+ * Default effort estimate (hours) for a known production task title, for
+ * prefilling a blank estimate in the task form. Never overwrites a value
+ * someone already entered -- returns null for unrecognized/custom titles.
+ * Mirrors production_task_estimated_hours in
+ * 20260915000000_production_task_default_hours.sql -- keep both in sync.
+ */
+export function estimatedHoursForTitle(title: string): number | null {
+  const key = normalizeProductionTaskTitle(title);
+  if (!key) return null;
+  if (key in EXACT_ESTIMATED_HOURS) return EXACT_ESTIMATED_HOURS[key];
+
+  if (key.endsWith(" copy") && key.startsWith("write ")) return 1.5;
+  if (key.startsWith("design ")) return 3;
+  if (key.startsWith("build ")) return 4;
+  if (key.startsWith("implement ")) return 2;
+  if (key.startsWith("set up ")) return 1;
+  if (key.startsWith("install ")) return 0.5;
+  if (key.startsWith("connect ")) return 0.5;
+  if (key.startsWith("add ")) return 0.5;
+  if (key.startsWith("test ")) return 0.5;
+
+  return null;
+}
+
 function displayPage(subject: string): string {
   const key = subject.trim().replace(/\s+copy$/i, "").replace(/\s+page$/i, "");
   const labels: Record<string, string> = {

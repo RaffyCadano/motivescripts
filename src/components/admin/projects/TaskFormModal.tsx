@@ -17,6 +17,7 @@ import {
   type TaskRecommendedRoleId,
 } from "@/data/taskRecommendedRoles";
 import { effectiveTaskType, TASK_TYPES, taskTypeLabel, type TaskType } from "@/data/taskTypes";
+import { estimatedHoursForTitle } from "@/data/productionTaskInstructions";
 
 const fieldClass =
   "mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]";
@@ -97,6 +98,7 @@ export function TaskFormModal({
       ...current,
       title,
       recommendedRole: task ? current.recommendedRole : recommendedRoleForTaskTitle(title) ?? current.recommendedRole,
+      estimatedHours: task ? current.estimatedHours : estimatedHoursForTitle(title) ?? current.estimatedHours,
     }));
   }
 

@@ -16,7 +16,7 @@ Estimated hours (forward-looking, for capacity planning) and logged hours (actua
 
 Migrations: `20260905000000_task_estimated_hours.sql`, `20260905010000_project_billing_fields.sql`, `20260905020000_time_entries.sql`, `20260905030000_invoice_items_fractional_quantity.sql`, `20260905040000_generate_invoice_from_time.sql`.
 
-`tasks.estimated_hours` — nullable `numeric(6,2)`, PM-entered effort estimate. Not tied to any actual logged time.
+`tasks.estimated_hours` — nullable `numeric(6,2)`, effort estimate. Not tied to any actual logged time. As of `20260915000000_production_task_default_hours.sql`, auto-generated production tasks get a sensible default from `production_task_estimated_hours(title)` (a title-matched lookup — e.g. "Build homepage" defaults higher than "Test contact form") instead of starting blank; a PM can still override it, and an override is never replaced. The manual task form (`TaskFormModal`) mirrors the same defaults client-side (`estimatedHoursForTitle` in `productionTaskInstructions.ts`) when a recognized title is typed for a *new* task — keep both in sync if the catalog changes. A genuinely custom/unrecognized title still gets no default, same as before.
 
 `projects`:
 
