@@ -84,6 +84,7 @@ export function AdminProposals() {
 
   const canCreateContract = hasPermission(profile, "contracts.manage");
   const canViewContract = hasPermission(profile, "contracts.view");
+  const canManage = hasPermission(profile, "proposals.manage");
   const createHref = newProposalHref(clientId, searchParams);
 
   useEffect(() => {
@@ -192,9 +193,11 @@ export function AdminProposals() {
         title="Proposals"
         description="Scope, investment, and terms for client review after a project is ready."
         action={
-          <Link to={createHref} className={`${adminBlueBtn} justify-center`}>
-            + New Proposal
-          </Link>
+          canManage ? (
+            <Link to={createHref} className={`${adminBlueBtn} justify-center`}>
+              + New Proposal
+            </Link>
+          ) : undefined
         }
       />
 
@@ -304,9 +307,11 @@ export function AdminProposals() {
           title="No proposals yet"
           body="Create a proposal after a client and project are ready for pricing and scope review."
           action={
-            <Link to={createHref} className={`${adminBlueBtn} justify-center`}>
-              New Proposal
-            </Link>
+            canManage ? (
+              <Link to={createHref} className={`${adminBlueBtn} justify-center`}>
+                New Proposal
+              </Link>
+            ) : undefined
           }
         />
       ) : visible.length === 0 ? (

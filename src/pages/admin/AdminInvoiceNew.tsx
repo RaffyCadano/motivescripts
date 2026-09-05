@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, Eye, Save, Send } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
+import { hasPermission } from "@/auth/permissions";
 import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
@@ -61,6 +63,8 @@ function scrollToInvoicePreview() {
 
 export function AdminInvoiceNew() {
   const { clients, projects, notify, portalAccounts } = useLeads();
+  const { profile } = useAuth();
+  const canManage = hasPermission(profile, "invoices.manage");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const presetClient = searchParams.get("client") ?? "";
@@ -387,7 +391,7 @@ export function AdminInvoiceNew() {
   }
 
   function editorActions() {
-    if (clients.length === 0) return null;
+    if (clients.length === 0 || !canManage) return null;
     return (
       <InvoiceEditorActions
         busy={busy}
@@ -450,7 +454,7 @@ export function AdminInvoiceNew() {
         </div>
         {editorActions()}
       </div>
-      {clients.length > 0 && contractNumber ? (
+      {clients.length > 0 && canManage && contractNumber ? (
         <section className="rounded-[var(--admin-radius)] border border-[rgb(16_185_129_/_0.35)] bg-[rgb(16_185_129_/_0.06)] p-5">
           <p className="inline-flex items-center gap-1.5 font-heading text-base font-semibold text-emerald-800">
             <Check className="h-4 w-4" />
@@ -466,10 +470,12 @@ export function AdminInvoiceNew() {
           </button>
         </section>
       ) : null}
-      {clients.length > 0 && sendReason ? (
+      {clients.length > 0 && canManage && sendReason ? (
         <p className="text-sm text-[var(--admin-muted)]">{sendReason}</p>
       ) : null}
-      {clients.length === 0 ? (
+      {!canManage ? (
+        <p className="text-sm text-[var(--admin-muted)]">You don’t have permission to create invoices.</p>
+      ) : clients.length === 0 ? (
         <NeedClientEmpty document="invoice" />
       ) : (
         <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Ban, Download, Mail, PencilLine, RotateCcw, Send, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
+import { hasPermission } from "@/auth/permissions";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
 import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
@@ -58,6 +60,8 @@ export function AdminInvoiceDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { clients, projects, notify, reload, portalAccounts } = useLeads();
+  const { profile } = useAuth();
+  const canManage = hasPermission(profile, "invoices.manage");
   const [detail, setDetail] = useState<InvoiceDetail | null>(null);
   const [accepted, setAccepted] = useState<{ id: string; number: string; clientId: string; projectId: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -308,7 +312,7 @@ export function AdminInvoiceDetails() {
       },
     },
   ];
-  if (isDraft) {
+  if (isDraft && canManage) {
     invoiceActions.push({
       id: "send",
       label: "Send Invoice",
@@ -322,7 +326,7 @@ export function AdminInvoiceDetails() {
         setSendOpen(true);
       },
     });
-  } else if (current.invoice.status !== "cancelled") {
+  } else if (current.invoice.status !== "cancelled" && canManage) {
     invoiceActions.push({
       id: "resend",
       label: "Resend email",
@@ -331,7 +335,7 @@ export function AdminInvoiceDetails() {
       onSelect: () => setResendOpen(true),
     });
   }
-  if (canEditSentInvoice(current.effectiveStatus, hasPayments)) {
+  if (canEditSentInvoice(current.effectiveStatus, hasPayments) && canManage) {
     invoiceActions.push({
       id: "edit",
       label: "Edit",
@@ -340,7 +344,7 @@ export function AdminInvoiceDetails() {
       onSelect: () => setEditOpen(true),
     });
   }
-  if (canRestoreInvoice(current.effectiveStatus, hasPayments)) {
+  if (canRestoreInvoice(current.effectiveStatus, hasPayments) && canManage) {
     invoiceActions.push({
       id: "restore",
       label: "Restore",
@@ -349,7 +353,7 @@ export function AdminInvoiceDetails() {
       onSelect: () => setRestoreOpen(true),
     });
   }
-  if (canRecordInvoicePayment(current.effectiveStatus)) {
+  if (canRecordInvoicePayment(current.effectiveStatus) && canManage) {
     invoiceActions.push({
       id: "pay",
       label: "Record Payment",
@@ -357,7 +361,7 @@ export function AdminInvoiceDetails() {
       onSelect: () => setPayOpen(true),
     });
   }
-  if (isDraft && project?.billingMode === "hourly") {
+  if (isDraft && project?.billingMode === "hourly" && canManage) {
     invoiceActions.push({
       id: "generate-time",
       label: "Generate from time entries",
@@ -365,7 +369,7 @@ export function AdminInvoiceDetails() {
       onSelect: () => setGenerateTimeOpen(true),
     });
   }
-  if (canCancelInvoice(current.effectiveStatus, hasPayments)) {
+  if (canCancelInvoice(current.effectiveStatus, hasPayments) && canManage) {
     invoiceActions.push({
       id: "cancel",
       label: "Cancel invoice",
@@ -376,7 +380,10 @@ export function AdminInvoiceDetails() {
       onSelect: () => setCancelOpen(true),
     });
   }
-  if (canDeleteInvoice(current.effectiveStatus, current.payments.length, current.invoice.amount_paid_cents)) {
+  if (
+    canDeleteInvoice(current.effectiveStatus, current.payments.length, current.invoice.amount_paid_cents) &&
+    canManage
+  ) {
     invoiceActions.push({
       id: "delete",
       label: "Delete invoice",
@@ -417,7 +424,7 @@ export function AdminInvoiceDetails() {
             <>
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || !canManage}
                 title="Save this invoice without sending it to the client."
                 className={adminGhostBtn}
                 onClick={async () => {
@@ -438,7 +445,7 @@ export function AdminInvoiceDetails() {
               </button>
               <button
                 type="button"
-                disabled={busy}
+                disabled={busy || !canManage}
                 title={sendReason || "Send this invoice to the client and make it available in the client portal."}
                 className={adminPrimaryBtn}
                 onClick={() => {
@@ -456,6 +463,9 @@ export function AdminInvoiceDetails() {
           <AdminActionsMenu ariaLabel="Invoice actions" iconOnly items={invoiceActions} />
         </div>
       </div>
+      {!canManage ? (
+        <p className="text-[12px] text-[var(--admin-muted)]">View only — you don’t have invoice-editing access.</p>
+      ) : null}
 
       <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
@@ -484,7 +494,7 @@ export function AdminInvoiceDetails() {
             value={form}
             items={items}
             showClient={false}
-            disabled={locked || busy}
+            disabled={locked || busy || !canManage}
             clients={clients.map((item) => ({ id: item.id, label: item.businessName }))}
             projects={projects
               .filter(
@@ -501,7 +511,7 @@ export function AdminInvoiceDetails() {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || !canManage}
                   title="Save this invoice without sending it to the client."
                   className={adminGhostBtn}
                   onClick={async () => {
@@ -522,7 +532,7 @@ export function AdminInvoiceDetails() {
                 </button>
                 <button
                   type="button"
-                  disabled={busy}
+                  disabled={busy || !canManage}
                   title={sendReason || "Send this invoice to the client and make it available in the client portal."}
                   className={adminPrimaryBtn}
                   onClick={() => {
@@ -626,7 +636,7 @@ export function AdminInvoiceDetails() {
                     <td className="py-3 pr-4">{payment.notes || "—"}</td>
                     <td className="py-3 pr-4">{payment.recorded_by_label || "—"}</td>
                     <td className="py-3">
-                      {!payment.reversed_at ? (
+                      {!payment.reversed_at && canManage ? (
                         <button
                           type="button"
                           className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
+import { hasPermission } from "@/auth/permissions";
 import { adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
@@ -21,6 +23,8 @@ function scopeStatusCopy(brief: ClientScopeBrief | null) {
 
 export function AdminProposalNew() {
   const { clients, projects, notify } = useLeads();
+  const { profile } = useAuth();
+  const canManage = hasPermission(profile, "proposals.manage");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const presetClient = searchParams.get("client") ?? "";
@@ -131,7 +135,9 @@ export function AdminProposalNew() {
             : "Creates a draft for this client. If they submitted a Website Scope, those pages are copied in. You'll still set investment and terms before sending."}
         </p>
       </div>
-      {clients.length === 0 ? (
+      {!canManage ? (
+        <p className="text-sm text-[var(--admin-muted)]">You don’t have permission to create proposals.</p>
+      ) : clients.length === 0 ? (
         <NeedClientEmpty document="proposal" />
       ) : (
         <div className="grid max-w-2xl gap-6">

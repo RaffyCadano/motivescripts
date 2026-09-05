@@ -82,6 +82,7 @@ export function AdminInvoices() {
   const [sort, setSort] = useState<"newest" | "oldest">("newest");
 
   const canViewContracts = hasPermission(profile, "contracts.view");
+  const canManage = hasPermission(profile, "invoices.manage");
   const createHref = newInvoiceHref(clientId, searchParams);
 
   useEffect(() => {
@@ -195,9 +196,11 @@ export function AdminInvoices() {
         title="Invoices"
         description="Bill the client after a contract is accepted. Send the invoice, then collect payment online or record it by hand."
         action={
-          <Link to={createHref} className={`${adminBlueBtn} justify-center`}>
-            + New Invoice
-          </Link>
+          canManage ? (
+            <Link to={createHref} className={`${adminBlueBtn} justify-center`}>
+              + New Invoice
+            </Link>
+          ) : undefined
         }
       />
 
@@ -298,9 +301,11 @@ export function AdminInvoices() {
                   View Contracts
                 </Link>
               ) : null}
-              <Link to={createHref} className={`${adminBlueBtn} justify-center`}>
-                New Invoice
-              </Link>
+              {canManage ? (
+                <Link to={createHref} className={`${adminBlueBtn} justify-center`}>
+                  New Invoice
+                </Link>
+              ) : null}
             </>
           }
         />

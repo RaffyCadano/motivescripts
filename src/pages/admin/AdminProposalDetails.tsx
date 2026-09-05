@@ -18,6 +18,8 @@ import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/
 import { adminBlueBtn, adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { AdminInfoTip } from "@/components/admin/AdminInfoTip";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
+import { hasPermission } from "@/auth/permissions";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
 import { LineItemsEditor } from "@/components/documents/LineItemsEditor";
@@ -131,6 +133,8 @@ export function AdminProposalDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { clients, projects, notify, reload, portalAccounts } = useLeads();
+  const { profile } = useAuth();
+  const canManage = hasPermission(profile, "proposals.manage");
   const [detail, setDetail] = useState<ProposalDetail | null>(null);
   const [brief, setBrief] = useState<ClientScopeBrief | null>(null);
   const [linkedContract, setLinkedContract] = useState<ContractSummary | null>(null);
@@ -364,7 +368,7 @@ export function AdminProposalDetails() {
       },
     },
   ];
-  if (isDraft && detail.published) {
+  if (isDraft && detail.published && canManage) {
     proposalActions.push({
       id: "stop-editing",
       label: "Stop editing",
@@ -389,7 +393,7 @@ export function AdminProposalDetails() {
       href: `/admin/contracts/new?client=${current.proposal.client_id}&proposal=${current.proposal.id}${current.proposal.project_id ? `&project=${current.proposal.project_id}` : ""}`,
     });
   }
-  if (!isDraft && status !== "cancelled") {
+  if (!isDraft && status !== "cancelled" && canManage) {
     proposalActions.push({
       id: "edit",
       label: "Edit",
@@ -409,7 +413,7 @@ export function AdminProposalDetails() {
       },
     });
   }
-  if (status !== "accepted" && status !== "cancelled") {
+  if (status !== "accepted" && status !== "cancelled" && canManage) {
     proposalActions.push({
       id: "cancel",
       label: "Cancel proposal",
@@ -420,7 +424,7 @@ export function AdminProposalDetails() {
       onSelect: () => setCancelOpen(true),
     });
   }
-  if (status === "cancelled") {
+  if (status === "cancelled" && canManage) {
     proposalActions.push({
       id: "restore",
       label: "Restore",
@@ -429,7 +433,7 @@ export function AdminProposalDetails() {
       onSelect: () => setRestoreOpen(true),
     });
   }
-  if (status !== "accepted" && publishedStatus !== "accepted" && !detail.acceptedOnce) {
+  if (status !== "accepted" && publishedStatus !== "accepted" && !detail.acceptedOnce && canManage) {
     proposalActions.push({
       id: "delete",
       label: "Delete proposal",
@@ -472,7 +476,12 @@ export function AdminProposalDetails() {
         <div className="flex flex-wrap items-center gap-2">
             {isDraft ? (
               <>
-                <button type="button" disabled={busy} className={adminGhostBtn} onClick={() => void onSave()}>
+                <button
+                  type="button"
+                  disabled={busy || !canManage}
+                  className={adminGhostBtn}
+                  onClick={() => void onSave()}
+                >
                   <Save className="mr-2 h-4 w-4" />
                   {busy ? "Saving…" : "Save Draft"}
                 </button>
@@ -480,7 +489,12 @@ export function AdminProposalDetails() {
                   <Eye className="mr-2 h-4 w-4" />
                   Preview
                 </button>
-                <button type="button" disabled={busy} className={adminPrimaryBtn} onClick={() => setSendOpen(true)}>
+                <button
+                  type="button"
+                  disabled={busy || !canManage}
+                  className={adminPrimaryBtn}
+                  onClick={() => setSendOpen(true)}
+                >
                   <Send className="mr-2 h-4 w-4" />
                   Send Proposal
                 </button>
@@ -496,11 +510,19 @@ export function AdminProposalDetails() {
                   <Eye className="mr-2 h-4 w-4" />
                   View Proposal
                 </button>
-                <button type="button" disabled={busy} className={adminBlueBtn} onClick={() => setResendOpen(true)}>
+                <button
+                  type="button"
+                  disabled={busy || !canManage}
+                  className={adminBlueBtn}
+                  onClick={() => setResendOpen(true)}
+                >
                   <Mail className="mr-2 h-4 w-4" />
                   Send / Resend
                 </button>
               </>
+            ) : null}
+            {!canManage ? (
+              <span className="text-[12px] text-[var(--admin-muted)]">View only — you don’t have proposal-editing access.</span>
             ) : null}
             <AdminActionsMenu ariaLabel="Proposal actions" iconOnly items={proposalActions} />
           </div>
@@ -542,14 +564,14 @@ export function AdminProposalDetails() {
               label="Proposal title"
               hint="The heading saved on this proposal. The client-facing document is titled Website Proposal."
               value={form.title}
-              disabled={!isDraft}
+              disabled={!isDraft || !canManage}
               onChange={(value) => setForm({ ...form, title: value })}
             />
             <Area
               label="Overview"
               hint="Opening note to the client."
               value={form.introduction}
-              disabled={!isDraft}
+              disabled={!isDraft || !canManage}
               rows={5}
               onChange={(value) => setForm({ ...form, introduction: value })}
             />
@@ -557,7 +579,7 @@ export function AdminProposalDetails() {
               label="Project overview"
               hint="What the website will accomplish based on this client's goals."
               value={form.overview}
-              disabled={!isDraft}
+              disabled={!isDraft || !canManage}
               rows={5}
               onChange={(value) => setForm({ ...form, overview: value })}
             />
@@ -573,14 +595,14 @@ export function AdminProposalDetails() {
             <ProposalScopePanel
               scope={form.scope}
               requestedLines={requestedLines}
-              disabled={!isDraft}
+              disabled={!isDraft || !canManage}
               onScopeChange={(scope) => patchDraft({ scope })}
             />
             <Area
               label="Scope list"
               hint="One item per line. Chips above write here. Use this for custom wording."
               value={form.scope}
-              disabled={!isDraft}
+              disabled={!isDraft || !canManage}
               rows={8}
               onChange={(value) => setForm({ ...form, scope: value })}
             />
@@ -591,7 +613,7 @@ export function AdminProposalDetails() {
           >
             <LineListEditor
               value={form.deliverablesText}
-              disabled={!isDraft}
+              disabled={!isDraft || !canManage}
               addLabel="Add deliverable"
               placeholder="Add a deliverable"
               onChange={(deliverablesText) => patchDraft({ deliverablesText })}
@@ -608,7 +630,7 @@ export function AdminProposalDetails() {
             <ProposalAdditionalPanel
               scope={form.scope}
               items={items}
-              disabled={!isDraft}
+              disabled={!isDraft || !canManage}
               addonCents={proposalAddonPriceOverrides(settingsRef.current)}
               onScopeChange={(scope) => patchDraft({ scope })}
               onItemsChange={persistItems}
@@ -625,7 +647,7 @@ export function AdminProposalDetails() {
             <Area
               label="Project timeline"
               value={form.timeline}
-              disabled={!isDraft}
+              disabled={!isDraft || !canManage}
               rows={8}
               onChange={(value) => setForm({ ...form, timeline: value })}
             />
@@ -669,7 +691,7 @@ export function AdminProposalDetails() {
                 Totals are calculated from quantity × unit price in cents.
               </p>
               <div className="mt-3">
-                <LineItemsEditor items={items} disabled={!isDraft} onChange={setItems} />
+                <LineItemsEditor items={items} disabled={!isDraft || !canManage} onChange={setItems} />
               </div>
             </div>
           </EditorCard>
@@ -677,7 +699,7 @@ export function AdminProposalDetails() {
             <Area
               label="Payment terms"
               value={form.paymentTerms}
-              disabled={!isDraft}
+              disabled={!isDraft || !canManage}
               rows={7}
               onChange={(value) => setForm({ ...form, paymentTerms: value })}
             />
@@ -686,7 +708,7 @@ export function AdminProposalDetails() {
             <Area
               label="Terms & conditions"
               value={form.terms}
-              disabled={!isDraft}
+              disabled={!isDraft || !canManage}
               rows={10}
               onChange={(value) => setForm({ ...form, terms: value })}
             />
@@ -695,7 +717,7 @@ export function AdminProposalDetails() {
             <Area
               label="Notes"
               value={form.notes}
-              disabled={!isDraft}
+              disabled={!isDraft || !canManage}
               rows={4}
               onChange={(value) => setForm({ ...form, notes: value })}
             />
@@ -712,7 +734,7 @@ export function AdminProposalDetails() {
               <input
                 id="proposal-valid-until"
                 type="date"
-                disabled={!isDraft}
+                disabled={!isDraft || !canManage}
                 value={form.validUntil}
                 onChange={(event) => setForm({ ...form, validUntil: event.target.value })}
                 className={fieldClass}
@@ -735,7 +757,7 @@ export function AdminProposalDetails() {
             <Area
               label="Internal notes (not shown to the client)"
               value={form.adminNotes}
-              disabled={!isDraft}
+              disabled={!isDraft || !canManage}
               onChange={(value) => setForm({ ...form, adminNotes: value })}
             />
           </EditorCard>
