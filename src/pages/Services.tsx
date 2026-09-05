@@ -2,8 +2,13 @@ import { CTA } from "@/components/CTA";
 import { AnimateIn } from "@/components/AnimateIn";
 import { PageHero } from "@/components/PageHero";
 import { services } from "@/data/services";
+import { usePageMeta } from "@/lib/usePageMeta";
 
 export function ServicesPage() {
+  usePageMeta(
+    "Services — MotiveScripts",
+    "Design, development, and support for small-business websites — from the first conversation through launch, with optional care afterward.",
+  );
   return (
     <main id="main">
       <PageHero

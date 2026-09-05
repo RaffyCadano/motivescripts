@@ -2,10 +2,16 @@ import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/Button";
 import { SitePreview } from "@/components/SitePreview";
 import { getProject } from "@/data/projects";
+import { usePageMeta } from "@/lib/usePageMeta";
 
 export function CaseStudyPage() {
   const { slug } = useParams();
   const project = slug ? getProject(slug) : undefined;
+
+  usePageMeta(
+    project ? `${project.name} — MotiveScripts` : "Project not found — MotiveScripts",
+    project ? project.summary : "That case study does not exist.",
+  );
 
   if (!project) {
     return (

@@ -2,8 +2,13 @@ import { CTA } from "@/components/CTA";
 import { AnimateIn } from "@/components/AnimateIn";
 import { PageHero } from "@/components/PageHero";
 import { processSteps } from "@/data/process";
+import { usePageMeta } from "@/lib/usePageMeta";
 
 export function ProcessPage() {
+  usePageMeta(
+    "Process — MotiveScripts",
+    "A clear, six-step process from discovery to launch, with review built in before your site goes live.",
+  );
   return (
     <main id="main">
       <PageHero

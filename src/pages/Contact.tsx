@@ -7,6 +7,7 @@ import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { inquiryMailtoHref, submitPublicLead, type PublicLeadDraft } from "@/data/publicLead";
 import { site } from "@/data/site";
 import { cn } from "@/lib/cn";
+import { usePageMeta } from "@/lib/usePageMeta";
 
 function draftFromForm(form: HTMLFormElement): PublicLeadDraft {
   const data = new FormData(form);
@@ -22,6 +23,10 @@ function draftFromForm(form: HTMLFormElement): PublicLeadDraft {
 }
 
 export function ContactPage() {
+  usePageMeta(
+    "Start a Project — MotiveScripts",
+    "Tell us about the website you want to build. Share a few details about your business and project and we'll follow up with next steps.",
+  );
   const { reload } = useLeads();
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);

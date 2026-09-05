@@ -3,6 +3,7 @@ import { AnimateIn } from "@/components/AnimateIn";
 import { CTA } from "@/components/CTA";
 import { PageHero } from "@/components/PageHero";
 import { pipeline, whyPoints } from "@/data/site";
+import { usePageMeta } from "@/lib/usePageMeta";
 
 const clients = [
   "Home service businesses",
@@ -31,6 +32,10 @@ const websiteJobs = [
 ];
 
 export function AboutPage() {
+  usePageMeta(
+    "About — MotiveScripts",
+    "MotiveScripts designs and develops websites for local and service businesses, from strategy through launch and ongoing care.",
+  );
   return (
     <main id="main">
       <PageHero

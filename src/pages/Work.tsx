@@ -3,8 +3,13 @@ import { ProjectCard } from "@/components/ProjectCard";
 import { AnimateIn } from "@/components/AnimateIn";
 import { CTA } from "@/components/CTA";
 import { projects } from "@/data/projects";
+import { usePageMeta } from "@/lib/usePageMeta";
 
 export function WorkPage() {
+  usePageMeta(
+    "Work — MotiveScripts",
+    "Selected website concepts for small businesses, showing how MotiveScripts structures websites for local service companies.",
+  );
   return (
     <main id="main">
       <PageHero
