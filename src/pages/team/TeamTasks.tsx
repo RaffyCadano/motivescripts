@@ -5,7 +5,7 @@ import { TeamTaskBoard } from "@/components/team/TeamTaskBoard";
 import { TeamTaskCard } from "@/components/team/TeamTaskCard";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
-import { taskPriorities, type AgencyTaskPriority, type AgencyTaskStatus } from "@/data/agencyProjects";
+import { earlierOpenMilestones, taskPriorities, type AgencyTaskPriority, type AgencyTaskStatus } from "@/data/agencyProjects";
 import { effectiveTaskType } from "@/data/taskTypes";
 import {
   filterTeamTasks,
@@ -183,6 +183,10 @@ export function TeamTasks() {
           canUpdateStatus
           busy={busy}
           error={error}
+          earlierOpen={(() => {
+            const project = myProjects.find((item) => item.id === openTask.projectId);
+            return project ? earlierOpenMilestones(project, openTask.milestoneId) : undefined;
+          })()}
           extra={
             effectiveTaskType(openTask) === "client_review" ? (
               <ClientReviewLinkOut

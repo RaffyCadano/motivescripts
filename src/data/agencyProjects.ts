@@ -201,6 +201,27 @@ export function milestoneTaskCounts(project: Pick<AgencyProject, "tasks">, miles
   return { total, completed, percent };
 }
 
+/**
+ * Milestones ordered earlier than the given one that still have open (not
+ * Completed) tasks -- a soft heads-up, not an enforced dependency. Deliberately
+ * not a hard block: real work often reasonably overlaps stages (a developer
+ * scaffolding while design is still being finalized), so this only informs,
+ * it never prevents a status change.
+ */
+export function earlierOpenMilestones(
+  project: Pick<AgencyProject, "milestones" | "tasks">,
+  milestoneId: string,
+): { name: string; openCount: number }[] {
+  const target = project.milestones.find((item) => item.id === milestoneId);
+  if (!target) return [];
+  return [...project.milestones]
+    .filter((item) => item.order < target.order)
+    .sort((a, b) => a.order - b.order)
+    .map((item) => ({ name: item.name, ...milestoneTaskCounts(project, item.id) }))
+    .filter((item) => item.total - item.completed > 0)
+    .map((item) => ({ name: item.name, openCount: item.total - item.completed }));
+}
+
 export function currentMilestone(project: AgencyProject): AgencyMilestone | null {
   const ordered = [...project.milestones].sort((a, b) => a.order - b.order);
   return (

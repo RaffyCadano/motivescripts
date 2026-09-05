@@ -3,7 +3,7 @@ import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { TaskClientRequestPanel } from "@/components/tasks/TaskClientRequestPanel";
 import { adminGhostBtn } from "@/components/admin/adminActionStyles";
 import type { AgencyDeliverable } from "@/data/files";
-import type { AgencyProject, AgencyTask, AgencyTaskStatus } from "@/data/agencyProjects";
+import { earlierOpenMilestones, type AgencyProject, type AgencyTask, type AgencyTaskStatus } from "@/data/agencyProjects";
 import { effectiveTaskType } from "@/data/taskTypes";
 import type { TeamWorkTask } from "@/data/teamWorkspace";
 
@@ -87,6 +87,7 @@ export function TaskWorkspace({
       error={error}
       workspace="admin"
       extra={extra}
+      earlierOpen={earlierOpenMilestones(project, task.milestoneId)}
       onClose={onClose}
       onStatusChange={onStatusChange}
     />

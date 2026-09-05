@@ -25,6 +25,7 @@ import { useTeamWork } from "@/components/team/useTeamWork";
 import {
   calculateProjectProgress,
   currentMilestone,
+  earlierOpenMilestones,
   formatProjectDay,
   milestoneTaskCounts,
   upcomingMilestone,
@@ -285,6 +286,7 @@ export function TeamProjectDetails() {
           )}
           busy={busy}
           error={error}
+          earlierOpen={earlierOpenMilestones(project, openTask.milestoneId)}
           extra={
             effectiveTaskType(openTask) === "client_review" ? (
               <ClientReviewLinkOut

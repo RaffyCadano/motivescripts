@@ -7,7 +7,7 @@ import { TeamProjectCard } from "@/components/team/TeamProjectCard";
 import { TeamTaskCard } from "@/components/team/TeamTaskCard";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
-import { formatProjectDay } from "@/data/agencyProjects";
+import { earlierOpenMilestones, formatProjectDay } from "@/data/agencyProjects";
 import { effectiveTaskType } from "@/data/taskTypes";
 import {
   collectRecentProjectActivity,
@@ -243,6 +243,10 @@ export function TeamDashboard() {
           canUpdateStatus
           busy={busy}
           error={error}
+          earlierOpen={(() => {
+            const project = myProjects.find((item) => item.id === openTask.projectId);
+            return project ? earlierOpenMilestones(project, openTask.milestoneId) : undefined;
+          })()}
           extra={
             effectiveTaskType(openTask) === "client_review" ? (
               <ClientReviewLinkOut

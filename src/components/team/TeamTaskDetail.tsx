@@ -25,6 +25,8 @@ type TeamTaskDetailProps = {
   workspace?: "team" | "admin";
   /** Task-type-specific content (Discovery link, client-request panel, etc.), rendered after instructions. */
   extra?: ReactNode;
+  /** Earlier milestones that still have open tasks -- a heads-up, never a block. Omit when the caller has no project context. */
+  earlierOpen?: { name: string; openCount: number }[];
   onClose: () => void;
   onStatusChange: (status: AgencyTaskStatus) => void;
 };
@@ -37,6 +39,7 @@ export function TeamTaskDetail({
   error,
   workspace = "team",
   extra,
+  earlierOpen,
   onClose,
   onStatusChange,
 }: TeamTaskDetailProps) {
@@ -174,6 +177,13 @@ export function TeamTaskDetail({
                 ))}
               </select>
             </label>
+          ) : null}
+
+          {earlierOpen && earlierOpen.length > 0 ? (
+            <p className="mt-3 rounded-lg border border-[rgb(180_83_9_/_0.3)] bg-[rgb(180_83_9_/_0.06)] px-3 py-2.5 text-[13px] text-[#b45309]">
+              This task is in a later stage than {earlierOpen.map((item) => `${item.name} (${item.openCount} open)`).join(", ")}.
+              Just a heads-up — you can still work on it.
+            </p>
           ) : null}
 
           {error ? <p className="mt-3 text-sm text-[#b45309]">{error}</p> : null}
