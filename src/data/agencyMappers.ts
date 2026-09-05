@@ -200,6 +200,7 @@ export function mapProjectDevelopment(row: ProjectDevelopmentRow): ProjectDevelo
   return {
     repositoryUrl: row.repository_url ?? "",
     repositoryBranch: row.repository_branch ?? "",
+    templateRepositoryUrl: row.template_repository_url ?? "",
     stagingUrl: "",
     productionUrl: "",
     hostingProvider: row.hosting_provider ?? "",

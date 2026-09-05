@@ -534,11 +534,13 @@ export async function upsertProjectDevelopment(projectId: string, development: P
   const stagingUrl = validatedHttpUrl(development.stagingUrl, "staging");
   const productionUrl = validatedHttpUrl(development.productionUrl, "production");
   const repositoryUrl = validatedHttpUrl(development.repositoryUrl, "repository");
+  const templateRepositoryUrl = validatedHttpUrl(development.templateRepositoryUrl, "starter template");
   const { error } = await client.from("project_development").upsert(
     {
       project_id: projectId,
       repository_url: repositoryUrl,
       repository_branch: emptyToNull(development.repositoryBranch),
+      template_repository_url: templateRepositoryUrl,
       hosting_provider: emptyToNull(development.hostingProvider),
       deployment_status: development.deploymentStatus,
       last_deployed_at: emptyToNull(development.lastDeployedAt),

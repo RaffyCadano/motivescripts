@@ -92,7 +92,7 @@ On a project's own page (`/team/projects/:id`), the tabs are: Overview, Tasks, M
 
 **Hosting stays external.** Deployment/staging/production tasks explicitly say MotiveScripts doesn't perform the actual hosting — that happens on whatever infrastructure the agency uses outside this app. Your job on those tasks is preparing the build and confirming it's live, not provisioning a server.
 
-After you deploy, click **Edit** on the Development card (Overview tab) to update the repository/branch, staging and production URLs, hosting provider, and deployment status yourself — it's a small scoped form, not the full project edit page, so it can't touch anything else about the project.
+After you deploy, click **Edit** on the Development card (Overview tab) to update the repository/branch, staging and production URLs, hosting provider, and deployment status yourself — it's a small scoped form, not the full project edit page, so it can't touch anything else about the project. If the project started from a per-industry starter template (a shared GitHub boilerplate for landscaping, contractors, restaurants, etc.), link it in **Starter template repository** so anyone opening the project later can see what it was scaffolded from — this is just a reference link, not something the app clones or manages.
 
 ## Team Member
 

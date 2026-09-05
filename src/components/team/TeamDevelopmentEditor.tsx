@@ -118,6 +118,19 @@ export function TeamDevelopmentEditor({ projectId, development, onClose, onSaved
               className={inputClass}
             />
           </label>
+          <label className="mt-4 block text-sm font-semibold">
+            Starter template repository
+            <input
+              type="text"
+              inputMode="url"
+              autoComplete="off"
+              placeholder="https://github.com/your-org/landscaping-starter"
+              value={draft.templateRepositoryUrl}
+              disabled={busy}
+              onChange={(event) => patch("templateRepositoryUrl", event.target.value)}
+              className={inputClass}
+            />
+          </label>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <label className="block text-sm font-semibold">
               Staging URL

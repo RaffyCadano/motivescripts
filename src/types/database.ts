@@ -92,6 +92,7 @@ export type ProjectDevelopmentRow = {
   project_id: string;
   repository_url: string | null;
   repository_branch: string | null;
+  template_repository_url: string | null;
   hosting_provider: string | null;
   deployment_status: string;
   last_deployed_at: string | null;

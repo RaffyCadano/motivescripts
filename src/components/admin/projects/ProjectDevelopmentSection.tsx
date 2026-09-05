@@ -82,6 +82,7 @@ type ProjectDevelopmentSectionProps = {
 
 export function ProjectDevelopmentSection({ development, editHref, onEditClick }: ProjectDevelopmentSectionProps) {
   const repoHref = safeHttpHref(development.repositoryUrl);
+  const templateHref = safeHttpHref(development.templateRepositoryUrl);
   const stagingHref = safeHttpHref(development.stagingUrl);
   const productionHref = safeHttpHref(development.productionUrl);
 
@@ -104,6 +105,12 @@ export function ProjectDevelopmentSection({ development, editHref, onEditClick }
         ) : null}
       </div>
       <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+        <Field
+          label="Starter template"
+          value={development.templateRepositoryUrl}
+          href={templateHref ?? undefined}
+          linkLabel="Open Template"
+        />
         <Field label="Repository" value={development.repositoryUrl} href={repoHref ?? undefined} linkLabel="Open Repository" />
         <Field label="Branch" value={development.repositoryBranch} />
         <Field label="Staging" value={development.stagingUrl} href={stagingHref ?? undefined} linkLabel="Open Staging" />

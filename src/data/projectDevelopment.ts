@@ -13,6 +13,7 @@ export type DeploymentStatus = (typeof deploymentStatuses)[number];
 export type ProjectDevelopment = {
   repositoryUrl: string;
   repositoryBranch: string;
+  templateRepositoryUrl: string;
   stagingUrl: string;
   productionUrl: string;
   hostingProvider: string;
@@ -24,6 +25,7 @@ export function emptyProjectDevelopment(): ProjectDevelopment {
   return {
     repositoryUrl: "",
     repositoryBranch: "",
+    templateRepositoryUrl: "",
     stagingUrl: "",
     productionUrl: "",
     hostingProvider: "",
