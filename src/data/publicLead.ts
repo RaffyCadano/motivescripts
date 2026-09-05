@@ -8,6 +8,8 @@ export type PublicLeadDraft = {
   phone: string;
   industry: string;
   goal: string;
+  /** Honeypot — real visitors never fill this in. A non-empty value marks the submission as a bot. */
+  website?: string;
 };
 
 export type PublicLeadResult = { ok: true } | { ok: false };
@@ -40,6 +42,7 @@ export async function submitPublicLead(draft: PublicLeadDraft): Promise<PublicLe
       phone: draft.phone.trim(),
       industry: draft.industry,
       goal: draft.goal.trim(),
+      website: draft.website ?? "",
     },
   });
 

@@ -8,6 +8,7 @@ import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
 import { AdminStatusChips } from "@/components/admin/list/AdminStatusChips";
 import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
+import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { TeamStatusBadge } from "@/components/admin/team/TeamStatusBadge";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import {
@@ -52,6 +53,7 @@ export function AdminTeam() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteMessage, setInviteMessage] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<TeamInvitation | null>(null);
   const canInvite = isActiveAdmin(profile);
   const canView = hasPermission(profile, "team.view");
 
@@ -137,6 +139,7 @@ export function AdminTeam() {
       setInviteMessage(caught instanceof AgencyDbError ? caught.message : "This invitation can no longer be changed.");
     } finally {
       setBusyId(null);
+      setCancelTarget(null);
     }
   }
 
@@ -295,7 +298,7 @@ export function AdminTeam() {
               busyId={busyId}
               message={inviteMessage}
               onResend={resendInvite}
-              onCancel={cancelInvite}
+              onCancel={setCancelTarget}
             />
           ) : null}
         </>
@@ -305,6 +308,20 @@ export function AdminTeam() {
         Role, permissions, and project assignments determine what each person can access. Open a teammate to review
         profile, permissions, assigned clients, and workload.
       </p>
+
+      <ConfirmDocumentModal
+        open={Boolean(cancelTarget)}
+        busy={Boolean(cancelTarget && busyId === cancelTarget.id)}
+        danger
+        title="Cancel this invitation?"
+        description={`${cancelTarget?.email ?? "This person"} will no longer be able to accept it. You can invite them again later.`}
+        actionLabel="Cancel invitation"
+        cancelLabel="Go back"
+        onClose={() => setCancelTarget(null)}
+        onConfirm={() => {
+          if (cancelTarget) void cancelInvite(cancelTarget);
+        }}
+      />
     </div>
   );
 }

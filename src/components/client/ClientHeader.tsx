@@ -25,6 +25,7 @@ export function ClientHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenM
   const [notesOpen, setNotesOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const notesRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -190,6 +191,7 @@ export function ClientHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenM
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[var(--client-ink)] hover:bg-[var(--client-bg)]"
                 onClick={() => {
                   setMenuOpen(false);
+                  setSignOutError(null);
                   setConfirmSignOut(true);
                 }}
               >
@@ -204,7 +206,12 @@ export function ClientHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenM
       <ClientConfirmDialog
         open={confirmSignOut}
         title="Log out?"
-        body="You’ll need a new sign-in link to get back into the client portal."
+        body={
+          <>
+            You’ll need a new sign-in link to get back into the client portal.
+            {signOutError ? <span className="mt-2 block font-medium text-[#b42318]">{signOutError}</span> : null}
+          </>
+        }
         confirmLabel="Log out"
         busy={signingOut}
         busyLabel="Signing out…"
@@ -214,8 +221,14 @@ export function ClientHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenM
         }}
         onConfirm={() => {
           if (signingOut) return;
+          setSignOutError(null);
           setSigningOut(true);
-          void signOut().then(() => navigate("/login"));
+          void signOut()
+            .then(() => navigate("/login"))
+            .catch(() => {
+              setSigningOut(false);
+              setSignOutError("Couldn’t log out. Check your connection and try again.");
+            });
         }}
       />
     </header>

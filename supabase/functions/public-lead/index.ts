@@ -25,6 +25,8 @@ type RequestBody = {
   phone?: string;
   industry?: string;
   goal?: string;
+  /** Honeypot field — real visitors never fill this in. Non-empty means a bot. */
+  website?: string;
 };
 
 type JsonFn = (body: Record<string, unknown>, status?: number) => Response;
@@ -170,6 +172,13 @@ Deno.serve(async (req) => {
     body = (await req.json()) as RequestBody;
   } catch {
     return json({ ok: false }, 400);
+  }
+
+  // Honeypot: a real visitor never sees or fills this field. A bot filling
+  // every input on the form will. Pretend success so the bot gets no signal
+  // it was caught, but skip the insert and the outbound email entirely.
+  if (clip(body.website, 200)) {
+    return json({ ok: true });
   }
 
   const name = clip(body.name, 120);

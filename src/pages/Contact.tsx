@@ -17,6 +17,7 @@ function draftFromForm(form: HTMLFormElement): PublicLeadDraft {
     phone: String(data.get("phone") ?? ""),
     industry: String(data.get("industry") ?? ""),
     goal: String(data.get("goal") ?? ""),
+    website: String(data.get("website") ?? ""),
   };
 }
 
@@ -71,6 +72,10 @@ export function ContactPage() {
           </div>
         ) : (
           <form className="rounded-[var(--radius-lg)] border border-[var(--color-line)] p-6 md:p-8" onSubmit={onSubmit}>
+            <div className="absolute left-[-9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
+              <label htmlFor="website">Website</label>
+              <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+            </div>
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Name" name="name" autoComplete="name" required placeholder="Your name" />
               <Field label="Business name" name="business" autoComplete="organization" required placeholder="Your business" />

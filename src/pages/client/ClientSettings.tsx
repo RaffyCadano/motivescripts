@@ -3,6 +3,7 @@ import { useLeads, usePortalIdentity } from "@/components/admin/leads/LeadsProvi
 import { formatUsdFromCents } from "@/data/money";
 import { SERVICE_PLAN_STATUS_LABELS, SERVICE_PLAN_TYPE_LABELS, type ServicePlan } from "@/data/servicePlans";
 import { listServicePlans } from "@/data/servicePlansRepository";
+import { site } from "@/data/site";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 const PREFS_KEY = "motivescripts.client.device-notification-prefs";
@@ -107,17 +108,32 @@ export function ClientSettings() {
               {plans.map((plan) => (
                 <li
                   key={plan.id}
-                  className="flex items-center justify-between gap-3 rounded-[var(--client-radius)] border border-[var(--client-line)] px-4 py-3"
+                  className="rounded-[var(--client-radius)] border border-[var(--client-line)] px-4 py-3"
                 >
-                  <div>
-                    <p className="text-sm font-medium text-[var(--client-ink)]">{plan.label}</p>
-                    <p className="mt-0.5 text-[12px] text-[var(--client-muted)]">
-                      {SERVICE_PLAN_TYPE_LABELS[plan.planType]} · {formatUsdFromCents(plan.amountCents)}/mo
-                    </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-[var(--client-ink)]">{plan.label}</p>
+                      <p className="mt-0.5 text-[12px] text-[var(--client-muted)]">
+                        {SERVICE_PLAN_TYPE_LABELS[plan.planType]} · {formatUsdFromCents(plan.amountCents)}/mo
+                      </p>
+                    </div>
+                    <span
+                      className={`text-[12px] font-semibold ${
+                        plan.status === "past_due" ? "text-[#b45309]" : "text-[var(--client-muted)]"
+                      }`}
+                    >
+                      {SERVICE_PLAN_STATUS_LABELS[plan.status]}
+                    </span>
                   </div>
-                  <span className="text-[12px] font-semibold text-[var(--client-muted)]">
-                    {SERVICE_PLAN_STATUS_LABELS[plan.status]}
-                  </span>
+                  {plan.status === "past_due" ? (
+                    <p className="mt-2 text-[12px] leading-relaxed text-[#b45309]">
+                      The last charge for this plan didn’t go through — check the card on file with your bank, or{" "}
+                      <a className="font-medium underline underline-offset-2" href={`mailto:${site.email}`}>
+                        contact us
+                      </a>{" "}
+                      and we’ll help sort it out.
+                    </p>
+                  ) : null}
                 </li>
               ))}
             </ul>
