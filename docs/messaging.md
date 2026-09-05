@@ -122,7 +122,9 @@ Added by `supabase/migrations/20260901210000_production_project_messaging.sql`, 
 | `version_sent_for_review` | That project’s client users | `version_ready_for_review` |
 | `status_changed` | That project’s client users | `project_update` |
 
-Milestone/task noise is ignored. Activity remains the project audit trail; notifications are a personal inbox. Message bodies are not copied into activity (only `conversation_created` / `conversation_closed` when a project is linked).
+Activity remains the project audit trail; notifications are a personal inbox. Message bodies are not copied into activity (only `conversation_created` / `conversation_closed` when a project is linked).
+
+As of `20260919000000_activity_task_milestone_events.sql`, task assignment, task status changes, and milestone updates are no longer "noise" that's ignored — they're logged to `public.activity` too (`task_assigned`/`task_status_changed`/`milestone_updated`, icons `task`/`milestone`), since the Activity tab is supposed to be the full project timeline and these are the bulk of day-to-day production work. They deliberately aren't added to `activity_notify_recipients`'s table above — the existing `task_assigned`/`task_status_changed`/`milestone_updated` **notifications** (a separate, older mechanism — see `tasks_notify_assignment`/`tasks_notify_status`/`milestones_notify_update` in `20260830350000_team_member_workspace.sql`) already cover the personal-inbox side of the same events, so wiring them through `activity_notify_recipients` as well would double-notify. A project's initial 15-30 auto-generated tasks are logged as one aggregate `production_plan_generated` row (task/milestone count), not one row per task — see `time-tracking.md`-adjacent migration comments for why.
 
 Notification links use existing routes only (`/admin/messages/:id`, `/client/messages/:id`, `/admin/projects/:id`, `/client/files/:id`, `/client/project/:id`).
 
