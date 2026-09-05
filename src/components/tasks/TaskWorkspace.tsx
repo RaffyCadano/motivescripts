@@ -14,6 +14,8 @@ type TaskWorkspaceProps = {
   deliverables: AgencyDeliverable[];
   busy?: boolean;
   error?: string | null;
+  /** Assignee's current In Progress count, for the WIP-limit nudge. Omit when the caller has no cross-project task list. */
+  wipCount?: number;
   onClose: () => void;
   onStatusChange: (status: AgencyTaskStatus) => void;
   onOpenDiscovery: () => void;
@@ -33,6 +35,7 @@ export function TaskWorkspace({
   deliverables,
   busy,
   error,
+  wipCount,
   onClose,
   onStatusChange,
   onOpenDiscovery,
@@ -88,6 +91,7 @@ export function TaskWorkspace({
       workspace="admin"
       extra={extra}
       earlierOpen={earlierOpenMilestones(project, task.milestoneId)}
+      wipCount={wipCount}
       onClose={onClose}
       onStatusChange={onStatusChange}
     />

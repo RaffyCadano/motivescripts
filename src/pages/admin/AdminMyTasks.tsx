@@ -7,6 +7,7 @@ import { taskPriorities, type AgencyTaskPriority, type AgencyTaskStatus } from "
 import {
   adminProjectHref,
   filterMyTasks,
+  inProgressCount,
   myTasksSummaryStats,
   sortMyTasks,
   uniqueTaskPhases,
@@ -25,7 +26,7 @@ const statusFilters: { id: MyTasksStatusFilter; label: string }[] = [
 
 export function AdminMyTasks() {
   const navigate = useNavigate();
-  const { tasks, myProjects, deliverables, changeTaskStatus } = useTeamWork();
+  const { profile, tasks, myProjects, deliverables, changeTaskStatus } = useTeamWork();
   const [status, setStatus] = useState<MyTasksStatusFilter>("all");
   const [projectId, setProjectId] = useState<string | "All">("All");
   const [priority, setPriority] = useState<AgencyTaskPriority | "All">("All");
@@ -174,6 +175,7 @@ export function AdminMyTasks() {
           deliverables={deliverables}
           busy={busy}
           error={error}
+          wipCount={inProgressCount(tasks, profile?.id ?? "", profile?.fullName ?? "")}
           onClose={() => {
             setOpenTask(null);
             setError(null);

@@ -9,6 +9,7 @@ import { earlierOpenMilestones, taskPriorities, type AgencyTaskPriority, type Ag
 import { effectiveTaskType } from "@/data/taskTypes";
 import {
   filterTeamTasks,
+  inProgressCount,
   matchesTaskSearch,
   teamProjectHref,
   type TeamTaskFilter,
@@ -31,7 +32,7 @@ const filters: { id: TeamTaskFilter; label: string }[] = [
 
 export function TeamTasks() {
   const navigate = useNavigate();
-  const { tasks, myProjects, deliverables, changeTaskStatus } = useTeamWork();
+  const { profile, tasks, myProjects, deliverables, changeTaskStatus } = useTeamWork();
   const [filter, setFilter] = useState<TeamTaskFilter>("all");
   const [projectId, setProjectId] = useState<string | "All">("All");
   const [priority, setPriority] = useState<AgencyTaskPriority | "All">("All");
@@ -187,6 +188,7 @@ export function TeamTasks() {
             const project = myProjects.find((item) => item.id === openTask.projectId);
             return project ? earlierOpenMilestones(project, openTask.milestoneId) : undefined;
           })()}
+          wipCount={inProgressCount(tasks, profile?.id ?? "", profile?.fullName ?? "")}
           extra={
             effectiveTaskType(openTask) === "client_review" ? (
               <ClientReviewLinkOut

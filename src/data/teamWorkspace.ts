@@ -132,6 +132,13 @@ export function isAssignedToMe(
   return false;
 }
 
+/** Kanban-style WIP limit -- a soft nudge, never a block. 3 is a common small-team default. */
+export const WIP_LIMIT = 3;
+
+export function inProgressCount(tasks: Pick<TeamWorkTask, "status" | "assignedTo" | "assignee">[], userId: string, fullName: string): number {
+  return tasks.filter((task) => task.status === "In Progress" && isAssignedToMe(task, userId, fullName)).length;
+}
+
 export function collectAssignedTasks(
   projects: AgencyProject[],
   clientsById: Map<string, { businessName: string }>,

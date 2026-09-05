@@ -13,6 +13,7 @@ import {
   collectRecentProjectActivity,
   collectTeamAttention,
   greetingFor,
+  inProgressCount,
   isDueSoon,
   isTaskOverdue,
   myOpenTaskCount,
@@ -247,6 +248,7 @@ export function TeamDashboard() {
             const project = myProjects.find((item) => item.id === openTask.projectId);
             return project ? earlierOpenMilestones(project, openTask.milestoneId) : undefined;
           })()}
+          wipCount={inProgressCount(tasks, profile?.id ?? "", profile?.fullName ?? "")}
           extra={
             effectiveTaskType(openTask) === "client_review" ? (
               <ClientReviewLinkOut

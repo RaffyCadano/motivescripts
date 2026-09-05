@@ -38,7 +38,14 @@ import { deliverableApprovalStats } from "@/data/files";
 import { displayMilestoneName } from "@/data/projectMilestones";
 import { taskInstructionPreview } from "@/data/productionTaskInstructions";
 import { effectiveTaskType } from "@/data/taskTypes";
-import { isAssignedToMe, myOpenTaskCount, projectWorkload, teamProjectHref, type TeamWorkTask } from "@/data/teamWorkspace";
+import {
+  isAssignedToMe,
+  inProgressCount,
+  myOpenTaskCount,
+  projectWorkload,
+  teamProjectHref,
+  type TeamWorkTask,
+} from "@/data/teamWorkspace";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
 
@@ -287,6 +294,7 @@ export function TeamProjectDetails() {
           busy={busy}
           error={error}
           earlierOpen={earlierOpenMilestones(project, openTask.milestoneId)}
+          wipCount={inProgressCount(tasks, profile?.id ?? "", profile?.fullName ?? "")}
           extra={
             effectiveTaskType(openTask) === "client_review" ? (
               <ClientReviewLinkOut

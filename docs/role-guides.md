@@ -66,6 +66,10 @@ Your dashboard shows, in priority order: **overdue tasks**, **due soon**, **assi
 
 Task status you control: **Not Started → In Progress → In Review → Completed** (or **Blocked**, if something outside your control is stopping you). Move it to **In Review** when you're done and want PM/client eyes on it, not straight to Completed — In Review is how the PM knows to check your work. My Tasks has a filter chip for each status, including Blocked.
 
+If you have more than **3 tasks In Progress at once**, the task panel nudges you to finish one before starting more — a WIP limit, not a hard rule. You can ignore it.
+
+You'll also get a notification when a task becomes **due tomorrow**, and another **every day it stays overdue and incomplete** — a repeating nag on purpose, not a one-time heads-up, so it keeps surfacing until it's actually done.
+
 If a task sits in a later stage (say, Development) while an earlier one (Design) still has open tasks, the task panel shows a heads-up — **not a block**. You can still work on it; it's just flagging that something upstream might not be finished yet, in case that changes what you're about to build.
 
 Tasks now come with a real due date, not blank — derived from the project's target launch date, split across the five stages. If the project has no target launch date set, your tasks stay undated, same as before.

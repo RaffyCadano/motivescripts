@@ -138,8 +138,12 @@ export function notificationHref(item: AppNotification, role: "admin" | "staff" 
       return item.conversationId ? `/client/messages/${item.conversationId}` : "/client/messages";
     case "task_assigned":
     case "task_status_changed":
+    case "task_due_soon":
+    case "task_overdue":
       if (staff) return "/team/tasks";
       return item.projectId ? `/admin/projects/${item.projectId}` : "/admin/projects";
+    case "payroll_paid":
+      return staff ? "/team/time" : "/admin/payroll";
     case "project_assigned":
     case "milestone_updated":
       if (agency) {

@@ -152,6 +152,8 @@ export type TimeEntryRow = {
 export type StaffPayRateRow = {
   user_id: string;
   pay_rate_cents: number;
+  zelle_contact: string | null;
+  paypal_email: string | null;
   updated_at: string;
   updated_by: string | null;
 };
@@ -370,7 +372,15 @@ export type NotificationType =
   | "task_assigned"
   | "task_status_changed"
   | "project_assigned"
-  | "milestone_updated";
+  | "milestone_updated"
+  | "task_info_requested"
+  | "task_response_submitted"
+  | "plan_past_due"
+  | "plan_canceled"
+  | "task_comment_added"
+  | "task_due_soon"
+  | "task_overdue"
+  | "payroll_paid";
 
 export type NotificationRow = {
   id: string;
@@ -1222,7 +1232,12 @@ export type Database = {
         Returns: string;
       };
       set_staff_pay_rate: {
-        Args: { p_user_id: string; p_pay_rate_cents: number };
+        Args: {
+          p_user_id: string;
+          p_pay_rate_cents: number;
+          p_zelle_contact?: string;
+          p_paypal_email?: string;
+        };
         Returns: void;
       };
       mark_time_entries_paid: {

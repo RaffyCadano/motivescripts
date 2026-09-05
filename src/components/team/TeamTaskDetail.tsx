@@ -11,7 +11,7 @@ import { TaskDeliverableSection } from "@/components/tasks/TaskDeliverableSectio
 import { TaskInstructions } from "@/components/tasks/TaskInstructions";
 import { formatProjectDay, taskStatuses, type AgencyTaskStatus } from "@/data/agencyProjects";
 import type { AgencyDeliverable } from "@/data/files";
-import { dueLabel, adminProjectHref, teamProjectHref, type TeamWorkTask } from "@/data/teamWorkspace";
+import { dueLabel, adminProjectHref, teamProjectHref, WIP_LIMIT, type TeamWorkTask } from "@/data/teamWorkspace";
 import { isoCalendarDate } from "@/data/invoices";
 import { logTimeEntry } from "@/data/timeEntriesRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
@@ -27,6 +27,8 @@ type TeamTaskDetailProps = {
   extra?: ReactNode;
   /** Earlier milestones that still have open tasks -- a heads-up, never a block. Omit when the caller has no project context. */
   earlierOpen?: { name: string; openCount: number }[];
+  /** How many tasks this assignee currently has In Progress (including this one, if it's already In Progress) -- a WIP-limit nudge, never a block. */
+  wipCount?: number;
   onClose: () => void;
   onStatusChange: (status: AgencyTaskStatus) => void;
 };
@@ -40,6 +42,7 @@ export function TeamTaskDetail({
   workspace = "team",
   extra,
   earlierOpen,
+  wipCount,
   onClose,
   onStatusChange,
 }: TeamTaskDetailProps) {
@@ -183,6 +186,12 @@ export function TeamTaskDetail({
             <p className="mt-3 rounded-lg border border-[rgb(180_83_9_/_0.3)] bg-[rgb(180_83_9_/_0.06)] px-3 py-2.5 text-[13px] text-[#b45309]">
               This task is in a later stage than {earlierOpen.map((item) => `${item.name} (${item.openCount} open)`).join(", ")}.
               Just a heads-up — you can still work on it.
+            </p>
+          ) : null}
+
+          {task.status === "In Progress" && wipCount != null && wipCount > WIP_LIMIT ? (
+            <p className="mt-3 rounded-lg border border-[rgb(180_83_9_/_0.3)] bg-[rgb(180_83_9_/_0.06)] px-3 py-2.5 text-[13px] text-[#b45309]">
+              {wipCount} tasks In Progress at once — consider finishing one before starting more. Just a nudge, not a block.
             </p>
           ) : null}
 
