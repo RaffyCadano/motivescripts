@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
+import { isDeveloper } from "@/auth/roles";
 import { BrandMark } from "@/components/BrandMark";
 import { TeamNavItem } from "@/components/team/TeamNavItem";
 import { canOpenAdminWorkspace, filterTeamNavGroups } from "@/data/teamNav";
@@ -15,6 +16,7 @@ type TeamSidebarProps = {
 export function TeamSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigate }: TeamSidebarProps) {
   const { profile } = useAuth();
   const showAdmin = canOpenAdminWorkspace(profile);
+  const portalLabel = isDeveloper(profile) ? "Development Workspace" : "Team";
   const groups = filterTeamNavGroups(profile).map((group) => {
     if (group.label !== "Account" || !showAdmin) return group;
     return {
@@ -53,7 +55,7 @@ export function TeamSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigate
           <BrandMark className="h-7 w-auto" decorative />
           <span className={cn("min-w-0", collapsed && "lg:hidden")}>
             <span className="block font-heading text-sm font-extrabold tracking-tight">MotiveScripts</span>
-            <span className="block text-[11px] font-medium text-[var(--admin-muted)]">Team</span>
+            <span className="block text-[11px] font-medium text-[var(--admin-muted)]">{portalLabel}</span>
           </span>
         </Link>
       </div>

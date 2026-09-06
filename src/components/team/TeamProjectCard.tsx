@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ProgressBar } from "@/components/admin/ProgressBar";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
@@ -10,9 +11,11 @@ type TeamProjectCardProps = {
   clientName: string;
   assignedTaskCount: number;
   teammates?: string;
+  /** Extra content rendered after the built-in fields (e.g. a deployment-status badge). */
+  extra?: ReactNode;
 };
 
-export function TeamProjectCard({ project, clientName, assignedTaskCount, teammates }: TeamProjectCardProps) {
+export function TeamProjectCard({ project, clientName, assignedTaskCount, teammates, extra }: TeamProjectCardProps) {
   const work = projectWorkload(project);
   const milestone = currentMilestone(project);
 
@@ -34,6 +37,7 @@ export function TeamProjectCard({ project, clientName, assignedTaskCount, teamma
       </p>
       <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Due {formatProjectDay(project.targetLaunchDate)}</p>
       {teammates ? <p className="mt-3 text-[12px] text-[var(--admin-muted)]">{teammates}</p> : null}
+      {extra}
       <Link
         to={teamProjectHref(project.id)}
         className="mt-4 inline-flex font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"

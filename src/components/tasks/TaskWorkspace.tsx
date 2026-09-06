@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { TaskClientRequestPanel } from "@/components/tasks/TaskClientRequestPanel";
 import { adminGhostBtn } from "@/components/admin/adminActionStyles";
@@ -16,6 +16,10 @@ type TaskWorkspaceProps = {
   error?: string | null;
   /** Assignee's current In Progress count, for the WIP-limit nudge. Omit when the caller has no cross-project task list. */
   wipCount?: number;
+  /** See TeamTaskDetail: "modal" (default) or "page" for an in-flow, non-overlay render. */
+  variant?: "modal" | "page";
+  /** Rendered above the title in "page" variant only. */
+  breadcrumb?: ReactNode;
   onClose: () => void;
   onStatusChange: (status: AgencyTaskStatus) => void;
   onOpenDiscovery: () => void;
@@ -36,6 +40,8 @@ export function TaskWorkspace({
   busy,
   error,
   wipCount,
+  variant,
+  breadcrumb,
   onClose,
   onStatusChange,
   onOpenDiscovery,
@@ -89,6 +95,8 @@ export function TaskWorkspace({
       busy={busy}
       error={error}
       workspace="admin"
+      variant={variant}
+      breadcrumb={breadcrumb}
       extra={extra}
       earlierOpen={earlierOpenMilestones(project, task.milestoneId)}
       wipCount={wipCount}

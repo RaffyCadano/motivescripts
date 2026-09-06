@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { initialsFromName, userDisplay } from "@/auth/userDisplay";
 import { useTeamWork } from "@/components/team/useTeamWork";
+import { formatUsdFromCents } from "@/data/money";
+import { type StaffPayRate } from "@/data/payroll";
+import { listStaffPayRates } from "@/data/payrollRepository";
 import { updateOwnProfile } from "@/data/settingsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 
@@ -38,10 +41,31 @@ export function TeamProfile() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [taskReminders, setTaskReminders] = useState(true);
   const [prefsSaved, setPrefsSaved] = useState(false);
+  const [payRate, setPayRate] = useState<StaffPayRate | null>(null);
+  const [payLoading, setPayLoading] = useState(true);
 
   useEffect(() => {
     setFullName(profile?.fullName ?? "");
   }, [profile?.fullName]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const rates = await listStaffPayRates();
+        if (cancelled) return;
+        setPayRate(rates[0] ?? null);
+      } catch {
+        // Non-fatal: the rest of the profile page still works if this fails to load.
+      } finally {
+        if (!cancelled) setPayLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const prefs = loadPrefs();
@@ -160,6 +184,27 @@ export function TeamProfile() {
             </p>
           ) : null}
         </div>
+      </section>
+
+      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6">
+        <h2 className="font-heading text-sm font-semibold">Pay &amp; payout info</h2>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--admin-muted)]">
+          Read-only. Contact your admin to set or correct any of this. Your payment history is on{" "}
+          <Link to="/team/time" className="font-medium text-[var(--admin-blue)] hover:underline">
+            My Time
+          </Link>
+          .
+        </p>
+        {payLoading ? null : (
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <ReadOnlyField
+              label="Pay rate"
+              value={payRate ? `${formatUsdFromCents(payRate.payRateCents)}/hr` : "Not set"}
+            />
+            <ReadOnlyField label="Zelle" value={payRate?.zelleContact || "Not set"} />
+            <ReadOnlyField label="PayPal" value={payRate?.paypalEmail || "Not set"} />
+          </div>
+        )}
       </section>
 
       <section className="grid gap-3 sm:grid-cols-3">

@@ -89,6 +89,12 @@ export function hasProjectManagerPermissionFootprint(permissions: string[]): boo
   return PM_TEMPLATE_PERMISSIONS.every((code) => granted.has(code));
 }
 
+export function isDeveloper(
+  profile: { role?: string | null; templateKey?: string | null } | null | undefined,
+): boolean {
+  return profile?.role === "staff" && profile.templateKey === "developer";
+}
+
 /** PM, Sales, Accounting, and other non-production staff belong on /admin. */
 export function isOfficeStaff(
   profile: { role?: string | null; templateKey?: string | null } | null | undefined,

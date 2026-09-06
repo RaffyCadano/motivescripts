@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { hasPermission, type StaffPermissionCode } from "@/auth/permissions";
+import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProgressBar } from "@/components/admin/ProgressBar";
 import { useAgencyProject, useProjectDeliverables } from "@/components/admin/leads/LeadsProvider";
 import { MilestoneStatusBadge } from "@/components/admin/projects/MilestoneStatusBadge";
@@ -71,7 +72,6 @@ export function TeamProjectDetails() {
   const [searchParams, setSearchParams] = useSearchParams();
   const match = useAgencyProject(id);
   const { profile, tasks, deliverables, changeTaskStatus, reload } = useTeamWork();
-  const [openTask, setOpenTask] = useState<TeamWorkTask | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const tabParam = searchParams.get("tab");
@@ -108,20 +108,6 @@ export function TeamProjectDetails() {
     setSearchParams(nextParams, { replace: true });
   }
 
-  async function onStatusChange(status: AgencyTaskStatus) {
-    if (!openTask) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await changeTaskStatus(openTask, status);
-      setOpenTask((current) => (current ? { ...current, status } : current));
-    } catch (caught) {
-      setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (!match?.project) {
     return (
       <div>
@@ -146,6 +132,58 @@ export function TeamProjectDetails() {
   const myOpen = myOpenTaskCount(project, profile?.id ?? "", profile?.fullName ?? "");
   const fileHref = (fileId: string) => teamProjectHref(project.id, { tab: "files", file: fileId });
   const progress = calculateProjectProgress(project);
+
+  const openTaskId = searchParams.get("task");
+  const openProjectTask = openTaskId ? (project.tasks.find((item) => item.id === openTaskId) ?? null) : null;
+  const openTask: TeamWorkTask | null = openProjectTask
+    ? (tasks.find((item) => item.id === openProjectTask.id) ?? {
+        id: openProjectTask.id,
+        projectId: project.id,
+        projectName: project.name,
+        clientId: project.clientId,
+        clientName: client?.businessName ?? "Client",
+        title: openProjectTask.title,
+        description: openProjectTask.description,
+        status: openProjectTask.status,
+        priority: openProjectTask.priority,
+        assignee: openProjectTask.assignee,
+        assignedTo: openProjectTask.assignedTo,
+        dueDate: openProjectTask.dueDate,
+        createdAt: openProjectTask.createdAt,
+        completedAt: openProjectTask.completedAt,
+        milestoneId: openProjectTask.milestoneId,
+        milestoneName: project.milestones.find((item) => item.id === openProjectTask.milestoneId)?.name ?? "",
+        recommendedRole: openProjectTask.recommendedRole,
+        taskType: openProjectTask.taskType,
+        referenceUrl: openProjectTask.referenceUrl,
+        estimatedHours: openProjectTask.estimatedHours,
+        deliverableId: openProjectTask.deliverableId,
+      })
+    : null;
+
+  function setOpenTask(task: AgencyTask | null) {
+    const nextParams = new URLSearchParams(searchParams);
+    if (task) {
+      nextParams.set("tab", "tasks");
+      nextParams.set("task", task.id);
+    } else {
+      nextParams.delete("task");
+    }
+    setSearchParams(nextParams);
+  }
+
+  async function onStatusChange(status: AgencyTaskStatus) {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await changeTaskStatus(openTask, status);
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -236,39 +274,12 @@ export function TeamProjectDetails() {
           onDevelopmentSaved={reload}
         />
       ) : null}
-      {tab === "tasks" ? (
+      {tab === "tasks" && !openTask ? (
         <TeamProjectTasks
           project={project}
           userId={profile?.id ?? ""}
           fullName={profile?.fullName ?? ""}
-          onOpenTask={(task) => {
-            const mapped = tasks.find((item) => item.id === task.id);
-            setOpenTask(
-              mapped ?? {
-                id: task.id,
-                projectId: project.id,
-                projectName: project.name,
-                clientId: project.clientId,
-                clientName: client?.businessName ?? "Client",
-                title: task.title,
-                description: task.description,
-                status: task.status,
-                priority: task.priority,
-                assignee: task.assignee,
-                assignedTo: task.assignedTo,
-                dueDate: task.dueDate,
-                createdAt: task.createdAt,
-                completedAt: task.completedAt,
-                milestoneId: task.milestoneId,
-                milestoneName: project.milestones.find((item) => item.id === task.milestoneId)?.name ?? "",
-                recommendedRole: task.recommendedRole,
-                taskType: task.taskType,
-                referenceUrl: task.referenceUrl,
-                estimatedHours: task.estimatedHours,
-                deliverableId: task.deliverableId,
-              },
-            );
-          }}
+          onOpenTask={setOpenTask}
         />
       ) : null}
       {tab === "milestones" ? <ProjectMilestonesPanel project={project} /> : null}
@@ -284,6 +295,16 @@ export function TeamProjectDetails() {
         <TeamTaskDetail
           task={openTask}
           files={deliverables.filter((item) => item.projectId === openTask.projectId)}
+          variant="page"
+          breadcrumb={
+            <Breadcrumbs
+              items={[
+                { label: "My Projects", href: "/team/projects" },
+                { label: project.name, href: `/team/projects/${project.id}` },
+                { label: openTask.title },
+              ]}
+            />
+          }
           canUpdateStatus={Boolean(
             profile?.id &&
               (openTask.assignedTo === profile.id ||

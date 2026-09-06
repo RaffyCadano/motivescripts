@@ -74,7 +74,7 @@ import { NotFoundPage } from "@/pages/NotFound";
 import { ProcessPage } from "@/pages/Process";
 import { ServicesPage } from "@/pages/Services";
 import { WorkPage } from "@/pages/Work";
-import { TeamDashboard } from "@/pages/team/TeamDashboard";
+import { TeamDashboardHome } from "@/pages/team/TeamDashboardHome";
 import { TeamFiles } from "@/pages/team/TeamFiles";
 import { TeamMessages } from "@/pages/team/TeamMessages";
 import { TeamProfile } from "@/pages/team/TeamProfile";
@@ -153,7 +153,7 @@ export default function App() {
             }
           >
             <Route index element={<Navigate to="/team/dashboard" replace />} />
-            <Route path="dashboard" element={<TeamDashboard />} />
+            <Route path="dashboard" element={<TeamDashboardHome />} />
             <Route path="tasks" element={<TeamTasks />} />
             <Route path="projects" element={<TeamProjects />} />
             <Route path="projects/:id" element={<TeamProjectDetails />} />

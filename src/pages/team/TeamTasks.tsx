@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ClientReviewLinkOut } from "@/components/tasks/TaskWorkspace";
 import { TeamTaskBoard } from "@/components/team/TeamTaskBoard";
 import { TeamTaskCard } from "@/components/team/TeamTaskCard";
@@ -32,16 +33,25 @@ const filters: { id: TeamTaskFilter; label: string }[] = [
 
 export function TeamTasks() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { profile, tasks, myProjects, deliverables, changeTaskStatus } = useTeamWork();
   const [filter, setFilter] = useState<TeamTaskFilter>("all");
   const [projectId, setProjectId] = useState<string | "All">("All");
   const [priority, setPriority] = useState<AgencyTaskPriority | "All">("All");
-  const [openTask, setOpenTask] = useState<TeamWorkTask | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("list");
   const [boardError, setBoardError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const openTaskId = searchParams.get("task");
+  const openTask = openTaskId ? (tasks.find((item) => item.id === openTaskId) ?? null) : null;
+
+  function setOpenTask(task: TeamWorkTask | null) {
+    const nextParams = new URLSearchParams(searchParams);
+    if (task) nextParams.set("task", task.id);
+    else nextParams.delete("task");
+    setSearchParams(nextParams);
+  }
 
   const visible = useMemo(
     () => filterTeamTasks(tasks, filter, projectId, priority).filter((task) => matchesTaskSearch(task, search)),
@@ -63,7 +73,6 @@ export function TeamTasks() {
     setError(null);
     try {
       await changeTaskStatus(openTask, status);
-      setOpenTask((current) => (current ? { ...current, status } : current));
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
     } finally {
@@ -73,114 +82,120 @@ export function TeamTasks() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">My Tasks</h1>
-          <p className="mt-1 text-sm text-[var(--admin-muted)]">Only tasks assigned to you.</p>
-        </div>
-        <div className="inline-flex rounded-lg border border-[var(--admin-line)] bg-white p-0.5">
-          <button
-            type="button"
-            className={cn(
-              "h-8 rounded-md px-3 font-heading text-[12px] font-semibold",
-              view === "list" ? "bg-[var(--admin-navy)] text-white" : "text-[var(--admin-ink)]",
-            )}
-            onClick={() => setView("list")}
-          >
-            List
-          </button>
-          <button
-            type="button"
-            className={cn(
-              "h-8 rounded-md px-3 font-heading text-[12px] font-semibold",
-              view === "board" ? "bg-[var(--admin-navy)] text-white" : "text-[var(--admin-ink)]",
-            )}
-            onClick={() => setView("board")}
-          >
-            Board
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {filters.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={
-              filter === item.id
-                ? "inline-flex h-9 items-center rounded-full bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white"
-                : "inline-flex h-9 items-center rounded-full border border-[var(--admin-line)] bg-white px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)]"
-            }
-            onClick={() => setFilter(item.id)}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search tasks…"
-          className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-        />
-        <select
-          value={projectId}
-          onChange={(event) => setProjectId(event.target.value)}
-          className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
-        >
-          <option value="All">All projects</option>
-          {myProjects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </select>
-        <select
-          value={priority}
-          onChange={(event) => setPriority(event.target.value as AgencyTaskPriority | "All")}
-          className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
-        >
-          <option value="All">All priorities</option>
-          {taskPriorities.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {tasks.length === 0 ? (
-        <div className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-10">
-          <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No tasks assigned</p>
-          <p className="mt-1 text-sm text-[var(--admin-muted)]">
-            You’re all caught up. New tasks will appear here when they’re assigned to you.
-          </p>
-        </div>
-      ) : visible.length === 0 ? (
-        <div className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-10">
-          <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No tasks match these filters.</p>
-          <p className="mt-1 text-sm text-[var(--admin-muted)]">Try another status, project, or priority.</p>
-        </div>
-      ) : view === "board" ? (
+      {!openTask ? (
         <>
-          {boardError ? <p className="text-sm text-[#b45309]">{boardError}</p> : null}
-          <TeamTaskBoard tasks={visible} onOpen={setOpenTask} onStatusChange={onBoardStatusChange} />
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">My Tasks</h1>
+              <p className="mt-1 text-sm text-[var(--admin-muted)]">Only tasks assigned to you.</p>
+            </div>
+            <div className="inline-flex rounded-lg border border-[var(--admin-line)] bg-white p-0.5">
+              <button
+                type="button"
+                className={cn(
+                  "h-8 rounded-md px-3 font-heading text-[12px] font-semibold",
+                  view === "list" ? "bg-[var(--admin-navy)] text-white" : "text-[var(--admin-ink)]",
+                )}
+                onClick={() => setView("list")}
+              >
+                List
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "h-8 rounded-md px-3 font-heading text-[12px] font-semibold",
+                  view === "board" ? "bg-[var(--admin-navy)] text-white" : "text-[var(--admin-ink)]",
+                )}
+                onClick={() => setView("board")}
+              >
+                Board
+              </button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {filters.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={
+                  filter === item.id
+                    ? "inline-flex h-9 items-center rounded-full bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white"
+                    : "inline-flex h-9 items-center rounded-full border border-[var(--admin-line)] bg-white px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)]"
+                }
+                onClick={() => setFilter(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search tasks…"
+              className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            />
+            <select
+              value={projectId}
+              onChange={(event) => setProjectId(event.target.value)}
+              className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
+            >
+              <option value="All">All projects</option>
+              {myProjects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={priority}
+              onChange={(event) => setPriority(event.target.value as AgencyTaskPriority | "All")}
+              className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
+            >
+              <option value="All">All priorities</option>
+              {taskPriorities.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {tasks.length === 0 ? (
+            <div className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-10">
+              <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No tasks assigned</p>
+              <p className="mt-1 text-sm text-[var(--admin-muted)]">
+                You’re all caught up. New tasks will appear here when they’re assigned to you.
+              </p>
+            </div>
+          ) : visible.length === 0 ? (
+            <div className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-10">
+              <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No tasks match these filters.</p>
+              <p className="mt-1 text-sm text-[var(--admin-muted)]">Try another status, project, or priority.</p>
+            </div>
+          ) : view === "board" ? (
+            <>
+              {boardError ? <p className="text-sm text-[#b45309]">{boardError}</p> : null}
+              <TeamTaskBoard tasks={visible} onOpen={setOpenTask} onStatusChange={onBoardStatusChange} />
+            </>
+          ) : (
+            <div className="grid gap-3 lg:grid-cols-2">
+              {visible.map((task) => (
+                <TeamTaskCard key={task.id} task={task} onOpen={setOpenTask} />
+              ))}
+            </div>
+          )}
         </>
-      ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {visible.map((task) => (
-            <TeamTaskCard key={task.id} task={task} onOpen={setOpenTask} />
-          ))}
-        </div>
-      )}
+      ) : null}
 
       {openTask ? (
         <TeamTaskDetail
           task={openTask}
           files={deliverables.filter((item) => item.projectId === openTask.projectId)}
+          variant="page"
+          breadcrumb={<Breadcrumbs items={[{ label: "My Tasks", href: "/team/tasks" }, { label: openTask.title }]} />}
           canUpdateStatus
           busy={busy}
           error={error}

@@ -68,6 +68,18 @@ export async function listTimeEntriesForProject(projectId: string): Promise<Time
   return (data ?? []).map((row) => mapTimeEntry(row as TimeEntryRow));
 }
 
+export async function listTimeEntriesForTask(taskId: string): Promise<TimeEntry[]> {
+  const client = db();
+  const { data, error } = await client
+    .from("time_entries")
+    .select("*")
+    .eq("task_id", taskId)
+    .order("entry_date", { ascending: false })
+    .order("created_at", { ascending: false });
+  throwIf(error, "load task time entries", "Unable to load time logged on this task.");
+  return (data ?? []).map((row) => mapTimeEntry(row as TimeEntryRow));
+}
+
 export async function listMyTimeEntries(staffId: string): Promise<TimeEntry[]> {
   const client = db();
   const { data, error } = await client

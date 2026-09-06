@@ -21,7 +21,11 @@ export type AdminIconName =
   | "time"
   | "activity"
   | "settings"
-  | "profile";
+  | "profile"
+  | "qa"
+  | "needsChanges"
+  | "blocked"
+  | "deployments";
 
 export type AdminNavItem = {
   label: string;

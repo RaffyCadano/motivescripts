@@ -10,6 +10,7 @@ import {
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { AdminActionsMenu } from "@/components/admin/AdminActionsMenu";
+import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { canInviteClient, workflowPrimaryAllowed } from "@/components/admin/projects/workflowPermissions";
 import { useProjectWorkflowState } from "@/components/admin/projects/useProjectWorkflowState";
@@ -77,7 +78,7 @@ export function AdminProjectDetails() {
   const [taskOpen, setTaskOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<AgencyTask | null>(null);
   const [taskMilestoneId, setTaskMilestoneId] = useState<string | undefined>(undefined);
-  const [workspaceTask, setWorkspaceTask] = useState<AgencyTask | null>(null);
+  const openTaskId = searchParams.get("task");
   const [workspaceBusy, setWorkspaceBusy] = useState(false);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const projectId = match?.project.id ?? "";
@@ -110,13 +111,19 @@ export function AdminProjectDetails() {
     });
   }
 
+  function closeWorkspace() {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete("task");
+    setSearchParams(nextParams);
+  }
+
   function openDiscoveryFromWorkspace() {
-    setWorkspaceTask(null);
+    closeWorkspace();
     openDiscovery();
   }
 
   function openFilesFromWorkspace() {
-    setWorkspaceTask(null);
+    closeWorkspace();
     setTab("files");
   }
 
@@ -138,7 +145,6 @@ export function AdminProjectDetails() {
         referenceUrl: task.referenceUrl,
         estimatedHours: task.estimatedHours,
       });
-      setWorkspaceTask((current) => (current ? { ...current, status } : current));
     } catch (caught) {
       setWorkspaceError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
     } finally {
@@ -170,6 +176,7 @@ export function AdminProjectDetails() {
   }
 
   const { project, client } = match;
+  const openTask = openTaskId ? (project.tasks.find((item) => item.id === openTaskId) ?? null) : null;
   const progress = calculateProjectProgress(project);
   const headerAction = workflow.action;
   const showHeaderAction =
@@ -252,7 +259,30 @@ export function AdminProjectDetails() {
           {tab === "overview" ? (
             <ProjectOverview project={project} client={client} workflow={workflow} onOpenTab={(next) => setTab(next as ProjectSectionTabId)} />
           ) : null}
-          {tab === "tasks" ? (
+          {tab === "tasks" && openTask ? (
+            <TaskWorkspace
+              task={openTask}
+              project={project}
+              clientName={client?.businessName ?? "Client"}
+              deliverables={deliverables}
+              busy={workspaceBusy}
+              error={workspaceError}
+              variant="page"
+              breadcrumb={
+                <Breadcrumbs
+                  items={[
+                    { label: "Projects", href: "/admin/projects" },
+                    { label: project.name, href: `/admin/projects/${project.id}` },
+                    { label: openTask.title },
+                  ]}
+                />
+              }
+              onClose={closeWorkspace}
+              onStatusChange={(status) => void handleWorkspaceStatusChange(openTask, status)}
+              onOpenDiscovery={openDiscoveryFromWorkspace}
+              onOpenFiles={openFilesFromWorkspace}
+            />
+          ) : tab === "tasks" ? (
             <ProjectTasksPanel
               project={project}
               onAdd={() => {
@@ -273,7 +303,10 @@ export function AdminProjectDetails() {
               onOpenDiscovery={openDiscovery}
               onOpenWorkspace={(task) => {
                 setWorkspaceError(null);
-                setWorkspaceTask(task);
+                const nextParams = new URLSearchParams(searchParams);
+                nextParams.set("tab", "tasks");
+                nextParams.set("task", task.id);
+                setSearchParams(nextParams);
               }}
             />
           ) : null}
@@ -377,20 +410,6 @@ export function AdminProjectDetails() {
           else addTask(project.id, draft);
         }}
       />
-      {workspaceTask ? (
-        <TaskWorkspace
-          task={workspaceTask}
-          project={project}
-          clientName={client?.businessName ?? "Client"}
-          deliverables={deliverables}
-          busy={workspaceBusy}
-          error={workspaceError}
-          onClose={() => setWorkspaceTask(null)}
-          onStatusChange={(status) => void handleWorkspaceStatusChange(workspaceTask, status)}
-          onOpenDiscovery={openDiscoveryFromWorkspace}
-          onOpenFiles={openFilesFromWorkspace}
-        />
-      ) : null}
     </div>
   );
 }

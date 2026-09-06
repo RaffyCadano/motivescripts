@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { firstNameFrom } from "@/auth/userDisplay";
 import { hasPermission } from "@/auth/permissions";
 import { ClientReviewLinkOut } from "@/components/tasks/TaskWorkspace";
+import { TeamEmptyState } from "@/components/team/TeamEmptyState";
 import { TeamProjectCard } from "@/components/team/TeamProjectCard";
 import { TeamTaskCard } from "@/components/team/TeamTaskCard";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
@@ -136,7 +137,7 @@ export function TeamDashboard() {
           </Link>
         </div>
         {overdue.length === 0 ? (
-          <EmptyState title="Nothing overdue" body="Assigned tasks that pass their due date will show up here." />
+          <TeamEmptyState title="Nothing overdue" body="Assigned tasks that pass their due date will show up here." />
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
             {overdue.slice(0, 4).map((task) => (
@@ -154,7 +155,7 @@ export function TeamDashboard() {
           </Link>
         </div>
         {dueSoon.length === 0 ? (
-          <EmptyState title="No upcoming due dates" body="Tasks due in the next week will show up here." />
+          <TeamEmptyState title="No upcoming due dates" body="Tasks due in the next week will show up here." />
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
             {dueSoon.slice(0, 4).map((task) => (
@@ -172,7 +173,7 @@ export function TeamDashboard() {
           </Link>
         </div>
         {tasks.length === 0 ? (
-          <EmptyState
+          <TeamEmptyState
             title="No tasks assigned"
             body="You’re all caught up. New tasks will appear here when they’re assigned to you."
           />
@@ -196,7 +197,7 @@ export function TeamDashboard() {
           </Link>
         </div>
         {myProjects.length === 0 ? (
-          <EmptyState title="No projects yet" body="You haven’t been assigned to any projects." />
+          <TeamEmptyState title="No projects yet" body="You haven’t been assigned to any projects." />
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
             {myProjects.slice(0, 4).map((project) => (
@@ -214,7 +215,7 @@ export function TeamDashboard() {
       <section className="space-y-3">
         <h2 className="font-heading text-sm font-semibold tracking-tight">Recent project activity</h2>
         {recent.length === 0 ? (
-          <EmptyState title="No recent activity" body="Updates on your assigned projects will appear here." />
+          <TeamEmptyState title="No recent activity" body="Updates on your assigned projects will appear here." />
         ) : (
           <ul className="divide-y divide-[var(--admin-line)] rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
             {recent.map((item) => (
@@ -267,15 +268,6 @@ export function TeamDashboard() {
           onStatusChange={(status) => void onStatusChange(status)}
         />
       ) : null}
-    </div>
-  );
-}
-
-function EmptyState({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-10">
-      <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{title}</p>
-      <p className="mt-1 text-sm text-[var(--admin-muted)]">{body}</p>
     </div>
   );
 }

@@ -13,7 +13,8 @@ import { formatProjectDay, taskStatuses, type AgencyTaskStatus } from "@/data/ag
 import type { AgencyDeliverable } from "@/data/files";
 import { dueLabel, adminProjectHref, teamProjectHref, WIP_LIMIT, type TeamWorkTask } from "@/data/teamWorkspace";
 import { isoCalendarDate } from "@/data/invoices";
-import { logTimeEntry } from "@/data/timeEntriesRepository";
+import { sumHours, type TimeEntry } from "@/data/timeEntries";
+import { deleteTimeEntry, listTimeEntriesForTask, logTimeEntry } from "@/data/timeEntriesRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 type TeamTaskDetailProps = {
@@ -23,6 +24,12 @@ type TeamTaskDetailProps = {
   busy?: boolean;
   error?: string | null;
   workspace?: "team" | "admin";
+  /** "modal" (default): floating dialog overlay, closed with the Close button/Escape/backdrop.
+   *  "page": renders in-flow as a normal page section instead -- no overlay, no Close button,
+   *  no focus trap/Escape handling. Pair with `breadcrumb` so there's still a way back up. */
+  variant?: "modal" | "page";
+  /** Rendered above the title in "page" variant only (e.g. "Projects / Website Redesign"). */
+  breadcrumb?: ReactNode;
   /** Task-type-specific content (Discovery link, client-request panel, etc.), rendered after instructions. */
   extra?: ReactNode;
   /** Earlier milestones that still have open tasks -- a heads-up, never a block. Omit when the caller has no project context. */
@@ -40,6 +47,8 @@ export function TeamTaskDetail({
   busy,
   error,
   workspace = "team",
+  variant = "modal",
+  breadcrumb,
   extra,
   earlierOpen,
   wipCount,
@@ -52,11 +61,13 @@ export function TeamTaskDetail({
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   const busyRef = useRef(busy);
+  const isModal = variant === "modal";
   const projectHref = workspace === "admin" ? adminProjectHref : teamProjectHref;
   onCloseRef.current = onClose;
   busyRef.current = busy;
 
   useEffect(() => {
+    if (!isModal) return;
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const frame = requestAnimationFrame(() => closeRef.current?.focus());
     const onKey = (event: KeyboardEvent) => {
@@ -75,45 +86,48 @@ export function TeamTaskDetail({
       root.style.overflow = previousOverflow;
       previous?.focus();
     };
-  }, []);
+  }, [isModal]);
 
-  return createPortal(
-    <div className="admin-theme pointer-events-auto fixed inset-0 z-[80] flex items-end justify-center p-4 sm:items-center">
-      <button
-        type="button"
-        className="absolute inset-0 bg-[rgb(7_17_31_/_0.4)]"
-        aria-label="Close task"
-        onClick={onClose}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="relative z-10 flex max-h-[min(40rem,calc(100svh-2rem))] w-full max-w-2xl flex-col overflow-hidden rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white shadow-[0_16px_40px_rgb(7_17_31_/_0.12)]"
-      >
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
-          <div className="min-w-0">
-            <p className="text-[12px] text-[var(--admin-muted)]">{task.clientName}</p>
-            <h2 id={titleId} className="mt-1 font-heading text-lg font-semibold text-[var(--admin-ink)]">
-              {task.title}
-            </h2>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <TaskStatusBadge status={task.status} />
-              <TaskPriorityBadge priority={task.priority} />
-              <span className="text-[12px] text-[var(--admin-muted)]">{dueLabel(task.dueDate)}</span>
-            </div>
-          </div>
-          <button
-            ref={closeRef}
-            type="button"
-            className="inline-flex h-9 shrink-0 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-            onClick={onClose}
-          >
-            Close
-          </button>
+  const header = (
+    <div
+      className={
+        isModal
+          ? "flex shrink-0 items-start justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4"
+          : "flex items-start justify-between gap-3"
+      }
+    >
+      <div className="min-w-0">
+        {!isModal && breadcrumb ? <div className="mb-2">{breadcrumb}</div> : null}
+        <p className="text-[12px] text-[var(--admin-muted)]">{task.clientName}</p>
+        <h2
+          id={titleId}
+          className={isModal ? "mt-1 font-heading text-lg font-semibold text-[var(--admin-ink)]" : "mt-1 font-heading text-[1.5rem] font-semibold tracking-tight text-[var(--admin-ink)] md:text-[1.65rem]"}
+        >
+          {task.title}
+        </h2>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <TaskStatusBadge status={task.status} />
+          <TaskPriorityBadge priority={task.priority} />
+          <span className="text-[12px] text-[var(--admin-muted)]">{dueLabel(task.dueDate)}</span>
         </div>
+      </div>
+      {isModal ? (
+        <button
+          ref={closeRef}
+          type="button"
+          className="inline-flex h-9 shrink-0 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+          onClick={onClose}
+        >
+          Close
+        </button>
+      ) : null}
+    </div>
+  );
 
-        <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
+  const body = (
+    <>
+      {header}
+      <div className={isModal ? "min-h-0 flex-1 overflow-auto px-5 py-4" : "mt-5"}>
           <TaskInstructions title={task.title} description={task.description} className="space-y-4" />
 
           <dl className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -208,7 +222,7 @@ export function TeamTaskDetail({
 
           <TaskChecklistSection taskId={task.id} projectId={task.projectId} />
 
-          <LogTimeSection projectId={task.projectId} taskId={task.id} />
+          <LogTimeSection projectId={task.projectId} taskId={task.id} estimatedHours={task.estimatedHours} viewerId={profile?.id} />
 
           <TaskAttachmentsSection taskId={task.id} projectId={task.projectId} uploadedByLabel={displayLabel} />
 
@@ -233,29 +247,85 @@ export function TeamTaskDetail({
           </section>
 
           <TaskCommentsSection taskId={task.id} projectId={task.projectId} authorLabel={displayLabel} />
-        </div>
+      </div>
 
-        <div className="shrink-0 border-t border-[var(--admin-line)] px-5 py-4">
-          <Link
-            to={projectHref(task.projectId, { tab: "tasks" })}
-            className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white"
-          >
-            Open project workspace
-          </Link>
-        </div>
+      <div className={isModal ? "shrink-0 border-t border-[var(--admin-line)] px-5 py-4" : "mt-6 border-t border-[var(--admin-line)] pt-4"}>
+        <Link
+          to={projectHref(task.projectId, { tab: "tasks" })}
+          className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white"
+        >
+          Open project workspace
+        </Link>
+      </div>
+    </>
+  );
+
+  if (!isModal) {
+    return (
+      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+        {body}
+      </section>
+    );
+  }
+
+  return createPortal(
+    <div className="admin-theme pointer-events-auto fixed inset-0 z-[80] flex items-end justify-center p-4 sm:items-center">
+      <button
+        type="button"
+        className="absolute inset-0 bg-[rgb(7_17_31_/_0.4)]"
+        aria-label="Close task"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className="relative z-10 flex max-h-[min(40rem,calc(100svh-2rem))] w-full max-w-2xl flex-col overflow-hidden rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white shadow-[0_16px_40px_rgb(7_17_31_/_0.12)]"
+      >
+        {body}
       </div>
     </div>,
     document.body,
   );
 }
 
-/** Self-contained: logs against the current user via RLS (staff_id = auth.uid()), so no identity is passed in. */
-function LogTimeSection({ projectId, taskId }: { projectId: string; taskId: string }) {
+/** Logs against the current user via RLS (staff_id = auth.uid()). Also loads and lists
+ *  this task's own entries (RLS already scopes which rows come back -- your own, plus
+ *  anyone else's if you're admin or have invoices.manage on the project), so logging
+ *  time isn't blind: you can see the running total against the estimate and fix mistakes. */
+function LogTimeSection({
+  projectId,
+  taskId,
+  estimatedHours,
+  viewerId,
+}: {
+  projectId: string;
+  taskId: string;
+  estimatedHours?: number | null;
+  viewerId?: string;
+}) {
   const [hours, setHours] = useState("");
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [logged, setLogged] = useState(false);
+  const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  async function reload() {
+    try {
+      setEntries(await listTimeEntriesForTask(taskId));
+    } catch {
+      // Non-fatal: the log-time form still works even if the list fails to load.
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskId]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -276,7 +346,7 @@ function LogTimeSection({ projectId, taskId }: { projectId: string; taskId: stri
       });
       setHours("");
       setNote("");
-      setLogged(true);
+      await reload();
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to log time.");
     } finally {
@@ -284,9 +354,31 @@ function LogTimeSection({ projectId, taskId }: { projectId: string; taskId: stri
     }
   }
 
+  async function onRemove(entryId: string) {
+    setRemovingId(entryId);
+    setError(null);
+    try {
+      await deleteTimeEntry(entryId);
+      await reload();
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to remove this entry.");
+    } finally {
+      setRemovingId(null);
+    }
+  }
+
+  const total = sumHours(entries);
+
   return (
     <section className="mt-6 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4">
-      <h3 className="font-heading text-sm font-semibold">Log time</h3>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h3 className="font-heading text-sm font-semibold">Log time</h3>
+        {!loading && (total > 0 || estimatedHours != null) ? (
+          <p className="text-[12px] text-[var(--admin-muted)]">
+            {total}h logged{estimatedHours != null ? ` of ${estimatedHours}h estimated` : ""}
+          </p>
+        ) : null}
+      </div>
       <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={(event) => void onSubmit(event)}>
         <label className="text-[13px] font-medium text-[var(--admin-ink)]">
           Hours
@@ -296,10 +388,7 @@ function LogTimeSection({ projectId, taskId }: { projectId: string; taskId: stri
             step="0.25"
             value={hours}
             disabled={busy}
-            onChange={(event) => {
-              setHours(event.target.value);
-              setLogged(false);
-            }}
+            onChange={(event) => setHours(event.target.value)}
             className="mt-1.5 h-10 w-24 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
           />
         </label>
@@ -308,10 +397,7 @@ function LogTimeSection({ projectId, taskId }: { projectId: string; taskId: stri
           <input
             value={note}
             disabled={busy}
-            onChange={(event) => {
-              setNote(event.target.value);
-              setLogged(false);
-            }}
+            onChange={(event) => setNote(event.target.value)}
             placeholder="Optional"
             className="mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
           />
@@ -325,7 +411,36 @@ function LogTimeSection({ projectId, taskId }: { projectId: string; taskId: stri
         </button>
       </form>
       {error ? <p className="mt-2 text-sm text-[#b45309]">{error}</p> : null}
-      {logged ? <p className="mt-2 text-sm text-[#0f7a56]">Time logged for today.</p> : null}
+
+      {!loading && entries.length > 0 ? (
+        <ul className="mt-4 divide-y divide-[var(--admin-line)] border-t border-[var(--admin-line)]">
+          {entries.map((entry) => {
+            const mine = viewerId != null && entry.staffId === viewerId;
+            const canRemove = mine && !entry.billedAt;
+            return (
+              <li key={entry.id} className="flex items-start justify-between gap-3 py-2 text-sm">
+                <div className="min-w-0">
+                  <p className="text-[var(--admin-ink)]">
+                    <span className="font-medium">{entry.hours}h</span> · {formatProjectDay(entry.entryDate)}
+                    {!mine ? " · Teammate" : ""}
+                  </p>
+                  {entry.note ? <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">{entry.note}</p> : null}
+                </div>
+                {canRemove ? (
+                  <button
+                    type="button"
+                    disabled={removingId === entry.id}
+                    onClick={() => void onRemove(entry.id)}
+                    className="shrink-0 text-[12px] font-medium text-[var(--admin-muted)] hover:text-[#b45309] disabled:opacity-60"
+                  >
+                    {removingId === entry.id ? "Removing…" : "Remove"}
+                  </button>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
     </section>
   );
 }

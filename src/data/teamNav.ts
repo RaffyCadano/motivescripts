@@ -1,5 +1,6 @@
 import type { AppProfile } from "@/auth/loadProfile";
 import { hasPermission, type StaffPermissionCode } from "@/auth/permissions";
+import { isDeveloper } from "@/auth/roles";
 import type { AdminIconName } from "@/data/adminNav";
 
 export type TeamNavItem = {
@@ -38,13 +39,55 @@ export const teamNavGroups: TeamNavGroup[] = [
   },
 ];
 
+/**
+ * Same routes as teamNavGroups, relabeled/regrouped for developers so the sidebar reads
+ * like a development workspace instead of the generic staff portal. QA & Review / Needs
+ * Changes / Blocked / Deployments have no standalone pages -- they're sections on the
+ * dashboard (TeamDeveloperDashboard) -- so those items link to the dashboard's own anchor
+ * ids rather than inventing empty-shell pages just to fill the sidebar.
+ */
+export const developerNavGroups: TeamNavGroup[] = [
+  {
+    label: "Developer",
+    items: [
+      { label: "Overview", href: "/team/dashboard", icon: "overview", end: true },
+      { label: "My Tasks", href: "/team/tasks", icon: "tasks" },
+      { label: "My Projects", href: "/team/projects", icon: "projects" },
+    ],
+  },
+  {
+    label: "Work",
+    items: [
+      { label: "QA & Review", href: "/team/dashboard#qa-review", icon: "qa" },
+      { label: "Needs Changes", href: "/team/dashboard#needs-changes", icon: "needsChanges" },
+      { label: "Blocked", href: "/team/dashboard#blocked-work", icon: "blocked" },
+    ],
+  },
+  {
+    label: "Delivery",
+    items: [
+      { label: "Deployments", href: "/team/dashboard#deployment-status", icon: "deployments" },
+      { label: "Time Tracking", href: "/team/time", icon: "time" },
+    ],
+  },
+  {
+    label: "Communication",
+    items: [{ label: "Messages", href: "/team/messages", icon: "messages" }],
+  },
+  {
+    label: "Account",
+    items: [{ label: "Profile", href: "/team/profile", icon: "settings" }],
+  },
+];
+
 const navPermission: Partial<Record<string, StaffPermissionCode>> = {
   "/team/messages": "messages.view",
   "/team/files": "files.view",
 };
 
 export function filterTeamNavGroups(profile: AppProfile | null): TeamNavGroup[] {
-  return teamNavGroups
+  const baseGroups = isDeveloper(profile) ? developerNavGroups : teamNavGroups;
+  return baseGroups
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {

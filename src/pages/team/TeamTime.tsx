@@ -4,7 +4,7 @@ import { useTeamWork } from "@/components/team/useTeamWork";
 import { formatProjectDay } from "@/data/agencyProjects";
 import { formatUsdFromCents } from "@/data/money";
 import { listPayrollPayments, listStaffPayRates } from "@/data/payrollRepository";
-import { payrollMethodLabel, type PayrollPayment } from "@/data/payroll";
+import { payrollMethodLabel, payrollPaymentMethods, type PayrollPayment, type PayrollPaymentMethod } from "@/data/payroll";
 import { amountOwedCents, sumHours, unpaidEntries, type TimeEntry } from "@/data/timeEntries";
 import { deleteTimeEntry, listMyTimeEntries, updateTimeEntry } from "@/data/timeEntriesRepository";
 import { teamProjectHref } from "@/data/teamWorkspace";
@@ -23,6 +23,8 @@ export function TeamTime() {
   const [editDate, setEditDate] = useState("");
   const [busy, setBusy] = useState(false);
   const [rowError, setRowError] = useState<string | null>(null);
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<PayrollPaymentMethod | "All">("All");
 
   const projectName = useMemo(() => {
     const byId = new Map(myProjects.map((project) => [project.id, project.name]));
@@ -65,6 +67,20 @@ export function TeamTime() {
   const totalHours = sumHours(entries);
   const unpaidHours = sumHours(unpaidEntries(entries));
   const estimatedOwedCents = payRateCents != null ? amountOwedCents(entries, payRateCents) : null;
+
+  const filteredPayments = useMemo(() => {
+    const needle = paymentSearch.trim().toLowerCase();
+    return payments.filter((payment) => {
+      if (paymentMethod !== "All" && payment.method !== paymentMethod) return false;
+      if (!needle) return true;
+      return (
+        payment.reference.toLowerCase().includes(needle) ||
+        payment.notes.toLowerCase().includes(needle) ||
+        formatUsdFromCents(payment.amountCents).toLowerCase().includes(needle)
+      );
+    });
+  }, [payments, paymentSearch, paymentMethod]);
+  const paymentsFiltering = paymentSearch.trim().length > 0 || paymentMethod !== "All";
 
   function startEdit(entry: TimeEntry) {
     setEditingId(entry.id);
@@ -134,21 +150,70 @@ export function TeamTime() {
       {payments.length > 0 ? (
         <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
           <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Payment history</h2>
-          <ul className="mt-3 divide-y divide-[var(--admin-line)]">
-            {payments.map((payment) => (
-              <li key={payment.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                <div>
-                  <p className="text-sm text-[var(--admin-ink)]">
-                    {formatUsdFromCents(payment.amountCents)} · {payment.hours}h at {formatUsdFromCents(payment.payRateCents)}/hr
-                  </p>
-                  <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                    {formatProjectDay(payment.paymentDate)} · {payrollMethodLabel(payment.method)}
-                    {payment.reference ? ` · ${payment.reference}` : ""}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
+
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              value={paymentSearch}
+              onChange={(event) => setPaymentSearch(event.target.value)}
+              placeholder="Search reference, notes, or amount…"
+              className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            />
+            <select
+              value={paymentMethod}
+              onChange={(event) => setPaymentMethod(event.target.value as PayrollPaymentMethod | "All")}
+              className="h-9 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
+            >
+              <option value="All">All methods</option>
+              {payrollPaymentMethods.map((method) => (
+                <option key={method} value={method}>
+                  {payrollMethodLabel(method)}
+                </option>
+              ))}
+            </select>
+            {paymentsFiltering ? (
+              <button
+                type="button"
+                className="h-9 shrink-0 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                onClick={() => {
+                  setPaymentSearch("");
+                  setPaymentMethod("All");
+                }}
+              >
+                Clear filters
+              </button>
+            ) : null}
+          </div>
+
+          {filteredPayments.length === 0 ? (
+            <p className="mt-4 text-sm text-[var(--admin-muted)]">No payments match your filters.</p>
+          ) : (
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[32rem] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--admin-line)] text-left text-[12px] text-[var(--admin-muted)]">
+                    <th className="pb-2 pr-3 font-medium">Date</th>
+                    <th className="pb-2 pr-3 font-medium">Amount</th>
+                    <th className="pb-2 pr-3 font-medium">Hours</th>
+                    <th className="pb-2 pr-3 font-medium">Rate</th>
+                    <th className="pb-2 pr-3 font-medium">Method</th>
+                    <th className="pb-2 font-medium">Reference</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--admin-line)]">
+                  {filteredPayments.map((payment) => (
+                    <tr key={payment.id}>
+                      <td className="py-2.5 pr-3 text-[var(--admin-ink)]">{formatProjectDay(payment.paymentDate)}</td>
+                      <td className="py-2.5 pr-3 font-medium text-[var(--admin-ink)]">{formatUsdFromCents(payment.amountCents)}</td>
+                      <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{payment.hours}h</td>
+                      <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{formatUsdFromCents(payment.payRateCents)}/hr</td>
+                      <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{payrollMethodLabel(payment.method)}</td>
+                      <td className="py-2.5 text-[var(--admin-muted)]">{payment.reference || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
       ) : null}
 

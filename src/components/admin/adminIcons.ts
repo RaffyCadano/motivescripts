@@ -1,12 +1,14 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
+  Ban,
   Bell,
   CheckSquare,
   Clock,
   CreditCard,
   FileSignature,
   FileText,
+  FlaskConical,
   FolderKanban,
   Gauge,
   Inbox,
@@ -14,6 +16,8 @@ import {
   MessageSquare,
   Paperclip,
   Receipt,
+  RotateCcw,
+  Rocket,
   Settings,
   UserCog,
   UserRound,
@@ -42,4 +46,8 @@ export const adminIcons: Record<AdminIconName, LucideIcon> = {
   activity: Activity,
   settings: Settings,
   profile: UserRound,
+  qa: FlaskConical,
+  needsChanges: RotateCcw,
+  blocked: Ban,
+  deployments: Rocket,
 };

@@ -12,7 +12,7 @@ import { cn } from "@/lib/cn";
 import "@/styles/admin.css";
 
 export function TeamLayout() {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const { profile } = useAuth();
   const { loadStatus, loadError, reload } = useLeads();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -59,8 +59,31 @@ export function TeamLayout() {
   }, [mobileOpen]);
 
   useEffect(() => {
-    document.getElementById("team-main")?.scrollTo({ top: 0, left: 0 });
-  }, [pathname]);
+    if (!hash) {
+      document.getElementById("team-main")?.scrollTo({ top: 0, left: 0 });
+      return;
+    }
+    const id = decodeURIComponent(hash.slice(1));
+    let frame = 0;
+    let timer = 0;
+
+    const scrollToHash = () => {
+      const target = document.getElementById(id);
+      if (!target) return false;
+      target.scrollIntoView({ block: "start" });
+      return true;
+    };
+
+    frame = requestAnimationFrame(() => {
+      if (scrollToHash()) return;
+      timer = window.setTimeout(scrollToHash, 80);
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [pathname, hash]);
 
   const dockCollapsed = isLg && collapsed;
 
