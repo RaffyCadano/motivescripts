@@ -49,6 +49,8 @@ function mapServicePlan(row: ServicePlanRow): ServicePlan {
     amountCents: Number(row.amount_cents),
     status: row.status,
     domain: row.domain,
+    domainExpiresAt: row.domain_expires_at,
+    sslExpiresAt: row.ssl_expires_at,
     createdAt: row.created_at,
     canceledAt: row.canceled_at,
   };
@@ -107,9 +109,18 @@ export async function createServicePlanCheckoutUrl(planId: string): Promise<stri
   return payload.url;
 }
 
-export async function setServicePlanDomain(planId: string, domain: string): Promise<void> {
+export async function setServicePlanDomain(
+  planId: string,
+  domain: string,
+  renewals?: { domainExpiresAt?: string | null; sslExpiresAt?: string | null },
+): Promise<void> {
   const client = db();
-  const { error } = await client.rpc("set_service_plan_domain", { p_plan_id: planId, p_domain: domain });
+  const { error } = await client.rpc("set_service_plan_domain", {
+    p_plan_id: planId,
+    p_domain: domain,
+    p_domain_expires_at: renewals?.domainExpiresAt || null,
+    p_ssl_expires_at: renewals?.sslExpiresAt || null,
+  });
   if (error) fail("set plan domain", error);
 }
 

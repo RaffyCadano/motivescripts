@@ -381,7 +381,11 @@ export type NotificationType =
   | "task_comment_added"
   | "task_due_soon"
   | "task_overdue"
-  | "payroll_paid";
+  | "payroll_paid"
+  | "domain_expiring_soon"
+  | "domain_expired"
+  | "ssl_expiring_soon"
+  | "ssl_expired";
 
 export type NotificationRow = {
   id: string;
@@ -625,6 +629,8 @@ export type ServicePlanRow = {
   stripe_subscription_id: string | null;
   stripe_checkout_session_id: string | null;
   domain: string | null;
+  domain_expires_at: string | null;
+  ssl_expires_at: string | null;
   created_by: string | null;
   created_at: string;
   canceled_at: string | null;
@@ -1297,7 +1303,12 @@ export type Database = {
         Returns: void;
       };
       set_service_plan_domain: {
-        Args: { p_plan_id: string; p_domain: string };
+        Args: {
+          p_plan_id: string;
+          p_domain: string;
+          p_domain_expires_at?: string | null;
+          p_ssl_expires_at?: string | null;
+        };
         Returns: void;
       };
       current_staff_context: {

@@ -144,6 +144,16 @@ export function notificationHref(item: AppNotification, role: "admin" | "staff" 
       return item.projectId ? `/admin/projects/${item.projectId}` : "/admin/projects";
     case "payroll_paid":
       return staff ? "/team/time" : "/admin/payroll";
+    case "plan_past_due":
+    case "plan_canceled":
+    case "domain_expiring_soon":
+    case "domain_expired":
+    case "ssl_expiring_soon":
+    case "ssl_expired":
+      // No client_id on the notification row to deep-link to a specific
+      // client's Plans tab -- the list is still a correct destination,
+      // unlike the old default fallback these silently hit before (Messages).
+      return agency ? "/admin/clients" : "/client/settings";
     case "project_assigned":
     case "milestone_updated":
       if (agency) {

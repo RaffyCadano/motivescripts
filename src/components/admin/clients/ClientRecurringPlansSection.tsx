@@ -49,6 +49,8 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
   const [rowError, setRowError] = useState<Map<string, string>>(new Map());
   const [checkoutUrl, setCheckoutUrl] = useState<Map<string, string>>(new Map());
   const [domainDrafts, setDomainDrafts] = useState<Map<string, string>>(new Map());
+  const [domainExpiresDrafts, setDomainExpiresDrafts] = useState<Map<string, string>>(new Map());
+  const [sslExpiresDrafts, setSslExpiresDrafts] = useState<Map<string, string>>(new Map());
   const [domainBusyId, setDomainBusyId] = useState<string | null>(null);
   const [domainStatus, setDomainStatus] = useState<Map<string, DomainAvailability>>(new Map());
   const [domainError, setDomainError] = useState<Map<string, string>>(new Map());
@@ -150,8 +152,12 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
     }
   }
 
-  async function onSaveDomain(planId: string) {
+  async function onSaveDomain(planId: string, plan: ServicePlan) {
     const draft = domainDrafts.get(planId) ?? "";
+    const domainExpiresAt = domainExpiresDrafts.has(planId)
+      ? domainExpiresDrafts.get(planId)!
+      : plan.domainExpiresAt ?? "";
+    const sslExpiresAt = sslExpiresDrafts.has(planId) ? sslExpiresDrafts.get(planId)! : plan.sslExpiresAt ?? "";
     setDomainBusyId(planId);
     setDomainError((current) => {
       const next = new Map(current);
@@ -159,7 +165,7 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
       return next;
     });
     try {
-      await setServicePlanDomain(planId, draft);
+      await setServicePlanDomain(planId, draft, { domainExpiresAt, sslExpiresAt });
       await reload();
     } catch (caught) {
       setDomainError((current) =>
@@ -332,11 +338,15 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
                   <DomainField
                     plan={plan}
                     draft={domainDrafts.get(plan.id) ?? plan.domain ?? ""}
+                    domainExpiresDraft={domainExpiresDrafts.get(plan.id) ?? plan.domainExpiresAt ?? ""}
+                    sslExpiresDraft={sslExpiresDrafts.get(plan.id) ?? plan.sslExpiresAt ?? ""}
                     busy={domainBusyId === plan.id}
                     status={domainStatus.get(plan.id)}
                     error={domainError.get(plan.id)}
                     onDraftChange={(value) => setDomainDrafts((current) => new Map(current).set(plan.id, value))}
-                    onSave={() => void onSaveDomain(plan.id)}
+                    onDomainExpiresChange={(value) => setDomainExpiresDrafts((current) => new Map(current).set(plan.id, value))}
+                    onSslExpiresChange={(value) => setSslExpiresDrafts((current) => new Map(current).set(plan.id, value))}
+                    onSave={() => void onSaveDomain(plan.id, plan)}
                     onCheck={() => void onCheckDomain(plan.id)}
                   />
                 ) : null}
@@ -352,23 +362,37 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
 function DomainField({
   plan,
   draft,
+  domainExpiresDraft,
+  sslExpiresDraft,
   busy,
   status,
   error,
   onDraftChange,
+  onDomainExpiresChange,
+  onSslExpiresChange,
   onSave,
   onCheck,
 }: {
   plan: ServicePlan;
   draft: string;
+  domainExpiresDraft: string;
+  sslExpiresDraft: string;
   busy: boolean;
   status: DomainAvailability | undefined;
   error: string | undefined;
   onDraftChange: (value: string) => void;
+  onDomainExpiresChange: (value: string) => void;
+  onSslExpiresChange: (value: string) => void;
   onSave: () => void;
   onCheck: () => void;
 }) {
-  const dirty = draft.trim().toLowerCase() !== (plan.domain ?? "");
+  const dirty =
+    draft.trim().toLowerCase() !== (plan.domain ?? "") ||
+    domainExpiresDraft !== (plan.domainExpiresAt ?? "") ||
+    sslExpiresDraft !== (plan.sslExpiresAt ?? "");
+  const today = new Date().toISOString().slice(0, 10);
+  const domainOverdue = Boolean(plan.domainExpiresAt && plan.domainExpiresAt <= today);
+  const sslOverdue = Boolean(plan.sslExpiresAt && plan.sslExpiresAt <= today);
   return (
     <div className="mt-3 border-t border-[var(--admin-line)] pt-3">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Domain</p>
@@ -404,6 +428,35 @@ function DomainField({
       </p>
       {status ? <p className={`mt-1 text-[12px] font-semibold ${availabilityClass[status]}`}>{availabilityLabel[status]}</p> : null}
       {error ? <p className="mt-1 text-[12px] text-[#b45309]">{error}</p> : null}
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <label className="block text-[12px] font-semibold text-[var(--admin-muted)]">
+          Domain renews
+          <input
+            type="date"
+            value={domainExpiresDraft}
+            disabled={busy}
+            onChange={(event) => onDomainExpiresChange(event.target.value)}
+            className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+          />
+          {domainOverdue ? <span className="mt-1 block text-[11px] font-semibold text-[#b42318]">Overdue</span> : null}
+        </label>
+        <label className="block text-[12px] font-semibold text-[var(--admin-muted)]">
+          SSL certificate renews
+          <input
+            type="date"
+            value={sslExpiresDraft}
+            disabled={busy}
+            onChange={(event) => onSslExpiresChange(event.target.value)}
+            className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+          />
+          {sslOverdue ? <span className="mt-1 block text-[11px] font-semibold text-[#b42318]">Overdue</span> : null}
+        </label>
+      </div>
+      <p className="mt-1.5 text-[11px] text-[var(--admin-muted)]">
+        Optional. Set these to get a reminder 30 days before renewal, and a repeating one if it lapses. Leave blank if this
+        host auto-renews and you don't need a reminder.
+      </p>
     </div>
   );
 }

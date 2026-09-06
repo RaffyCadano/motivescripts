@@ -27,7 +27,7 @@ Admin creates a service_plans row (pending)
 
 ## Database
 
-Migrations: `supabase/migrations/20260910000000_service_plans.sql`, `20260911000000_service_plan_domain.sql`.
+Migrations: `supabase/migrations/20260910000000_service_plans.sql`, `20260911000000_service_plan_domain.sql`, `20260921000000_domain_ssl_renewal_tracking.sql`.
 
 `service_plans`:
 
@@ -39,6 +39,7 @@ Migrations: `supabase/migrations/20260910000000_service_plans.sql`, `20260911000
 | `status` | `pending` → `active` → `past_due` / `canceled`. Set only by `create_service_plan` (pending) or the webhook |
 | `stripe_subscription_id` | Unique. Set on activation |
 | `domain` | Free-text reference note, mainly for `hosting` plans. Not validated against a registry |
+| `domain_expires_at` / `ssl_expires_at` | Optional manual renewal dates (added `20260921000000`). Nothing here renews anything — these exist purely to drive the reminder in "Renewal reminders" below. Leave blank if the host auto-renews and no reminder is wanted |
 
 `invoices.service_plan_id` — nullable FK, set only on recurring-cycle invoices. One-time invoices leave this null.
 
@@ -64,9 +65,15 @@ Stripe does not guarantee `checkout.session.completed` arrives before `invoice.p
 
 There is no `active` → `pending` path and no resuming a canceled plan — create a new plan instead.
 
+## Renewal reminders
+
+`notify_domain_ssl_renewals()` runs daily via `pg_cron`, folded into the same job as `notify_task_deadlines()` (see [time-tracking.md](./time-tracking.md)) rather than a second cron entry. For any non-canceled plan with a `domain_expires_at`/`ssl_expires_at` set: notifies once when it's exactly 30 days out (`domain_expiring_soon` / `ssl_expiring_soon`), then once per calendar day while it stays expired and unresolved (`domain_expired` / `ssl_expired`) — the same "upcoming once, then repeating overdue" shape as task deadline reminders. Dedup is by `notifications.service_plan_id` (new column, added for exactly this).
+
+Recipients match `plan_past_due`/`plan_canceled`'s existing audience: admins, plus staff holding `activity.view` on that client — not just true admins, since a PM is often the one who'd actually renew it.
+
 ## Admin UI
 
-`/admin/clients/:id#plans` (`ClientRecurringPlansSection`): create a plan (type, optional project, name, monthly amount), "Get checkout link" for `pending` plans, "Cancel plan" for `active`/`past_due`. Hosting-type plans additionally show the domain field: type a domain, "Check availability" (RDAP lookup, no account needed), "Save" to keep it as a note on the plan.
+`/admin/clients/:id#plans` (`ClientRecurringPlansSection`): create a plan (type, optional project, name, monthly amount), "Get checkout link" for `pending` plans, "Cancel plan" for `active`/`past_due`. Hosting-type plans additionally show the domain field: type a domain, "Check availability" (RDAP lookup, no account needed), plus two optional renewal-date fields (domain, SSL) that drive the reminders above; "Save" persists all three together.
 
 ## Client UI
 
@@ -74,7 +81,7 @@ There is no `active` → `pending` path and no resuming a canceled plan — crea
 
 ## Notifications
 
-`payment_received` and (when the cycle's invoice reaches `paid`, which it always should given a single matching line item) `invoice_paid` — same types the one-time flow uses. `plan_past_due` on payment failure, `plan_canceled` on subscription deletion, both to admins only.
+`payment_received` and (when the cycle's invoice reaches `paid`, which it always should given a single matching line item) `invoice_paid` — same types the one-time flow uses. `plan_past_due` on payment failure, `plan_canceled` on subscription deletion, both to admins only. `domain_expiring_soon` / `domain_expired` / `ssl_expiring_soon` / `ssl_expired` per "Renewal reminders" above.
 
 ## Exact Supabase setup
 
@@ -134,6 +141,9 @@ Use Stripe test mode and two Auth users (an admin and a client on the same test 
 | 12 | Domain "Check availability" on a clearly free custom-TLD name returns `available` |
 | 13 | Domain "Check availability" on `google.com` returns `taken` |
 | 14 | Domain note saves and persists across reload |
+| 15 | Setting a domain/SSL renewal date 30 days out, then manually running `select public.notify_domain_ssl_renewals();`, creates exactly one `domain_expiring_soon`/`ssl_expiring_soon` notification; running it again does not duplicate |
+| 16 | Setting a renewal date in the past, then running the function, creates a `domain_expired`/`ssl_expired` notification once per day (running it twice the same day does not duplicate; running it the next day does) |
+| 17 | Canceling a plan with an overdue renewal date stops new reminders from firing on the next run |
 
 ## Out of scope
 

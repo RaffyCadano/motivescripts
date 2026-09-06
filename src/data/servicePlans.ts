@@ -10,6 +10,8 @@ export type ServicePlan = {
   amountCents: number;
   status: ServicePlanStatus;
   domain: string | null;
+  domainExpiresAt: string | null;
+  sslExpiresAt: string | null;
   createdAt: string;
   canceledAt: string | null;
 };
