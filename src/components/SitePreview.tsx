@@ -23,6 +23,11 @@ export function SitePreview({ project }: SitePreviewProps) {
         {project.preview === "cleaning" ? <CleaningPreview /> : null}
         {project.preview === "auto" ? <AutoPreview /> : null}
         {project.preview === "electric" ? <ElectricPreview /> : null}
+        {project.preview === "home_services" ? <HomeServicesPreview /> : null}
+        {project.preview === "contractor" ? <ContractorPreview /> : null}
+        {project.preview === "restaurant" ? <RestaurantPreview /> : null}
+        {project.preview === "salon" ? <SalonPreview /> : null}
+        {project.preview === "professional_services" ? <ProfessionalServicesPreview /> : null}
       </MiniPage>
     </BrowserFrame>
   );
@@ -291,6 +296,192 @@ function ElectricPreview() {
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeServicesPreview() {
+  return (
+    <div className="flex h-full flex-col bg-[#f7fafc] text-[#132436]" aria-hidden="true">
+      <div className="flex shrink-0 items-center justify-between px-10 py-2.5 text-[13px] text-[#4f6478]">
+        <span>Licensed · Insured · Background-checked</span>
+        <span className="font-heading font-semibold text-[#2b5f8a]">(512) 555-0171</span>
+      </div>
+      <div className="flex shrink-0 items-center justify-between border-y border-[#dbe6ee] bg-white px-10 py-4">
+        <div className="flex items-center gap-3">
+          <span className="grid size-9 place-items-center rounded-md bg-[#2b5f8a] font-heading text-sm font-extrabold text-white">
+            A
+          </span>
+          <span className="font-heading text-xl font-extrabold tracking-tight">Anchor Point</span>
+        </div>
+        <span className="rounded-md bg-[#e07b39] px-4 py-2 text-sm font-semibold text-white">Get an estimate</span>
+      </div>
+      <div className="grid min-h-0 flex-1 grid-cols-[1.2fr_1fr] items-center gap-10 px-10 py-8">
+        <div>
+          <p className="font-heading text-xs font-bold uppercase tracking-[0.18em] text-[#2b5f8a]">
+            Repairs · Installation · Maintenance
+          </p>
+          <p className="mt-3 max-w-[15ch] font-heading text-[3rem] font-extrabold leading-[1.05] text-[#132436]">
+            One call for everything on your list.
+          </p>
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-[#4f6478]">
+            Upfront pricing, background-checked technicians, and same-week scheduling for the repairs
+            homeowners keep putting off.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            ["✓", "Licensed & Insured"],
+            ["✓", "Background-Checked"],
+            ["✓", "Upfront Pricing"],
+            ["✓", "Same-Week Slots"],
+          ].map(([mark, label]) => (
+            <div key={label} className="rounded-lg border border-[#dbe6ee] bg-white px-4 py-3.5 shadow-[0_8px_20px_rgb(19_36_54_/_0.06)]">
+              <span className="grid size-7 place-items-center rounded-full bg-[#e6f0f7] font-heading text-sm font-bold text-[#2b5f8a]">
+                {mark}
+              </span>
+              <p className="mt-2 text-[13px] font-semibold leading-tight">{label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ContractorPreview() {
+  return (
+    <div className="flex h-full flex-col bg-[#1c232a] text-white" aria-hidden="true">
+      <div className="flex shrink-0 items-center justify-between px-10 py-6">
+        <span className="font-heading text-lg font-extrabold tracking-tight">Fieldstone Construction</span>
+        <span className="rounded-md bg-[#d9731c] px-4 py-2 text-sm font-semibold">Free Estimate</span>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col justify-center px-10">
+        <p className="font-heading text-xs font-bold uppercase tracking-[0.18em] text-[#e39a56]">
+          Remodels · Additions · Renovations
+        </p>
+        <p className="mt-3 max-w-[16ch] font-heading text-[3.1rem] font-extrabold leading-[1.05]">
+          Built the way you'd want your own house done.
+        </p>
+      </div>
+      <div className="grid shrink-0 grid-cols-3 gap-px border-t border-white/10 bg-white/10">
+        {[
+          ["18+", "Years in Business"],
+          ["400+", "Projects Completed"],
+          ["4.9★", "Average Rating"],
+        ].map(([stat, label]) => (
+          <div key={label} className="bg-[#1c232a] px-8 py-7 text-center">
+            <p className="font-heading text-[2.4rem] font-extrabold text-[#e39a56]">{stat}</p>
+            <p className="mt-1 text-[12px] font-semibold uppercase tracking-[0.1em] text-white/70">{label}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RestaurantPreview() {
+  return (
+    <div className="flex h-full flex-col items-center bg-[#faf3ee] px-10 py-8 text-center text-[#3a1219]" aria-hidden="true">
+      <div className="flex w-full shrink-0 items-center justify-between text-[13px] font-semibold text-[#7a2331]">
+        <span>The Amber Fork</span>
+        <span className="flex gap-6 uppercase tracking-[0.12em] text-[#a8636f]">
+          <span>Menu</span>
+          <span>About</span>
+          <span>Reserve</span>
+        </span>
+      </div>
+      <div className="mt-8">
+        <p className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-[#c9a227]">
+          Seasonal American Bistro
+        </p>
+        <p className="mt-3 max-w-[20ch] font-heading text-[2.9rem] italic leading-[1.1]" style={{ fontFamily: "Georgia, serif" }}>
+          Plates that change with the season.
+        </p>
+      </div>
+      <div className="mt-8 grid w-full max-w-xl grid-cols-1 gap-2 text-left">
+        {[
+          ["Roasted Beet Salad", "$14"],
+          ["Pan-Seared Duck Breast", "$34"],
+          ["Dark Chocolate Tart", "$11"],
+        ].map(([dish, price]) => (
+          <div key={dish} className="flex items-baseline justify-between border-b border-[#e6d3ca] py-2">
+            <span className="font-heading text-[15px] font-semibold">{dish}</span>
+            <span className="mx-3 flex-1 border-b border-dotted border-[#c9a8a0]" />
+            <span className="font-heading text-[15px] font-bold text-[#7a2331]">{price}</span>
+          </div>
+        ))}
+      </div>
+      <span className="mt-7 rounded-md bg-[#7a2331] px-6 py-2.5 text-sm font-semibold text-white">Reserve a Table</span>
+    </div>
+  );
+}
+
+function SalonPreview() {
+  return (
+    <div className="flex h-full text-white" aria-hidden="true">
+      <div className="flex min-h-0 flex-[1.4] flex-col justify-between bg-[#201b1c] px-10 py-8">
+        <span className="font-heading text-lg font-extrabold tracking-tight">Bloom &amp; Blade</span>
+        <div>
+          <p className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-[#d99aa4]">
+            Salon &amp; Barber
+          </p>
+          <p className="mt-3 max-w-[13ch] font-heading text-[2.9rem] font-extrabold leading-[1.05]">
+            Cuts &amp; color, on your schedule.
+          </p>
+        </div>
+        <span className="w-fit rounded-md bg-[#b76e79] px-5 py-2.5 text-sm font-semibold">Book Now</span>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col justify-center gap-4 bg-[#2f2325] px-8 py-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#d99aa4]">Popular Services</p>
+        {[
+          ["Women's Cut", "$65"],
+          ["Men's Cut", "$40"],
+          ["Full Color", "$95"],
+          ["Beard Trim", "$20"],
+        ].map(([service, price]) => (
+          <div key={service} className="flex items-baseline justify-between border-b border-white/10 pb-2">
+            <span className="text-[14px] font-semibold">{service}</span>
+            <span className="font-heading text-[14px] font-bold text-[#e3aeb5]">{price}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProfessionalServicesPreview() {
+  return (
+    <div className="flex h-full text-white" aria-hidden="true">
+      <div className="flex w-[15.5rem] shrink-0 flex-col justify-between border-r border-[#c9a24b]/30 bg-[#0f2338] px-6 py-8">
+        <span className="font-heading text-base font-extrabold tracking-tight">Kestrel Advisory</span>
+        <div className="space-y-5">
+          {[
+            ["20+", "Years Advising"],
+            ["500+", "Clients Served"],
+            ["Certified", "Financial Advisors"],
+          ].map(([stat, label]) => (
+            <div key={label}>
+              <p className="font-heading text-xl font-extrabold text-[#c9a24b]">{stat}</p>
+              <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/60">{label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex min-h-0 flex-1 flex-col justify-center bg-[#16324f] px-10">
+        <p className="font-heading text-xs font-bold uppercase tracking-[0.18em] text-[#c9a24b]">
+          Business Advisory &amp; Consulting
+        </p>
+        <p className="mt-3 max-w-[16ch] font-heading text-[2.7rem] font-extrabold leading-[1.08]">
+          Straight advice for the decisions that matter.
+        </p>
+        <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/75">
+          Clear recommendations from advisors who take the time to understand your business first.
+        </p>
+        <span className="mt-6 w-fit rounded-md bg-[#c9a24b] px-5 py-2.5 text-sm font-semibold text-[#16324f]">
+          Schedule a Consultation
+        </span>
       </div>
     </div>
   );

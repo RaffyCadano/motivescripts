@@ -12,7 +12,17 @@ export type Project = {
   summary: string;
   concept: true;
   accent: string;
-  preview: "trees" | "landscape" | "cleaning" | "auto" | "electric";
+  preview:
+    | "trees"
+    | "landscape"
+    | "cleaning"
+    | "auto"
+    | "electric"
+    | "home_services"
+    | "contractor"
+    | "restaurant"
+    | "salon"
+    | "professional_services";
   challenge: string;
   approach: string[];
   outcome: string;
@@ -118,6 +128,106 @@ export const projects: Project[] = [
     ],
     outcome:
       "A high-contrast electrician website built around calling and booking a visit. Shown here as a concept example.",
+  },
+  {
+    slug: "anchor-point-home",
+    name: "Anchor Point Home Services",
+    industry: "Home Services",
+    services: "Website Design / Development",
+    summary:
+      "A trust-first website for a handyman and home-repair company, built to make free estimates and same-week scheduling the obvious next step.",
+    concept: true,
+    accent: "#2b5f8a",
+    preview: "home_services",
+    challenge:
+      "Homeowners hesitate to let a stranger into their house. The site has to earn trust — licensed, insured, background-checked — before it ever asks for a booking.",
+    approach: [
+      "Lead with trust signals instead of a generic hero photo.",
+      "Keep 'get an estimate' visible on every screen, not just the homepage.",
+      "Group repairs the way homeowners actually search for them.",
+    ],
+    outcome:
+      "A trust-forward home-services site built to convert quickly on a phone. This is a concept project, not a client engagement.",
+  },
+  {
+    slug: "fieldstone-construction",
+    name: "Fieldstone Construction",
+    industry: "General Contracting",
+    services: "Website Design / Development",
+    summary:
+      "A portfolio-driven website for a remodeling contractor, built to prove capability through real project work before a client commits to a bid.",
+    concept: true,
+    accent: "#33404a",
+    preview: "contractor",
+    challenge:
+      "A remodel is a five- or six-figure decision. Visitors need proof of real capability, not just a page that says 'we do kitchens.'",
+    approach: [
+      "Lead with numbers that build confidence: years in business, projects completed.",
+      "Explain the fixed-price-contract process step by step, so there are no surprises.",
+      "Make the free estimate the one clear next step on every page.",
+    ],
+    outcome:
+      "A capability-first contractor site built around proof and process. Shown here as a concept example.",
+  },
+  {
+    slug: "the-amber-fork",
+    name: "The Amber Fork",
+    industry: "Restaurant",
+    services: "Website Design / Development",
+    summary:
+      "A seasonal-menu bistro website built to make reservations effortless and the current menu easy to browse before walking in.",
+    concept: true,
+    accent: "#7a2331",
+    preview: "restaurant",
+    challenge:
+      "Diners decide in seconds whether to book. A menu that reads like a scanned PDF from three years ago costs a reservation before the food ever gets a chance.",
+    approach: [
+      "Keep the menu feeling current and easy to scan, not buried in a PDF download.",
+      "Put 'reserve a table' above the fold on every page.",
+      "Design quietly enough that the food does the talking once real photography is in.",
+    ],
+    outcome:
+      "A reservation-first restaurant site built around a current, browsable menu. This is a concept project.",
+  },
+  {
+    slug: "bloom-and-blade",
+    name: "Bloom & Blade",
+    industry: "Salon & Barber",
+    services: "Website Design / Development",
+    summary:
+      "A booking-first website for a combined salon and barbershop, built around real published pricing instead of a phone-only 'call for pricing' intake.",
+    concept: true,
+    accent: "#b76e79",
+    preview: "salon",
+    challenge:
+      "Clients want to know the price and pick a specific stylist or barber before they ever call. A site that hides both loses the booking to whoever answers first.",
+    approach: [
+      "Publish real pricing instead of 'call for pricing.'",
+      "Put 'book now' in reach on every screen, for both walk-in and appointment clients.",
+      "Give the team enough personality on the page to help clients choose who to book.",
+    ],
+    outcome:
+      "A booking-first salon/barbershop site built around clear pricing and easy scheduling. Shown here as a concept example.",
+  },
+  {
+    slug: "kestrel-advisory-group",
+    name: "Kestrel Advisory Group",
+    industry: "Professional Services",
+    services: "Website Design / Development",
+    summary:
+      "A credibility-first website for a business advisory firm, built to earn trust through a specific, no-jargon offer before price ever comes up.",
+    concept: true,
+    accent: "#16324f",
+    preview: "professional_services",
+    challenge:
+      "Prospective clients are vetting expertise, not comparing prices. A generic 'we do consulting' page reads as interchangeable with every other firm.",
+    approach: [
+      "Lead with specific outcomes clients get, not a generic service menu.",
+      "Put advisor credentials front and center to build trust fast.",
+      "Make 'schedule a consultation' the one unambiguous next step.",
+    ],
+    outcome:
+      "A credibility-first advisory-firm site built around expertise and a clear next step. This is a concept project.",
   },
 ];
 
