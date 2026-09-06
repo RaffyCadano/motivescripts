@@ -11,6 +11,7 @@ import { ClientLayout } from "@/components/client/ClientLayout";
 import { Layout } from "@/components/Layout";
 import { routerBasename } from "@/lib/appUrl";
 import { AboutPage } from "@/pages/About";
+import { AdminActivity } from "@/pages/admin/AdminActivity";
 import { AdminCapacity } from "@/pages/admin/AdminCapacity";
 import { AdminPayroll } from "@/pages/admin/AdminPayroll";
 import { AdminClientDetails } from "@/pages/admin/AdminClientDetails";
@@ -83,7 +84,7 @@ import { TeamTasks } from "@/pages/team/TeamTasks";
 import { TeamTime } from "@/pages/team/TeamTime";
 import { MessagingProvider } from "@/providers/MessagingProvider";
 
-const adminUnavailablePaths = ["notifications", "activity"] as const;
+const adminUnavailablePaths = ["notifications"] as const;
 
 export default function App() {
   return (
@@ -133,6 +134,7 @@ export default function App() {
                 <Route path="team/new" element={<AdminTeamInviteNew />} />
                 <Route path="team/invite/:invitationId" element={<AdminTeamInviteDetails />} />
                 <Route path="team/:id" element={<AdminTeamDetails />} />
+                <Route path="activity" element={<AdminActivity />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="profile" element={<AdminProfile />} />
                 <Route path="payments" element={<Navigate to="/admin/invoices" replace />} />

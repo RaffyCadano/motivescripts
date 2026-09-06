@@ -80,6 +80,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { label: "Team", href: "/admin/team", icon: "team" },
       { label: "Capacity", href: "/admin/capacity", icon: "capacity" },
+      { label: "Activity", href: "/admin/activity", icon: "activity" },
       { label: "Settings", href: "/admin/settings", icon: "settings" },
     ],
   },
@@ -185,12 +186,6 @@ export const adminUnavailablePages: Record<
     icon: "notifications",
     description: "A dedicated notifications page is not available in this release.",
     hint: "Unread alerts are in the header bell. Messages live under Messages.",
-  },
-  "/admin/activity": {
-    label: "Activity",
-    icon: "activity",
-    description: "A workspace-wide activity feed is not available in this release.",
-    hint: "Project activity is on each project’s overview.",
   },
 };
 
