@@ -36,6 +36,16 @@ export function LeadContactCard({ lead }: LeadContactCardProps) {
           </dd>
         </div>
         <Item label="Industry" value={lead.industry} />
+        <Item
+          label="Referral source"
+          value={
+            lead.referralSource
+              ? lead.referralSource === "Other" && lead.referralSourceOther
+                ? `Other — ${lead.referralSourceOther}`
+                : lead.referralSource
+              : "Unknown"
+          }
+        />
       </dl>
       <div className="mt-4 flex flex-wrap gap-2">
         <a href={`mailto:${lead.email}`} className={`${adminGhostBtn} gap-2`}>

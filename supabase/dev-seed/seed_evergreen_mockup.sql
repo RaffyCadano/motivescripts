@@ -296,7 +296,9 @@ begin
   insert into public.deliverables (id, project_id, name, description, category, status, created_at, updated_at)
   values
     (v_deliv_logo, v_project_id, 'Logo', 'Primary Evergreen Grounds logo lockup, in the EG brand green (#2f5d3a).', 'Branding', 'Approved', timestamptz '2026-07-26 11:00:00-07', timestamptz '2026-07-29 14:00:00-07'),
-    (v_deliv_home, v_project_id, 'Homepage Design', 'Homepage layout: hero, services overview, project gallery teaser, and contact CTA.', 'Website Page', 'In Review', timestamptz '2026-08-06 10:00:00-07', timestamptz '2026-08-28 15:30:00-07')
+    -- Status is 'Needs Changes', not 'In Review' -- matches the changes_requested activity
+    -- entry and Open feedback message below (client asked for a bigger mobile phone number).
+    (v_deliv_home, v_project_id, 'Homepage Design', 'Homepage layout: hero, services overview, project gallery teaser, and contact CTA.', 'Website Page', 'Needs Changes', timestamptz '2026-08-06 10:00:00-07', timestamptz '2026-08-29 09:20:00-07')
   on conflict (id) do nothing;
 
   insert into public.file_versions (
@@ -345,10 +347,16 @@ begin
     (v_t10, v_project_id, v_ms_dev, 'Set up project repository from starter template', 'Scaffold from the landscaping starter template and configure branding tokens.', 'Completed', 'Medium', 'Marcus Chen', v_developer_id, 9, date '2026-08-13', timestamptz '2026-08-13 10:00:00-07', timestamptz '2026-08-11 09:00:00-07', 'production', 2, v_template_repo_url, null),
     (v_t11, v_project_id, v_ms_dev, 'Build homepage', 'Implement the approved homepage design and copy.', 'Completed', 'High', 'Marcus Chen', v_developer_id, 10, date '2026-08-20', timestamptz '2026-08-20 16:00:00-07', timestamptz '2026-08-11 09:00:00-07', 'production', 8, null, v_deliv_home),
     (v_t12, v_project_id, v_ms_dev, 'Build About & Services pages', 'Implement from approved design and copy.', 'In Review', 'Medium', 'Marcus Chen', v_developer_id, 11, date '2026-09-08', null, timestamptz '2026-08-11 09:00:00-07', 'production', 6, null, null),
-    (v_t13, v_project_id, v_ms_dev, 'Build Gallery / Portfolio page', 'Implement gallery grid with lightbox for before/after shots.', 'In Progress', 'Low', 'Marcus Chen', v_developer_id, 12, date '2026-09-10', null, timestamptz '2026-08-11 09:00:00-07', 'production', 5, null, null),
+    -- due_date is "today" for this seed scenario (2026-09-07) so the Developer Dashboard's
+    -- "Today's Tasks" section has something real to show -- re-date this if the scenario's
+    -- reference "today" ever moves.
+    (v_t13, v_project_id, v_ms_dev, 'Build Gallery / Portfolio page', 'Implement gallery grid with lightbox for before/after shots.', 'In Progress', 'Low', 'Marcus Chen', v_developer_id, 12, date '2026-09-07', null, timestamptz '2026-08-11 09:00:00-07', 'production', 5, null, null),
     (v_t14, v_project_id, v_ms_dev, 'Build Contact page with quote-request form', 'Waiting on the client to provide the quote-request notification email address before this can be finished.', 'Blocked', 'Medium', 'Marcus Chen', v_developer_id, 13, date '2026-09-12', null, timestamptz '2026-08-11 09:00:00-07', 'production', 4, null, null),
     (v_t15, v_project_id, v_ms_dev, 'Integrate approved photography and copy', 'Place final crew/project photos and approved copy across pages.', 'In Progress', 'Medium', 'Priya Nair', v_writer_id, 14, date '2026-09-09', null, timestamptz '2026-08-11 09:00:00-07', 'content_collection', 3, null, null),
-    (v_t16, v_project_id, v_ms_dev, 'Mobile responsiveness pass', 'Verify phone/tablet layouts match approved design.', 'Todo', 'Medium', 'Marcus Chen', v_developer_id, 15, date '2026-09-13', null, timestamptz '2026-08-11 09:00:00-07', 'production', 4, null, null),
+    -- task_type is 'qa', not 'production' -- verifying layouts match approved design is a
+    -- testing task. The only QA-typed task in this project assigned to the developer
+    -- (Marcus); the other two (v_t17, v_t20) belong to the QA staff member, Devon.
+    (v_t16, v_project_id, v_ms_dev, 'Mobile responsiveness pass', 'Verify phone/tablet layouts match approved design.', 'Todo', 'Medium', 'Marcus Chen', v_developer_id, 15, date '2026-09-13', null, timestamptz '2026-08-11 09:00:00-07', 'qa', 4, null, null),
 
     (v_t17, v_project_id, v_ms_qa, 'Test staging site across devices and browsers', 'Cross-browser and cross-device QA pass on staging.', 'Todo', 'High', 'Devon Brooks', v_qa_id, 16, date '2026-09-17', null, timestamptz '2026-08-11 09:00:00-07', 'qa', 4, null, null),
     (v_t18, v_project_id, v_ms_qa, 'Client walkthrough and feedback session', 'Walk Maria through staging and log any revision requests.', 'Todo', 'High', 'Marcus Chen', v_developer_id, 17, date '2026-09-18', null, timestamptz '2026-08-11 09:00:00-07', 'client_review', 2, null, null),

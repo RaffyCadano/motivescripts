@@ -39,8 +39,8 @@ export function TaskDeliverableSection({
   const mismatch = taskStatus === "Completed" && linked !== null && linked.status !== "Approved";
 
   return (
-    <section className="mt-6">
-      <h3 className="font-heading text-sm font-semibold">Linked deliverable</h3>
+    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4 sm:p-5">
+      <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Linked deliverable</h3>
       <p className="mt-1 text-[11px] text-[var(--admin-muted)]">
         Which deliverable does this task produce? Lets everyone see whether completed work actually has an approved
         deliverable behind it, not just a checked-off task.

@@ -131,6 +131,8 @@ export function TeamProjectDetails() {
   const nextMilestone = upcomingMilestone(project);
   const myOpen = myOpenTaskCount(project, profile?.id ?? "", profile?.fullName ?? "");
   const fileHref = (fileId: string) => teamProjectHref(project.id, { tab: "files", file: fileId });
+  // Just "Files" -- the project name and "My Projects" are already shown in the page header above.
+  const filesBreadcrumb = [{ label: "Files", href: teamProjectHref(project.id, { tab: "files" }) }];
   const progress = calculateProjectProgress(project);
 
   const openTaskId = searchParams.get("task");
@@ -158,6 +160,7 @@ export function TeamProjectDetails() {
         referenceUrl: openProjectTask.referenceUrl,
         estimatedHours: openProjectTask.estimatedHours,
         deliverableId: openProjectTask.deliverableId,
+        origin: openProjectTask.origin,
       })
     : null;
 
@@ -284,7 +287,12 @@ export function TeamProjectDetails() {
       ) : null}
       {tab === "milestones" ? <ProjectMilestonesPanel project={project} /> : null}
       {tab === "files" ? (
-        <ProjectFilesPanel project={project} selectedId={selectedFileId} onSelect={setSelectedFile} />
+        <ProjectFilesPanel
+          project={project}
+          selectedId={selectedFileId}
+          onSelect={setSelectedFile}
+          breadcrumbItems={filesBreadcrumb}
+        />
       ) : null}
       {tab === "time" ? <ProjectTimePanel project={project} /> : null}
       {tab === "feedback" ? <ProjectFeedbackPanel project={project} fileHref={fileHref} /> : null}

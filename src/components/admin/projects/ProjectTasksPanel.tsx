@@ -1,3 +1,4 @@
+import { TaskOriginBadge } from "@/components/admin/projects/TaskOriginBadge";
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
 import { TaskRecommendedRoleNote } from "@/components/admin/projects/TaskRecommendedRoleNote";
 import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
@@ -166,6 +167,7 @@ function TaskRow({
           {preview ? <span className="mt-1 block text-[12px] text-[var(--admin-muted)]">{preview}</span> : null}
           <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
             <TaskStatusBadge status={task.status} />
+            {task.origin === "client" ? <TaskOriginBadge /> : null}
             <TaskPriorityBadge priority={task.priority} />
             <TaskRecommendedRoleNote role={recommendedRole} />
             <span className="text-[12px] text-[var(--admin-muted)]">

@@ -98,24 +98,26 @@ export function TeamTaskDetail({
     >
       <div className="min-w-0">
         {!isModal && breadcrumb ? <div className="mb-2">{breadcrumb}</div> : null}
-        <p className="text-[12px] text-[var(--admin-muted)]">{task.clientName}</p>
+        <p className="text-[12px] font-medium text-[var(--admin-muted)]">
+          {task.projectName} · {task.clientName}
+        </p>
         <h2
           id={titleId}
-          className={isModal ? "mt-1 font-heading text-lg font-semibold text-[var(--admin-ink)]" : "mt-1 font-heading text-[1.5rem] font-semibold tracking-tight text-[var(--admin-ink)] md:text-[1.65rem]"}
+          className={isModal ? "mt-1.5 font-heading text-lg font-semibold tracking-tight text-[var(--admin-ink)]" : "mt-1.5 font-heading text-[1.5rem] font-semibold tracking-tight text-[var(--admin-ink)] md:text-[1.65rem]"}
         >
           {task.title}
         </h2>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
+        <div className="mt-3 flex flex-wrap items-center gap-2.5">
           <TaskStatusBadge status={task.status} />
           <TaskPriorityBadge priority={task.priority} />
-          <span className="text-[12px] text-[var(--admin-muted)]">{dueLabel(task.dueDate)}</span>
+          <span className="text-[12px] font-medium text-[var(--admin-muted)]">{dueLabel(task.dueDate)}</span>
         </div>
       </div>
       {isModal ? (
         <button
           ref={closeRef}
           type="button"
-          className="inline-flex h-9 shrink-0 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+          className="inline-flex h-9 shrink-0 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] transition-colors hover:bg-[var(--admin-bg)]"
           onClick={onClose}
         >
           Close
@@ -127,91 +129,89 @@ export function TeamTaskDetail({
   const body = (
     <>
       {header}
-      <div className={isModal ? "min-h-0 flex-1 overflow-auto px-5 py-4" : "mt-5"}>
+      <div className={isModal ? "min-h-0 flex-1 overflow-auto px-5 py-5" : "mt-6"}>
+        <div className="space-y-4">
           <TaskInstructions title={task.title} description={task.description} className="space-y-4" />
 
-          <dl className="mt-5 grid gap-3 sm:grid-cols-2">
-            <div>
-              <dt className="text-[12px] text-[var(--admin-muted)]">Project</dt>
-              <dd className="mt-1 text-sm">{task.projectName}</dd>
-            </div>
-            <div>
-              <dt className="text-[12px] text-[var(--admin-muted)]">Client</dt>
-              <dd className="mt-1 text-sm">{task.clientName}</dd>
-            </div>
-            {task.milestoneName ? (
+          <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4 sm:p-5">
+            <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Details</h3>
+            <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+              {task.milestoneName ? (
+                <div>
+                  <dt className="text-[12px] text-[var(--admin-muted)]">Milestone</dt>
+                  <dd className="mt-1 text-sm text-[var(--admin-ink)]">{task.milestoneName}</dd>
+                </div>
+              ) : null}
               <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Milestone</dt>
-                <dd className="mt-1 text-sm">{task.milestoneName}</dd>
+                <dt className="text-[12px] text-[var(--admin-muted)]">Created</dt>
+                <dd className="mt-1 text-sm text-[var(--admin-ink)]">{formatProjectDay(task.createdAt)}</dd>
               </div>
-            ) : null}
-            <div>
-              <dt className="text-[12px] text-[var(--admin-muted)]">Created</dt>
-              <dd className="mt-1 text-sm">{formatProjectDay(task.createdAt)}</dd>
-            </div>
-            {task.estimatedHours != null ? (
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Estimated</dt>
-                <dd className="mt-1 text-sm">{task.estimatedHours}h</dd>
-              </div>
-            ) : null}
-            {task.completedAt ? (
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Completed</dt>
-                <dd className="mt-1 text-sm">{formatProjectDay(task.completedAt)}</dd>
-              </div>
-            ) : null}
-            {task.referenceUrl ? (
-              <div>
-                <dt className="text-[12px] text-[var(--admin-muted)]">Reference link</dt>
-                <dd className="mt-1 text-sm">
-                  <a
-                    href={task.referenceUrl}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="font-medium text-[var(--admin-blue)] hover:underline"
-                  >
-                    Open link ↗
-                  </a>
-                </dd>
-              </div>
-            ) : null}
-          </dl>
+              {task.estimatedHours != null ? (
+                <div>
+                  <dt className="text-[12px] text-[var(--admin-muted)]">Estimated</dt>
+                  <dd className="mt-1 text-sm text-[var(--admin-ink)]">{task.estimatedHours}h</dd>
+                </div>
+              ) : null}
+              {task.completedAt ? (
+                <div>
+                  <dt className="text-[12px] text-[var(--admin-muted)]">Completed</dt>
+                  <dd className="mt-1 text-sm text-[var(--admin-ink)]">{formatProjectDay(task.completedAt)}</dd>
+                </div>
+              ) : null}
+              {task.referenceUrl ? (
+                <div>
+                  <dt className="text-[12px] text-[var(--admin-muted)]">Reference link</dt>
+                  <dd className="mt-1 text-sm">
+                    <a
+                      href={task.referenceUrl}
+                      target="_blank"
+                      rel="noreferrer noopener"
+                      className="font-medium text-[var(--admin-blue)] hover:underline"
+                    >
+                      Open link ↗
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
 
-          {canUpdateStatus ? (
-            <label className="mt-5 block text-[13px] font-medium text-[var(--admin-ink)]">
-              Status
-              <select
-                className="mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-                value={task.status}
-                disabled={busy}
-                onChange={(event) => onStatusChange(event.target.value as AgencyTaskStatus)}
-              >
-                {taskStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status === "Todo" ? "To Do" : status}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
+            {canUpdateStatus ? (
+              <div className="mt-4 border-t border-[var(--admin-line)] pt-4">
+                <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+                  Status
+                  <select
+                    className="mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                    value={task.status}
+                    disabled={busy}
+                    onChange={(event) => onStatusChange(event.target.value as AgencyTaskStatus)}
+                  >
+                    {taskStatuses.map((status) => (
+                      <option key={status} value={status}>
+                        {status === "Todo" ? "To Do" : status}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            ) : null}
+          </section>
 
           {earlierOpen && earlierOpen.length > 0 ? (
-            <p className="mt-3 rounded-lg border border-[rgb(180_83_9_/_0.3)] bg-[rgb(180_83_9_/_0.06)] px-3 py-2.5 text-[13px] text-[#b45309]">
+            <p className="rounded-lg border border-[rgb(180_83_9_/_0.3)] bg-[rgb(180_83_9_/_0.06)] px-3 py-2.5 text-[13px] text-[#b45309]">
               This task is in a later stage than {earlierOpen.map((item) => `${item.name} (${item.openCount} open)`).join(", ")}.
               Just a heads-up — you can still work on it.
             </p>
           ) : null}
 
           {task.status === "In Progress" && wipCount != null && wipCount > WIP_LIMIT ? (
-            <p className="mt-3 rounded-lg border border-[rgb(180_83_9_/_0.3)] bg-[rgb(180_83_9_/_0.06)] px-3 py-2.5 text-[13px] text-[#b45309]">
+            <p className="rounded-lg border border-[rgb(180_83_9_/_0.3)] bg-[rgb(180_83_9_/_0.06)] px-3 py-2.5 text-[13px] text-[#b45309]">
               {wipCount} tasks In Progress at once — consider finishing one before starting more. Just a nudge, not a block.
             </p>
           ) : null}
 
-          {error ? <p className="mt-3 text-sm text-[#b45309]">{error}</p> : null}
+          {error ? <p className="text-sm text-[#b45309]">{error}</p> : null}
 
-          {extra ? <div className="mt-6">{extra}</div> : null}
+          {extra}
 
           <TaskDeliverableSection
             taskId={task.id}
@@ -226,8 +226,8 @@ export function TeamTaskDetail({
 
           <TaskAttachmentsSection taskId={task.id} projectId={task.projectId} uploadedByLabel={displayLabel} />
 
-          <section className="mt-6">
-            <h3 className="font-heading text-sm font-semibold">Related files</h3>
+          <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4 sm:p-5">
+            <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Related files</h3>
             {files.length === 0 ? (
               <p className="mt-2 text-sm text-[var(--admin-muted)]">No files on this project yet.</p>
             ) : (
@@ -247,12 +247,13 @@ export function TeamTaskDetail({
           </section>
 
           <TaskCommentsSection taskId={task.id} projectId={task.projectId} authorLabel={displayLabel} />
+        </div>
       </div>
 
-      <div className={isModal ? "shrink-0 border-t border-[var(--admin-line)] px-5 py-4" : "mt-6 border-t border-[var(--admin-line)] pt-4"}>
+      <div className={isModal ? "flex shrink-0 justify-end border-t border-[var(--admin-line)] px-5 py-4" : "mt-6 flex justify-end border-t border-[var(--admin-line)] pt-4"}>
         <Link
           to={projectHref(task.projectId, { tab: "tasks" })}
-          className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white"
+          className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white transition-colors hover:bg-[var(--admin-navy)]"
         >
           Open project workspace
         </Link>
@@ -370,9 +371,9 @@ function LogTimeSection({
   const total = sumHours(entries);
 
   return (
-    <section className="mt-6 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4">
+    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h3 className="font-heading text-sm font-semibold">Log time</h3>
+        <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Log time</h3>
         {!loading && (total > 0 || estimatedHours != null) ? (
           <p className="text-[12px] text-[var(--admin-muted)]">
             {total}h logged{estimatedHours != null ? ` of ${estimatedHours}h estimated` : ""}
@@ -381,26 +382,30 @@ function LogTimeSection({
       </div>
       <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={(event) => void onSubmit(event)}>
         <label className="text-[13px] font-medium text-[var(--admin-ink)]">
-          Hours
-          <input
-            type="number"
-            min="0.25"
-            step="0.25"
-            value={hours}
-            disabled={busy}
-            onChange={(event) => setHours(event.target.value)}
-            className="mt-1.5 h-10 w-24 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-          />
+          Hours <br />
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="0.25"
+              step="0.25"
+              value={hours}
+              disabled={busy}
+              onChange={(event) => setHours(event.target.value)}
+              className="mt-1.5 h-10 w-24 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3  text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            />
+          </div>
         </label>
         <label className="min-w-[10rem] flex-1 text-[13px] font-medium text-[var(--admin-ink)]">
-          Note
-          <input
-            value={note}
-            disabled={busy}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="Optional"
-            className="mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-          />
+          Note <br />
+          <div className="flex items-center gap-2"> 
+            <input
+              value={note}
+              disabled={busy}
+              onChange={(event) => setNote(event.target.value)}
+              placeholder="Optional"
+              className="mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            />
+          </div>
         </label>
         <button
           type="submit"

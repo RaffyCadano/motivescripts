@@ -3,6 +3,7 @@ import { HeroSection } from "@/sections/HeroSection";
 import { IntroSection } from "@/sections/IntroSection";
 import { ProcessSection } from "@/sections/ProcessSection";
 import { ServicesSection } from "@/sections/ServicesSection";
+import { TestimonialsSection } from "@/sections/TestimonialsSection";
 import { WhySection } from "@/sections/WhySection";
 import { WorkSection } from "@/sections/WorkSection";
 import { usePageMeta } from "@/lib/usePageMeta";
@@ -18,6 +19,7 @@ export function HomePage() {
       <IntroSection />
       <ServicesSection />
       <WorkSection />
+      <TestimonialsSection />
       <ProcessSection />
       <WhySection />
       <CTA />

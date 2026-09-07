@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAdmin } from "@/auth/permissions";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
+import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { RecordPayrollPaymentModal } from "@/components/admin/payroll/RecordPayrollPaymentModal";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { amountOwedCents, sumHours, unpaidEntries, type TimeEntry } from "@/data/timeEntries";
@@ -25,8 +26,16 @@ export function AdminPayroll() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Map<string, string>>(new Map());
   const [payModalFor, setPayModalFor] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
 
   const members = useMemo(() => (data?.members ?? []).filter((member) => member.isActive), [data?.members]);
+  const filteredMembers = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return members;
+    return members.filter((member) =>
+      `${member.fullName} ${member.jobTitle} ${member.templateLabel}`.toLowerCase().includes(needle),
+    );
+  }, [members, query]);
 
   async function reload() {
     if (!isAdmin) return;
@@ -144,20 +153,38 @@ export function AdminPayroll() {
           <p className="mt-1 text-sm text-[var(--admin-muted)]">Invite team members from Team to see them here.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
-          <table className="w-full min-w-[760px] border-collapse text-left">
-            <thead>
-              <tr className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
-                <th className="px-3 py-2.5">Staff</th>
-                <th className="px-3 py-2.5">Hourly rate</th>
-                <th className="px-3 py-2.5">Payout contact (Zelle / PayPal)</th>
-                <th className="px-3 py-2.5">Unpaid hours</th>
-                <th className="px-3 py-2.5">Amount owed</th>
-                <th className="px-3 py-2.5" />
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((member) => {
+        <div className="space-y-3">
+          <label className="block max-w-sm">
+            <span className="sr-only">Search staff</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search name, title, or role"
+              className={adminFilterControlState(Boolean(query.trim()))}
+            />
+          </label>
+
+          {filteredMembers.length === 0 ? (
+            <div className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-9">
+              <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No matching staff</p>
+              <p className="mt-1 text-sm text-[var(--admin-muted)]">Try a different name, title, or role.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
+              <table className="w-full min-w-[760px] border-collapse text-left">
+                <thead>
+                  <tr className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                    <th className="px-3 py-2.5">Staff</th>
+                    <th className="px-3 py-2.5">Hourly rate</th>
+                    <th className="px-3 py-2.5">Payout contact (Zelle / PayPal)</th>
+                    <th className="px-3 py-2.5">Unpaid hours</th>
+                    <th className="px-3 py-2.5">Amount owed</th>
+                    <th className="px-3 py-2.5" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMembers.map((member) => {
                 const rate = rates.get(member.id);
                 const entries = entriesByStaff.get(member.id) ?? [];
                 const unpaidHours = sumHours(unpaidEntries(entries));
@@ -233,7 +260,9 @@ export function AdminPayroll() {
                 );
               })}
             </tbody>
-          </table>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

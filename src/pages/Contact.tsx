@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { PageHero } from "@/components/PageHero";
-import { leadIndustries } from "@/data/leads";
+import { leadIndustries, referralSources } from "@/data/leads";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { inquiryMailtoHref, submitPublicLead, type PublicLeadDraft } from "@/data/publicLead";
 import { site } from "@/data/site";
@@ -18,6 +18,8 @@ function draftFromForm(form: HTMLFormElement): PublicLeadDraft {
     phone: String(data.get("phone") ?? ""),
     industry: String(data.get("industry") ?? ""),
     goal: String(data.get("goal") ?? ""),
+    referralSource: String(data.get("referralSource") ?? ""),
+    referralSourceOther: String(data.get("referralSourceOther") ?? ""),
     website: String(data.get("website") ?? ""),
   };
 }
@@ -32,6 +34,7 @@ export function ContactPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mailtoHref, setMailtoHref] = useState<string | null>(null);
+  const [referralSource, setReferralSource] = useState("");
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -109,6 +112,40 @@ export function ContactPage() {
                   ))}
                 </select>
               </div>
+              <div className="sm:col-span-2">
+                <label className="block font-heading text-sm font-semibold text-ink" htmlFor="referralSource">
+                  How did you hear about us?
+                  <span className="ml-2 font-normal text-faint">Optional</span>
+                </label>
+                <select
+                  id="referralSource"
+                  name="referralSource"
+                  className={inputClass}
+                  value={referralSource}
+                  onChange={(event) => setReferralSource(event.target.value)}
+                >
+                  <option value="">Prefer not to say</option>
+                  {referralSources.map((source) => (
+                    <option key={source} value={source}>
+                      {source}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {referralSource === "Other" ? (
+                <div className="sm:col-span-2">
+                  <label className="block font-heading text-sm font-semibold text-ink" htmlFor="referralSourceOther">
+                    Tell us where
+                    <span className="ml-2 font-normal text-faint">Optional</span>
+                  </label>
+                  <input
+                    id="referralSourceOther"
+                    name="referralSourceOther"
+                    className={inputClass}
+                    placeholder="e.g. a podcast, a friend, a search engine"
+                  />
+                </div>
+              ) : null}
               <div className="sm:col-span-2">
                 <label className="block font-heading text-sm font-semibold text-ink" htmlFor="goal">
                   What do you need?

@@ -6,6 +6,7 @@ import {
   type AgencyTask,
   type AgencyTaskPriority,
   type AgencyTaskStatus,
+  type TaskOrigin,
 } from "@/data/agencyProjects";
 import type { TaskRecommendedRoleId } from "@/data/taskRecommendedRoles";
 import type { TaskType } from "@/data/taskTypes";
@@ -33,6 +34,7 @@ export type TeamWorkTask = {
   referenceUrl: string;
   estimatedHours: number | null;
   deliverableId: string | null;
+  origin: TaskOrigin;
 };
 
 export type TeamAttentionItem = {
@@ -172,6 +174,7 @@ export function collectAssignedTasks(
         referenceUrl: task.referenceUrl,
         estimatedHours: task.estimatedHours,
         deliverableId: task.deliverableId,
+        origin: task.origin,
       });
     }
   }

@@ -30,6 +30,8 @@ export type LeadRow = {
   project_details: string;
   status: string;
   source: string;
+  referral_source: string | null;
+  referral_source_other: string;
   notes: Json;
   activity: Json;
   client_id: string | null;
@@ -131,6 +133,7 @@ export type TaskRow = {
   reference_url: string | null;
   estimated_hours: number | null;
   deliverable_id: string | null;
+  origin: string;
   created_at: string;
   updated_at: string;
 };
@@ -614,6 +617,19 @@ export type PaymentRow = {
   created_at: string;
 };
 
+export type TestimonialRow = {
+  id: string;
+  client_name: string;
+  role_title: string;
+  quote: string;
+  project_id: string | null;
+  published: boolean;
+  display_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ServicePlanType = "care" | "seo_retainer" | "hosting" | "custom";
 export type ServicePlanStatus = "pending" | "active" | "past_due" | "canceled";
 
@@ -878,6 +894,7 @@ export type Database = {
       invoice_items: Table<InvoiceItemRow, Partial<InvoiceItemRow> & { invoice_id: string; description: string }>;
       payments: Table<PaymentRow, Partial<PaymentRow> & { invoice_id: string; amount_cents: number; payment_method: PaymentMethod }>;
       invoice_admin_notes: Table<InvoiceAdminNoteRow, Partial<InvoiceAdminNoteRow> & { invoice_id: string }>;
+      testimonials: Table<TestimonialRow, Partial<TestimonialRow> & { client_name: string; quote: string }>;
       service_plans: Table<
         ServicePlanRow,
         Partial<ServicePlanRow> & { client_id: string; plan_type: ServicePlanType; label: string; amount_cents: number }
@@ -1021,6 +1038,10 @@ export type Database = {
       client_approve_current_version: {
         Args: { p_deliverable_id: string };
         Returns: ApprovalRow;
+      };
+      client_create_task: {
+        Args: { p_project_id: string; p_title: string; p_description?: string };
+        Returns: TaskRow;
       };
       admin_link_client_account: {
         Args: { p_client_id: string; p_email: string };

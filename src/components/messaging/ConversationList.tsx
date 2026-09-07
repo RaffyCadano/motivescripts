@@ -14,6 +14,9 @@ type ConversationListProps = {
   showClient: boolean;
   canCompose?: boolean;
   onNew: () => void;
+  search: string;
+  onSearchChange: (value: string) => void;
+  showSearch: boolean;
 };
 
 export function ConversationList({
@@ -27,8 +30,12 @@ export function ConversationList({
   showClient,
   canCompose = true,
   onNew,
+  search,
+  onSearchChange,
+  showSearch,
 }: ConversationListProps) {
   const styles = messagingClasses(tone);
+  const searching = search.trim().length > 0;
 
   return (
     <aside className={cn("flex min-h-0 flex-col border-b lg:border-b-0 lg:border-r", styles.line)}>
@@ -47,13 +54,31 @@ export function ConversationList({
           </button>
         ) : null}
       </div>
+      {showSearch ? (
+        <div className={cn("border-b px-3 py-2.5", styles.line)}>
+          <label className="block">
+            <span className="sr-only">Search conversations</span>
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder="Search by client or subject"
+              className={cn(styles.control, styles.controlBorder)}
+            />
+          </label>
+        </div>
+      ) : null}
       <div className="min-h-0 flex-1 overflow-auto p-2">
         {loading ? (
           <p className={cn("px-2 py-6 text-sm", styles.muted)}>Loading conversations…</p>
         ) : conversations.length === 0 ? (
           <div className="px-2 py-6">
-            <p className={cn("font-heading text-sm font-semibold", styles.ink)}>{emptyTitle}</p>
-            <p className={cn("mt-1 text-sm leading-relaxed", styles.muted)}>{emptyDescription}</p>
+            <p className={cn("font-heading text-sm font-semibold", styles.ink)}>
+              {searching ? "No matching conversations" : emptyTitle}
+            </p>
+            <p className={cn("mt-1 text-sm leading-relaxed", styles.muted)}>
+              {searching ? "Try a different client name or subject." : emptyDescription}
+            </p>
           </div>
         ) : (
           <ul className="space-y-1">

@@ -15,6 +15,7 @@ const INDUSTRIES = [
   "Professional services",
   "Other",
 ] as const;
+const REFERRAL_SOURCES = ["Google Search", "Referral", "Social Media", "Existing Client", "Other"] as const;
 
 type ServiceClient = SupabaseClient;
 
@@ -25,6 +26,8 @@ type RequestBody = {
   phone?: string;
   industry?: string;
   goal?: string;
+  referralSource?: string;
+  referralSourceOther?: string;
   /** Honeypot field — real visitors never fill this in. Non-empty means a bot. */
   website?: string;
 };
@@ -50,6 +53,10 @@ function normalizeEmail(value: string): string {
 
 function isIndustry(value: string): value is (typeof INDUSTRIES)[number] {
   return (INDUSTRIES as readonly string[]).includes(value);
+}
+
+function isReferralSource(value: string): value is (typeof REFERRAL_SOURCES)[number] {
+  return (REFERRAL_SOURCES as readonly string[]).includes(value);
 }
 
 function resendFrom(): string {
@@ -188,6 +195,9 @@ Deno.serve(async (req) => {
   const industry = clip(body.industry, 40);
   const goal = clip(body.goal, 4000);
   const request = goal.slice(0, 80) || "New Website";
+  const referralSourceInput = clip(body.referralSource, 40);
+  const referralSource = isReferralSource(referralSourceInput) ? referralSourceInput : null;
+  const referralSourceOther = referralSource === "Other" ? clip(body.referralSourceOther, 200) : "";
 
   if (!name || !business || !EMAIL_PATTERN.test(email) || !isIndustry(industry) || !goal) {
     return json({ ok: false }, 400);
@@ -222,6 +232,8 @@ Deno.serve(async (req) => {
     project_details: goal,
     status: "New",
     source: "Start a Project",
+    referral_source: referralSource,
+    referral_source_other: referralSourceOther,
     notes: [],
     activity: [
       {

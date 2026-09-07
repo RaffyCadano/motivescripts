@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Activity,
+  AlertTriangle,
   Ban,
   Bell,
   CheckSquare,
@@ -15,10 +16,12 @@ import {
   LayoutDashboard,
   MessageSquare,
   Paperclip,
+  Quote,
   Receipt,
   RotateCcw,
   Rocket,
   Settings,
+  TrendingUp,
   UserCog,
   UserRound,
   Users,
@@ -50,4 +53,7 @@ export const adminIcons: Record<AdminIconName, LucideIcon> = {
   needsChanges: RotateCcw,
   blocked: Ban,
   deployments: Rocket,
+  overdue: AlertTriangle,
+  reports: TrendingUp,
+  testimonials: Quote,
 };

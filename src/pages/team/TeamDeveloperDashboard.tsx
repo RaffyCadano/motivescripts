@@ -2,31 +2,24 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { firstNameFrom } from "@/auth/userDisplay";
 import { adminIcons } from "@/components/admin/adminIcons";
+import { MyTaskMobileList, MyTaskTable } from "@/components/admin/MyTaskList";
 import { ProgressBar } from "@/components/admin/ProgressBar";
 import { ClientReviewLinkOut } from "@/components/tasks/TaskWorkspace";
+import { AvailabilityDot } from "@/components/team/AvailabilityDot";
 import { TeamEmptyState } from "@/components/team/TeamEmptyState";
 import { TeamProjectCard } from "@/components/team/TeamProjectCard";
-import { TeamTaskCard } from "@/components/team/TeamTaskCard";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
-import { earlierOpenMilestones, type AgencyProject } from "@/data/agencyProjects";
+import { earlierOpenMilestones } from "@/data/agencyProjects";
 import {
   activeTasks,
-  blockedReason,
   blockedTasks,
-  developerDeploymentRows,
   developmentPhaseProgress,
   dueThisWeekTasks,
   hoursLoggedThisWeek,
   hoursLoggedToday,
-  needsChangesDeliverables,
-  qaTasks,
   reviewTasks,
-  type DeveloperDeploymentRow,
 } from "@/data/developerOverview";
-import type { AgencyDeliverable } from "@/data/files";
-import type { DeploymentStatus } from "@/data/projectDevelopment";
-import { formatDeploymentWhen } from "@/data/projectDevelopment";
 import { effectiveTaskType } from "@/data/taskTypes";
 import { listMyTimeEntries } from "@/data/timeEntriesRepository";
 import type { TimeEntry } from "@/data/timeEntries";
@@ -38,7 +31,6 @@ import {
   type TeamWorkTask,
 } from "@/data/teamWorkspace";
 import { AgencyDbError } from "@/lib/dbErrors";
-import { cn } from "@/lib/cn";
 
 export function TeamDeveloperDashboard() {
   const navigate = useNavigate();
@@ -72,19 +64,11 @@ export function TeamDeveloperDashboard() {
   const active = useMemo(() => activeTasks(tasks), [tasks]);
   const blocked = useMemo(() => blockedTasks(tasks), [tasks]);
   const inReview = useMemo(() => reviewTasks(tasks), [tasks]);
-  const qa = useMemo(() => qaTasks(tasks), [tasks]);
   const dueToday = useMemo(
     () => tasks.filter((task) => task.status !== "Completed" && task.dueDate === todayIso()),
     [tasks],
   );
   const dueThisWeek = useMemo(() => dueThisWeekTasks(tasks), [tasks]);
-  const deployments = useMemo(() => developerDeploymentRows(myProjects), [myProjects]);
-  const myProjectIds = useMemo(() => new Set(myProjects.map((project) => project.id)), [myProjects]);
-  const projectsById = useMemo(() => new Map(myProjects.map((project) => [project.id, project])), [myProjects]);
-  const needsChanges = useMemo(
-    () => needsChangesDeliverables(deliverables, myProjectIds),
-    [deliverables, myProjectIds],
-  );
   const todayHours = timeLoading ? null : hoursLoggedToday(timeEntries);
   const weekHours = timeLoading ? null : hoursLoggedThisWeek(timeEntries);
 
@@ -117,7 +101,7 @@ export function TeamDeveloperDashboard() {
       value: inReview.length,
       label: "In Review",
       caption: "waiting for review",
-      href: "#qa-review",
+      href: "/team/qa-review",
       icon: "activity",
     },
     {
@@ -125,7 +109,7 @@ export function TeamDeveloperDashboard() {
       value: blocked.length,
       label: "Blocked",
       caption: "need your attention",
-      href: "#blocked-work",
+      href: "/team/blocked",
       icon: "blocked",
     },
   ];
@@ -148,7 +132,7 @@ export function TeamDeveloperDashboard() {
     <div className="space-y-8">
       <div>
         <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">
-          {greetingFor()}, {firstName} 👋
+          {greetingFor()}, {firstName}
         </h1>
         <p className="mt-1 text-sm text-[var(--admin-muted)]">Here's what needs your attention today.</p>
       </div>
@@ -201,11 +185,10 @@ export function TeamDeveloperDashboard() {
         {dueToday.length === 0 ? (
           <TeamEmptyState title="Nothing due today" body="Tasks due today will show up here." />
         ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
-            {dueToday.map((task) => (
-              <TeamTaskCard key={task.id} task={task} onOpen={setOpenTask} />
-            ))}
-          </div>
+          <>
+            <MyTaskTable tasks={dueToday} onOpen={setOpenTask} projectHref={(id) => teamProjectHref(id, { tab: "tasks" })} />
+            <MyTaskMobileList tasks={dueToday} onOpen={setOpenTask} projectHref={(id) => teamProjectHref(id, { tab: "tasks" })} />
+          </>
         )}
       </section>
 
@@ -219,11 +202,10 @@ export function TeamDeveloperDashboard() {
         {dueThisWeek.length === 0 ? (
           <TeamEmptyState title="Nothing else due this week" body="Tasks due in the next few days will show up here." />
         ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
-            {dueThisWeek.map((task) => (
-              <TeamTaskCard key={task.id} task={task} onOpen={setOpenTask} />
-            ))}
-          </div>
+          <>
+            <MyTaskTable tasks={dueThisWeek} onOpen={setOpenTask} projectHref={(id) => teamProjectHref(id, { tab: "tasks" })} />
+            <MyTaskMobileList tasks={dueThisWeek} onOpen={setOpenTask} projectHref={(id) => teamProjectHref(id, { tab: "tasks" })} />
+          </>
         )}
       </section>
 
@@ -237,7 +219,7 @@ export function TeamDeveloperDashboard() {
         {myProjects.length === 0 ? (
           <TeamEmptyState title="No projects yet" body="You haven't been assigned to any projects." />
         ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid gap-3">
             {myProjects.slice(0, 4).map((project) => {
               const projectBlockedCount = tasks.filter(
                 (task) => task.projectId === project.id && task.status === "Blocked",
@@ -288,126 +270,6 @@ export function TeamDeveloperDashboard() {
                 />
               );
             })}
-          </div>
-        )}
-      </section>
-
-      <section id="qa-review" className="scroll-mt-20 space-y-5 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <div>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <h2 className="font-heading text-sm font-semibold tracking-tight">QA Tasks</h2>
-              <CountBadge count={qa.length} />
-            </div>
-            <Link to="/team/tasks" className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
-              View all
-            </Link>
-          </div>
-          <div className="mt-3">
-            {qa.length === 0 ? (
-              <TeamEmptyState title="No QA tasks assigned to you." body="Tasks classified as QA will show up here." />
-            ) : (
-              <div className="grid gap-3 lg:grid-cols-2">
-                {qa.slice(0, 4).map((task) => (
-                  <TeamTaskCard key={task.id} task={task} onOpen={setOpenTask} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="border-t border-[var(--admin-line)] pt-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <h2 className="font-heading text-sm font-semibold tracking-tight">In Review</h2>
-              <CountBadge count={inReview.length} />
-            </div>
-            <Link to="/team/tasks" className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
-              View all
-            </Link>
-          </div>
-          <div className="mt-3">
-            {inReview.length === 0 ? (
-              <TeamEmptyState title="Nothing is waiting for review." body="Tasks marked In Review will show up here." />
-            ) : (
-              <div className="grid gap-3 lg:grid-cols-2">
-                {inReview.slice(0, 4).map((task) => (
-                  <TeamTaskCard key={task.id} task={task} onOpen={setOpenTask} />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section id="needs-changes" className="scroll-mt-20 space-y-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="font-heading text-sm font-semibold tracking-tight">Needs Changes</h2>
-            <CountBadge count={needsChanges.length} />
-          </div>
-          <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-            Client feedback/revisions require your attention.
-          </p>
-        </div>
-        {needsChanges.length === 0 ? (
-          <TeamEmptyState title="No changes requested." body="Deliverables the client asks to revise will show up here." />
-        ) : (
-          <ul className="divide-y divide-[var(--admin-line)] rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
-            {needsChanges.map((item) => (
-              <NeedsChangesRow key={item.id} deliverable={item} project={projectsById.get(item.projectId)} />
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section id="blocked-work" className="scroll-mt-20 space-y-3">
-        <div className="flex items-center gap-2">
-          <h2 className="font-heading text-sm font-semibold tracking-tight">Blocked</h2>
-          <CountBadge count={blocked.length} />
-        </div>
-        {blocked.length === 0 ? (
-          <TeamEmptyState title="You're all clear — no blocked work." body="Tasks marked Blocked will show up here." />
-        ) : (
-          <ul className="divide-y divide-[var(--admin-line)] rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
-            {blocked.map((task) => (
-              <li key={task.id} className="flex flex-wrap items-start justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <button
-                    type="button"
-                    className="text-left font-heading text-sm font-semibold text-[var(--admin-ink)] hover:text-[var(--admin-blue)]"
-                    onClick={() => setOpenTask(task)}
-                  >
-                    {task.title}
-                  </button>
-                  <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                    {task.projectName} · {task.priority} priority
-                  </p>
-                  <p className="mt-1 text-[13px] text-[var(--admin-ink)]">
-                    {blockedReason(task) ?? "No reason provided"}
-                  </p>
-                </div>
-                <Link
-                  to={teamProjectHref(task.projectId, { tab: "tasks" })}
-                  className="shrink-0 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-                >
-                  View project
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section id="deployment-status" className="scroll-mt-20 space-y-3">
-        <h2 className="font-heading text-sm font-semibold tracking-tight">Deployment Status</h2>
-        {deployments.length === 0 ? (
-          <TeamEmptyState title="No deployment information available." body="Deployment status for your projects will show up here." />
-        ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
-            {deployments.map((row) => (
-              <DeploymentCard key={row.projectId} row={row} />
-            ))}
           </div>
         )}
       </section>
@@ -478,149 +340,7 @@ export function TeamDeveloperDashboard() {
   );
 }
 
-function NeedsChangesRow({
-  deliverable,
-  project,
-}: {
-  deliverable: AgencyDeliverable;
-  project: AgencyProject | undefined;
-}) {
-  return (
-    <li className="flex flex-wrap items-start justify-between gap-3 px-4 py-3">
-      <div className="min-w-0">
-        <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{deliverable.name}</p>
-        <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-          {project?.name ?? "Project"} · {deliverable.category}
-        </p>
-      </div>
-      <Link
-        to={teamProjectHref(deliverable.projectId, { tab: "feedback" })}
-        className="shrink-0 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-      >
-        Open feedback
-      </Link>
-    </li>
-  );
-}
-
 function todayIso(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-}
-
-/** Small pill next to a section heading showing how many items need attention -- hidden at zero. */
-function CountBadge({ count }: { count: number }) {
-  if (count <= 0) return null;
-  return (
-    <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--admin-bg)] px-1.5 font-heading text-[11px] font-semibold text-[var(--admin-muted)]">
-      {count}
-    </span>
-  );
-}
-
-const deploymentStatusStyles: Record<DeploymentStatus, string> = {
-  "Not deployed": "bg-[var(--admin-bg)] text-[var(--admin-muted)]",
-  Development: "bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]",
-  Staging: "bg-[rgb(245_158_11_/_0.12)] text-[#b45309]",
-  Production: "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]",
-  "Deployment issue": "bg-[rgb(220_38_38_/_0.1)] text-[#b91c1c]",
-};
-
-function DeploymentStatusBadge({ status }: { status: DeploymentStatus }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight",
-        deploymentStatusStyles[status],
-      )}
-    >
-      {status}
-    </span>
-  );
-}
-
-/** 🟢 when a URL is present, ⚪ when it isn't -- never a broken link or empty button. */
-function AvailabilityDot({ label, available }: { label: string; available: boolean }) {
-  return (
-    <span className="inline-flex items-center gap-1 text-[12px] text-[var(--admin-muted)]">
-      <span aria-hidden="true">{available ? "🟢" : "⚪"}</span>
-      {label}
-      {!available ? " not deployed" : ""}
-    </span>
-  );
-}
-
-function DeploymentCard({ row }: { row: DeveloperDeploymentRow }) {
-  const { development } = row;
-  return (
-    <article className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{row.projectName}</p>
-        <DeploymentStatusBadge status={development.deploymentStatus} />
-      </div>
-      <dl className="mt-3 space-y-1.5 text-[13px]">
-        <div className="flex justify-between gap-3">
-          <dt className="text-[var(--admin-muted)]">Repository</dt>
-          <dd className="truncate text-[var(--admin-ink)]">
-            {development.repositoryUrl.trim() ? (
-              <a
-                href={development.repositoryUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="font-medium text-[var(--admin-blue)] hover:underline"
-              >
-                {development.repositoryBranch.trim() ? `${development.repositoryBranch} ↗` : "Open repository ↗"}
-              </a>
-            ) : (
-              "Not set"
-            )}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-[var(--admin-muted)]">Staging</dt>
-          <dd className="truncate text-[var(--admin-ink)]">
-            {development.stagingUrl.trim() ? (
-              <a
-                href={development.stagingUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="font-medium text-[var(--admin-blue)] hover:underline"
-              >
-                Open staging ↗
-              </a>
-            ) : (
-              "Not deployed"
-            )}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-[var(--admin-muted)]">Production</dt>
-          <dd className="truncate text-[var(--admin-ink)]">
-            {development.productionUrl.trim() ? (
-              <a
-                href={development.productionUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="font-medium text-[var(--admin-blue)] hover:underline"
-              >
-                Open production ↗
-              </a>
-            ) : (
-              "Not deployed"
-            )}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt className="text-[var(--admin-muted)]">Last deployed</dt>
-          <dd className="text-[var(--admin-ink)]">{formatDeploymentWhen(development.lastDeployedAt)}</dd>
-        </div>
-      </dl>
-      <Link
-        to={teamProjectHref(row.projectId)}
-        className="mt-4 inline-flex font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-      >
-        Open project →
-      </Link>
-    </article>
-  );
 }

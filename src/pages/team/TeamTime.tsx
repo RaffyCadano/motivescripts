@@ -25,6 +25,7 @@ export function TeamTime() {
   const [rowError, setRowError] = useState<string | null>(null);
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PayrollPaymentMethod | "All">("All");
+  const [entrySearch, setEntrySearch] = useState("");
 
   const projectName = useMemo(() => {
     const byId = new Map(myProjects.map((project) => [project.id, project.name]));
@@ -68,6 +69,26 @@ export function TeamTime() {
   const unpaidHours = sumHours(unpaidEntries(entries));
   const estimatedOwedCents = payRateCents != null ? amountOwedCents(entries, payRateCents) : null;
 
+  const weekChart = useMemo(() => {
+    const now = new Date();
+    const monday = mondayOf(now);
+    const start = new Date(`${monday}T00:00:00`);
+    const today = isoDate(now);
+    return Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(start);
+      day.setDate(day.getDate() + index);
+      const date = isoDate(day);
+      return {
+        date,
+        label: day.toLocaleDateString(undefined, { weekday: "short" }),
+        hours: sumHours(entries.filter((entry) => entry.entryDate === date)),
+        isToday: date === today,
+      };
+    });
+  }, [entries]);
+  const weekChartTotal = weekChart.reduce((sum, day) => sum + day.hours, 0);
+  const weekChartMax = Math.max(1, ...weekChart.map((day) => day.hours));
+
   const filteredPayments = useMemo(() => {
     const needle = paymentSearch.trim().toLowerCase();
     return payments.filter((payment) => {
@@ -81,6 +102,15 @@ export function TeamTime() {
     });
   }, [payments, paymentSearch, paymentMethod]);
   const paymentsFiltering = paymentSearch.trim().length > 0 || paymentMethod !== "All";
+
+  const filteredEntries = useMemo(() => {
+    const needle = entrySearch.trim().toLowerCase();
+    if (!needle) return entries;
+    return entries.filter((entry) => {
+      const haystack = `${projectName(entry.projectId)} ${taskTitle(entry.taskId) ?? ""} ${entry.note}`.toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [entries, entrySearch, projectName, taskTitle]);
 
   function startEdit(entry: TimeEntry) {
     setEditingId(entry.id);
@@ -147,188 +177,299 @@ export function TeamTime() {
         ) : null}
       </section>
 
-      {payments.length > 0 ? (
+      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+        <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">This Week</h2>
+        {loading ? (
+          <div className="mt-3 h-32 animate-pulse rounded-[var(--admin-radius)] bg-[var(--admin-bg)]" />
+        ) : weekChartTotal === 0 ? (
+          <p className="mt-3 text-sm text-[var(--admin-muted)]">No hours logged this week yet.</p>
+        ) : (
+          <div className="mt-4 flex items-end gap-2 sm:gap-4">
+            {weekChart.map((day) => (
+              <div key={day.date} className="flex flex-1 flex-col items-center gap-1.5">
+                <span className="text-[11px] font-medium text-[var(--admin-ink)]">{day.hours > 0 ? `${day.hours}h` : ""}</span>
+                <div className="flex h-24 w-full items-end justify-center">
+                  <div
+                    className={
+                      day.isToday
+                        ? "w-full max-w-8 rounded-t-md bg-[var(--admin-blue)]"
+                        : "w-full max-w-8 rounded-t-md bg-[var(--admin-navy)] opacity-70"
+                    }
+                    style={{ height: day.hours > 0 ? `${Math.max(6, (day.hours / weekChartMax) * 100)}%` : "2px" }}
+                  />
+                </div>
+                <span className={day.isToday ? "text-[12px] font-semibold text-[var(--admin-blue)]" : "text-[12px] text-[var(--admin-muted)]"}>
+                  {day.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
           <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Payment history</h2>
 
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-            <input
-              value={paymentSearch}
-              onChange={(event) => setPaymentSearch(event.target.value)}
-              placeholder="Search reference, notes, or amount…"
-              className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-            />
-            <select
-              value={paymentMethod}
-              onChange={(event) => setPaymentMethod(event.target.value as PayrollPaymentMethod | "All")}
-              className="h-9 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
-            >
-              <option value="All">All methods</option>
-              {payrollPaymentMethods.map((method) => (
-                <option key={method} value={method}>
-                  {payrollMethodLabel(method)}
-                </option>
-              ))}
-            </select>
-            {paymentsFiltering ? (
-              <button
-                type="button"
-                className="h-9 shrink-0 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-                onClick={() => {
-                  setPaymentSearch("");
-                  setPaymentMethod("All");
-                }}
-              >
-                Clear filters
-              </button>
-            ) : null}
-          </div>
-
-          {filteredPayments.length === 0 ? (
-            <p className="mt-4 text-sm text-[var(--admin-muted)]">No payments match your filters.</p>
+          {payments.length === 0 ? (
+            <p className="mt-4 text-sm text-[var(--admin-muted)]">No payments recorded yet.</p>
           ) : (
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full min-w-[32rem] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--admin-line)] text-left text-[12px] text-[var(--admin-muted)]">
-                    <th className="pb-2 pr-3 font-medium">Date</th>
-                    <th className="pb-2 pr-3 font-medium">Amount</th>
-                    <th className="pb-2 pr-3 font-medium">Hours</th>
-                    <th className="pb-2 pr-3 font-medium">Rate</th>
-                    <th className="pb-2 pr-3 font-medium">Method</th>
-                    <th className="pb-2 font-medium">Reference</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--admin-line)]">
-                  {filteredPayments.map((payment) => (
-                    <tr key={payment.id}>
-                      <td className="py-2.5 pr-3 text-[var(--admin-ink)]">{formatProjectDay(payment.paymentDate)}</td>
-                      <td className="py-2.5 pr-3 font-medium text-[var(--admin-ink)]">{formatUsdFromCents(payment.amountCents)}</td>
-                      <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{payment.hours}h</td>
-                      <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{formatUsdFromCents(payment.payRateCents)}/hr</td>
-                      <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{payrollMethodLabel(payment.method)}</td>
-                      <td className="py-2.5 text-[var(--admin-muted)]">{payment.reference || "—"}</td>
-                    </tr>
+            <>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <input
+                  value={paymentSearch}
+                  onChange={(event) => setPaymentSearch(event.target.value)}
+                  placeholder="Search reference, notes, or amount…"
+                  className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                />
+                <select
+                  value={paymentMethod}
+                  onChange={(event) => setPaymentMethod(event.target.value as PayrollPaymentMethod | "All")}
+                  className="h-9 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
+                >
+                  <option value="All">All methods</option>
+                  {payrollPaymentMethods.map((method) => (
+                    <option key={method} value={method}>
+                      {payrollMethodLabel(method)}
+                    </option>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </select>
+                {paymentsFiltering ? (
+                  <button
+                    type="button"
+                    className="h-9 shrink-0 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                    onClick={() => {
+                      setPaymentSearch("");
+                      setPaymentMethod("All");
+                    }}
+                  >
+                    Clear filters
+                  </button>
+                ) : null}
+              </div>
+
+              {filteredPayments.length === 0 ? (
+                <p className="mt-4 text-sm text-[var(--admin-muted)]">No payments match your filters.</p>
+              ) : (
+                <div className="mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[32rem] border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--admin-line)] text-left text-[12px] text-[var(--admin-muted)]">
+                        <th className="pb-2 pr-3 font-medium">Date</th>
+                        <th className="pb-2 pr-3 font-medium">Amount</th>
+                        <th className="pb-2 pr-3 font-medium">Hours</th>
+                        <th className="pb-2 pr-3 font-medium">Rate</th>
+                        <th className="pb-2 pr-3 font-medium">Method</th>
+                        <th className="pb-2 font-medium">Reference</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--admin-line)]">
+                      {filteredPayments.map((payment) => (
+                        <tr key={payment.id}>
+                          <td className="py-2.5 pr-3 text-[var(--admin-ink)]">{formatProjectDay(payment.paymentDate)}</td>
+                          <td className="py-2.5 pr-3 font-medium text-[var(--admin-ink)]">{formatUsdFromCents(payment.amountCents)}</td>
+                          <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{payment.hours}h</td>
+                          <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{formatUsdFromCents(payment.payRateCents)}/hr</td>
+                          <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{payrollMethodLabel(payment.method)}</td>
+                          <td className="py-2.5 text-[var(--admin-muted)]">{payment.reference || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
           )}
         </section>
-      ) : null}
 
-      {loading ? (
-        <div className="h-36 animate-pulse rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]" />
-      ) : loadError ? (
-        <p className="text-sm text-[#b45309]">{loadError}</p>
-      ) : entries.length === 0 ? (
-        <div className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-10">
-          <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No time logged yet</p>
-          <p className="mt-1 text-sm text-[var(--admin-muted)]">
-            Log hours from a task's detail view — they'll show up here.
-          </p>
-        </div>
-      ) : (
         <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-          {rowError ? <p className="mb-3 text-sm text-[#b45309]">{rowError}</p> : null}
-          <ul className="divide-y divide-[var(--admin-line)]">
-            {entries.map((entry) => {
-              const editable = !entry.billedAt && !entry.payrollPaidAt;
-              const task = taskTitle(entry.taskId);
-              if (editingId === entry.id) {
-                return (
-                  <li key={entry.id} className="flex flex-wrap items-end gap-2 py-3">
-                    <label className="text-[12px] font-medium text-[var(--admin-ink)]">
-                      Hours
-                      <input
-                        type="number"
-                        min="0.25"
-                        step="0.25"
-                        value={editHours}
-                        disabled={busy}
-                        onChange={(event) => setEditHours(event.target.value)}
-                        className="mt-1 h-9 w-20 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-                      />
-                    </label>
-                    <label className="min-w-[8rem] flex-1 text-[12px] font-medium text-[var(--admin-ink)]">
-                      Note
-                      <input
-                        value={editNote}
-                        disabled={busy}
-                        onChange={(event) => setEditNote(event.target.value)}
-                        className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-                      />
-                    </label>
-                    <label className="text-[12px] font-medium text-[var(--admin-ink)]">
-                      Date
-                      <input
-                        type="date"
-                        value={editDate}
-                        disabled={busy}
-                        onChange={(event) => setEditDate(event.target.value)}
-                        className="mt-1 h-9 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      className="h-9 rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-60"
-                      onClick={() => void onSaveEdit(entry.id)}
-                    >
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      className="h-9 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)]"
-                      onClick={() => setEditingId(null)}
-                    >
-                      Cancel
-                    </button>
-                  </li>
-                );
-              }
-              return (
-                <li key={entry.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                  <div className="min-w-0">
-                    <p className="text-sm text-[var(--admin-ink)]">
-                      <Link to={teamProjectHref(entry.projectId, { tab: "tasks" })} className="font-medium text-[var(--admin-blue)] hover:underline">
-                        {projectName(entry.projectId)}
-                      </Link>
-                      {task ? ` · ${task}` : ""} — {entry.hours}h
-                      {entry.note ? ` · ${entry.note}` : ""}
-                    </p>
-                    <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                      {formatProjectDay(entry.entryDate)} · {entry.payrollPaidAt ? "Paid" : "Not yet paid"}
-                      {entry.billedAt ? " · Billed to client" : ""}
-                    </p>
-                  </div>
-                  {editable ? (
-                    <div className="flex shrink-0 gap-3">
-                      <button
-                        type="button"
-                        disabled={busy}
-                        className="text-[12px] font-semibold text-[var(--admin-blue)] hover:underline disabled:opacity-40"
-                        onClick={() => startEdit(entry)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        className="text-[12px] font-semibold text-[var(--admin-muted)] hover:text-[var(--admin-ink)] disabled:opacity-40"
-                        onClick={() => void onDelete(entry.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
+          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Logged time</h2>
+
+          {loading ? (
+            <div className="mt-3 h-36 animate-pulse rounded-[var(--admin-radius)] bg-[var(--admin-bg)]" />
+          ) : loadError ? (
+            <p className="mt-3 text-sm text-[#b45309]">{loadError}</p>
+          ) : entries.length === 0 ? (
+            <p className="mt-4 text-sm text-[var(--admin-muted)]">
+              No time logged yet. Log hours from a task's detail view — they'll show up here.
+            </p>
+          ) : (
+            <>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+                <input
+                  value={entrySearch}
+                  onChange={(event) => setEntrySearch(event.target.value)}
+                  placeholder="Search project, task, or note…"
+                  className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                />
+                {entrySearch.trim() ? (
+                  <button
+                    type="button"
+                    className="h-9 shrink-0 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                    onClick={() => setEntrySearch("")}
+                  >
+                    Clear filter
+                  </button>
+                ) : null}
+              </div>
+
+              {rowError ? <p className="mt-3 text-sm text-[#b45309]">{rowError}</p> : null}
+              {filteredEntries.length === 0 ? (
+                <p className="mt-4 text-sm text-[var(--admin-muted)]">No entries match your search.</p>
+              ) : (
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full min-w-[36rem] border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--admin-line)] text-left text-[12px] text-[var(--admin-muted)]">
+                      <th className="pb-2 pr-3 font-medium">Date</th>
+                      <th className="pb-2 pr-3 font-medium">Project / Task</th>
+                      <th className="pb-2 pr-3 font-medium">Hours</th>
+                      <th className="pb-2 pr-3 font-medium">Note</th>
+                      <th className="pb-2 pr-3 font-medium">Status</th>
+                      <th className="pb-2 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--admin-line)]">
+                    {filteredEntries.map((entry) => {
+                      const editable = !entry.billedAt && !entry.payrollPaidAt;
+                      const task = taskTitle(entry.taskId);
+                      const editing = editingId === entry.id;
+
+                      if (editing) {
+                        return (
+                          <tr key={entry.id}>
+                            <td className="py-2.5 pr-3">
+                              <input
+                                type="date"
+                                value={editDate}
+                                disabled={busy}
+                                onChange={(event) => setEditDate(event.target.value)}
+                                className="h-9 w-full min-w-[9rem] rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                              />
+                            </td>
+                            <td className="py-2.5 pr-3 text-[var(--admin-muted)]">
+                              {projectName(entry.projectId)}
+                              {task ? ` · ${task}` : ""}
+                            </td>
+                            <td className="py-2.5 pr-3">
+                              <input
+                                type="number"
+                                min="0.25"
+                                step="0.25"
+                                value={editHours}
+                                disabled={busy}
+                                onChange={(event) => setEditHours(event.target.value)}
+                                className="h-9 w-20 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                              />
+                            </td>
+                            <td className="py-2.5 pr-3">
+                              <input
+                                value={editNote}
+                                disabled={busy}
+                                onChange={(event) => setEditNote(event.target.value)}
+                                className="h-9 w-full min-w-[8rem] rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                              />
+                            </td>
+                            <td className="py-2.5 pr-3 text-[var(--admin-muted)]">Not yet paid</td>
+                            <td className="py-2.5">
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  className="h-9 rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-60"
+                                  onClick={() => void onSaveEdit(entry.id)}
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  className="h-9 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)]"
+                                  onClick={() => setEditingId(null)}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return (
+                        <tr key={entry.id} className="hover:bg-[var(--admin-bg)]">
+                          <td className="py-2.5 pr-3 text-[var(--admin-ink)]">{formatProjectDay(entry.entryDate)}</td>
+                          <td className="py-2.5 pr-3">
+                            <Link
+                              to={teamProjectHref(entry.projectId, { tab: "tasks" })}
+                              className="font-medium text-[var(--admin-blue)] hover:underline"
+                            >
+                              {projectName(entry.projectId)}
+                            </Link>
+                            {task ? <span className="text-[var(--admin-muted)]"> · {task}</span> : null}
+                          </td>
+                          <td className="py-2.5 pr-3 text-[var(--admin-ink)]">{entry.hours}h</td>
+                          <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{entry.note || "—"}</td>
+                          <td className="py-2.5 pr-3 text-[var(--admin-muted)]">
+                            {entry.payrollPaidAt ? "Paid" : "Not yet paid"}
+                            {entry.billedAt ? " · Billed to client" : ""}
+                          </td>
+                          <td className="py-2.5">
+                            <div className="flex gap-3">
+                              <Link
+                                to={teamProjectHref(entry.projectId, { tab: "tasks" })}
+                                className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+                              >
+                                View project
+                              </Link>
+                              {editable ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    disabled={busy}
+                                    className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline disabled:opacity-40"
+                                    onClick={() => startEdit(entry)}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={busy}
+                                    className="font-heading text-[12px] font-semibold text-[var(--admin-muted)] hover:text-[var(--admin-ink)] disabled:opacity-40"
+                                    onClick={() => void onDelete(entry.id)}
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              ) : null}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              )}
+            </>
+          )}
         </section>
-      )}
+      </div>
     </div>
   );
+}
+
+function isoDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+/** Monday of the local calendar week containing `date`, as a date-only ISO string. */
+function mondayOf(date: Date): string {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const weekday = start.getDay();
+  const offsetToMonday = weekday === 0 ? -6 : 1 - weekday;
+  start.setDate(start.getDate() + offsetToMonday);
+  return isoDate(start);
 }

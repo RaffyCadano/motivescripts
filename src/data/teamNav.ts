@@ -41,10 +41,9 @@ export const teamNavGroups: TeamNavGroup[] = [
 
 /**
  * Same routes as teamNavGroups, relabeled/regrouped for developers so the sidebar reads
- * like a development workspace instead of the generic staff portal. QA & Review / Needs
- * Changes / Blocked / Deployments have no standalone pages -- they're sections on the
- * dashboard (TeamDeveloperDashboard) -- so those items link to the dashboard's own anchor
- * ids rather than inventing empty-shell pages just to fill the sidebar.
+ * like a development workspace instead of the generic staff portal. QA & Review, Needs
+ * Changes, Blocked, and Deployments are their own standalone pages (TeamQaReview,
+ * TeamNeedsChanges, TeamBlocked, TeamDeployments) rather than dashboard-only sections.
  */
 export const developerNavGroups: TeamNavGroup[] = [
   {
@@ -58,15 +57,15 @@ export const developerNavGroups: TeamNavGroup[] = [
   {
     label: "Work",
     items: [
-      { label: "QA & Review", href: "/team/dashboard#qa-review", icon: "qa" },
-      { label: "Needs Changes", href: "/team/dashboard#needs-changes", icon: "needsChanges" },
-      { label: "Blocked", href: "/team/dashboard#blocked-work", icon: "blocked" },
+      { label: "QA & Review", href: "/team/qa-review", icon: "qa" },
+      { label: "Needs Changes", href: "/team/needs-changes", icon: "needsChanges" },
+      { label: "Blocked", href: "/team/blocked", icon: "blocked" },
     ],
   },
   {
     label: "Delivery",
     items: [
-      { label: "Deployments", href: "/team/dashboard#deployment-status", icon: "deployments" },
+      { label: "Deployments", href: "/team/deployments", icon: "deployments" },
       { label: "Time Tracking", href: "/team/time", icon: "time" },
     ],
   },

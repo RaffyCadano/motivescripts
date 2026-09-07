@@ -74,9 +74,9 @@ export function TaskChecklistSection({ taskId, projectId }: { taskId: string; pr
   const done = items.filter((item) => item.done).length;
 
   return (
-    <section className="mt-6">
+    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4 sm:p-5">
       <div className="flex items-center justify-between">
-        <h3 className="font-heading text-sm font-semibold">Checklist</h3>
+        <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Checklist</h3>
         {items.length > 0 ? (
           <span className="text-[12px] text-[var(--admin-muted)]">
             {done}/{items.length}
@@ -122,7 +122,7 @@ export function TaskChecklistSection({ taskId, projectId }: { taskId: string; pr
             <button
               type="submit"
               disabled={busy || !label.trim()}
-              className="h-9 shrink-0 rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-50"
+              className="h-9 shrink-0 rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] transition-colors hover:bg-white disabled:opacity-50"
             >
               Add
             </button>

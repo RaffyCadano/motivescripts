@@ -24,6 +24,10 @@ export type LeadIndustry = (typeof leadIndustries)[number];
 
 export type LeadSource = "Start a Project" | "Manual";
 
+export const referralSources = ["Google Search", "Referral", "Social Media", "Existing Client", "Other"] as const;
+
+export type ReferralSource = (typeof referralSources)[number];
+
 export type LeadNote = {
   id: string;
   body: string;
@@ -49,6 +53,8 @@ export type Lead = {
   status: LeadStatus;
   createdAt: string;
   source: LeadSource;
+  referralSource: ReferralSource | null;
+  referralSourceOther: string;
   notes: LeadNote[];
   activity: LeadActivityItem[];
   convertedClientId: string | null;
@@ -62,6 +68,8 @@ export type LeadDraft = {
   industry: LeadIndustry;
   request: string;
   projectDetails: string;
+  referralSource?: ReferralSource | null;
+  referralSourceOther?: string;
 };
 
 export function createRecordId(prefix: string): string {

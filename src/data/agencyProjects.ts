@@ -55,6 +55,8 @@ export type AgencyMilestone = {
   dueDate: string;
 };
 
+export type TaskOrigin = "agency" | "client";
+
 export type AgencyTask = {
   id: string;
   milestoneId: string;
@@ -72,6 +74,7 @@ export type AgencyTask = {
   referenceUrl: string;
   estimatedHours: number | null;
   deliverableId: string | null;
+  origin: TaskOrigin;
 };
 
 export type AgencyProjectFeedback = {

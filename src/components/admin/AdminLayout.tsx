@@ -9,7 +9,7 @@ import { cn } from "@/lib/cn";
 import "@/styles/admin.css";
 
 export function AdminLayout() {
-  const { pathname, search } = useLocation();
+  const { pathname, search, hash } = useLocation();
   const { profile } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -55,8 +55,31 @@ export function AdminLayout() {
   }, [mobileOpen]);
 
   useEffect(() => {
-    document.getElementById("admin-main")?.scrollTo({ top: 0, left: 0 });
-  }, [pathname]);
+    if (!hash) {
+      document.getElementById("admin-main")?.scrollTo({ top: 0, left: 0 });
+      return;
+    }
+    const id = decodeURIComponent(hash.slice(1));
+    let frame = 0;
+    let timer = 0;
+
+    const scrollToHash = () => {
+      const target = document.getElementById(id);
+      if (!target) return false;
+      target.scrollIntoView({ block: "start" });
+      return true;
+    };
+
+    frame = requestAnimationFrame(() => {
+      if (scrollToHash()) return;
+      timer = window.setTimeout(scrollToHash, 80);
+    });
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [pathname, hash]);
 
   const dockCollapsed = isLg && collapsed;
 

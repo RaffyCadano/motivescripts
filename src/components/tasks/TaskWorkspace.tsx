@@ -72,6 +72,7 @@ export function TaskWorkspace({
     referenceUrl: task.referenceUrl,
     estimatedHours: task.estimatedHours,
     deliverableId: task.deliverableId,
+    origin: task.origin,
   };
 
   const projectFiles = deliverables.filter((item) => item.projectId === project.id);

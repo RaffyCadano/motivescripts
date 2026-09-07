@@ -40,6 +40,9 @@ import { AdminProposals } from "@/pages/admin/AdminProposals";
 import { AdminInvoiceDetails } from "@/pages/admin/AdminInvoiceDetails";
 import { AdminInvoiceNew } from "@/pages/admin/AdminInvoiceNew";
 import { AdminInvoices } from "@/pages/admin/AdminInvoices";
+import { AdminReports } from "@/pages/admin/AdminReports";
+import { AdminTestimonials } from "@/pages/admin/AdminTestimonials";
+import { AdminTestimonialForm } from "@/pages/admin/AdminTestimonialForm";
 import { AdminTeam } from "@/pages/admin/AdminTeam";
 import { AdminTeamDetails } from "@/pages/admin/AdminTeamDetails";
 import { AdminTeamInviteDetails } from "@/pages/admin/AdminTeamInviteDetails";
@@ -55,6 +58,7 @@ import { ClientOverview } from "@/pages/client/ClientOverview";
 import { ClientProject } from "@/pages/client/ClientProject";
 import { ClientDiscovery } from "@/pages/client/ClientDiscovery";
 import { ClientTaskRequests } from "@/pages/client/ClientTaskRequests";
+import { ClientSupportRequest } from "@/pages/client/ClientSupportRequest";
 import { ClientScope } from "@/pages/client/ClientScope";
 import { ClientProposalDetails } from "@/pages/client/ClientProposalDetails";
 import { ClientProposals } from "@/pages/client/ClientProposals";
@@ -74,12 +78,16 @@ import { NotFoundPage } from "@/pages/NotFound";
 import { ProcessPage } from "@/pages/Process";
 import { ServicesPage } from "@/pages/Services";
 import { WorkPage } from "@/pages/Work";
+import { TeamBlocked } from "@/pages/team/TeamBlocked";
 import { TeamDashboardHome } from "@/pages/team/TeamDashboardHome";
+import { TeamDeployments } from "@/pages/team/TeamDeployments";
 import { TeamFiles } from "@/pages/team/TeamFiles";
 import { TeamMessages } from "@/pages/team/TeamMessages";
+import { TeamNeedsChanges } from "@/pages/team/TeamNeedsChanges";
 import { TeamProfile } from "@/pages/team/TeamProfile";
 import { TeamProjects } from "@/pages/team/TeamProjects";
 import { TeamProjectDetails } from "@/pages/team/TeamProjectDetails";
+import { TeamQaReview } from "@/pages/team/TeamQaReview";
 import { TeamTasks } from "@/pages/team/TeamTasks";
 import { TeamTime } from "@/pages/team/TeamTime";
 import { MessagingProvider } from "@/providers/MessagingProvider";
@@ -129,6 +137,10 @@ export default function App() {
                 <Route path="invoices" element={<AdminInvoices />} />
                 <Route path="invoices/new" element={<AdminInvoiceNew />} />
                 <Route path="invoices/:id" element={<AdminInvoiceDetails />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="testimonials" element={<AdminTestimonials />} />
+                <Route path="testimonials/new" element={<AdminTestimonialForm />} />
+                <Route path="testimonials/:id" element={<AdminTestimonialForm />} />
                 <Route path="payroll" element={<AdminPayroll />} />
                 <Route path="team" element={<AdminTeam />} />
                 <Route path="team/new" element={<AdminTeamInviteNew />} />
@@ -157,6 +169,10 @@ export default function App() {
             <Route path="tasks" element={<TeamTasks />} />
             <Route path="projects" element={<TeamProjects />} />
             <Route path="projects/:id" element={<TeamProjectDetails />} />
+            <Route path="qa-review" element={<TeamQaReview />} />
+            <Route path="needs-changes" element={<TeamNeedsChanges />} />
+            <Route path="blocked" element={<TeamBlocked />} />
+            <Route path="deployments" element={<TeamDeployments />} />
             <Route path="messages" element={<TeamMessages />} />
             <Route path="messages/:conversationId" element={<TeamMessages />} />
             <Route path="files" element={<TeamFiles />} />
@@ -181,6 +197,7 @@ export default function App() {
             <Route path="files/:deliverableId" element={<ClientReview />} />
             <Route path="feedback" element={<ClientFeedback />} />
             <Route path="approvals" element={<ClientApprovals />} />
+            <Route path="support" element={<ClientSupportRequest />} />
             <Route path="messages" element={<ClientMessages />} />
             <Route path="messages/:conversationId" element={<ClientMessages />} />
             <Route path="proposals" element={<ClientProposals />} />

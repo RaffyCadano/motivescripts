@@ -75,9 +75,9 @@ export function TaskAttachmentsSection({
   }
 
   return (
-    <section className="mt-6">
+    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4 sm:p-5">
       <div className="flex items-center justify-between">
-        <h3 className="font-heading text-sm font-semibold">Attachments</h3>
+        <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Attachments</h3>
         <button
           type="button"
           disabled={busy}

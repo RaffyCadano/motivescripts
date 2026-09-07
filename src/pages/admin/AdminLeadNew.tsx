@@ -6,7 +6,7 @@ import { LeadStatusBadge } from "@/components/admin/leads/LeadStatusBadge";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission } from "@/auth/permissions";
-import { leadIndustries, type LeadIndustry } from "@/data/leads";
+import { leadIndustries, referralSources, type LeadIndustry, type ReferralSource } from "@/data/leads";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
 
@@ -24,6 +24,8 @@ export function AdminLeadNew() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [industry, setIndustry] = useState<LeadIndustry>("Other");
+  const [referralSource, setReferralSource] = useState<ReferralSource | "">("");
+  const [referralSourceOther, setReferralSourceOther] = useState("");
   const [request, setRequest] = useState("");
   const [projectDetails, setProjectDetails] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -65,6 +67,8 @@ export function AdminLeadNew() {
         industry,
         request,
         projectDetails,
+        referralSource: referralSource || null,
+        referralSourceOther: referralSource === "Other" ? referralSourceOther : "",
       });
       if (!lead) {
         setBusy(false);
@@ -202,6 +206,32 @@ export function AdminLeadNew() {
                 ))}
               </select>
             </FormField>
+            <FormField id="lead-referral-source" label="How did they hear about us?" optional hint="Marketing attribution for this inquiry.">
+              <select
+                id="lead-referral-source"
+                value={referralSource}
+                onChange={(event) => setReferralSource(event.target.value as ReferralSource | "")}
+                className={fieldClass()}
+                aria-describedby="lead-referral-source-hint"
+              >
+                <option value="">Unknown</option>
+                {referralSources.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+            {referralSource === "Other" ? (
+              <FormField id="lead-referral-source-other" label="Referral detail" optional hint="Where specifically did they hear about us?">
+                <input
+                  id="lead-referral-source-other"
+                  value={referralSourceOther}
+                  onChange={(event) => setReferralSourceOther(event.target.value)}
+                  className={fieldClass()}
+                />
+              </FormField>
+            ) : null}
           </div>
 
           <div className="space-y-4 border-t border-[var(--admin-line)] pt-6">

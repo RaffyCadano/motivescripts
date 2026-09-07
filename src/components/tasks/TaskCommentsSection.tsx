@@ -52,8 +52,8 @@ export function TaskCommentsSection({
   }
 
   return (
-    <section className="mt-6 border-t border-[var(--admin-line)] pt-6">
-      <h3 className="font-heading text-sm font-semibold">Comments</h3>
+    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4 sm:p-5">
+      <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Comments</h3>
       {loading ? (
         <p className="mt-2 text-sm text-[var(--admin-muted)]">Loading…</p>
       ) : comments.length === 0 ? (
@@ -61,7 +61,7 @@ export function TaskCommentsSection({
       ) : (
         <ul className="mt-3 space-y-3">
           {comments.map((comment) => (
-            <li key={comment.id} className="rounded-lg bg-[var(--admin-bg)] px-3 py-2">
+            <li key={comment.id} className="rounded-lg border border-[var(--admin-line)] bg-white px-3 py-2">
               <div className="flex items-baseline justify-between gap-2">
                 <p className="text-[12px] font-semibold text-[var(--admin-ink)]">{comment.authorLabel}</p>
                 <p className="text-[11px] text-[var(--admin-muted)]">{formatProjectDay(comment.createdAt)}</p>

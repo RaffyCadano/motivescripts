@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
+import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { formatProjectDayShort } from "@/data/agencyProjects";
@@ -54,11 +55,17 @@ function StaffRow({ workload }: { workload: StaffWorkload }) {
 export function AdminCapacity() {
   const { projects } = useLeads();
   const { data } = useTeamDirectory();
+  const [query, setQuery] = useState("");
 
   const workloads = useMemo(
     () => collectStaffWorkload(projects, data?.members ?? [], WEEK_COUNT),
     [data?.members, projects],
   );
+  const filteredWorkloads = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return workloads;
+    return workloads.filter((workload) => workload.fullName.toLowerCase().includes(needle));
+  }, [workloads, query]);
   const weekStarts = workloads[0]?.weeks.map((week) => week.weekStart) ?? [];
 
   return (
@@ -76,26 +83,46 @@ export function AdminCapacity() {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
-          <table className="w-full min-w-[720px] border-collapse text-left">
-            <thead>
-              <tr className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
-                <th className="px-3 py-2.5">Staff</th>
-                <th className="px-3 py-2.5">Overdue</th>
-                {weekStarts.map((weekStart) => (
-                  <th key={weekStart} className="px-3 py-2.5">
-                    Week of {formatProjectDayShort(weekStart)}
-                  </th>
-                ))}
-                <th className="px-3 py-2.5">No due date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {workloads.map((workload) => (
-                <StaffRow key={workload.staffId} workload={workload} />
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-3">
+          <label className="block max-w-sm">
+            <span className="sr-only">Search staff</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search staff name"
+              className={adminFilterControlState(Boolean(query.trim()))}
+            />
+          </label>
+
+          {filteredWorkloads.length === 0 ? (
+            <div className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-9">
+              <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No matching staff</p>
+              <p className="mt-1 text-sm text-[var(--admin-muted)]">Try a different name.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
+              <table className="w-full min-w-[720px] border-collapse text-left">
+                <thead>
+                  <tr className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                    <th className="px-3 py-2.5">Staff</th>
+                    <th className="px-3 py-2.5">Overdue</th>
+                    {weekStarts.map((weekStart) => (
+                      <th key={weekStart} className="px-3 py-2.5">
+                        Week of {formatProjectDayShort(weekStart)}
+                      </th>
+                    ))}
+                    <th className="px-3 py-2.5">No due date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredWorkloads.map((workload) => (
+                    <StaffRow key={workload.staffId} workload={workload} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

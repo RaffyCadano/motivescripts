@@ -186,94 +186,108 @@ export function ProjectTimePanel({ project }: { project: AgencyProject }) {
         ) : entries.length === 0 ? (
           <p className="text-sm text-[var(--admin-muted)]">No time logged on this project yet.</p>
         ) : (
-          <ul className="divide-y divide-[var(--admin-line)]">
-            {entries.map((entry) =>
-              editingId === entry.id ? (
-                <li key={entry.id} className="flex flex-wrap items-end gap-2 py-2.5">
-                  <label className="text-[12px] font-medium text-[var(--admin-ink)]">
-                    Hours
-                    <input
-                      type="number"
-                      min="0.25"
-                      step="0.25"
-                      value={editHours}
-                      disabled={busy}
-                      onChange={(event) => setEditHours(event.target.value)}
-                      className="mt-1 h-9 w-20 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-                    />
-                  </label>
-                  <label className="min-w-[8rem] flex-1 text-[12px] font-medium text-[var(--admin-ink)]">
-                    Note
-                    <input
-                      value={editNote}
-                      disabled={busy}
-                      onChange={(event) => setEditNote(event.target.value)}
-                      className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-                    />
-                  </label>
-                  <label className="text-[12px] font-medium text-[var(--admin-ink)]">
-                    Date
-                    <input
-                      type="date"
-                      value={editDate}
-                      disabled={busy}
-                      onChange={(event) => setEditDate(event.target.value)}
-                      className="mt-1 h-9 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    className="h-9 rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-60"
-                    onClick={() => void onSaveEdit(entry.id)}
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    className="h-9 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)]"
-                    onClick={() => setEditingId(null)}
-                  >
-                    Cancel
-                  </button>
-                </li>
-              ) : (
-                <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                  <div>
-                    <p className="text-sm text-[var(--admin-ink)]">
-                      {staffName(entry.staffId)} — {entry.hours}h
-                      {entry.note ? ` · ${entry.note}` : ""}
-                    </p>
-                    <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                      {formatProjectDay(entry.entryDate)}
-                      {entry.billedAt ? " · Billed" : " · Unbilled"}
-                    </p>
-                  </div>
-                  {!entry.billedAt ? (
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        disabled={busy}
-                        className="text-[12px] font-semibold text-[var(--admin-blue)] hover:underline disabled:opacity-40"
-                        onClick={() => startEdit(entry)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        className="text-[12px] font-semibold text-[var(--admin-muted)] hover:text-[var(--admin-ink)] disabled:opacity-40"
-                        onClick={() => void onDelete(entry.id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  ) : null}
-                </li>
-              ),
-            )}
-          </ul>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[40rem] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-[var(--admin-line)] text-left text-[12px] text-[var(--admin-muted)]">
+                  <th className="pb-2 pr-3 font-medium">Date</th>
+                  <th className="pb-2 pr-3 font-medium">Staff</th>
+                  <th className="pb-2 pr-3 font-medium">Hours</th>
+                  <th className="pb-2 pr-3 font-medium">Note</th>
+                  <th className="pb-2 pr-3 font-medium">Status</th>
+                  <th className="pb-2 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--admin-line)]">
+                {entries.map((entry) =>
+                  editingId === entry.id ? (
+                    <tr key={entry.id}>
+                      <td className="py-2.5 pr-3">
+                        <input
+                          type="date"
+                          value={editDate}
+                          disabled={busy}
+                          onChange={(event) => setEditDate(event.target.value)}
+                          className="h-9 w-full min-w-[9rem] rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                        />
+                      </td>
+                      <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{staffName(entry.staffId)}</td>
+                      <td className="py-2.5 pr-3">
+                        <input
+                          type="number"
+                          min="0.25"
+                          step="0.25"
+                          value={editHours}
+                          disabled={busy}
+                          onChange={(event) => setEditHours(event.target.value)}
+                          className="h-9 w-20 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                        />
+                      </td>
+                      <td className="py-2.5 pr-3">
+                        <input
+                          value={editNote}
+                          disabled={busy}
+                          onChange={(event) => setEditNote(event.target.value)}
+                          className="h-9 w-full min-w-[8rem] rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                        />
+                      </td>
+                      <td className="py-2.5 pr-3 text-[var(--admin-muted)]">Unbilled</td>
+                      <td className="py-2.5">
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            disabled={busy}
+                            className="h-9 rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-60"
+                            onClick={() => void onSaveEdit(entry.id)}
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            disabled={busy}
+                            className="h-9 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)]"
+                            onClick={() => setEditingId(null)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={entry.id} className="hover:bg-[var(--admin-bg)]">
+                      <td className="py-2.5 pr-3 text-[var(--admin-ink)]">{formatProjectDay(entry.entryDate)}</td>
+                      <td className="py-2.5 pr-3 text-[var(--admin-ink)]">{staffName(entry.staffId)}</td>
+                      <td className="py-2.5 pr-3 text-[var(--admin-ink)]">{entry.hours}h</td>
+                      <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{entry.note || "—"}</td>
+                      <td className="py-2.5 pr-3 text-[var(--admin-muted)]">{entry.billedAt ? "Billed" : "Unbilled"}</td>
+                      <td className="py-2.5">
+                        {!entry.billedAt ? (
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              disabled={busy}
+                              className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline disabled:opacity-40"
+                              onClick={() => startEdit(entry)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              className="font-heading text-[12px] font-semibold text-[var(--admin-muted)] hover:text-[var(--admin-ink)] disabled:opacity-40"
+                              onClick={() => void onDelete(entry.id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ),
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </section>

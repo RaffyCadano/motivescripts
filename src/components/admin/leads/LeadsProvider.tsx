@@ -14,6 +14,7 @@ import {
   deleteMilestone,
   fetchAgencySnapshot,
   insertClient,
+  insertClientTask,
   insertDeliverable,
   insertLead,
   insertMilestone,
@@ -98,6 +99,7 @@ type LeadsContextValue = {
   moveMilestone: (projectId: string, milestoneId: string, direction: "up" | "down") => Promise<void>;
   removeMilestone: (projectId: string, milestoneId: string) => Promise<void>;
   addTask: (projectId: string, draft: AgencyTaskDraft) => Promise<void>;
+  addClientTask: (projectId: string, title: string, description: string) => Promise<void>;
   updateTask: (projectId: string, taskId: string, draft: AgencyTaskDraft) => Promise<void>;
   toggleTaskComplete: (projectId: string, taskId: string) => Promise<void>;
   addDeliverable: (projectId: string, draft: DeliverableDraft, file: File | null) => Promise<boolean>;
@@ -454,12 +456,16 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
               referenceUrl: draft.referenceUrl,
               estimatedHours: draft.estimatedHours,
               deliverableId: null,
+              origin: "agency",
               createdAt: new Date().toISOString(),
               completedAt: draft.status === "Completed" ? new Date().toISOString() : null,
             };
             await persistMilestoneSync(project, { ...project, tasks: [created, ...project.tasks] });
           }
         }, "Task created.");
+      },
+      async addClientTask(projectId, title, description) {
+        await run(() => insertClientTask(projectId, title, description), "Request submitted.");
       },
       async updateTask(projectId, taskId, draft) {
         const project = snapshotRef.current.projects.find((item) => item.id === projectId);

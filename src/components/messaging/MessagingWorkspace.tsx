@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ConversationList } from "@/components/messaging/ConversationList";
 import { ConversationThread } from "@/components/messaging/ConversationThread";
@@ -32,6 +32,7 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
   const [sending, setSending] = useState(false);
   const [missing, setMissing] = useState(false);
   const [extraConversation, setExtraConversation] = useState<ConversationSummary | null>(null);
+  const [search, setSearch] = useState("");
   const [isLg, setIsLg] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : false,
   );
@@ -142,10 +143,17 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
     await markConversationRead(conversationId);
   }, [conversationId, markConversationRead]);
 
-  const listedConversations =
+  const baseConversations =
     queryClientId && !conversationId
       ? messaging.conversations.filter((item) => item.clientId === queryClientId)
       : messaging.conversations;
+  const listedConversations = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    if (!needle) return baseConversations;
+    return baseConversations.filter((item) =>
+      `${item.clientName} ${item.subject} ${item.projectName ?? ""}`.toLowerCase().includes(needle),
+    );
+  }, [baseConversations, search]);
   const teamWorkspace = usesTeamWorkspace(profile);
   const emptyTitle = tone === "admin" ? "No conversations yet" : "No messages yet";
   const emptyDescription = requireProject
@@ -214,6 +222,9 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
               showClient={tone === "admin"}
               canCompose={canManage}
               onNew={() => setComposeOpen(true)}
+              search={search}
+              onSearchChange={setSearch}
+              showSearch={baseConversations.length > 0}
             />
           ) : null}
 

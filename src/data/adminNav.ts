@@ -25,7 +25,10 @@ export type AdminIconName =
   | "qa"
   | "needsChanges"
   | "blocked"
-  | "deployments";
+  | "deployments"
+  | "overdue"
+  | "reports"
+  | "testimonials";
 
 export type AdminNavItem = {
   label: string;
@@ -66,6 +69,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { label: "Proposals", href: "/admin/proposals", icon: "proposals" },
       { label: "Contracts", href: "/admin/contracts", icon: "contracts" },
+      { label: "Testimonials", href: "/admin/testimonials", icon: "testimonials" },
     ],
   },
   {
@@ -73,6 +77,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { label: "Invoices", href: "/admin/invoices", icon: "invoices" },
       { label: "Payroll", href: "/admin/payroll", icon: "payroll" },
+      { label: "Reports", href: "/admin/reports", icon: "reports" },
     ],
   },
   {
@@ -96,25 +101,38 @@ export const adminNavGroups: AdminNavGroup[] = [
 
 /**
  * PM's working set is a curated subset of the same `/admin` routes (no new routes),
- * grouped around "my work" instead of the agency-wide CRM/Sales/Finance/Operations
- * groupings admin sees. Still pruned by `navPermission` below, so it degrades safely
- * if a PM's grants ever change.
+ * grouped around how a PM actually works instead of the agency-wide CRM/Sales/Finance/
+ * Operations groupings admin sees. Still pruned by `navPermission` below, so it degrades
+ * safely if a PM's grants ever change.
+ *
+ * "Needs Attention" / "Due Today" / "Overdue" / "Reviews & Deliverables" have no standalone
+ * pages -- they're sections on the PM Overview dashboard (PmOverview.tsx) -- so those items
+ * link to the dashboard's own anchor ids rather than inventing empty-shell pages.
  */
 export const pmNavGroups: AdminNavGroup[] = [
   {
-    label: "Main",
+    label: "Project Management",
     items: [
       { label: "Overview", href: "/admin", icon: "overview", end: true },
-      { label: "My Tasks", href: "/admin/my-tasks", icon: "tasks" },
+      { label: "My Projects", href: "/admin/projects", icon: "projects" },
+      { label: "Tasks", href: "/admin/my-tasks", icon: "tasks" },
+      { label: "Clients", href: "/admin/clients", icon: "clients" },
     ],
   },
   {
-    label: "My Work",
+    label: "Work",
     items: [
-      { label: "Projects", href: "/admin/projects", icon: "projects" },
-      { label: "Clients", href: "/admin/clients", icon: "clients" },
-      { label: "Files", href: "/admin/files", icon: "files" },
+      { label: "Needs Attention", href: "/admin#needs-attention", icon: "activity" },
+      { label: "Due Today", href: "/admin#today-work", icon: "time" },
+      { label: "Overdue", href: "/admin#overdue", icon: "overdue" },
+      { label: "Reviews & Deliverables", href: "/admin#reviews", icon: "needsChanges" },
+    ],
+  },
+  {
+    label: "Delivery",
+    items: [
       { label: "Capacity", href: "/admin/capacity", icon: "capacity" },
+      { label: "Files", href: "/admin/files", icon: "files" },
     ],
   },
   {
@@ -137,6 +155,8 @@ function resolveAdminNavPath(pathname: string): string {
   if (pathname === "/admin/proposals" || pathname.startsWith("/admin/proposals/")) return "/admin/proposals";
   if (pathname === "/admin/contracts" || pathname.startsWith("/admin/contracts/")) return "/admin/contracts";
   if (pathname === "/admin/invoices" || pathname.startsWith("/admin/invoices/")) return "/admin/invoices";
+  if (pathname === "/admin/reports") return "/admin/reports";
+  if (pathname === "/admin/testimonials" || pathname.startsWith("/admin/testimonials/")) return "/admin/testimonials";
   if (pathname === "/admin/team" || pathname.startsWith("/admin/team/")) return "/admin/team";
   if (pathname === "/admin/settings" || pathname.startsWith("/admin/settings/")) return "/admin/settings";
   if (pathname === "/admin/profile") return "/admin/profile";
@@ -165,6 +185,8 @@ const navPermission: Record<string, StaffPermissionCode | null> = {
   "/admin/proposals": "proposals.view",
   "/admin/contracts": "contracts.view",
   "/admin/invoices": "invoices.view",
+  "/admin/reports": "invoices.view",
+  "/admin/testimonials": null,
   "/admin/payments": "invoices.view",
   "/admin/messages": "messages.view",
   "/admin/notifications": null,
@@ -201,6 +223,7 @@ export function filterAdminNavGroups(profile: AppProfile | null): AdminNavGroup[
       items: group.items.filter((item) => {
         if (item.href === "/admin/settings") return isActiveAdmin(profile);
         if (item.href === "/admin/payroll") return isActiveAdmin(profile);
+        if (item.href === "/admin/testimonials") return isActiveAdmin(profile);
         if (item.href === "/admin/my-tasks" && isActiveAdmin(profile)) return false;
         const required = navPermission[item.href];
         if (!required) return true;

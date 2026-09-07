@@ -291,6 +291,8 @@ export async function insertLead(draft: LeadDraft): Promise<Lead> {
       project_details: draft.projectDetails.trim(),
       status: "New",
       source: "Manual",
+      referral_source: draft.referralSource ?? null,
+      referral_source_other: draft.referralSourceOther?.trim() ?? "",
       notes: [],
       activity,
     })
@@ -759,6 +761,16 @@ export async function insertTask(projectId: string, draft: AgencyTaskDraft): Pro
   }
   throwIf(error, "create task", "Unable to create task.");
   await addActivity(projectId, "task_created", `Task created: ${draft.title.trim()}`, "task");
+}
+
+export async function insertClientTask(projectId: string, title: string, description: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("client_create_task", {
+    p_project_id: projectId,
+    p_title: title.trim(),
+    p_description: description.trim(),
+  });
+  throwIf(error, "create support request", "Unable to submit this request.");
 }
 
 export async function updateTaskRecord(projectId: string, taskId: string, draft: AgencyTaskDraft, completedAt: string | null): Promise<void> {

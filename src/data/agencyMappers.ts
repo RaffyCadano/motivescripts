@@ -1,6 +1,7 @@
 import type { AgencyClient, AgencyNote, AgencyActivityItem } from "@/data/agencyClients";
 import type { AgencyDeliverable, AgencyFileVersion, DeliverableCategory, DeliverableStatus } from "@/data/files";
-import type { Lead, LeadActivityItem, LeadIndustry, LeadNote, LeadStatus } from "@/data/leads";
+import type { Lead, LeadActivityItem, LeadIndustry, LeadNote, LeadStatus, ReferralSource } from "@/data/leads";
+import { referralSources } from "@/data/leads";
 import type {
   AgencyMilestone,
   AgencyMilestoneStatus,
@@ -11,6 +12,7 @@ import type {
   AgencyTask,
   AgencyTaskPriority,
   AgencyTaskStatus,
+  TaskOrigin,
 } from "@/data/agencyProjects";
 import { parseStoredRecommendedRole } from "@/data/taskRecommendedRoles";
 import { isTaskType } from "@/data/taskTypes";
@@ -83,6 +85,10 @@ export function mapLead(row: LeadRow): Lead {
     status: leadStatuses.includes(row.status as LeadStatus) ? (row.status as LeadStatus) : "New",
     createdAt,
     source: row.source === "Start a Project" ? "Start a Project" : "Manual",
+    referralSource: referralSources.includes(row.referral_source as ReferralSource)
+      ? (row.referral_source as ReferralSource)
+      : null,
+    referralSourceOther: row.referral_source_other ?? "",
     notes: asList(row.notes).map((item) => ({
       id: text(item.id, crypto.randomUUID()),
       body: text(item.body),
@@ -178,6 +184,7 @@ export function mapTask(row: TaskRow): AgencyTask {
     referenceUrl: row.reference_url ?? "",
     estimatedHours: row.estimated_hours ?? null,
     deliverableId: row.deliverable_id ?? null,
+    origin: row.origin === "client" ? "client" : ("agency" as TaskOrigin),
   };
 }
 

@@ -334,7 +334,12 @@ export function AdminProjectDetails() {
             />
           ) : null}
           {tab === "files" ? (
-            <ProjectFilesPanel project={project} selectedId={selectedFileId} onSelect={setSelectedFile} />
+            <ProjectFilesPanel
+              project={project}
+              selectedId={selectedFileId}
+              onSelect={setSelectedFile}
+              breadcrumbItems={[{ label: "Files", href: `/admin/projects/${project.id}?tab=files` }]}
+            />
           ) : null}
           {tab === "time" ? <ProjectTimePanel project={project} /> : null}
           {tab === "feedback" ? <ProjectFeedbackPanel project={project} /> : null}

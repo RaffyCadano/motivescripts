@@ -5,6 +5,7 @@ export type ClientIconName =
   | "files"
   | "feedback"
   | "approvals"
+  | "support"
   | "messages"
   | "proposals"
   | "contracts"
@@ -26,6 +27,7 @@ export const clientMainNav: ClientNavItem[] = [
   { label: "Files", href: "/client/files", icon: "files", requiresProject: true },
   { label: "Feedback", href: "/client/feedback", icon: "feedback", requiresProject: true },
   { label: "Approvals", href: "/client/approvals", icon: "approvals", requiresProject: true },
+  { label: "Support", href: "/client/support", icon: "support", requiresProject: true },
   { label: "Messages", href: "/client/messages", icon: "messages" },
   { label: "Proposals", href: "/client/proposals", icon: "proposals" },
   { label: "Contracts", href: "/client/contracts", icon: "contracts" },

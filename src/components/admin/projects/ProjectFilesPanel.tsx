@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
+import { Archive as ArchiveIcon, Eye, PencilLine, Send, Upload } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission } from "@/auth/permissions";
+import { AdminActionsMenu } from "@/components/admin/AdminActionsMenu";
+import { Breadcrumbs, type BreadcrumbItem } from "@/components/admin/Breadcrumbs";
 import { ConfirmArchiveDeliverableModal } from "@/components/admin/projects/ConfirmArchiveDeliverableModal";
 import { ConfirmSendForReviewModal } from "@/components/admin/projects/ConfirmSendForReviewModal";
 import { DeliverableDetailPanel } from "@/components/admin/projects/DeliverableDetailPanel";
@@ -29,7 +32,6 @@ import {
 } from "@/data/files";
 import { canSendForReview } from "@/data/review";
 import type { AgencyProject } from "@/data/agencyProjects";
-import { cn } from "@/lib/cn";
 
 const statusFilters = ["All", ...deliverableStatuses] as const;
 
@@ -37,9 +39,13 @@ type ProjectFilesPanelProps = {
   project: AgencyProject;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  /** Breadcrumb trail up to and including "Files" (e.g. "My Projects / Website Redesign / Files").
+   *  The selected deliverable's name is appended automatically. Omit to fall back to a plain
+   *  "Back to files" link. */
+  breadcrumbItems?: BreadcrumbItem[];
 };
 
-export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFilesPanelProps) {
+export function ProjectFilesPanel({ project, selectedId, onSelect, breadcrumbItems }: ProjectFilesPanelProps) {
   const { profile } = useAuth();
   const canManageFiles = hasPermission(profile, "files.manage");
   const {
@@ -82,6 +88,11 @@ export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFile
           key={selected.id}
           deliverable={selected}
           onBack={() => onSelect(null)}
+          breadcrumb={
+            breadcrumbItems ? (
+              <Breadcrumbs items={[...breadcrumbItems, { label: selected.name }]} />
+            ) : undefined
+          }
           onAddVersion={() => setVersionTarget(selected)}
           onPreview={openPreview}
           onMakeCurrent={(versionId) => setCurrentVersion(selected.id, versionId)}
@@ -168,6 +179,20 @@ export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFile
             />
           </label>
           <label className="lg:w-44">
+            <span className="sr-only">Status</span>
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value as DeliverableStatus | "All")}
+              className="h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            >
+              {statusFilters.map((item) => (
+                <option key={item} value={item}>
+                  {item === "All" ? "All statuses" : item}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="lg:w-44">
             <span className="sr-only">Category</span>
             <select
               value={category}
@@ -196,24 +221,6 @@ export function ProjectFilesPanel({ project, selectedId, onSelect }: ProjectFile
               ))}
             </select>
           </label>
-        </div>
-        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="group" aria-label="Deliverable status">
-          {statusFilters.map((item) => (
-            <button
-              key={item}
-              type="button"
-              aria-pressed={status === item}
-              className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 font-heading text-[12px] font-semibold",
-                status === item
-                  ? "bg-[var(--admin-navy)] text-white"
-                  : "bg-white text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)] hover:bg-[var(--admin-hover)]",
-              )}
-              onClick={() => setStatus(item)}
-            >
-              {item}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -351,63 +358,90 @@ function DeliverableList({
           </ul>
         </div>
       ) : null}
-      <ul className="divide-y divide-[var(--admin-line)]">
-        {items.map((item) => {
-          const current = currentVersion(item);
-          const sendable = Boolean(onSendForReview && canSendForReview(item));
-          const archived = item.status === "Archived";
-          return (
-            <li key={item.id} className="flex flex-col gap-3 py-4">
-              <div className="flex min-w-0 items-start gap-3">
-                <span className="mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--admin-bg)] text-[var(--admin-muted)]">
-                  <FileTypeIcon fileType={current?.fileType ?? "Other"} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{item.name}</p>
+      <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)]">
+        <table className="w-full min-w-[820px] text-left text-sm">
+          <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+            <tr>
+              <th className="px-4 py-3 font-heading">Deliverable</th>
+              <th className="px-4 py-3 font-heading">Status</th>
+              <th className="px-4 py-3 font-heading">Category</th>
+              <th className="px-4 py-3 font-heading">Version</th>
+              <th className="px-4 py-3 font-heading">Updated</th>
+              <th className="px-4 py-3 font-heading">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--admin-line)]">
+            {items.map((item) => {
+              const current = currentVersion(item);
+              const sendable = Boolean(onSendForReview && canSendForReview(item));
+              const archived = item.status === "Archived";
+              return (
+                <tr key={item.id} className="hover:bg-[var(--admin-bg)]">
+                  <td className="px-4 py-3 align-middle">
+                    <div className="flex min-w-0 items-start gap-2.5">
+                      <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--admin-bg)] text-[var(--admin-muted)]">
+                        <FileTypeIcon fileType={current?.fileType ?? "Other"} />
+                      </span>
+                      <div className="min-w-0">
+                        <button
+                          type="button"
+                          className="text-left font-medium text-[var(--admin-ink)] hover:text-[var(--admin-blue)]"
+                          onClick={() => onView(item.id)}
+                        >
+                          {item.name}
+                        </button>
+                        {item.description ? (
+                          <p className="mt-0.5 max-w-xs text-[12px] text-[var(--admin-muted)]">{item.description}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 align-middle">
                     <DeliverableStatusBadge status={item.status} />
-                  </div>
-                  <p className="mt-1 text-[13px] text-[var(--admin-muted)]">
-                    {item.category}
-                    <span aria-hidden="true"> · </span>
+                  </td>
+                  <td className="px-4 py-3 align-middle text-[var(--admin-muted)]">{item.category}</td>
+                  <td className="px-4 py-3 align-middle text-[var(--admin-ink)]">
                     {current ? versionLabel(current.versionNumber) : "No version"}
-                    <span aria-hidden="true"> · </span>
-                    Updated {formatFileHistoryDate(deliverableUpdatedAt(item))}
-                  </p>
-                  {item.description ? (
-                    <p className="mt-1 text-[13px] text-[var(--admin-muted)]">{item.description}</p>
-                  ) : null}
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 sm:pl-12">
-                <button type="button" className={actionBtn} onClick={() => onView(item.id)}>
-                  View
-                </button>
-                {canManageFiles && !archived && onUploadVersion ? (
-                  <button type="button" className={actionBtn} onClick={() => onUploadVersion(item)}>
-                    Upload Version
-                  </button>
-                ) : null}
-                {sendable ? (
-                  <button type="button" className={actionBtn} onClick={() => onSendForReview?.(item)}>
-                    Send for Review
-                  </button>
-                ) : null}
-                {canManageFiles && !archived && onEdit ? (
-                  <button type="button" className={actionBtn} onClick={() => onEdit(item)}>
-                    Edit
-                  </button>
-                ) : null}
-                {canManageFiles && !archived && onArchive ? (
-                  <button type="button" className={actionBtn} onClick={() => onArchive(item)}>
-                    Archive
-                  </button>
-                ) : null}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+                  </td>
+                  <td className="px-4 py-3 align-middle text-[var(--admin-muted)]">
+                    {formatFileHistoryDate(deliverableUpdatedAt(item))}
+                  </td>
+                  <td className="px-4 py-3 align-middle">
+                    <AdminActionsMenu
+                      ariaLabel={`Actions for ${item.name}`}
+                      iconOnly
+                      items={[
+                        { id: "view", label: "View", icon: Eye, onSelect: () => onView(item.id) },
+                        ...(canManageFiles && !archived && onUploadVersion
+                          ? [{ id: "upload", label: "Upload Version", icon: Upload, onSelect: () => onUploadVersion(item) }]
+                          : []),
+                        ...(sendable
+                          ? [{ id: "send", label: "Send for Review", icon: Send, onSelect: () => onSendForReview?.(item) }]
+                          : []),
+                        ...(canManageFiles && !archived && onEdit
+                          ? [{ id: "edit", label: "Edit", icon: PencilLine, onSelect: () => onEdit(item) }]
+                          : []),
+                        ...(canManageFiles && !archived && onArchive
+                          ? [
+                              {
+                                id: "archive",
+                                label: "Archive",
+                                icon: ArchiveIcon,
+                                danger: true,
+                                separatorBefore: true,
+                                onSelect: () => onArchive(item),
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -475,6 +509,3 @@ function FileModals({
     </>
   );
 }
-
-const actionBtn =
-  "inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[11px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]";

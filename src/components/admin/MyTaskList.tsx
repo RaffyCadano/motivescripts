@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { TaskOriginBadge } from "@/components/admin/projects/TaskOriginBadge";
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
 import { TaskRecommendedRoleNote } from "@/components/admin/projects/TaskRecommendedRoleNote";
 import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
@@ -15,9 +16,17 @@ import { cn } from "@/lib/cn";
 type MyTaskRowProps = {
   task: TeamWorkTask;
   onOpen: (task: TeamWorkTask) => void;
+  projectHref: (projectId: string) => string;
 };
 
-export function MyTaskTable({ tasks, onOpen }: { tasks: TeamWorkTask[]; onOpen: (task: TeamWorkTask) => void }) {
+type MyTaskListProps = {
+  tasks: TeamWorkTask[];
+  onOpen: (task: TeamWorkTask) => void;
+  /** Where the "Project" link/button goes. Defaults to the admin project workspace. */
+  projectHref?: (projectId: string) => string;
+};
+
+export function MyTaskTable({ tasks, onOpen, projectHref = adminProjectTasksHref }: MyTaskListProps) {
   return (
     <div className="hidden overflow-hidden rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] md:block">
       <table className="w-full text-left text-sm">
@@ -29,11 +38,12 @@ export function MyTaskTable({ tasks, onOpen }: { tasks: TeamWorkTask[]; onOpen: 
             <th className="px-4 py-3 font-heading">Priority</th>
             <th className="px-4 py-3 font-heading">Due</th>
             <th className="px-4 py-3 font-heading">Status</th>
+            <th className="px-4 py-3 font-heading">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--admin-line)]">
           {tasks.map((task) => (
-            <MyTaskTableRow key={task.id} task={task} onOpen={onOpen} />
+            <MyTaskTableRow key={task.id} task={task} onOpen={onOpen} projectHref={projectHref} />
           ))}
         </tbody>
       </table>
@@ -41,7 +51,7 @@ export function MyTaskTable({ tasks, onOpen }: { tasks: TeamWorkTask[]; onOpen: 
   );
 }
 
-function MyTaskTableRow({ task, onOpen }: MyTaskRowProps) {
+function MyTaskTableRow({ task, onOpen, projectHref }: MyTaskRowProps) {
   const recommendedRole = resolveTaskRecommendedRole(task);
   const bucket = dueBucket(task.dueDate);
   const phase = task.milestoneName.trim() ? displayMilestoneName(task.milestoneName) : "—";
@@ -63,7 +73,7 @@ function MyTaskTableRow({ task, onOpen }: MyTaskRowProps) {
         ) : null}
       </td>
       <td className="px-4 py-3">
-        <Link to={adminProjectTasksHref(task.projectId)} className="text-[var(--admin-blue)] hover:underline">
+        <Link to={projectHref(task.projectId)} className="text-[var(--admin-blue)] hover:underline">
           {task.projectName}
         </Link>
       </td>
@@ -75,23 +85,40 @@ function MyTaskTableRow({ task, onOpen }: MyTaskRowProps) {
         {task.dueDate ? formatProjectDay(task.dueDate) : "Not set"}
       </td>
       <td className="px-4 py-3">
-        <TaskStatusBadge status={task.status} />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <TaskStatusBadge status={task.status} />
+          {task.origin === "client" ? <TaskOriginBadge /> : null}
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+            onClick={() => onOpen(task)}
+          >
+            Open
+          </button>
+          <Link to={projectHref(task.projectId)} className="font-heading text-[12px] font-semibold text-[var(--admin-muted)] hover:text-[var(--admin-blue)] hover:underline">
+            View project
+          </Link>
+        </div>
       </td>
     </tr>
   );
 }
 
-export function MyTaskMobileList({ tasks, onOpen }: { tasks: TeamWorkTask[]; onOpen: (task: TeamWorkTask) => void }) {
+export function MyTaskMobileList({ tasks, onOpen, projectHref = adminProjectTasksHref }: MyTaskListProps) {
   return (
     <ul className="space-y-3 md:hidden">
       {tasks.map((task) => (
-        <MyTaskMobileCard key={task.id} task={task} onOpen={onOpen} />
+        <MyTaskMobileCard key={task.id} task={task} onOpen={onOpen} projectHref={projectHref} />
       ))}
     </ul>
   );
 }
 
-function MyTaskMobileCard({ task, onOpen }: MyTaskRowProps) {
+function MyTaskMobileCard({ task, onOpen, projectHref }: MyTaskRowProps) {
   const recommendedRole = resolveTaskRecommendedRole(task);
   const bucket = dueBucket(task.dueDate);
   const phase = task.milestoneName.trim() ? displayMilestoneName(task.milestoneName) : "Ungrouped";
@@ -118,7 +145,10 @@ function MyTaskMobileCard({ task, onOpen }: MyTaskRowProps) {
         <span className={cn("text-[12px] font-medium", bucket === "overdue" ? "text-[#b45309]" : "text-[var(--admin-muted)]")}>
           {task.dueDate ? formatProjectDay(task.dueDate) : "No due date"}
         </span>
-        <TaskStatusBadge status={task.status} />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <TaskStatusBadge status={task.status} />
+          {task.origin === "client" ? <TaskOriginBadge /> : null}
+        </div>
       </div>
       <div className="mt-3 flex gap-3">
         <button
@@ -128,7 +158,7 @@ function MyTaskMobileCard({ task, onOpen }: MyTaskRowProps) {
         >
           Open
         </button>
-        <Link to={adminProjectTasksHref(task.projectId)} className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
+        <Link to={projectHref(task.projectId)} className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
           View project
         </Link>
       </div>

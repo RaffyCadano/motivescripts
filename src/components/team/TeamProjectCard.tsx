@@ -40,7 +40,7 @@ export function TeamProjectCard({ project, clientName, assignedTaskCount, teamma
       {extra}
       <Link
         to={teamProjectHref(project.id)}
-        className="mt-4 inline-flex font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+        className="mt-4 flex justify-end font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
       >
         Open project →
       </Link>

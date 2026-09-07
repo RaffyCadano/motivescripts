@@ -1,7 +1,6 @@
 import {
   calculateProjectProgress,
   currentMilestone,
-  formatProjectDay,
   productionTaskStats,
   projectLaunchUrgency,
   projectListAttention,
@@ -10,22 +9,11 @@ import {
 } from "@/data/agencyProjects";
 import type { DiscoveryAttentionItem, DiscoveryIntake } from "@/data/discoveryIntake";
 import { buildDiscoveryAttentionItems, buildDiscoveryStatusBoard } from "@/data/discoveryIntake";
+import { blockedReason } from "@/data/developerOverview";
 import type { ConversationSummary } from "@/data/messaging";
 import type { AgencyDeliverable } from "@/data/files";
-import { needsAttention, type ReviewFeedback } from "@/data/review";
-import { adminProjectHref, isTaskOverdue, type TeamWorkTask } from "@/data/teamWorkspace";
-
-export type PmFollowUpItem = {
-  id: string;
-  projectId: string | null;
-  clientId: string;
-  name: string;
-  body: string;
-  stage: string;
-  actionLabel: string;
-  href: string;
-  sort: number;
-};
+import { awaitingReview, needsAttention, type ReviewFeedback } from "@/data/review";
+import { adminProjectHref, adminProjectTasksHref, isTaskOverdue, type TeamWorkTask } from "@/data/teamWorkspace";
 
 export type PmProjectHealthStatus = "healthy" | "attention" | "blocked";
 
@@ -38,33 +26,19 @@ export type PmProjectHealthItem = {
   href: string;
 };
 
-export type PmNextActionItem = {
+export type PmAttentionKind = "blocked" | "overdue" | "needs-changes" | "in-review" | "discovery" | "unassigned";
+
+export type PmAttentionItem = {
   id: string;
+  kind: PmAttentionKind;
   label: string;
   body: string;
   href: string;
   sort: number;
 };
 
-export type PmDiscoveryStats = {
-  awaitingReview: number;
-  followUpRequired: number;
-  underReview: number;
-  awaitingClient: number;
-};
-
 export function activePmProjects(projects: AgencyProject[]): AgencyProject[] {
   return projects.filter((project) => !project.archived && project.status !== "Completed");
-}
-
-export function buildPmDiscoveryStats(intakes: DiscoveryIntake[], projectIds: Set<string>): PmDiscoveryStats {
-  const scoped = intakes.filter((item) => projectIds.has(item.projectId));
-  return {
-    awaitingReview: scoped.filter((item) => item.status === "submitted").length,
-    followUpRequired: scoped.filter((item) => item.status === "more_information_needed").length,
-    underReview: scoped.filter((item) => item.status === "under_review").length,
-    awaitingClient: scoped.filter((item) => item.status === "awaiting_client").length,
-  };
 }
 
 export function buildPmDiscoveryItems(input: {
@@ -116,133 +90,6 @@ export function projectCoordinationHint(input: {
   const milestone = currentMilestone(input.project);
   if (milestone) return `Current phase: ${milestone.name}.`;
   return "No urgent coordination items.";
-}
-
-export function buildPmClientFollowUps(input: {
-  projects: AgencyProject[];
-  projectIds: Set<string>;
-  clientsById: Map<string, { businessName: string }>;
-  deliverables: AgencyDeliverable[];
-  feedback: ReviewFeedback[];
-  conversations: ConversationSummary[];
-  discoveryItems: DiscoveryAttentionItem[];
-  limit?: number;
-}): PmFollowUpItem[] {
-  const items: PmFollowUpItem[] = [];
-  const scopedProjects = input.projects.filter((project) => input.projectIds.has(project.id) && !project.archived);
-
-  for (const discovery of input.discoveryItems) {
-    if (discovery.status !== "awaiting_client" && discovery.status !== "more_information_needed") continue;
-    items.push({
-      id: `discovery-${discovery.id}`,
-      projectId: discovery.projectId,
-      clientId: scopedProjects.find((row) => row.id === discovery.projectId)?.clientId ?? "",
-      name: discovery.projectName,
-      body:
-        discovery.status === "more_information_needed"
-          ? "Discovery follow-up — client information requested."
-          : "Discovery questionnaire sent — waiting on client.",
-      stage: "Discovery",
-      actionLabel: "Open Discovery",
-      href: discovery.href,
-      sort: discovery.status === "more_information_needed" ? 12 : 18,
-    });
-  }
-
-  for (const project of scopedProjects) {
-    if (project.status !== "Client Review") continue;
-    items.push({
-      id: `client-review-${project.id}`,
-      projectId: project.id,
-      clientId: project.clientId,
-      name: project.name,
-      body: "Client review waiting — follow up if needed.",
-      stage: "Client Review",
-      actionLabel: "Open Project",
-      href: adminProjectHref(project.id),
-      sort: 14,
-    });
-  }
-
-  for (const conversation of input.conversations) {
-    if (conversation.unreadCount <= 0 || conversation.status !== "open") continue;
-    const projectMatch = conversation.projectId && input.projectIds.has(conversation.projectId);
-    const clientMatch = scopedProjects.some((project) => project.clientId === conversation.clientId);
-    if (!projectMatch && !clientMatch) continue;
-    items.push({
-      id: `message-${conversation.id}`,
-      projectId: conversation.projectId,
-      clientId: conversation.clientId,
-      name: conversation.clientName || conversation.subject,
-      body:
-        conversation.unreadCount === 1
-          ? "1 unread client message."
-          : `${conversation.unreadCount} unread client messages.`,
-      stage: "Messages",
-      actionLabel: "Open Inbox",
-      href: `/admin/messages?conversation=${conversation.id}`,
-      sort: 10,
-    });
-  }
-
-  for (const file of input.deliverables) {
-    if (!input.projectIds.has(file.projectId)) continue;
-    const project = scopedProjects.find((row) => row.id === file.projectId);
-    if (!project) continue;
-    if (file.status === "In Review") {
-      items.push({
-        id: `review-${file.id}`,
-        projectId: file.projectId,
-        clientId: project.clientId,
-        name: project.name,
-        body: `${file.name} is waiting for review.`,
-        stage: "Review",
-        actionLabel: "Open Files",
-        href: adminProjectHref(file.projectId, { tab: "files" }),
-        sort: 16,
-      });
-    }
-  }
-
-  for (const file of needsAttention(input.deliverables)) {
-    if (!input.projectIds.has(file.projectId)) continue;
-    const project = scopedProjects.find((row) => row.id === file.projectId);
-    if (!project) continue;
-    items.push({
-      id: `changes-${file.id}`,
-      projectId: file.projectId,
-      clientId: project.clientId,
-      name: project.name,
-      body: `${file.name} has requested changes.`,
-      stage: "Review",
-      actionLabel: "Open Feedback",
-      href: adminProjectHref(file.projectId, { tab: "feedback" }),
-      sort: 13,
-    });
-  }
-
-  const seenDeliverables = new Set(items.filter((item) => item.id.startsWith("changes-")).map((item) => item.id.replace("changes-", "")));
-  for (const row of input.feedback.filter((item) => item.status === "Open")) {
-    if (seenDeliverables.has(row.deliverableId)) continue;
-    if (!input.projectIds.has(row.projectId)) continue;
-    const project = scopedProjects.find((item) => item.id === row.projectId);
-    if (!project) continue;
-    items.push({
-      id: `feedback-${row.id}`,
-      projectId: row.projectId,
-      clientId: project.clientId,
-      name: project.name,
-      body: "Open client feedback is waiting.",
-      stage: "Review",
-      actionLabel: "Open Feedback",
-      href: adminProjectHref(row.projectId, { tab: "feedback" }),
-      sort: 15,
-    });
-  }
-
-  return items
-    .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name))
-    .slice(0, input.limit ?? 8);
 }
 
 function projectHealthReasons(input: {
@@ -352,45 +199,79 @@ export function buildPmProjectHealth(input: {
     .slice(0, input.limit ?? 8);
 }
 
-export function buildPmNextActions(input: {
+/**
+ * "Needs My Attention" -- a single, prioritized queue merging existing attention signals
+ * (blocked tasks, overdue tasks, deliverables needing changes, discovery submissions
+ * awaiting review, deliverables awaiting review, unassigned production tasks). Every item
+ * type reuses an existing status/review definition (isTaskOverdue, needsAttention,
+ * awaitingReview, taskIsAssigned) -- this is a new aggregation view, not a new status system.
+ */
+export function buildPmAttentionQueue(input: {
+  tasks: TeamWorkTask[];
   projects: AgencyProject[];
   projectIds: Set<string>;
-  tasks: TeamWorkTask[];
+  deliverables: AgencyDeliverable[];
   discoveryItems: DiscoveryAttentionItem[];
-  followUps: PmFollowUpItem[];
-  health: PmProjectHealthItem[];
   limit?: number;
-}): PmNextActionItem[] {
-  const items: PmNextActionItem[] = [];
+}): PmAttentionItem[] {
+  const items: PmAttentionItem[] = [];
+  const scopedDeliverables = input.deliverables.filter((item) => input.projectIds.has(item.projectId));
   const projectsById = new Map(input.projects.map((project) => [project.id, project]));
 
-  for (const discovery of input.discoveryItems.filter((item) => item.status === "submitted")) {
+  for (const task of input.tasks.filter((task) => task.status === "Blocked")) {
     items.push({
-      id: `next-discovery-${discovery.id}`,
-      label: `Review ${discovery.projectName} discovery`,
-      body: "Client submitted the discovery questionnaire.",
-      href: discovery.href,
+      id: `blocked-${task.id}`,
+      kind: "blocked",
+      label: task.title,
+      body: `Blocked on ${task.projectName} — ${blockedReason(task) ?? "no reason provided"}.`,
+      href: adminProjectTasksHref(task.projectId),
       sort: 0,
     });
   }
 
-  for (const task of input.tasks.filter(isTaskOverdue).slice(0, 4)) {
+  for (const task of input.tasks.filter(isTaskOverdue)) {
     items.push({
-      id: `next-task-${task.id}`,
+      id: `overdue-${task.id}`,
+      kind: "overdue",
       label: task.title,
       body: `Overdue on ${task.projectName}.`,
-      href: adminProjectHref(task.projectId, { tab: "tasks" }),
+      href: adminProjectTasksHref(task.projectId),
       sort: 1,
     });
   }
 
-  for (const task of input.tasks.filter((row) => row.status !== "Completed" && !isTaskOverdue(row)).slice(0, 2)) {
+  for (const item of needsAttention(scopedDeliverables)) {
+    const project = projectsById.get(item.projectId);
     items.push({
-      id: `next-soon-${task.id}`,
-      label: task.title,
-      body: `Due ${task.dueDate ? formatProjectDay(task.dueDate) : "soon"} · ${task.projectName}.`,
-      href: adminProjectHref(task.projectId, { tab: "tasks" }),
+      id: `needs-changes-${item.id}`,
+      kind: "needs-changes",
+      label: item.name,
+      body: project ? `Needs changes — ${project.name}.` : "Needs changes.",
+      href: adminProjectHref(item.projectId, { tab: "feedback" }),
+      sort: 2,
+    });
+  }
+
+  for (const discovery of input.discoveryItems.filter((item) => item.status === "submitted")) {
+    items.push({
+      id: `discovery-${discovery.id}`,
+      kind: "discovery",
+      label: `Review ${discovery.projectName} discovery`,
+      body: "Client submitted the discovery questionnaire.",
+      href: discovery.href,
       sort: 3,
+    });
+  }
+
+  for (const item of awaitingReview(scopedDeliverables)) {
+    const project = projectsById.get(item.projectId);
+    items.push({
+      id: `in-review-${item.id}`,
+      kind: "in-review",
+      label: item.name,
+      body: project ? `Awaiting review — ${project.name}.` : "Awaiting review.",
+      href: adminProjectHref(item.projectId, { tab: "files" }),
+      sort: 4,
     });
   }
 
@@ -400,51 +281,17 @@ export function buildPmNextActions(input: {
     const unassigned = project.tasks.filter((task) => task.status !== "Completed" && !taskIsAssigned(task)).length;
     if (unassigned > 0 && stats.total > 0) {
       items.push({
-        id: `next-assign-${project.id}`,
+        id: `unassigned-${project.id}`,
+        kind: "unassigned",
         label: `Assign production tasks on ${project.name}`,
-        body:
-          unassigned === 1
-            ? "1 open task still needs an assignee."
-            : `${unassigned} open tasks still need assignees.`,
+        body: unassigned === 1 ? "1 open task still needs an assignee." : `${unassigned} open tasks still need assignees.`,
         href: adminProjectHref(project.id, { tab: "tasks" }),
-        sort: 2,
-      });
-    }
-  }
-
-  for (const followUp of input.followUps.slice(0, 3)) {
-    items.push({
-      id: `next-follow-${followUp.id}`,
-      label: `Follow up with ${followUp.name}`,
-      body: followUp.body,
-      href: followUp.href,
-      sort: 4,
-    });
-  }
-
-  for (const row of input.health.filter((item) => item.status !== "healthy")) {
-    const project = projectsById.get(row.projectId);
-    if (!project) continue;
-    if (projectLaunchUrgency(project.targetLaunchDate, project.status) === "overdue") {
-      items.push({
-        id: `next-deadline-${row.projectId}`,
-        label: `Review ${row.projectName} deadline`,
-        body: row.reasons.find((reason) => reason.includes("launch")) ?? "Target launch date needs attention.",
-        href: row.href,
         sort: 5,
       });
     }
   }
 
-  const seen = new Set<string>();
-  return items
-    .filter((item) => {
-      if (seen.has(item.id)) return false;
-      seen.add(item.id);
-      return true;
-    })
-    .sort((a, b) => a.sort - b.sort || a.label.localeCompare(b.label))
-    .slice(0, input.limit ?? 6);
+  return items.sort((a, b) => a.sort - b.sort || a.label.localeCompare(b.label)).slice(0, input.limit ?? 10);
 }
 
 export function pmProjectProgress(project: AgencyProject): number {

@@ -1,8 +1,7 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission } from "@/auth/permissions";
 import { DeliverableStatusBadge } from "@/components/admin/projects/DeliverableStatusBadge";
-import { FileTypeIcon } from "@/components/admin/projects/FileTypeIcon";
 import { useLeads, useProjectReview } from "@/components/admin/leads/LeadsProvider";
 import {
   currentVersion,
@@ -26,6 +25,9 @@ import { hasStoredFile } from "@/data/fileUploadConfig";
 type DeliverableDetailPanelProps = {
   deliverable: AgencyDeliverable;
   onBack: () => void;
+  /** Full breadcrumb trail (e.g. "My Projects / Website Redesign / Files / Homepage Design").
+   *  Falls back to a plain "Back to files" link when the caller doesn't have one to give. */
+  breadcrumb?: ReactNode;
   onAddVersion: () => void;
   onPreview: (version: AgencyFileVersion) => void;
   onMakeCurrent: (versionId: string) => void;
@@ -40,6 +42,7 @@ type DeliverableDetailPanelProps = {
 export function DeliverableDetailPanel({
   deliverable,
   onBack,
+  breadcrumb,
   onAddVersion,
   onPreview,
   onMakeCurrent,
@@ -64,13 +67,15 @@ export function DeliverableDetailPanel({
 
   return (
     <section className="space-y-4">
-      <button
-        type="button"
-        className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline"
-        onClick={onBack}
-      >
-        Back to files
-      </button>
+      {breadcrumb ?? (
+        <button
+          type="button"
+          className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline"
+          onClick={onBack}
+        >
+          Back to files
+        </button>
+      )}
 
       <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -135,7 +140,7 @@ export function DeliverableDetailPanel({
                 {canManageFiles ? (
                   <button
                     type="button"
-                    className="inline-flex h-9 items-center rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                    className="inline-flex h-9 items-center rounded-lg px-3 font-heading text-[12px] font-semibold text-[var(--admin-muted)] hover:text-[#b45309] hover:underline"
                     onClick={onArchiveDeliverable}
                   >
                     Archive
@@ -166,23 +171,6 @@ export function DeliverableDetailPanel({
       </div>
 
       <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <h3 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Current version</h3>
-        {current ? (
-          <VersionSummary
-            version={current}
-            canDownload={hasStoredFile(current)}
-            onPreview={() => onPreview(current)}
-            onDownload={() => onDownload(current)}
-          />
-        ) : (
-          <div className="mt-3">
-            <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">No versions yet</p>
-            <p className="mt-1 text-sm text-[var(--admin-muted)]">Add a version when work is ready to upload.</p>
-          </div>
-        )}
-      </div>
-
-      <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
         <h3 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Version history</h3>
         {history.length === 0 ? (
           <p className="mt-3 text-sm text-[var(--admin-muted)]">No versions yet</p>
@@ -196,17 +184,17 @@ export function DeliverableDetailPanel({
                 <li key={version.id} className="py-3">
                   <button
                     type="button"
-                    className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-3 text-left"
+                    className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 text-left"
                     aria-expanded={open}
                     onClick={() => setOpenId(open ? null : version.id)}
                   >
                     <span className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
                       {versionLabel(version.versionNumber)}
                     </span>
-                    <span className="min-w-0 text-sm text-[var(--admin-muted)]">
-                      {reviewLabel}
+                    <span className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm text-[var(--admin-muted)]">
+                      <span className="truncate">{reviewLabel}</span>
                       {label === "Current" ? (
-                        <span className="ml-2 font-heading text-[11px] font-semibold text-[var(--admin-blue)]">
+                        <span className="inline-flex shrink-0 items-center rounded-full bg-[rgb(0_80_240_/_0.08)] px-2 py-0.5 font-heading text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--admin-blue)]">
                           Current
                         </span>
                       ) : null}
@@ -258,7 +246,7 @@ export function DeliverableDetailPanel({
                             Download
                           </button>
                         ) : (
-                          <span className="inline-flex h-8 items-center px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-muted)]">
+                          <span className="inline-flex h-8 items-center rounded-lg bg-[var(--admin-card)] px-2.5 font-heading text-[12px] font-medium text-[var(--admin-muted)]">
                             No file uploaded yet
                           </span>
                         )}
@@ -272,58 +260,48 @@ export function DeliverableDetailPanel({
         )}
       </div>
 
-      {deliverable.description ? (
-        <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-          <h3 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Description</h3>
-          <p className="mt-3 text-sm leading-relaxed text-[var(--admin-ink)]">{deliverable.description}</p>
-        </div>
-      ) : null}
-
       <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <h3 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Open feedback</h3>
-        {openFeedback.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--admin-muted)]">No open feedback on this deliverable.</p>
+        <div className="flex items-center gap-2">
+          <h3 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Feedback</h3>
+          {openFeedback.length > 0 ? (
+            <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgb(180_83_9_/_0.1)] px-1.5 font-heading text-[11px] font-semibold text-[#b45309]">
+              {openFeedback.length} open
+            </span>
+          ) : null}
+        </div>
+        {itemFeedback.length === 0 ? (
+          <p className="mt-3 text-sm text-[var(--admin-muted)]">No feedback yet.</p>
         ) : (
-          <ul className="mt-3 space-y-3">
-            {openFeedback.map((item) => {
+          <ul className="mt-3 divide-y divide-[var(--admin-line)]">
+            {itemFeedback.map((item) => {
               const version = deliverable.versions.find((entry) => entry.id === item.versionId);
+              const open = item.status === "Open";
               return (
-                <li key={item.id} className="rounded-lg bg-[var(--admin-bg)] px-3 py-3">
-                  <p className="text-[12px] text-[var(--admin-muted)]">
-                    {version ? versionLabel(version.versionNumber) : "Version"} · {formatReviewLong(item.createdAt)}
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--admin-ink)]">“{item.message}”</p>
-                  {canResolveFeedback ? (
+                <li key={item.id} className="py-3 first:pt-0 last:pb-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-[12px] font-medium text-[var(--admin-muted)]">
+                      {version ? versionLabel(version.versionNumber) : "Version"} · {formatReviewLong(item.createdAt)}
+                    </p>
+                    <span
+                      className={
+                        open
+                          ? "font-heading text-[11px] font-semibold uppercase tracking-[0.06em] text-[#b45309]"
+                          : "font-heading text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--admin-muted)]"
+                      }
+                    >
+                      {item.status}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-sm text-[var(--admin-ink)]">“{item.message}”</p>
+                  {open && canResolveFeedback ? (
                     <button
                       type="button"
-                      className="mt-3 inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] bg-white px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-hover)]"
+                      className="mt-2.5 inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] bg-white px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
                       onClick={() => resolveFeedback(item.id)}
                     >
                       Mark Resolved
                     </button>
                   ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-
-      <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <h3 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Feedback history</h3>
-        {itemFeedback.length === 0 ? (
-          <p className="mt-3 text-sm text-[var(--admin-muted)]">No feedback yet.</p>
-        ) : (
-          <ul className="mt-3 space-y-3">
-            {itemFeedback.map((item) => {
-              const version = deliverable.versions.find((entry) => entry.id === item.versionId);
-              return (
-                <li key={item.id}>
-                  <p className="text-sm font-medium text-[var(--admin-ink)]">
-                    {version ? versionLabel(version.versionNumber) : "Version"} · {item.status}
-                  </p>
-                  <p className="mt-1 text-sm text-[var(--admin-ink)]">“{item.message}”</p>
-                  <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">{formatReviewLong(item.createdAt)}</p>
                 </li>
               );
             })}
@@ -354,54 +332,5 @@ export function DeliverableDetailPanel({
         )}
       </div>
     </section>
-  );
-}
-
-function VersionSummary({
-  version,
-  canDownload,
-  onPreview,
-  onDownload,
-}: {
-  version: AgencyFileVersion;
-  canDownload: boolean;
-  onPreview: () => void;
-  onDownload: () => void;
-}) {
-  return (
-    <div className="mt-4 flex items-start gap-3">
-      <span className="mt-0.5 inline-flex size-9 items-center justify-center rounded-lg bg-[var(--admin-bg)] text-[var(--admin-muted)]">
-        <FileTypeIcon fileType={version.fileType} />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{versionLabel(version.versionNumber)}</p>
-        <p className="mt-1 truncate text-sm text-[var(--admin-ink)]">{version.fileName}</p>
-        <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
-          {formatFileSize(version.fileSize)} · {version.fileType} · Uploaded by {version.uploadedBy}
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-            onClick={onPreview}
-          >
-            Preview
-          </button>
-          {canDownload ? (
-            <button
-              type="button"
-              className="inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-              onClick={onDownload}
-            >
-              Download
-            </button>
-          ) : (
-            <span className="inline-flex h-8 items-center font-heading text-[12px] font-semibold text-[var(--admin-muted)]">
-              No file uploaded yet
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }

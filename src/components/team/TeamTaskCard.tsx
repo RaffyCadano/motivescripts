@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { TaskOriginBadge } from "@/components/admin/projects/TaskOriginBadge";
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
 import { dueBucket, dueLabel, teamProjectHref, type TeamWorkTask } from "@/data/teamWorkspace";
@@ -28,6 +29,7 @@ export function TeamTaskCard({ task, onOpen }: TeamTaskCardProps) {
         </div>
         <div className="flex flex-col items-end gap-2">
           <TaskStatusBadge status={task.status} />
+          {task.origin === "client" ? <TaskOriginBadge /> : null}
           <TaskPriorityBadge priority={task.priority} />
         </div>
       </div>

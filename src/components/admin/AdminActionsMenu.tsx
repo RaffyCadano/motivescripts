@@ -1,4 +1,5 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, MoreHorizontal, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -27,23 +28,43 @@ export function AdminActionsMenu({
   iconOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const visible = items.filter((item) => item.label);
+
+  // Rendered through a portal into <body> with fixed positioning (rather than absolute inside
+  // this component's own DOM position) so an ancestor with `overflow-x-auto` -- e.g. a wide
+  // table -- never clips the menu or gets forced into a horizontal scroll to "fit" it.
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPosition({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const onPointer = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
+      const target = event.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
     };
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
+    // Close rather than reposition on scroll/resize -- simpler and avoids the menu drifting
+    // away from the trigger while open.
+    const onScrollOrResize = () => setOpen(false);
     document.addEventListener("mousedown", onPointer);
     window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
     return () => {
       document.removeEventListener("mousedown", onPointer);
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
     };
   }, [open]);
 
@@ -51,7 +72,7 @@ export function AdminActionsMenu({
 
   const itemClass = (item: AdminActionsMenuItem) =>
     [
-      "flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px]",
+      "flex w-full items-center gap-2 px-3 py-2 text-left text-[13px]",
       item.danger ? "text-[#b42318] hover:bg-[rgb(220_38_38_/_0.08)]" : "text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]",
       item.disabled ? "cursor-not-allowed opacity-50 hover:bg-transparent" : "",
     ].join(" ");
@@ -77,8 +98,9 @@ export function AdminActionsMenu({
   }
 
   return (
-    <div className="relative" ref={ref}>
+    <>
       <button
+        ref={triggerRef}
         type="button"
         className={
           iconOnly
@@ -101,48 +123,53 @@ export function AdminActionsMenu({
           </>
         )}
       </button>
-      {open ? (
-        <div
-          id={menuId}
-          role="menu"
-          className="absolute right-0 z-30 mt-1 w-56 overflow-hidden rounded-xl border border-[var(--admin-line)] bg-white py-1 shadow-[0_12px_32px_rgb(7_17_31_/_0.08)]"
-        >
-          {visible.map((item) => (
-            <div key={item.id}>
-              {item.separatorBefore ? <div className="my-1 border-t border-[var(--admin-line)]" /> : null}
-              {item.href && !item.disabled && isExternalHref(item.href) ? (
-                <a
-                  href={item.href}
-                  role="menuitem"
-                  className={itemClass(item)}
-                  onClick={() => setOpen(false)}
-                >
-                  {itemContent(item)}
-                </a>
-              ) : item.href && !item.disabled ? (
-                <Link
-                  to={item.href}
-                  role="menuitem"
-                  className={itemClass(item)}
-                  onClick={() => setOpen(false)}
-                >
-                  {itemContent(item)}
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  role="menuitem"
-                  disabled={item.disabled}
-                  className={itemClass(item)}
-                  onClick={() => closeAndRun(item)}
-                >
-                  {itemContent(item)}
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </div>
+      {open && position
+        ? createPortal(
+            <div
+              ref={menuRef}
+              id={menuId}
+              role="menu"
+              style={{ top: position.top, right: position.right }}
+              className="admin-theme fixed z-[70] w-56 overflow-hidden rounded-lg border border-[var(--admin-line)] bg-[var(--admin-card)] py-1 shadow-[0_12px_32px_rgb(7_17_31_/_0.08)]"
+            >
+              {visible.map((item) => (
+                <div key={item.id}>
+                  {item.separatorBefore ? <div className="my-1 border-t border-[var(--admin-line)]" /> : null}
+                  {item.href && !item.disabled && isExternalHref(item.href) ? (
+                    <a
+                      href={item.href}
+                      role="menuitem"
+                      className={itemClass(item)}
+                      onClick={() => setOpen(false)}
+                    >
+                      {itemContent(item)}
+                    </a>
+                  ) : item.href && !item.disabled ? (
+                    <Link
+                      to={item.href}
+                      role="menuitem"
+                      className={itemClass(item)}
+                      onClick={() => setOpen(false)}
+                    >
+                      {itemContent(item)}
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      disabled={item.disabled}
+                      className={itemClass(item)}
+                      onClick={() => closeAndRun(item)}
+                    >
+                      {itemContent(item)}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>,
+            document.body,
+          )
+        : null}
+    </>
   );
 }
