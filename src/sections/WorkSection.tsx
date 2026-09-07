@@ -13,7 +13,7 @@ export function WorkSection() {
         <AnimateIn>
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
             <div>
-              <SectionHeader eyebrow="Selected work" title="Built for real businesses." />
+              <SectionHeader eyebrow="Selected work" title="Websites we've built." />
               <p className="mt-4 max-w-xl text-sm text-faint">
                 Concept projects that show how we approach websites for local service businesses. They
                 are labeled as concepts — not client work.
@@ -25,9 +25,9 @@ export function WorkSection() {
           </div>
         </AnimateIn>
 
-        <div className="mt-12 space-y-16">
+        <div className="mt-12 space-y-16 md:space-y-20">
           <AnimateIn>
-            <ProjectCard project={featured} featured />
+            <ProjectCard project={featured} large />
           </AnimateIn>
           {rest.slice(0, 2).map((project, index) => (
             <AnimateIn key={project.slug} delay={index * 80}>

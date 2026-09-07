@@ -6,8 +6,8 @@ import { site } from "@/data/site";
 export function Footer() {
   return (
     <footer className="border-t border-[var(--color-line)] bg-[var(--color-bg)]">
-      <div className="container-wide grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-4 lg:gap-10 lg:py-20">
-        <div className="lg:col-span-1">
+      <div className="container-wide grid grid-cols-2 gap-x-6 gap-y-10 py-16 lg:grid-cols-4 lg:gap-10 lg:py-20">
+        <div className="col-span-2 md:col-span-1">
           <Logo />
           <p className="mt-5 max-w-xs text-sm leading-relaxed text-muted">{site.tagline}</p>
         </div>
@@ -32,6 +32,11 @@ export function Footer() {
                 Process
               </Link>
             </li>
+            <li>
+              <Link className="text-muted-strong transition-colors hover:text-ink" to="/pricing">
+                Pricing
+              </Link>
+            </li>
           </ul>
         </div>
 
@@ -50,7 +55,7 @@ export function Footer() {
           </ul>
         </div>
 
-        <div>
+        <div className="col-span-2 md:col-span-1">
           <h2 className="font-heading text-xs font-bold uppercase tracking-[0.16em] text-faint">
             Contact
           </h2>

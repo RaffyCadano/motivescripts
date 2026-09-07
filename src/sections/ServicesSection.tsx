@@ -10,10 +10,10 @@ export function ServicesSection() {
         <AnimateIn>
           <SectionHeader
             eyebrow="What we do"
-            title="Everything you need to build your presence online."
+            title="Everything your business needs online."
           />
         </AnimateIn>
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
           {services.map((service, index) => (
             <AnimateIn key={service.id} className="flex h-full" delay={index * 70}>
               <ServiceCard

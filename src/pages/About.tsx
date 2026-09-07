@@ -2,19 +2,8 @@ import { Link } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { CTA } from "@/components/CTA";
 import { PageHero } from "@/components/PageHero";
-import { pipeline, whyPoints } from "@/data/site";
+import { clientTypes, pipeline, whyPoints } from "@/data/site";
 import { usePageMeta } from "@/lib/usePageMeta";
-
-const clients = [
-  "Home service businesses",
-  "Contractors",
-  "Landscaping and tree services",
-  "Cleaning companies",
-  "Restaurants and salons",
-  "Auto shops",
-  "Professional services",
-  "Other local businesses",
-];
 
 const websiteJobs = [
   {
@@ -75,7 +64,7 @@ export function AboutPage() {
             site.
           </p>
           <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {clients.map((item) => (
+            {clientTypes.map((item) => (
               <li
                 key={item}
                 className="rounded-[var(--radius-lg)] border border-[var(--color-line)] px-4 py-4 text-sm font-medium text-ink"

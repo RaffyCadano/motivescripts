@@ -29,15 +29,15 @@ export function CTA({ className }: CTAProps) {
             />
             <div className="relative">
               <h2 id="cta-heading" className="text-[1.85rem] md:text-[2.75rem]">
-                Ready to build your next website?
+                Ready to build a better website?
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-[var(--text-md)] text-muted">
-                Tell us about your business and what you’re looking to accomplish. We’ll review your
-                project and prepare the next steps.
+                Tell us about your business and let's create a website that helps you grow.
               </p>
               <div className="mt-8 flex justify-center">
                 <Button to="/start-a-project" size="lg">
-                  Start a Project
+                  Start Your Project
+                  <span aria-hidden="true">→</span>
                 </Button>
               </div>
             </div>

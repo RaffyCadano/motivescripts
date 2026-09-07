@@ -8,12 +8,25 @@ export const site = {
   /** Supabase Auth magic-link sender. Set this in the Auth SMTP / sender settings. */
   authFromEmail: "no-reply@motivescripts.com",
   nav: [
-    { label: "Services", href: "/services" },
     { label: "Work", href: "/work" },
+    { label: "Services", href: "/services" },
     { label: "Process", href: "/process" },
+    { label: "Pricing", href: "/pricing" },
     { label: "About", href: "/about" },
   ],
 } as const;
+
+/** Local/service-business categories we design for. Reused by the homepage About teaser and the About page. */
+export const clientTypes = [
+  "Home service businesses",
+  "Contractors",
+  "Landscaping and tree services",
+  "Cleaning companies",
+  "Restaurants and salons",
+  "Auto shops",
+  "Professional services",
+  "Other local businesses",
+] as const;
 
 export const pipeline = [
   {
@@ -48,8 +61,8 @@ export const whyPoints = [
     body: "You always know what stage your project is in and what comes next.",
   },
   {
-    title: "Modern Technology",
-    body: "Responsive, fast and maintainable websites built for today's web.",
+    title: "Built to Grow",
+    body: "The site is structured so it's easy to add pages, services, or features as your business grows.",
   },
   {
     title: "Long-Term Support",

@@ -75,6 +75,7 @@ import { StaffInviteAcceptPage } from "@/pages/StaffInviteAccept";
 import { InviteAcceptPage } from "@/pages/InviteAccept";
 import { LoginPage } from "@/pages/Login";
 import { NotFoundPage } from "@/pages/NotFound";
+import { PricingPage } from "@/pages/Pricing";
 import { ProcessPage } from "@/pages/Process";
 import { ServicesPage } from "@/pages/Services";
 import { WorkPage } from "@/pages/Work";
@@ -218,6 +219,7 @@ export default function App() {
             <Route path="work" element={<WorkPage />} />
             <Route path="work/:slug" element={<CaseStudyPage />} />
             <Route path="process" element={<ProcessPage />} />
+            <Route path="pricing" element={<PricingPage />} />
             <Route path="about" element={<AboutPage />} />
             <Route path="start-a-project" element={<ContactPage />} />
             <Route path="invite/:token" element={<InviteAcceptPage />} />
