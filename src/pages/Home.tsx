@@ -15,6 +15,7 @@ export function HomePage() {
   usePageMeta(
     "MotiveScripts — Websites that turn visitors into customers",
     "MotiveScripts designs and builds fast, modern websites for small businesses that want more calls, bookings, and customers.",
+    "/",
   );
   return (
     <main id="main">

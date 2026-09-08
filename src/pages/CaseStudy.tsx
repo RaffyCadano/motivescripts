@@ -11,6 +11,7 @@ export function CaseStudyPage() {
   usePageMeta(
     project ? `${project.name} — MotiveScripts` : "Project not found — MotiveScripts",
     project ? project.summary : "That case study does not exist.",
+    project ? `/work/${project.slug}` : "/work",
   );
 
   if (!project) {

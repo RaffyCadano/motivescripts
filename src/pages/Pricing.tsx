@@ -1,22 +1,62 @@
+import { Link } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { CTA } from "@/components/CTA";
+import { FaqItem } from "@/components/FaqItem";
 import { PageHero } from "@/components/PageHero";
 import { pricingTiers } from "@/data/pricing";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { cn } from "@/lib/cn";
 
+const priceFactors = [
+  "Number of pages",
+  "Design complexity and custom layouts",
+  "Custom functionality, like booking or e-commerce",
+  "Integrations with other tools",
+  "Amount of content to design around",
+];
+
+const quoteSteps = [
+  "Tell us about your business.",
+  "We review your requirements.",
+  "We define the project scope.",
+  "You receive a quote.",
+  "We move into the project process.",
+];
+
+const pricingFaqs = [
+  {
+    question: "Do I need to know exactly what I need before contacting you?",
+    answer:
+      "No. Discovery exists to turn a general idea into a clear brief — you don't need a finished list of pages or features before reaching out.",
+  },
+  {
+    question: "What happens after I accept the quote?",
+    answer: "We move into the project process — strategy, design, development, review, and launch.",
+  },
+  {
+    question: "Can the website be expanded later?",
+    answer: "Yes. Sites are structured so it's straightforward to add pages, services, or features as your business grows.",
+  },
+  {
+    question: "Are ongoing services included?",
+    answer:
+      "Not automatically. Website Care (updates, maintenance, and technical support) is a separate ongoing service you can add if you want it.",
+  },
+];
+
 export function PricingPage() {
   usePageMeta(
     "Pricing — MotiveScripts",
     "Engagement options for small-business websites, from a focused starter site to a custom build. Every project is scoped and quoted individually.",
+    "/pricing",
   );
   return (
     <main id="main">
       <PageHero
         eyebrow="Pricing"
-        title="Engagement options for every stage of growth."
-        description="Every project is scoped and quoted individually based on your goals, pages, and features — these tiers are a starting point for the conversation."
+        title="Simple pricing for websites built around your business."
+        description="Every project is scoped around what your business actually needs, so you get a clear quote before development begins."
       />
 
       <div className="container-wide py-16 md:py-24">
@@ -60,7 +100,100 @@ export function PricingPage() {
           scope.
         </p>
       </div>
-      <CTA />
+
+      <div className="border-t border-[var(--color-line)]">
+        <div className="container-wide grid gap-16 py-16 md:py-24 lg:grid-cols-2 lg:gap-20">
+          <AnimateIn>
+            <section>
+              <h2 className="text-2xl md:text-3xl">What determines the price?</h2>
+              <p className="mt-4 text-muted">
+                Every business is different, so no two websites cost exactly the same. A few things shape the
+                scope and price of a project:
+              </p>
+              <ul className="mt-6 space-y-3">
+                {priceFactors.map((factor) => (
+                  <li key={factor} className="flex items-start gap-2.5 text-sm text-ink">
+                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-cyan" aria-hidden="true" />
+                    {factor}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </AnimateIn>
+
+          <AnimateIn delay={80}>
+            <section>
+              <h2 className="text-2xl md:text-3xl">Your project gets a clear scope and quote.</h2>
+              <p className="mt-4 text-muted">
+                Before development begins, we define what your website needs and provide a project quote based on
+                that scope.
+              </p>
+              <ol className="mt-6 space-y-3">
+                {quoteSteps.map((step, index) => (
+                  <li key={step} className="flex items-start gap-3 text-sm text-ink">
+                    <span className="font-heading text-xs font-bold text-cyan">{String(index + 1).padStart(2, "0")}</span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          </AnimateIn>
+        </div>
+      </div>
+
+      <div className="border-t border-[var(--color-line)]">
+        <div className="container-wide grid gap-10 py-16 md:py-24 sm:grid-cols-2">
+          <AnimateIn>
+            <div>
+              <h2 className="text-xl font-bold">Not sure which option fits your business?</h2>
+              <p className="mt-3 text-sm text-muted">
+                Explore our services to understand what's involved in building and launching your website.
+              </p>
+              <Link
+                to="/services"
+                className="mt-4 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
+              >
+                Explore Services
+                <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+          </AnimateIn>
+          <AnimateIn delay={80}>
+            <div>
+              <h2 className="text-xl font-bold">Curious how the project runs?</h2>
+              <p className="mt-3 text-sm text-muted">
+                Your project starts with understanding what you need, then moves through strategy, design,
+                development, review, and launch.
+              </p>
+              <Link
+                to="/process"
+                className="mt-4 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
+              >
+                See Our Process
+                <span aria-hidden="true">→</span>
+              </Link>
+            </div>
+          </AnimateIn>
+        </div>
+      </div>
+
+      <div className="border-t border-[var(--color-line)]">
+        <div className="container-site py-16 md:py-24">
+          <AnimateIn>
+            <h2 className="text-2xl md:text-3xl">Pricing questions.</h2>
+            <div className="mt-8">
+              {pricingFaqs.map((item) => (
+                <FaqItem key={item.question} question={item.question} answer={item.answer} />
+              ))}
+            </div>
+          </AnimateIn>
+        </div>
+      </div>
+
+      <CTA
+        title="Ready to get a clear quote for your website?"
+        description="Tell us about your business, your goals, and what you're looking to build."
+      />
     </main>
   );
 }

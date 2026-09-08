@@ -9,17 +9,26 @@ type ProjectCardProps = {
   reverse?: boolean;
   /** Full-width treatment for a single hero case study — no column split, larger type. */
   large?: boolean;
+  /** Visible label for the case-study link, e.g. "View Case Study" or "View Project". */
+  ctaLabel?: string;
 };
 
-export function ProjectCard({ project, featured = false, reverse = false, large = false }: ProjectCardProps) {
+export function ProjectCard({
+  project,
+  featured = false,
+  reverse = false,
+  large = false,
+  ctaLabel = "View Case Study",
+}: ProjectCardProps) {
   const split = !large && (featured || reverse);
+  const linkLabel = `${ctaLabel} — ${project.name}`;
 
   return (
     <article className={cn("group", split && "lg:grid lg:grid-cols-2 lg:items-center lg:gap-12")}>
       <Link
         to={`/work/${project.slug}`}
         className={cn("block", reverse && !large && "lg:order-2")}
-        aria-label={`View ${project.name} case study`}
+        aria-label={linkLabel}
       >
         <div className="origin-center transition-transform duration-500 ease-[var(--ease-out)] group-hover:scale-[1.015]">
           <SitePreview project={project} />
@@ -59,8 +68,9 @@ export function ProjectCard({ project, featured = false, reverse = false, large 
         <Link
           to={`/work/${project.slug}`}
           className="mt-5 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
+          aria-label={linkLabel}
         >
-          View Case Study
+          {ctaLabel}
           <span aria-hidden="true">→</span>
         </Link>
       </div>

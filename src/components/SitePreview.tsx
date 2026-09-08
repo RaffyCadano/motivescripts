@@ -9,6 +9,11 @@ import landscapeCare from "@/assets/previews/landscape-care.jpg";
 import cleaningHero from "@/assets/previews/cleaning-hero.jpg";
 import autoHero from "@/assets/previews/auto-hero.jpg";
 import electricHero from "@/assets/previews/electric-hero.jpg";
+import homeServicesHero from "@/assets/previews/home-services-hero.jpg";
+import contractorHero from "@/assets/previews/contractor-hero.jpg";
+import restaurantHero from "@/assets/previews/restaurant-hero.jpg";
+import salonHero from "@/assets/previews/salon-hero.jpg";
+import professionalServicesHero from "@/assets/previews/professional-services-hero.jpg";
 
 type SitePreviewProps = {
   project: Project;
@@ -330,20 +335,8 @@ function HomeServicesPreview() {
             homeowners keep putting off.
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            ["✓", "Licensed & Insured"],
-            ["✓", "Background-Checked"],
-            ["✓", "Upfront Pricing"],
-            ["✓", "Same-Week Slots"],
-          ].map(([mark, label]) => (
-            <div key={label} className="rounded-lg border border-[#dbe6ee] bg-white px-4 py-3.5 shadow-[0_8px_20px_rgb(19_36_54_/_0.06)]">
-              <span className="grid size-7 place-items-center rounded-full bg-[#e6f0f7] font-heading text-sm font-bold text-[#2b5f8a]">
-                {mark}
-              </span>
-              <p className="mt-2 text-[13px] font-semibold leading-tight">{label}</p>
-            </div>
-          ))}
+        <div className="relative h-full self-stretch overflow-hidden rounded-2xl">
+          <Photo src={homeServicesHero} className="absolute inset-0 size-full" position="center 40%" />
         </div>
       </div>
     </div>
@@ -357,13 +350,17 @@ function ContractorPreview() {
         <span className="font-heading text-lg font-extrabold tracking-tight">Fieldstone Construction</span>
         <span className="rounded-md bg-[#d9731c] px-4 py-2 text-sm font-semibold">Free Estimate</span>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col justify-center px-10">
-        <p className="font-heading text-xs font-bold uppercase tracking-[0.18em] text-[#e39a56]">
-          Remodels · Additions · Renovations
-        </p>
-        <p className="mt-3 max-w-[16ch] font-heading text-[3.1rem] font-extrabold leading-[1.05]">
-          Built the way you'd want your own house done.
-        </p>
+      <div className="relative flex min-h-0 flex-1 flex-col justify-center px-10">
+        <Photo src={contractorHero} className="absolute inset-0 size-full" position="center 55%" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(28_35_42_/_0.92)_0%,rgb(28_35_42_/_0.72)_48%,rgb(28_35_42_/_0.3)_100%)]" />
+        <div className="relative">
+          <p className="font-heading text-xs font-bold uppercase tracking-[0.18em] text-[#e39a56]">
+            Remodels · Additions · Renovations
+          </p>
+          <p className="mt-3 max-w-[16ch] font-heading text-[3.1rem] font-extrabold leading-[1.05]">
+            Built the way you'd want your own house done.
+          </p>
+        </div>
       </div>
       <div className="grid shrink-0 grid-cols-3 gap-px border-t border-white/10 bg-white/10">
         {[
@@ -392,7 +389,7 @@ function RestaurantPreview() {
           <span>Reserve</span>
         </span>
       </div>
-      <div className="mt-8">
+      <div className="mt-6">
         <p className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-[#c9a227]">
           Seasonal American Bistro
         </p>
@@ -400,7 +397,10 @@ function RestaurantPreview() {
           Plates that change with the season.
         </p>
       </div>
-      <div className="mt-8 grid w-full max-w-xl grid-cols-1 gap-2 text-left">
+      <div className="relative mt-6 h-[8.5rem] w-full max-w-xl overflow-hidden rounded-2xl">
+        <Photo src={restaurantHero} className="absolute inset-0 size-full" position="center 35%" />
+      </div>
+      <div className="mt-6 grid w-full max-w-xl grid-cols-1 gap-2 text-left">
         {[
           ["Roasted Beet Salad", "$14"],
           ["Pan-Seared Duck Breast", "$34"],
@@ -421,9 +421,11 @@ function RestaurantPreview() {
 function SalonPreview() {
   return (
     <div className="flex h-full text-white" aria-hidden="true">
-      <div className="flex min-h-0 flex-[1.4] flex-col justify-between bg-[#201b1c] px-10 py-8">
-        <span className="font-heading text-lg font-extrabold tracking-tight">Bloom &amp; Blade</span>
-        <div>
+      <div className="relative flex min-h-0 flex-[1.4] flex-col justify-between px-10 py-8">
+        <Photo src={salonHero} className="absolute inset-0 size-full" position="center 65%" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgb(32_27_28_/_0.55)_0%,rgb(32_27_28_/_0.55)_100%)]" />
+        <span className="relative font-heading text-lg font-extrabold tracking-tight">Bloom &amp; Blade</span>
+        <div className="relative">
           <p className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-[#d99aa4]">
             Salon &amp; Barber
           </p>
@@ -431,7 +433,7 @@ function SalonPreview() {
             Cuts &amp; color, on your schedule.
           </p>
         </div>
-        <span className="w-fit rounded-md bg-[#b76e79] px-5 py-2.5 text-sm font-semibold">Book Now</span>
+        <span className="relative w-fit rounded-md bg-[#b76e79] px-5 py-2.5 text-sm font-semibold">Book Now</span>
       </div>
       <div className="flex min-h-0 flex-1 flex-col justify-center gap-4 bg-[#2f2325] px-8 py-8">
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#d99aa4]">Popular Services</p>
@@ -469,17 +471,19 @@ function ProfessionalServicesPreview() {
           ))}
         </div>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col justify-center bg-[#16324f] px-10">
-        <p className="font-heading text-xs font-bold uppercase tracking-[0.18em] text-[#c9a24b]">
+      <div className="relative flex min-h-0 flex-1 flex-col justify-center px-10">
+        <Photo src={professionalServicesHero} className="absolute inset-0 size-full" position="center 60%" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(22_50_79_/_0.94)_0%,rgb(22_50_79_/_0.82)_55%,rgb(22_50_79_/_0.55)_100%)]" />
+        <p className="relative font-heading text-xs font-bold uppercase tracking-[0.18em] text-[#c9a24b]">
           Business Advisory &amp; Consulting
         </p>
-        <p className="mt-3 max-w-[16ch] font-heading text-[2.7rem] font-extrabold leading-[1.08]">
+        <p className="relative mt-3 max-w-[16ch] font-heading text-[2.7rem] font-extrabold leading-[1.08]">
           Straight advice for the decisions that matter.
         </p>
-        <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/75">
+        <p className="relative mt-4 max-w-md text-[15px] leading-relaxed text-white/75">
           Clear recommendations from advisors who take the time to understand your business first.
         </p>
-        <span className="mt-6 w-fit rounded-md bg-[#c9a24b] px-5 py-2.5 text-sm font-semibold text-[#16324f]">
+        <span className="relative mt-6 w-fit rounded-md bg-[#c9a24b] px-5 py-2.5 text-sm font-semibold text-[#16324f]">
           Schedule a Consultation
         </span>
       </div>

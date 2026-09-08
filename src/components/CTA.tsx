@@ -4,9 +4,15 @@ import { cn } from "@/lib/cn";
 
 type CTAProps = {
   className?: string;
+  title?: string;
+  description?: string;
 };
 
-export function CTA({ className }: CTAProps) {
+export function CTA({
+  className,
+  title = "Ready to build a better website?",
+  description = "Tell us about your business and let's create a website that helps you grow.",
+}: CTAProps) {
   return (
     <section className={cn("relative py-20 md:py-28", className)} aria-labelledby="cta-heading">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -29,11 +35,9 @@ export function CTA({ className }: CTAProps) {
             />
             <div className="relative">
               <h2 id="cta-heading" className="text-[1.85rem] md:text-[2.75rem]">
-                Ready to build a better website?
+                {title}
               </h2>
-              <p className="mx-auto mt-4 max-w-xl text-[var(--text-md)] text-muted">
-                Tell us about your business and let's create a website that helps you grow.
-              </p>
+              <p className="mx-auto mt-4 max-w-xl text-[var(--text-md)] text-muted">{description}</p>
               <div className="mt-8 flex justify-center">
                 <Button to="/start-a-project" size="lg">
                   Start Your Project

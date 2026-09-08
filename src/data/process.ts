@@ -6,6 +6,9 @@ export const processSteps = [
     detail:
       "We start with how the business works today: who you serve, what you offer, and what a successful website needs to do. If you already have a site, we look at what is getting in the way. The goal is a clear brief, not a pile of assumptions.",
     includes: ["Business, audience, and goals", "Current site and competitors", "Project scope and timeline"],
+    yourPart: ["Share your business, audience, and goals", "Point us to your current site, if you have one"],
+    checkpoint: "",
+    next: "Once we understand the business, we move into strategy.",
   },
   {
     number: "02",
@@ -14,6 +17,9 @@ export const processSteps = [
     detail:
       "Before design starts, we decide what the website needs to say and where it should send people. That includes the sitemap, the job of each page, and the primary action — call, book, or request a quote.",
     includes: ["Sitemap and page list", "Content direction", "Primary conversion path"],
+    yourPart: [] as string[],
+    checkpoint: "",
+    next: "With the structure and direction set, design begins.",
   },
   {
     number: "03",
@@ -22,6 +28,9 @@ export const processSteps = [
     detail:
       "We design the site around your brand and the way customers actually use it. Pages are built so services are easy to scan, trust is established quickly, and the next step is obvious on a phone.",
     includes: ["Homepage and key templates", "Mobile-first layouts", "Visual system and components"],
+    yourPart: ["Review the design direction and approve it before development begins"],
+    checkpoint: "Design approval",
+    next: "Once the design is approved, we build the live website.",
   },
   {
     number: "04",
@@ -30,6 +39,9 @@ export const processSteps = [
     detail:
       "The approved design is built as a fast, maintainable website. We implement the pages, forms, and structure so the site works on modern devices and is ready for real customer use.",
     includes: ["Responsive front-end build", "Forms and contact paths", "Performance and accessibility basics"],
+    yourPart: [] as string[],
+    checkpoint: "",
+    next: "After development, you review the site before anything goes live.",
   },
   {
     number: "05",
@@ -38,6 +50,9 @@ export const processSteps = [
     detail:
       "You review a staging version of the site and tell us what needs to change. We collect feedback in one focused pass, make revisions, and confirm the site is ready before it goes live.",
     includes: ["Staging preview", "Structured feedback", "Revisions before launch"],
+    yourPart: ["Review the staging site and share feedback in one focused pass"],
+    checkpoint: "Website review & approval",
+    next: "Once revisions are confirmed, we prepare the site for launch.",
   },
   {
     number: "06",
@@ -46,5 +61,8 @@ export const processSteps = [
     detail:
       "We test key pages and actions, then publish the site. After launch you have a live website and a clear handoff — including what happens next if you want ongoing updates or care.",
     includes: ["QA and launch checks", "Go-live", "Handoff and next steps"],
+    yourPart: [] as string[],
+    checkpoint: "",
+    next: "",
   },
 ] as const;
