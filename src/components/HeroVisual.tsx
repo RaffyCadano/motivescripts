@@ -8,8 +8,6 @@ export function HeroVisual() {
     <div className="relative mx-auto w-full max-w-[36rem] lg:max-w-none">
       <div className="hero-glow-pulse pointer-events-none absolute -right-8 top-6 size-56 rounded-full bg-[radial-gradient(circle,rgb(0_104_255_/_0.06),transparent_64%)] blur-2xl" />
 
-      <div className="hero-grid pointer-events-none absolute inset-[-12%] opacity-50" />
-
       <div className="relative z-10 px-3 pt-2 sm:px-7 sm:pt-8 md:px-10 md:pt-14">
         <BrowserFrame url="yoursite.com" className="shadow-[var(--shadow-card),var(--shadow-glow)]">
           <MiniPage>
