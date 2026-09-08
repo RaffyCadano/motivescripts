@@ -1,10 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Eye, ExternalLink } from "lucide-react";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
 import { TeamEmptyState } from "@/components/team/TeamEmptyState";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import { developerDeploymentRows, type DeveloperDeploymentRow } from "@/data/developerOverview";
-import { formatDeploymentWhen, type DeploymentStatus } from "@/data/projectDevelopment";
+import { deploymentStatuses, formatDeploymentWhen, type DeploymentStatus } from "@/data/projectDevelopment";
 import { teamProjectHref } from "@/data/teamWorkspace";
 import { displayHttpHost, safeHttpHref } from "@/lib/safeUrl";
 import { cn } from "@/lib/cn";
@@ -12,6 +12,21 @@ import { cn } from "@/lib/cn";
 export function TeamDeployments() {
   const { myProjects } = useTeamWork();
   const deployments = useMemo(() => developerDeploymentRows(myProjects), [myProjects]);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<DeploymentStatus | "All">("All");
+
+  const visible = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return deployments.filter((row) => {
+      if (status !== "All" && row.development.deploymentStatus !== status) return false;
+      if (!needle) return true;
+      return (
+        row.projectName.toLowerCase().includes(needle) ||
+        row.development.repositoryUrl.toLowerCase().includes(needle) ||
+        row.development.hostingProvider.toLowerCase().includes(needle)
+      );
+    });
+  }, [deployments, search, status]);
 
   return (
     <div className="space-y-6">
@@ -25,6 +40,32 @@ export function TeamDeployments() {
       {deployments.length === 0 ? (
         <TeamEmptyState title="No deployment information available." body="Deployment status for your projects will show up here." />
       ) : (
+        <>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search project, repository, or hosting"
+              className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            />
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value as DeploymentStatus | "All")}
+              className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
+            >
+              <option value="All">All statuses</option>
+              {deploymentStatuses.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {visible.length === 0 ? (
+            <TeamEmptyState title="No deployments match your filters." body="Try a different search term or status." />
+          ) : (
         <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
           <table className="w-full min-w-[980px] text-left text-sm">
             <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
@@ -41,12 +82,14 @@ export function TeamDeployments() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--admin-line)]">
-              {deployments.map((row) => (
+              {visible.map((row) => (
                 <DeploymentRow key={row.projectId} row={row} />
               ))}
             </tbody>
           </table>
         </div>
+          )}
+        </>
       )}
     </div>
   );

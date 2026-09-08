@@ -5,7 +5,6 @@ import { AdminAttentionList } from "@/components/admin/list/AdminAttentionList";
 import { AdminEmptyState } from "@/components/admin/list/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
-import { AdminStatusChips } from "@/components/admin/list/AdminStatusChips";
 import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
@@ -40,6 +39,12 @@ const statusFilters: Array<DocumentStatus | "All" | "awaiting"> = [
 
 type StatusFilter = (typeof statusFilters)[number];
 type PrimaryCard = "draft" | "awaiting" | "accepted" | "declined";
+
+function formatStatusFilter(item: StatusFilter) {
+  if (item === "All") return "All";
+  if (item === "awaiting") return "Awaiting Response";
+  return proposalWorkspaceLabel(item);
+}
 
 function newProposalHref(clientId: string | "All", searchParams: URLSearchParams) {
   const params = new URLSearchParams();
@@ -285,19 +290,26 @@ export function AdminProposals() {
               <option value="oldest">Oldest first</option>
             </select>
           </label>
+          <label className="lg:w-52">
+            <span className="sr-only">Proposal status</span>
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value as StatusFilter)}
+              className={adminFilterControlState(status !== "All")}
+            >
+              {statusFilters.map((item) => (
+                <option key={item} value={item}>
+                  {formatStatusFilter(item)}
+                </option>
+              ))}
+            </select>
+          </label>
           {filtering ? (
             <button type="button" className={`${adminGhostBtn} shrink-0 justify-center`} onClick={clearFilters}>
               Clear filters
             </button>
           ) : null}
         </div>
-        <AdminStatusChips
-          items={statusFilters}
-          value={status}
-          onChange={setStatus}
-          label="Proposal status"
-          format={(item) => (item === "All" ? "All" : item === "awaiting" ? "Awaiting Response" : proposalWorkspaceLabel(item))}
-        />
       </div>
 
       {loading ? (

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AdminEmptyState } from "@/components/admin/list/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
-import { AdminStatusChips } from "@/components/admin/list/AdminStatusChips";
+import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import {
   buildRevenueReport,
@@ -25,6 +25,7 @@ export function AdminReports() {
   const [payments, setPayments] = useState<PaymentReportRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [grain, setGrain] = useState<RevenuePeriodGrain>("month");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -45,6 +46,12 @@ export function AdminReports() {
   }, []);
 
   const periods = useMemo(() => buildRevenueReport(payments, grain), [payments, grain]);
+
+  const visiblePeriods = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return periods;
+    return periods.filter((period) => period.label.toLowerCase().includes(needle));
+  }, [periods, query]);
 
   const summary = useMemo(
     () => ({
@@ -71,12 +78,39 @@ export function AdminReports() {
         </AdminStatGrid>
       </section>
 
-      <AdminStatusChips items={grains} value={grain} onChange={setGrain} label="Group by" format={(item) => grainLabels[item]} />
+      <div className="flex flex-col gap-3 lg:flex-row">
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Search periods</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search period (e.g. Jan 2026, Q1, 2026)"
+            className={adminFilterControlState(Boolean(query.trim()))}
+          />
+        </label>
+        <label className="lg:w-44">
+          <span className="sr-only">Group by</span>
+          <select
+            value={grain}
+            onChange={(event) => setGrain(event.target.value as RevenuePeriodGrain)}
+            className={adminFilterControlState(false)}
+          >
+            {grains.map((item) => (
+              <option key={item} value={item}>
+                {grainLabels[item]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
 
       {loading ? (
         <div className="h-36 animate-pulse rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]" />
       ) : periods.length === 0 ? (
         <AdminEmptyState title="No payments recorded yet" body="Revenue totals appear here once invoices have been paid." />
+      ) : visiblePeriods.length === 0 ? (
+        <AdminEmptyState title="No periods match this search" body="Try a different period, like a month, quarter, or year." />
       ) : (
         <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
           <table className="w-full min-w-[40rem] text-left text-[13px]">
@@ -89,7 +123,7 @@ export function AdminReports() {
               </tr>
             </thead>
             <tbody>
-              {periods.map((period) => (
+              {visiblePeriods.map((period) => (
                 <tr key={period.key} className="border-b border-[var(--admin-line)] last:border-b-0">
                   <td className="px-5 py-3.5 font-heading font-semibold text-[var(--admin-ink)]">{period.label}</td>
                   <td className="px-5 py-3.5 text-[var(--admin-ink)]">{formatUsdFromCents(period.totalCents)}</td>

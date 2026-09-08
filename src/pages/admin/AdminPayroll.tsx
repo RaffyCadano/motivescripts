@@ -27,15 +27,28 @@ export function AdminPayroll() {
   const [rowError, setRowError] = useState<Map<string, string>>(new Map());
   const [payModalFor, setPayModalFor] = useState<string | null>(null);
   const [query, setQuery] = useState("");
+  const [role, setRole] = useState("All");
+  const [payStatus, setPayStatus] = useState<"All" | "unpaid" | "paid" | "no-rate">("All");
 
   const members = useMemo(() => (data?.members ?? []).filter((member) => member.isActive), [data?.members]);
   const filteredMembers = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return members;
-    return members.filter((member) =>
-      `${member.fullName} ${member.jobTitle} ${member.templateLabel}`.toLowerCase().includes(needle),
-    );
-  }, [members, query]);
+    return members.filter((member) => {
+      if (needle && !`${member.fullName} ${member.jobTitle} ${member.templateLabel}`.toLowerCase().includes(needle)) {
+        return false;
+      }
+      if (role !== "All" && member.templateKey !== role) return false;
+      if (payStatus !== "All") {
+        const rate = rates.get(member.id);
+        const entries = entriesByStaff.get(member.id) ?? [];
+        const unpaidHours = sumHours(unpaidEntries(entries));
+        if (payStatus === "no-rate") return !rate;
+        if (payStatus === "unpaid") return unpaidHours > 0;
+        if (payStatus === "paid") return Boolean(rate) && unpaidHours <= 0;
+      }
+      return true;
+    });
+  }, [members, query, role, payStatus, rates, entriesByStaff]);
 
   async function reload() {
     if (!isAdmin) return;
@@ -154,16 +167,46 @@ export function AdminPayroll() {
         </div>
       ) : (
         <div className="space-y-3">
-          <label className="block max-w-sm">
-            <span className="sr-only">Search staff</span>
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search name, title, or role"
-              className={adminFilterControlState(Boolean(query.trim()))}
-            />
-          </label>
+          <div className="flex flex-col gap-3 lg:flex-row">
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">Search staff</span>
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search name, title, or role"
+                className={adminFilterControlState(Boolean(query.trim()))}
+              />
+            </label>
+            <label className="lg:w-56">
+              <span className="sr-only">Role</span>
+              <select
+                value={role}
+                onChange={(event) => setRole(event.target.value)}
+                className={adminFilterControlState(role !== "All")}
+              >
+                <option value="All">All roles</option>
+                {(data?.catalog.templates ?? []).map((item) => (
+                  <option key={item.key} value={item.key}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="lg:w-48">
+              <span className="sr-only">Pay status</span>
+              <select
+                value={payStatus}
+                onChange={(event) => setPayStatus(event.target.value as typeof payStatus)}
+                className={adminFilterControlState(payStatus !== "All")}
+              >
+                <option value="All">All pay statuses</option>
+                <option value="unpaid">Unpaid hours</option>
+                <option value="paid">Paid up</option>
+                <option value="no-rate">No rate set</option>
+              </select>
+            </label>
+          </div>
 
           {filteredMembers.length === 0 ? (
             <div className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-9">

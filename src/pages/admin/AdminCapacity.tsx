@@ -52,20 +52,42 @@ function StaffRow({ workload }: { workload: StaffWorkload }) {
   );
 }
 
+type LoadFilter = "All" | "over-capacity" | "overdue" | "idle";
+
 export function AdminCapacity() {
   const { projects } = useLeads();
   const { data } = useTeamDirectory();
   const [query, setQuery] = useState("");
+  const [role, setRole] = useState("All");
+  const [loadFilter, setLoadFilter] = useState<LoadFilter>("All");
 
   const workloads = useMemo(
     () => collectStaffWorkload(projects, data?.members ?? [], WEEK_COUNT),
     [data?.members, projects],
   );
+  const roleByStaffId = useMemo(
+    () => new Map((data?.members ?? []).map((member) => [member.id, member.templateKey])),
+    [data?.members],
+  );
   const filteredWorkloads = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return workloads;
-    return workloads.filter((workload) => workload.fullName.toLowerCase().includes(needle));
-  }, [workloads, query]);
+    return workloads.filter((workload) => {
+      if (needle && !workload.fullName.toLowerCase().includes(needle)) return false;
+      if (role !== "All" && roleByStaffId.get(workload.staffId) !== role) return false;
+      if (loadFilter === "over-capacity") {
+        return workload.weeks.some((week) => week.hours >= WEEKLY_CAPACITY_HOURS);
+      }
+      if (loadFilter === "overdue") return workload.overdueHours > 0;
+      if (loadFilter === "idle") {
+        return (
+          workload.overdueHours <= 0 &&
+          workload.unscheduledHours <= 0 &&
+          workload.weeks.every((week) => week.hours <= 0)
+        );
+      }
+      return true;
+    });
+  }, [workloads, query, role, loadFilter, roleByStaffId]);
   const weekStarts = workloads[0]?.weeks.map((week) => week.weekStart) ?? [];
 
   return (
@@ -84,16 +106,46 @@ export function AdminCapacity() {
         </div>
       ) : (
         <div className="space-y-3">
-          <label className="block max-w-sm">
-            <span className="sr-only">Search staff</span>
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search staff name"
-              className={adminFilterControlState(Boolean(query.trim()))}
-            />
-          </label>
+          <div className="flex flex-col gap-3 lg:flex-row">
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">Search staff</span>
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search staff name"
+                className={adminFilterControlState(Boolean(query.trim()))}
+              />
+            </label>
+            <label className="lg:w-56">
+              <span className="sr-only">Role</span>
+              <select
+                value={role}
+                onChange={(event) => setRole(event.target.value)}
+                className={adminFilterControlState(role !== "All")}
+              >
+                <option value="All">All roles</option>
+                {(data?.catalog.templates ?? []).map((item) => (
+                  <option key={item.key} value={item.key}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="lg:w-52">
+              <span className="sr-only">Load</span>
+              <select
+                value={loadFilter}
+                onChange={(event) => setLoadFilter(event.target.value as LoadFilter)}
+                className={adminFilterControlState(loadFilter !== "All")}
+              >
+                <option value="All">All workloads</option>
+                <option value="over-capacity">At or over {WEEKLY_CAPACITY_HOURS}h a week</option>
+                <option value="overdue">Has overdue hours</option>
+                <option value="idle">No tasks assigned</option>
+              </select>
+            </label>
+          </div>
 
           {filteredWorkloads.length === 0 ? (
             <div className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-9">

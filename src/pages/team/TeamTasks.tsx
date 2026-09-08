@@ -74,23 +74,6 @@ export function TeamTasks() {
             <p className="mt-1 text-sm text-[var(--admin-muted)]">Only tasks assigned to you.</p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {filters.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className={
-                  filter === item.id
-                    ? "inline-flex h-9 items-center rounded-full bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white"
-                    : "inline-flex h-9 items-center rounded-full border border-[var(--admin-line)] bg-white px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)]"
-                }
-                onClick={() => setFilter(item.id)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               value={search}
@@ -98,6 +81,17 @@ export function TeamTasks() {
               placeholder="Search tasks…"
               className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
             />
+            <select
+              value={filter}
+              onChange={(event) => setFilter(event.target.value as TeamTaskFilter)}
+              className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
+            >
+              {filters.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
             <select
               value={projectId}
               onChange={(event) => setProjectId(event.target.value)}

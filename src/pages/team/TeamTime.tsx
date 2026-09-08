@@ -26,6 +26,7 @@ export function TeamTime() {
   const [paymentSearch, setPaymentSearch] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PayrollPaymentMethod | "All">("All");
   const [entrySearch, setEntrySearch] = useState("");
+  const [entryStatus, setEntryStatus] = useState<"All" | "Paid" | "Not yet paid">("All");
 
   const projectName = useMemo(() => {
     const byId = new Map(myProjects.map((project) => [project.id, project.name]));
@@ -105,12 +106,15 @@ export function TeamTime() {
 
   const filteredEntries = useMemo(() => {
     const needle = entrySearch.trim().toLowerCase();
-    if (!needle) return entries;
     return entries.filter((entry) => {
+      if (entryStatus === "Paid" && !entry.payrollPaidAt) return false;
+      if (entryStatus === "Not yet paid" && entry.payrollPaidAt) return false;
+      if (!needle) return true;
       const haystack = `${projectName(entry.projectId)} ${taskTitle(entry.taskId) ?? ""} ${entry.note}`.toLowerCase();
       return haystack.includes(needle);
     });
-  }, [entries, entrySearch, projectName, taskTitle]);
+  }, [entries, entrySearch, entryStatus, projectName, taskTitle]);
+  const entriesFiltering = entrySearch.trim().length > 0 || entryStatus !== "All";
 
   function startEdit(entry: TimeEntry) {
     setEditingId(entry.id);
@@ -302,20 +306,32 @@ export function TeamTime() {
                   placeholder="Search project, task, or note…"
                   className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
                 />
-                {entrySearch.trim() ? (
+                <select
+                  value={entryStatus}
+                  onChange={(event) => setEntryStatus(event.target.value as "All" | "Paid" | "Not yet paid")}
+                  className="h-9 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
+                >
+                  <option value="All">All statuses</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Not yet paid">Not yet paid</option>
+                </select>
+                {entriesFiltering ? (
                   <button
                     type="button"
                     className="h-9 shrink-0 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-                    onClick={() => setEntrySearch("")}
+                    onClick={() => {
+                      setEntrySearch("");
+                      setEntryStatus("All");
+                    }}
                   >
-                    Clear filter
+                    Clear filters
                   </button>
                 ) : null}
               </div>
 
               {rowError ? <p className="mt-3 text-sm text-[#b45309]">{rowError}</p> : null}
               {filteredEntries.length === 0 ? (
-                <p className="mt-4 text-sm text-[var(--admin-muted)]">No entries match your search.</p>
+                <p className="mt-4 text-sm text-[var(--admin-muted)]">No entries match your filters.</p>
               ) : (
               <div className="mt-3 overflow-x-auto">
                 <table className="w-full min-w-[36rem] border-collapse text-sm">

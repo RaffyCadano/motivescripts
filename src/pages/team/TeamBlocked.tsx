@@ -5,7 +5,7 @@ import { ClientReviewLinkOut } from "@/components/tasks/TaskWorkspace";
 import { TeamEmptyState } from "@/components/team/TeamEmptyState";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
-import { earlierOpenMilestones } from "@/data/agencyProjects";
+import { earlierOpenMilestones, taskPriorities, type AgencyTaskPriority } from "@/data/agencyProjects";
 import { blockedReason, blockedTasks } from "@/data/developerOverview";
 import { effectiveTaskType } from "@/data/taskTypes";
 import { inProgressCount, teamProjectHref, type TeamWorkTask } from "@/data/teamWorkspace";
@@ -17,8 +17,24 @@ export function TeamBlocked() {
   const [openTask, setOpenTask] = useState<TeamWorkTask | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [priority, setPriority] = useState<AgencyTaskPriority | "All">("All");
 
   const blocked = useMemo(() => blockedTasks(tasks), [tasks]);
+
+  const visible = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return blocked.filter((task) => {
+      if (priority !== "All" && task.priority !== priority) return false;
+      if (!needle) return true;
+      const reason = blockedReason(task) ?? "";
+      return (
+        task.title.toLowerCase().includes(needle) ||
+        task.projectName.toLowerCase().includes(needle) ||
+        reason.toLowerCase().includes(needle)
+      );
+    });
+  }, [blocked, priority, search]);
 
   async function onStatusChange(status: TeamWorkTask["status"]) {
     if (!openTask) return;
@@ -44,6 +60,32 @@ export function TeamBlocked() {
       {blocked.length === 0 ? (
         <TeamEmptyState title="You're all clear — no blocked work." body="Tasks marked Blocked will show up here." />
       ) : (
+        <>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search task, project, or reason"
+              className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            />
+            <select
+              value={priority}
+              onChange={(event) => setPriority(event.target.value as AgencyTaskPriority | "All")}
+              className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
+            >
+              <option value="All">All priorities</option>
+              {taskPriorities.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {visible.length === 0 ? (
+            <TeamEmptyState title="No blocked tasks match your filters." body="Try a different search term or priority." />
+          ) : (
         <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
@@ -55,7 +97,7 @@ export function TeamBlocked() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--admin-line)]">
-              {blocked.map((task) => (
+              {visible.map((task) => (
                 <tr key={task.id} className="hover:bg-[var(--admin-bg)]">
                   <td className="px-4 py-3">
                     <button
@@ -93,6 +135,8 @@ export function TeamBlocked() {
             </tbody>
           </table>
         </div>
+          )}
+        </>
       )}
 
       {openTask ? (

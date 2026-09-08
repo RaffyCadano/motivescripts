@@ -6,7 +6,6 @@ import { adminBlueBtn, adminGhostBtn } from "@/components/admin/adminActionStyle
 import { AdminEmptyState } from "@/components/admin/list/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
-import { AdminStatusChips } from "@/components/admin/list/AdminStatusChips";
 import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { TeamStatusBadge } from "@/components/admin/team/TeamStatusBadge";
@@ -33,6 +32,13 @@ type RoleFilter = "All" | string;
 type StatusFilter = "All" | "active" | "inactive" | "pending";
 
 const statusFilters: StatusFilter[] = ["All", "active", "inactive", "pending"];
+
+function formatStatusFilter(item: StatusFilter) {
+  if (item === "All") return "All";
+  if (item === "pending") return "Pending invitations";
+  if (item === "active") return "Active";
+  return "Inactive";
+}
 
 function matchesQuery(row: TeamListRow, needle: string) {
   if (!needle) return true;
@@ -231,21 +237,26 @@ export function AdminTeam() {
               ))}
             </select>
           </label>
+          <label className="lg:w-56">
+            <span className="sr-only">Team status</span>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+              className={adminFilterControlState(statusFilter !== "All")}
+            >
+              {statusFilters.map((item) => (
+                <option key={item} value={item}>
+                  {formatStatusFilter(item)}
+                </option>
+              ))}
+            </select>
+          </label>
           {filtering ? (
             <button type="button" className={`${adminGhostBtn} shrink-0 justify-center`} onClick={clearFilters}>
               Clear filters
             </button>
           ) : null}
         </div>
-        <AdminStatusChips
-          items={statusFilters}
-          value={statusFilter}
-          onChange={setStatusFilter}
-          label="Team status"
-          format={(item) =>
-            item === "All" ? "All" : item === "pending" ? "Pending invitations" : item === "active" ? "Active" : "Inactive"
-          }
-        />
       </div>
 
       {status === "error" ? (

@@ -4,7 +4,6 @@ import { Flag, FolderKanban, MessageSquareQuote, RefreshCw, SquareCheck, Upload 
 import { adminGhostBtn } from "@/components/admin/adminActionStyles";
 import { AdminEmptyState } from "@/components/admin/list/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
-import { AdminStatusChips } from "@/components/admin/list/AdminStatusChips";
 import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import {
@@ -113,22 +112,29 @@ export function AdminActivity() {
               className={adminFilterControlState(Boolean(query.trim()))}
             />
           </label>
+          <label className="lg:w-48">
+            <span className="sr-only">Activity type</span>
+            <select
+              value={kind}
+              onChange={(event) => {
+                setKind(event.target.value as KindFilter);
+                setVisibleCount(PAGE_SIZE);
+              }}
+              className={adminFilterControlState(kind !== "All")}
+            >
+              {kindFilters.map((item) => (
+                <option key={item} value={item}>
+                  {item === "All" ? "All" : kindLabels[item]}
+                </option>
+              ))}
+            </select>
+          </label>
           {filtering ? (
             <button type="button" className={`${adminGhostBtn} shrink-0 justify-center`} onClick={clearFilters}>
               Clear filters
             </button>
           ) : null}
         </div>
-        <AdminStatusChips
-          items={kindFilters}
-          value={kind}
-          onChange={(value) => {
-            setKind(value);
-            setVisibleCount(PAGE_SIZE);
-          }}
-          label="Activity type"
-          format={(item) => (item === "All" ? "All" : kindLabels[item])}
-        />
       </div>
 
       {feed.length === 0 ? (

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { TeamEmptyState } from "@/components/team/TeamEmptyState";
@@ -12,6 +12,8 @@ import { teamProjectHref } from "@/data/teamWorkspace";
 export function TeamNeedsChanges() {
   const { myProjects, deliverables } = useTeamWork();
   const { feedback } = useLeads();
+  const [search, setSearch] = useState("");
+  const [projectId, setProjectId] = useState<string | "All">("All");
   const projectIds = useMemo(() => new Set(myProjects.map((project) => project.id)), [myProjects]);
   const projectsById = useMemo(() => new Map(myProjects.map((project) => [project.id, project])), [myProjects]);
   const needsChanges = useMemo(() => needsChangesDeliverables(deliverables, projectIds), [deliverables, projectIds]);
@@ -31,6 +33,27 @@ export function TeamNeedsChanges() {
     return latest;
   }, [feedback]);
 
+  const projectOptions = useMemo(() => {
+    const ids = new Set(needsChanges.map((item) => item.projectId));
+    return myProjects.filter((project) => ids.has(project.id));
+  }, [myProjects, needsChanges]);
+
+  const visible = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    return needsChanges.filter((item) => {
+      if (projectId !== "All" && item.projectId !== projectId) return false;
+      if (!needle) return true;
+      const project = projectsById.get(item.projectId);
+      const message = latestOpenFeedbackByDeliverable.get(item.id)?.message ?? "";
+      return (
+        item.name.toLowerCase().includes(needle) ||
+        item.category.toLowerCase().includes(needle) ||
+        (project?.name.toLowerCase().includes(needle) ?? false) ||
+        message.toLowerCase().includes(needle)
+      );
+    });
+  }, [latestOpenFeedbackByDeliverable, needsChanges, projectId, projectsById, search]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -41,27 +64,55 @@ export function TeamNeedsChanges() {
       {needsChanges.length === 0 ? (
         <TeamEmptyState title="No changes requested." body="Deliverables the client asks to revise will show up here." />
       ) : (
-        <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
-          <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
-              <tr>
-                <th className="px-4 py-3 font-heading">Deliverable</th>
-                <th className="px-4 py-3 font-heading">What needs to change</th>
-                <th className="px-4 py-3 font-heading">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--admin-line)]">
-              {needsChanges.map((item) => (
-                <NeedsChangesRow
-                  key={item.id}
-                  deliverable={item}
-                  project={projectsById.get(item.projectId)}
-                  feedback={latestOpenFeedbackByDeliverable.get(item.id) ?? null}
-                />
+        <>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search deliverable, project, or feedback"
+              className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            />
+            <select
+              value={projectId}
+              onChange={(event) => setProjectId(event.target.value)}
+              className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
+            >
+              <option value="All">All projects</option>
+              {projectOptions.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </select>
+          </div>
+
+          {visible.length === 0 ? (
+            <TeamEmptyState title="No changes match your filters." body="Try a different search term or project." />
+          ) : (
+            <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
+              <table className="w-full min-w-[720px] text-left text-sm">
+                <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+                  <tr>
+                    <th className="px-4 py-3 font-heading">Deliverable</th>
+                    <th className="px-4 py-3 font-heading">What needs to change</th>
+                    <th className="px-4 py-3 font-heading">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--admin-line)]">
+                  {visible.map((item) => (
+                    <NeedsChangesRow
+                      key={item.id}
+                      deliverable={item}
+                      project={projectsById.get(item.projectId)}
+                      feedback={latestOpenFeedbackByDeliverable.get(item.id) ?? null}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

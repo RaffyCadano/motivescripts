@@ -5,7 +5,6 @@ import { AdminAttentionList } from "@/components/admin/list/AdminAttentionList";
 import { AdminEmptyState } from "@/components/admin/list/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
-import { AdminStatusChips } from "@/components/admin/list/AdminStatusChips";
 import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
@@ -13,6 +12,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission } from "@/auth/permissions";
 import { formatClientDate } from "@/data/agencyClients";
 import {
+  adminStatusLabel,
   awaitingResponse,
   contractSignatureCaption,
   contractWorkspaceLabel,
@@ -39,6 +39,13 @@ const statusFilters: Array<DocumentStatus | "All" | "awaiting"> = [
 
 type StatusFilter = (typeof statusFilters)[number];
 type PrimaryCard = "draft" | "sent" | "awaiting" | "accepted" | "declined";
+
+function formatStatusFilter(item: StatusFilter) {
+  if (item === "All") return "All";
+  if (item === "awaiting") return "Awaiting Response";
+  if (item === "sent") return adminStatusLabel(item);
+  return contractWorkspaceLabel(item);
+}
 
 function newContractHref(clientId: string | "All", searchParams: URLSearchParams) {
   const params = new URLSearchParams();
@@ -305,21 +312,26 @@ export function AdminContracts() {
               <option value="oldest">Oldest first</option>
             </select>
           </label>
+          <label className="lg:w-52">
+            <span className="sr-only">Contract status</span>
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value as StatusFilter)}
+              className={adminFilterControlState(status !== "All")}
+            >
+              {statusFilters.map((item) => (
+                <option key={item} value={item}>
+                  {formatStatusFilter(item)}
+                </option>
+              ))}
+            </select>
+          </label>
           {filtering ? (
             <button type="button" className={`${adminGhostBtn} shrink-0 justify-center`} onClick={clearFilters}>
               Clear filters
             </button>
           ) : null}
         </div>
-        <AdminStatusChips
-          items={statusFilters}
-          value={status}
-          onChange={setStatus}
-          label="Contract status"
-          format={(item) =>
-            item === "All" ? "All" : item === "awaiting" ? "Awaiting Response" : contractWorkspaceLabel(item)
-          }
-        />
       </div>
 
       {loading ? (
