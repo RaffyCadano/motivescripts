@@ -546,6 +546,9 @@ export async function upsertProjectDevelopment(projectId: string, development: P
       hosting_provider: emptyToNull(development.hostingProvider),
       deployment_status: development.deploymentStatus,
       last_deployed_at: emptyToNull(development.lastDeployedAt),
+      domain_name: emptyToNull(development.domainName),
+      domain_status: development.domainStatus,
+      hosting_status: development.hostingStatus,
     },
     { onConflict: "project_id" },
   );

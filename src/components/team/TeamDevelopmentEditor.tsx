@@ -2,11 +2,14 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import {
   deploymentStatuses,
+  domainHostingStatuses,
   fromDatetimeLocalValue,
   toDatetimeLocalValue,
   type DeploymentStatus,
+  type DomainHostingStatus,
   type ProjectDevelopment,
 } from "@/data/projectDevelopment";
+import { DomainHostingStatusBadge } from "@/components/admin/projects/ProjectDevelopmentSection";
 import { upsertProjectDevelopment } from "@/data/agencyRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 
@@ -16,6 +19,8 @@ const inputClass =
 type TeamDevelopmentEditorProps = {
   projectId: string;
   development: ProjectDevelopment;
+  /** Admin or an assigned PM (mirrors staff_may_coordinate_project). Everyone else may view domain/hosting delivery status here but not change it. */
+  canManageDomainHosting: boolean;
   onClose: () => void;
   onSaved: () => void;
 };
@@ -26,7 +31,13 @@ type TeamDevelopmentEditorProps = {
  * than the full-project updateProjectRecord, which would otherwise require
  * (and silently overwrite) every other field on the project row.
  */
-export function TeamDevelopmentEditor({ projectId, development, onClose, onSaved }: TeamDevelopmentEditorProps) {
+export function TeamDevelopmentEditor({
+  projectId,
+  development,
+  canManageDomainHosting,
+  onClose,
+  onSaved,
+}: TeamDevelopmentEditorProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const [draft, setDraft] = useState<ProjectDevelopment>(development);
@@ -182,6 +193,79 @@ export function TeamDevelopmentEditor({ projectId, development, onClose, onSaved
                 ))}
               </select>
             </label>
+          </div>
+          <div className="mt-5 border-t border-[var(--admin-line)] pt-4">
+            <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Domain &amp; hosting delivery</p>
+            {canManageDomainHosting ? (
+              <>
+                <label className="mt-3 block text-sm font-semibold">
+                  Domain name
+                  <input
+                    value={draft.domainName}
+                    disabled={busy}
+                    placeholder="example.com"
+                    onChange={(event) => patch("domainName", event.target.value)}
+                    className={inputClass}
+                  />
+                </label>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label className="block text-sm font-semibold">
+                    Domain status
+                    <select
+                      value={draft.domainStatus}
+                      disabled={busy}
+                      onChange={(event) => patch("domainStatus", event.target.value as DomainHostingStatus)}
+                      className={inputClass}
+                    >
+                      {domainHostingStatuses.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block text-sm font-semibold">
+                    Hosting status
+                    <select
+                      value={draft.hostingStatus}
+                      disabled={busy}
+                      onChange={(event) => patch("hostingStatus", event.target.value as DomainHostingStatus)}
+                      className={inputClass}
+                    >
+                      {domainHostingStatuses.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </>
+            ) : (
+              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-[12px] text-[var(--admin-muted)]">Domain</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--admin-ink)]">
+                    {draft.domainName.trim() || "Not configured"}
+                  </p>
+                  <div className="mt-1.5">
+                    <DomainHostingStatusBadge status={draft.domainStatus} />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[12px] text-[var(--admin-muted)]">Hosting</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--admin-ink)]">
+                    {draft.hostingProvider.trim() || "Not configured"}
+                  </p>
+                  <div className="mt-1.5">
+                    <DomainHostingStatusBadge status={draft.hostingStatus} />
+                  </div>
+                </div>
+                <p className="text-[12px] text-[var(--admin-muted)] sm:col-span-2">
+                  Only an admin or the assigned project manager can update domain and hosting status.
+                </p>
+              </div>
+            )}
           </div>
           <label className="mt-4 block text-sm font-semibold">
             Last deployment

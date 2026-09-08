@@ -98,6 +98,9 @@ export type ProjectDevelopmentRow = {
   hosting_provider: string | null;
   deployment_status: string;
   last_deployed_at: string | null;
+  domain_name: string | null;
+  domain_status: string;
+  hosting_status: string;
   updated_at: string;
   updated_by: string | null;
 };

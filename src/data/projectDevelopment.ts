@@ -10,6 +10,11 @@ export const deploymentStatuses = [
 
 export type DeploymentStatus = (typeof deploymentStatuses)[number];
 
+/** Shared status shape for the agency's own domain and hosting delivery tracking. */
+export const domainHostingStatuses = ["Not configured", "In progress", "Configured", "Issue"] as const;
+
+export type DomainHostingStatus = (typeof domainHostingStatuses)[number];
+
 export type ProjectDevelopment = {
   repositoryUrl: string;
   repositoryBranch: string;
@@ -19,6 +24,9 @@ export type ProjectDevelopment = {
   hostingProvider: string;
   deploymentStatus: DeploymentStatus;
   lastDeployedAt: string;
+  domainName: string;
+  domainStatus: DomainHostingStatus;
+  hostingStatus: DomainHostingStatus;
 };
 
 export function emptyProjectDevelopment(): ProjectDevelopment {
@@ -31,11 +39,18 @@ export function emptyProjectDevelopment(): ProjectDevelopment {
     hostingProvider: "",
     deploymentStatus: "Not deployed",
     lastDeployedAt: "",
+    domainName: "",
+    domainStatus: "Not configured",
+    hostingStatus: "Not configured",
   };
 }
 
 export function isDeploymentStatus(value: string | null | undefined): value is DeploymentStatus {
   return deploymentStatuses.includes(value as DeploymentStatus);
+}
+
+export function isDomainHostingStatus(value: string | null | undefined): value is DomainHostingStatus {
+  return domainHostingStatuses.includes(value as DomainHostingStatus);
 }
 
 export function formatDeploymentWhen(value: string): string {

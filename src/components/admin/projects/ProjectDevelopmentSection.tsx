@@ -3,6 +3,7 @@ import { adminSoftBtn } from "@/components/admin/adminActionStyles";
 import {
   formatDeploymentWhen,
   type DeploymentStatus,
+  type DomainHostingStatus,
   type ProjectDevelopment,
 } from "@/data/projectDevelopment";
 import { displayHttpHost, safeHttpHref } from "@/lib/safeUrl";
@@ -22,6 +23,27 @@ function DevelopmentStatus({ status }: { status: DeploymentStatus }) {
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight",
         statusTone[status],
+      )}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+      {status}
+    </span>
+  );
+}
+
+const domainHostingStatusTone: Record<DomainHostingStatus, string> = {
+  "Not configured": "bg-[var(--admin-bg)] text-[var(--admin-muted)]",
+  "In progress": "bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]",
+  Configured: "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]",
+  Issue: "bg-[rgb(220_38_38_/_0.08)] text-[#b42318]",
+};
+
+export function DomainHostingStatusBadge({ status }: { status: DomainHostingStatus }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight",
+        domainHostingStatusTone[status],
       )}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
@@ -115,7 +137,6 @@ export function ProjectDevelopmentSection({ development, editHref, onEditClick }
         <Field label="Branch" value={development.repositoryBranch} />
         <Field label="Staging" value={development.stagingUrl} href={stagingHref ?? undefined} linkLabel="Open Staging" />
         <Field label="Production" value={development.productionUrl} href={productionHref ?? undefined} linkLabel="Open Production" />
-        <Field label="Hosting" value={development.hostingProvider} />
         <div>
           <dt className="text-[12px] text-[var(--admin-muted)]">Deployment</dt>
           <dd className="mt-1">
@@ -128,6 +149,26 @@ export function ProjectDevelopmentSection({ development, editHref, onEditClick }
           emptyLabel="Not deployed"
         />
       </dl>
+      <div className="mt-5 grid gap-4 border-t border-[var(--admin-line)] pt-4 sm:grid-cols-2">
+        <div>
+          <dt className="text-[12px] text-[var(--admin-muted)]">Domain</dt>
+          <dd className="mt-1 space-y-1.5">
+            <p className="break-all font-heading text-sm font-semibold text-[var(--admin-ink)]">
+              {development.domainName.trim() || <span className="font-normal text-[var(--admin-muted)]">Not configured</span>}
+            </p>
+            <DomainHostingStatusBadge status={development.domainStatus} />
+          </dd>
+        </div>
+        <div>
+          <dt className="text-[12px] text-[var(--admin-muted)]">Hosting</dt>
+          <dd className="mt-1 space-y-1.5">
+            <p className="break-all font-heading text-sm font-semibold text-[var(--admin-ink)]">
+              {development.hostingProvider.trim() || <span className="font-normal text-[var(--admin-muted)]">Not configured</span>}
+            </p>
+            <DomainHostingStatusBadge status={development.hostingStatus} />
+          </dd>
+        </div>
+      </div>
     </section>
   );
 }

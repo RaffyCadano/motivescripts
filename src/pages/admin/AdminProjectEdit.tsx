@@ -16,7 +16,15 @@ import {
 import { centsInputValue, parseDollarsToCents } from "@/data/money";
 import { updateProjectRecord } from "@/data/agencyRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
-import { toDatetimeLocalValue, fromDatetimeLocalValue } from "@/data/projectDevelopment";
+import {
+  domainHostingStatuses,
+  fromDatetimeLocalValue,
+  toDatetimeLocalValue,
+  type DomainHostingStatus,
+} from "@/data/projectDevelopment";
+import { DomainHostingStatusBadge } from "@/components/admin/projects/ProjectDevelopmentSection";
+import { canCoordinateAssignedWork } from "@/auth/permissions";
+import { useAuth } from "@/auth/AuthProvider";
 
 const inputClass =
   "mt-1.5 h-10 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm font-normal outline-none focus:border-[rgb(0_80_240_/_0.45)]";
@@ -29,6 +37,8 @@ type EditLocationState = {
 export function AdminProjectEdit() {
   const { id = "" } = useParams();
   const match = useAgencyProject(id);
+  const { profile } = useAuth();
+  const canManageDomainHosting = canCoordinateAssignedWork(profile);
   const { clients, notify, reload } = useLeads();
   const navigate = useNavigate();
   const location = useLocation();
@@ -349,6 +359,84 @@ export function AdminProjectEdit() {
               className={inputClass}
             />
           </label>
+        </fieldset>
+        <fieldset className="space-y-4 border-t border-[var(--admin-line)] pt-4">
+          <legend className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
+            Domain &amp; hosting delivery
+          </legend>
+          <p className="text-sm text-[var(--admin-muted)]">
+            The agency's own tracking of domain and hosting setup for this project. Domains and hosting are handled
+            externally &mdash; nothing here purchases or configures anything.
+          </p>
+          {canManageDomainHosting ? (
+            <>
+              <label className="block text-sm font-semibold">
+                Domain name
+                <input
+                  type="text"
+                  autoComplete="off"
+                  placeholder="example.com"
+                  value={development.domainName}
+                  onChange={(event) => patchDevelopment("domainName", event.target.value)}
+                  className={inputClass}
+                />
+              </label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block text-sm font-semibold">
+                  Domain status
+                  <select
+                    value={development.domainStatus}
+                    onChange={(event) => patchDevelopment("domainStatus", event.target.value as DomainHostingStatus)}
+                    className={inputClass}
+                  >
+                    {domainHostingStatuses.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block text-sm font-semibold">
+                  Hosting status
+                  <select
+                    value={development.hostingStatus}
+                    onChange={(event) => patchDevelopment("hostingStatus", event.target.value as DomainHostingStatus)}
+                    className={inputClass}
+                  >
+                    {domainHostingStatuses.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-[12px] text-[var(--admin-muted)]">Domain</p>
+                <p className="mt-1 text-sm font-medium text-[var(--admin-ink)]">
+                  {development.domainName.trim() || "Not configured"}
+                </p>
+                <div className="mt-1.5">
+                  <DomainHostingStatusBadge status={development.domainStatus} />
+                </div>
+              </div>
+              <div>
+                <p className="text-[12px] text-[var(--admin-muted)]">Hosting</p>
+                <p className="mt-1 text-sm font-medium text-[var(--admin-ink)]">
+                  {development.hostingProvider.trim() || "Not configured"}
+                </p>
+                <div className="mt-1.5">
+                  <DomainHostingStatusBadge status={development.hostingStatus} />
+                </div>
+              </div>
+              <p className="text-[12px] text-[var(--admin-muted)] sm:col-span-2">
+                Only an admin or the assigned project manager can update domain and hosting status.
+              </p>
+            </div>
+          )}
         </fieldset>
         <button
           type="submit"

@@ -16,7 +16,12 @@ import type {
 } from "@/data/agencyProjects";
 import { parseStoredRecommendedRole } from "@/data/taskRecommendedRoles";
 import { isTaskType } from "@/data/taskTypes";
-import { emptyProjectDevelopment, isDeploymentStatus, type ProjectDevelopment } from "@/data/projectDevelopment";
+import {
+  emptyProjectDevelopment,
+  isDeploymentStatus,
+  isDomainHostingStatus,
+  type ProjectDevelopment,
+} from "@/data/projectDevelopment";
 import type { ReviewApproval, ReviewFeedback } from "@/data/review";
 import type {
   ActivityRow,
@@ -213,6 +218,9 @@ export function mapProjectDevelopment(row: ProjectDevelopmentRow): ProjectDevelo
     hostingProvider: row.hosting_provider ?? "",
     deploymentStatus: isDeploymentStatus(row.deployment_status) ? row.deployment_status : "Not deployed",
     lastDeployedAt: row.last_deployed_at ?? "",
+    domainName: row.domain_name ?? "",
+    domainStatus: isDomainHostingStatus(row.domain_status) ? row.domain_status : "Not configured",
+    hostingStatus: isDomainHostingStatus(row.hosting_status) ? row.hosting_status : "Not configured",
   };
 }
 

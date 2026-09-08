@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { hasPermission, type StaffPermissionCode } from "@/auth/permissions";
+import { canCoordinateAssignedWork, hasPermission, type StaffPermissionCode } from "@/auth/permissions";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { ProgressBar } from "@/components/admin/ProgressBar";
 import { useAgencyProject, useProjectDeliverables } from "@/components/admin/leads/LeadsProvider";
@@ -273,6 +273,7 @@ export function TeamProjectDetails() {
           milestone={milestone}
           nextMilestone={nextMilestone}
           myOpen={myOpen}
+          canManageDomainHosting={canCoordinateAssignedWork(profile)}
           onOpenTasks={() => setTab("tasks")}
           onDevelopmentSaved={reload}
         />
@@ -352,6 +353,7 @@ function TeamProjectOverview({
   milestone,
   nextMilestone,
   myOpen,
+  canManageDomainHosting,
   onOpenTasks,
   onDevelopmentSaved,
 }: {
@@ -361,6 +363,7 @@ function TeamProjectOverview({
   milestone: AgencyMilestone | null;
   nextMilestone: AgencyMilestone | null;
   myOpen: number;
+  canManageDomainHosting: boolean;
   onOpenTasks: () => void;
   onDevelopmentSaved: () => void;
 }) {
@@ -444,6 +447,7 @@ function TeamProjectOverview({
         <TeamDevelopmentEditor
           projectId={project.id}
           development={project.development}
+          canManageDomainHosting={canManageDomainHosting}
           onClose={() => setDevEditorOpen(false)}
           onSaved={onDevelopmentSaved}
         />

@@ -5,6 +5,7 @@ import { TeamEmptyState } from "@/components/team/TeamEmptyState";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import { developerDeploymentRows, type DeveloperDeploymentRow } from "@/data/developerOverview";
 import { deploymentStatuses, formatDeploymentWhen, type DeploymentStatus } from "@/data/projectDevelopment";
+import { DomainHostingStatusBadge } from "@/components/admin/projects/ProjectDevelopmentSection";
 import { teamProjectHref } from "@/data/teamWorkspace";
 import { displayHttpHost, safeHttpHref } from "@/lib/safeUrl";
 import { cn } from "@/lib/cn";
@@ -23,7 +24,8 @@ export function TeamDeployments() {
       return (
         row.projectName.toLowerCase().includes(needle) ||
         row.development.repositoryUrl.toLowerCase().includes(needle) ||
-        row.development.hostingProvider.toLowerCase().includes(needle)
+        row.development.hostingProvider.toLowerCase().includes(needle) ||
+        row.development.domainName.toLowerCase().includes(needle)
       );
     });
   }, [deployments, search, status]);
@@ -33,7 +35,7 @@ export function TeamDeployments() {
       <div>
         <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">Deployments</h1>
         <p className="mt-1 text-sm text-[var(--admin-muted)]">
-          Starter template, repository, staging, production, and hosting for your projects.
+          Starter template, repository, staging, production, hosting, and domain delivery status for your projects.
         </p>
       </div>
 
@@ -67,7 +69,7 @@ export function TeamDeployments() {
             <TeamEmptyState title="No deployments match your filters." body="Try a different search term or status." />
           ) : (
         <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
-          <table className="w-full min-w-[980px] text-left text-sm">
+          <table className="w-full min-w-[1180px] text-left text-sm">
             <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
               <tr>
                 <th className="px-4 py-3 font-heading">Project</th>
@@ -77,6 +79,8 @@ export function TeamDeployments() {
                 <th className="px-4 py-3 font-heading">Staging</th>
                 <th className="px-4 py-3 font-heading">Production</th>
                 <th className="px-4 py-3 font-heading">Hosting</th>
+                <th className="px-4 py-3 font-heading">Domain</th>
+                <th className="px-4 py-3 font-heading">Hosting status</th>
                 <th className="px-4 py-3 font-heading">Last deployed</th>
                 <th className="px-4 py-3 font-heading">Actions</th>
               </tr>
@@ -142,6 +146,15 @@ function DeploymentRow({ row }: { row: DeveloperDeploymentRow }) {
         <UrlCell value={development.productionUrl} />
       </td>
       <td className="px-4 py-3 align-middle text-[var(--admin-muted)]">{development.hostingProvider.trim() || "—"}</td>
+      <td className="px-4 py-3 align-middle">
+        <div className="space-y-1">
+          <p className="text-[var(--admin-ink)]">{development.domainName.trim() || "—"}</p>
+          <DomainHostingStatusBadge status={development.domainStatus} />
+        </div>
+      </td>
+      <td className="px-4 py-3 align-middle">
+        <DomainHostingStatusBadge status={development.hostingStatus} />
+      </td>
       <td className="px-4 py-3 align-middle text-[var(--admin-muted)]">{formatDeploymentWhen(development.lastDeployedAt)}</td>
       <td className="px-4 py-3 align-middle">
         <AdminActionsMenu ariaLabel={`Actions for ${row.projectName}`} iconOnly items={items} />

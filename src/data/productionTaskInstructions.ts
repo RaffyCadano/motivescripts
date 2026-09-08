@@ -358,17 +358,21 @@ const EXACT_INSTRUCTIONS: Record<string, string> = {
     "Done when": "Approved source content is available to the team and gaps are documented.",
   }),
   "establish design direction": sectioned({
-    Objective: "Define the visual direction for the website before completing the detailed page designs.",
+    Objective: "Define the visual direction for the website and take that initial concept through client approval before completing the detailed page designs.",
     "What to do": [
       "- Review the client's branding, requirements, and supplied assets.",
       "- Determine typography, color usage, spacing, and layout principles.",
       "- Establish visual hierarchy.",
       "- Consider the client's industry and target audience.",
       "- Keep the direction appropriate for the approved scope.",
+      "- Upload the concept as a Design deliverable (create one if it doesn't exist yet) and send it for client review.",
+      "- Watch for client feedback. If changes are requested, upload a revised version and send that new version for review.",
+      "- Repeat review/revise until the client approves a version.",
+      "- This approval covers only the initial direction/concept, not the finished page designs -- continue into the per-page design tasks once it's approved.",
     ].join("\n"),
     "Before starting": "Brand assets and the approved sitemap should be available, or missing items should already be flagged.",
-    Deliverable: "Initial visual and design direction.",
-    "Done when": "The visual system is established and provides a consistent foundation for the website.",
+    Deliverable: "A Design deliverable with the initial visual direction, approved by the client through the existing file review workflow.",
+    "Done when": "The client has approved a version of the initial design direction, giving the team a consistent, client-approved foundation to build the rest of the website on.",
   }),
   "design homepage": sectioned({
     Objective: "Create the primary homepage design based on the approved scope and design direction.",
@@ -386,16 +390,23 @@ const EXACT_INSTRUCTIONS: Record<string, string> = {
       "Required homepage sections are designed, branding is consistent, hierarchy is clear, and the design is ready for review or implementation.",
   }),
   "design responsive/mobile layouts": sectioned({
-    Objective: "Ensure the approved design works correctly across common screen sizes.",
+    Objective:
+      "Finish the responsive/mobile layouts -- completing the overall website design -- then take the whole design through client approval before development begins.",
     "What to do": [
       "- Review the desktop designs for purchased pages.",
       "- Adapt layouts for mobile.",
       "- Check typography, spacing, navigation, images, and CTAs.",
       "- Ensure content remains readable and usable.",
       "- Do not design extra pages that are not in scope.",
+      "- Once every purchased page and its responsive layout are ready, upload the complete design as a Design deliverable (e.g. \"Website Design\") and send it for client review.",
+      "- Use a deliverable separate from the Initial Design / Concept reviewed earlier -- approving that concept did not approve this overall design, so this needs its own review and its own approval.",
+      "- Watch for client feedback. If changes are requested, revise, upload a new version, and send that version for review again.",
+      "- Repeat review/revise until the client approves a version.",
     ].join("\n"),
-    Deliverable: "Responsive and mobile designs for the purchased pages.",
-    "Done when": "The required pages have usable desktop and mobile layouts.",
+    Deliverable:
+      "A Design deliverable with the completed website design, approved by the client through the existing file review workflow.",
+    "Done when":
+      "The client has approved a version of the overall website design. That approval means the design is ready for development -- it does not by itself start development tasks, assign developers, or change the project's status; the team picks up the already-planned development tasks against the approved version.",
   }),
   "write homepage copy": sectioned({
     Objective: "Create clear, client-appropriate copy for the homepage.",
@@ -460,6 +471,32 @@ const EXACT_INSTRUCTIONS: Record<string, string> = {
     ].join("\n"),
     Deliverable: "Purchased pages using approved client content.",
     "Done when": "Approved content is correctly integrated and no placeholder client-facing content remains.",
+  }),
+  "set up hosting": sectioned({
+    Objective: "Confirm and configure the agency's external hosting for this project.",
+    "What to do": [
+      "- Confirm the hosting provider and plan included in the accepted proposal.",
+      "- Configure hosting through the agency's external hosting process.",
+      "- Verify the environment is ready to receive a deployment.",
+      "- Update this project's Domain & hosting delivery section: set the hosting provider and move Hosting status to In progress, then Configured once verified.",
+      "- Report problems by setting Hosting status to Issue and notifying the PM.",
+      "- MotiveScripts does not provision hosting itself.",
+    ].join("\n"),
+    Deliverable: "Configured hosting environment, ready for deployment.",
+    "Done when": "Hosting is configured and verified, and the project's Hosting status reflects the result.",
+  }),
+  "connect the domain": sectioned({
+    Objective: "Confirm and connect the domain included in the accepted proposal.",
+    "What to do": [
+      "- Confirm the domain name and registrar/DNS owner (agency or client) from discovery and the accepted proposal.",
+      "- Connect the domain to the hosting environment through the agency's external process.",
+      "- Verify the domain resolves to the correct environment.",
+      "- Update this project's Domain & hosting delivery section: set the domain name and move Domain status to In progress, then Configured once verified.",
+      "- Report problems by setting Domain status to Issue and notifying the PM.",
+      "- MotiveScripts does not register or manage DNS itself.",
+    ].join("\n"),
+    Deliverable: "Domain connected and verified against the correct environment.",
+    "Done when": "The domain resolves correctly and the project's Domain status reflects the result.",
   }),
   "prepare/deploy staging": sectioned({
     Objective: "Make the current website available for QA and client review.",
@@ -563,17 +600,20 @@ const EXACT_INSTRUCTIONS: Record<string, string> = {
   "implement e-commerce functionality": implementFeatureInstructions("e-commerce functionality"),
   "implement online store": implementFeatureInstructions("e-commerce functionality"),
   "design brand identity / logo": sectioned({
-    Objective: "Create the logo and brand identity included in the accepted proposal.",
+    Objective: "Create the logo and brand identity included in the accepted proposal, and take it through client approval.",
     "What to do": [
       "- Review the client's industry, audience, and any existing brand materials.",
       "- Explore concepts for a logo mark and/or wordmark.",
       "- Define the core brand palette and typography.",
       "- Prepare the logo in the file formats needed for the website and other uses.",
       "- Keep the identity appropriate for the client's business.",
+      "- Upload the work as a Branding deliverable (create one if it doesn't exist yet) and send it for client review.",
+      "- Watch for client feedback. If changes are requested, upload a revised version and send that new version for review.",
+      "- Repeat review/revise until the client approves a version. The approved version is the one to use across the website design.",
     ].join("\n"),
     "Before starting": "The accepted proposal should include branding/logo design. Any existing brand materials should be available, or missing items should already be flagged.",
-    Deliverable: "Logo files and a brand palette/typography reference.",
-    "Done when": "The logo and brand basics are complete and ready for use across the website design.",
+    Deliverable: "A Branding deliverable with the logo and brand palette/typography reference, approved by the client through the existing file review workflow.",
+    "Done when": "The client has approved a version of the Branding deliverable, and that approved version is ready for use across the website design.",
   }),
   "accessibility audit (ada/wcag)": sectioned({
     Objective: "Audit the staging website against WCAG 2.1 AA and document required fixes.",
