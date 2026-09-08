@@ -1,12 +1,13 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
-import { isActiveAdmin } from "@/auth/permissions";
+import { hasPermission, isActiveAdmin } from "@/auth/permissions";
 import { adminGhostBtn } from "@/components/admin/adminActionStyles";
 import { InviteClientDialog } from "@/components/admin/clients/InviteClientDialog";
 import { ClientNoteModal } from "@/components/admin/clients/ClientNoteModal";
 import { useLeads, useProjectDeliverables } from "@/components/admin/leads/LeadsProvider";
 import { EditWebsiteUrlsModal } from "@/components/admin/projects/EditWebsiteUrlsModal";
+import { WebsiteHealthCard } from "@/components/admin/projects/WebsiteHealthCard";
 import { ProjectDiscoveryPanel } from "@/components/admin/projects/ProjectDiscoveryPanel";
 import { ProjectCommercialProgress } from "@/components/admin/projects/ProjectCommercialProgress";
 import { ProjectNextAction } from "@/components/admin/projects/ProjectNextAction";
@@ -240,6 +241,12 @@ export function ProjectOverview({ project, client, workflow, onOpenTab }: Projec
           View deliverables
         </button>
       </section>
+
+      <WebsiteHealthCard
+        projectId={project.id}
+        productionUrl={project.development.productionUrl}
+        canCheckNow={hasPermission(profile, "projects.manage")}
+      />
 
       {client ? (
         <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">

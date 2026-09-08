@@ -105,6 +105,17 @@ export type ProjectDevelopmentRow = {
   updated_by: string | null;
 };
 
+export type WebsiteHealthCheckRow = {
+  id: string;
+  project_id: string;
+  checked_at: string;
+  status: string;
+  http_status: number | null;
+  response_time_ms: number | null;
+  error_message: string;
+  checked_by: string | null;
+};
+
 export type MilestoneRow = {
   id: string;
   project_id: string;
@@ -1012,6 +1023,10 @@ export type Database = {
       payroll_payments: Table<
         PayrollPaymentRow,
         Partial<PayrollPaymentRow> & { staff_id: string; amount_cents: number; hours: number; pay_rate_cents: number }
+      >;
+      website_health_checks: Table<
+        WebsiteHealthCheckRow,
+        Partial<WebsiteHealthCheckRow> & { project_id: string; status: string }
       >;
     };
     Views: Record<string, never>;

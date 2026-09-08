@@ -16,6 +16,9 @@ verify_jwt = false
 [functions.check-domain-availability]
 verify_jwt = false
 
+[functions.check-website-health]
+verify_jwt = false
+
 [functions.stripe-webhook]
 verify_jwt = false
 

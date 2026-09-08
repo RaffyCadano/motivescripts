@@ -11,6 +11,7 @@ import { ProjectFeedbackPanel } from "@/components/admin/projects/ProjectFeedbac
 import { ProjectFilesPanel } from "@/components/admin/projects/ProjectFilesPanel";
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
 import { ProjectDevelopmentSection } from "@/components/admin/projects/ProjectDevelopmentSection";
+import { WebsiteHealthCard } from "@/components/admin/projects/WebsiteHealthCard";
 import { ProjectTimePanel } from "@/components/admin/projects/ProjectTimePanel";
 import { TeamDevelopmentEditor } from "@/components/team/TeamDevelopmentEditor";
 import { ProjectProductionPipeline } from "@/components/admin/projects/ProjectProductionPipeline";
@@ -274,6 +275,7 @@ export function TeamProjectDetails() {
           nextMilestone={nextMilestone}
           myOpen={myOpen}
           canManageDomainHosting={canCoordinateAssignedWork(profile)}
+          canCheckWebsiteHealth={hasPermission(profile, "projects.manage")}
           onOpenTasks={() => setTab("tasks")}
           onDevelopmentSaved={reload}
         />
@@ -354,6 +356,7 @@ function TeamProjectOverview({
   nextMilestone,
   myOpen,
   canManageDomainHosting,
+  canCheckWebsiteHealth,
   onOpenTasks,
   onDevelopmentSaved,
 }: {
@@ -364,6 +367,7 @@ function TeamProjectOverview({
   nextMilestone: AgencyMilestone | null;
   myOpen: number;
   canManageDomainHosting: boolean;
+  canCheckWebsiteHealth: boolean;
   onOpenTasks: () => void;
   onDevelopmentSaved: () => void;
 }) {
@@ -442,6 +446,12 @@ function TeamProjectOverview({
         </section>
 
         <ProjectDevelopmentSection development={project.development} onEditClick={() => setDevEditorOpen(true)} />
+
+        <WebsiteHealthCard
+          projectId={project.id}
+          productionUrl={project.development.productionUrl}
+          canCheckNow={canCheckWebsiteHealth}
+        />
       </div>
       {devEditorOpen ? (
         <TeamDevelopmentEditor
