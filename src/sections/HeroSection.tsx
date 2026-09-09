@@ -5,7 +5,7 @@ import { HeroVisual } from "@/components/HeroVisual";
 export function HeroSection() {
   return (
     <section className="relative pb-16 pt-10 sm:pb-20 sm:pt-14 md:pb-40 md:pt-28 lg:pb-44 lg:pt-36">
-      <div className="hero-grid pointer-events-none absolute inset-0 opacity-50" />
+      <div className="hero-grid pointer-events-none absolute inset-0" />
 
       <div className="container-wide relative grid items-center gap-8 md:gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16">
         <AnimateIn>

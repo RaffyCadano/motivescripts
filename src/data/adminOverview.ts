@@ -50,6 +50,40 @@ export type OverviewActivityItem = {
 
 const pipelineStatuses = new Set(["draft", "sent", "viewed", "accepted", "expired"]);
 
+/**
+ * Cumulative running total for the last `points` days, built from real
+ * per-item timestamps (never fabricated). Callers pass exactly the cohort
+ * that matches a stat's live count (e.g. currently-active clients), so the
+ * trend always ends at that same number -- it's a growth curve of *when*
+ * today's total accumulated, not an invented history.
+ */
+export function buildCumulativeTrend(items: { at: string; weight?: number }[], points = 12): number[] {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const perDay = new Array(points).fill(0) as number[];
+  let before = 0;
+
+  for (const item of items) {
+    const date = new Date(item.at);
+    if (Number.isNaN(date.getTime())) continue;
+    const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    const daysAgo = Math.round((todayStart - dayStart) / dayMs);
+    const bucket = points - 1 - daysAgo;
+    const weight = item.weight ?? 1;
+    if (bucket < 0) before += weight;
+    else if (bucket < points) perDay[bucket] += weight;
+  }
+
+  const cumulative: number[] = [];
+  let running = before;
+  for (let i = 0; i < points; i++) {
+    running += perDay[i];
+    cumulative.push(running);
+  }
+  return cumulative;
+}
+
 export function dateInNextDays(dateStr: string, days: number): boolean {
   if (!dateStr) return false;
   const due = new Date(`${dateStr}T00:00:00`);
@@ -59,6 +93,45 @@ export function dateInNextDays(dateStr: string, days: number): boolean {
   const end = new Date(start);
   end.setDate(end.getDate() + days);
   return due >= start && due < end;
+}
+
+export const invoicePeriods = ["all", "thisMonth", "lastMonth", "lastYear"] as const;
+export type InvoicePeriod = (typeof invoicePeriods)[number];
+
+export function invoicePeriodLabel(period: InvoicePeriod): string {
+  switch (period) {
+    case "all":
+      return "All";
+    case "thisMonth":
+      return "This Month";
+    case "lastMonth":
+      return "Last Month";
+    case "lastYear":
+      return "Last Year";
+  }
+}
+
+/** Scopes invoices to a calendar period by issue date. "Last Year" means the previous calendar year (Jan-Dec), not a trailing 12 months. */
+export function filterInvoicesByPeriod(rows: InvoiceSummary[], period: InvoicePeriod, now = new Date()): InvoiceSummary[] {
+  if (period === "all") return rows;
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  let start: Date;
+  let end: Date;
+  if (period === "thisMonth") {
+    start = new Date(year, month, 1);
+    end = new Date(year, month + 1, 1);
+  } else if (period === "lastMonth") {
+    start = new Date(year, month - 1, 1);
+    end = new Date(year, month, 1);
+  } else {
+    start = new Date(year - 1, 0, 1);
+    end = new Date(year, 0, 1);
+  }
+  return rows.filter((row) => {
+    const issued = new Date(`${row.issueDate.slice(0, 10)}T00:00:00`);
+    return issued >= start && issued < end;
+  });
 }
 
 export function buildOverviewInvoiceTotals(rows: InvoiceSummary[]): OverviewInvoiceTotals {
@@ -276,22 +349,27 @@ export function buildOverviewAttention(
     }
   }
 
+  // Grouped by project (not one row per deliverable) so a project with several
+  // files in review at once shows a single row instead of identical-looking
+  // duplicates -- the count still says how many are waiting.
+  const inReviewByProject = new Map<string, number>();
   for (const file of input.deliverables) {
-    if (file.status === "Archived") continue;
-    const project = projects.find((item) => item.id === file.projectId);
+    if (file.status !== "In Review") continue;
+    inReviewByProject.set(file.projectId, (inReviewByProject.get(file.projectId) ?? 0) + 1);
+  }
+  for (const [projectId, count] of inReviewByProject) {
+    const project = projects.find((item) => item.id === projectId);
     const name = project ? clientName(input.clients, project.clientId, project.name) : "Project";
-    if (file.status === "In Review") {
-      items.push({
-        id: `review-${file.id}`,
-        name,
-        body: "Website is waiting for your review.",
-        stage: "Review",
-        actionLabel: "Open Project",
-        href: `/admin/projects/${file.projectId}?tab=files`,
-        sort: 20,
-        clientId: project?.clientId ?? null,
-      });
-    }
+    items.push({
+      id: `review-${projectId}`,
+      name,
+      body: count === 1 ? "Website is waiting for your review." : `${count} deliverables are waiting for your review.`,
+      stage: "Review",
+      actionLabel: "Open Project",
+      href: `/admin/projects/${projectId}?tab=files`,
+      sort: 20,
+      clientId: project?.clientId ?? null,
+    });
   }
 
   for (const file of needsAttention(input.deliverables)) {
@@ -330,6 +408,63 @@ export function buildOverviewAttention(
   }
 
   return items.sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name)).slice(0, limit);
+}
+
+/**
+ * Pure "next step" reminders -- no client-specific document number, so several
+ * of them read as identical rows once there are a few clients at that stage.
+ * Deliberately excludes anything referencing a specific proposal/contract/
+ * invoice/feedback (those stay itemized -- each is a distinct thing to open).
+ */
+const GROUPABLE_REMINDERS: Partial<Record<string, string>> = {
+  "Create Project": "have a submitted scope ready to become a project.",
+  "Create Proposal": "have a project ready for a proposal.",
+  "Create Contract": "have an accepted proposal ready for a contract.",
+  "Create Invoice": "have an accepted contract ready for an invoice.",
+};
+
+/**
+ * Display-only compacting for a long attention list: once 3+ items share the
+ * same groupable reminder action, collapse them into a single "N clients ..."
+ * summary row that links back to this same page's Attention filter, instead
+ * of one near-identical row per client. Does not change what counts as
+ * needing attention -- callers should keep using the un-grouped list (e.g.
+ * for an Attention filter's client-id set) and only pass the compacted
+ * result to what's actually rendered.
+ */
+export function compactAttentionItems(items: OverviewAttentionItem[], threshold = 3): OverviewAttentionItem[] {
+  const groups = new Map<string, OverviewAttentionItem[]>();
+  const rest: OverviewAttentionItem[] = [];
+
+  for (const item of items) {
+    if (!GROUPABLE_REMINDERS[item.actionLabel]) {
+      rest.push(item);
+      continue;
+    }
+    const list = groups.get(item.actionLabel) ?? [];
+    list.push(item);
+    groups.set(item.actionLabel, list);
+  }
+
+  const result = [...rest];
+  for (const [actionLabel, group] of groups) {
+    if (group.length < threshold) {
+      result.push(...group);
+      continue;
+    }
+    result.push({
+      id: `summary-${actionLabel}`,
+      name: `${group.length} clients`,
+      body: GROUPABLE_REMINDERS[actionLabel]!,
+      stage: group[0].stage,
+      actionLabel: "View all",
+      href: "/admin/clients?attention=1",
+      sort: Math.min(...group.map((entry) => entry.sort)),
+      clientId: null,
+    });
+  }
+
+  return result.sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name));
 }
 
 export function buildClientListAttention(

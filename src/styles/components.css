@@ -87,8 +87,8 @@
 
 .hero-grid {
   background-image:
-    linear-gradient(rgb(0 16 48 / 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(0 16 48 / 0.06) 1px, transparent 1px);
+    linear-gradient(rgb(0 16 48 / 0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(0 16 48 / 0.10) 1px, transparent 1px);
   background-size: 56px 56px;
   mask-image: radial-gradient(ellipse 70% 60% at 70% 40%, black 10%, transparent 70%);
 }

@@ -9,6 +9,7 @@ import {
   startOfCurrentMonth,
   startOfCurrentQuarter,
   startOfCurrentYear,
+  sumAllCents,
   sumCentsInRange,
   type PaymentReportRow,
   type RevenuePeriodGrain,
@@ -61,6 +62,7 @@ export function AdminReports() {
       recurringYear: payments
         .filter((payment) => payment.recurring && payment.paymentDate.slice(0, 10) >= startOfCurrentYear())
         .reduce((sum, payment) => sum + payment.amountCents, 0),
+      total: sumAllCents(payments),
     }),
     [payments],
   );
@@ -70,11 +72,12 @@ export function AdminReports() {
       <AdminPageHeader title="Reports" description="Revenue by period, split between recurring and one-time billing." />
 
       <section aria-label="Revenue summary">
-        <AdminStatGrid columns={4}>
+        <AdminStatGrid columns={5}>
           <AdminStatCard label="This month" value={formatUsdFromCents(summary.month)} />
           <AdminStatCard label="This quarter" value={formatUsdFromCents(summary.quarter)} />
           <AdminStatCard label="This year" value={formatUsdFromCents(summary.year)} />
           <AdminStatCard label="Recurring this year" value={formatUsdFromCents(summary.recurringYear)} />
+          <AdminStatCard label="Total revenue" value={formatUsdFromCents(summary.total)} />
         </AdminStatGrid>
       </section>
 

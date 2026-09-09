@@ -60,6 +60,10 @@ export function sumCentsInRange(payments: PaymentReportRow[], startIso: string):
     .reduce((sum, payment) => sum + payment.amountCents, 0);
 }
 
+export function sumAllCents(payments: PaymentReportRow[]): number {
+  return payments.reduce((sum, payment) => sum + payment.amountCents, 0);
+}
+
 export function startOfCurrentMonth(): string {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);

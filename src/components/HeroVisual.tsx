@@ -23,11 +23,19 @@ export function HeroVisual() {
   );
 }
 
+function TrustBadge({ children }: { children: string }) {
+  return (
+    <span className="inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-[12px] font-semibold text-white ring-1 ring-inset ring-white/25">
+      {children}
+    </span>
+  );
+}
+
 function HeroSiteMock() {
   return (
     <div className="flex h-full flex-col bg-white text-[#101828]" aria-hidden="true">
       <div className="flex shrink-0 items-center justify-between bg-[#0b1b3a] px-10 py-2.5 text-[13px] text-white/80">
-        <span>Residential contracting · Austin and nearby</span>
+        <span>★★★★★ 4.9 (120 reviews) · Austin and nearby</span>
         <span className="font-heading font-semibold text-white">(512) 555-0160</span>
       </div>
 
@@ -46,43 +54,60 @@ function HeroSiteMock() {
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-2 items-center gap-10 px-10 py-8">
-        <div className="min-w-0">
-          <p className="font-heading text-xs font-bold uppercase tracking-[0.16em] text-[#0050F0]">
-            Residential contracting
-          </p>
-          <p className="mt-3 max-w-[13ch] font-heading text-[3.1rem] font-extrabold leading-[1.04]">
-            Built for the way you work.
-          </p>
-          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-[#5c6678]">
-            Kitchens, baths, and repairs — with a clear estimate and a crew that shows up.
-          </p>
-          <div className="mt-6 flex items-center gap-4">
-            <span className="inline-flex rounded-md bg-[linear-gradient(135deg,#0050F0,#00A0FF)] px-5 py-2.5 text-sm font-semibold text-white">
-              Request an estimate
-            </span>
-            <span className="text-sm text-[#5c6678]">Same-week visits</span>
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <img
+          src={houseHero}
+          alt=""
+          draggable={false}
+          className="absolute inset-0 size-full max-w-none object-cover"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(100deg,rgba(11,27,58,0.90)_0%,rgba(11,27,58,0.62)_36%,rgba(11,27,58,0.08)_62%)]" />
+
+        <div className="relative z-10 flex h-full items-center px-10">
+          <div className="max-w-lg">
+            <p className="font-heading text-xs font-bold uppercase tracking-[0.16em] text-[#8fbcff]">
+              Residential contracting
+            </p>
+            <p className="mt-3 max-w-[13ch] font-heading text-[3.1rem] font-extrabold leading-[1.04] text-white">
+              Built for the way you work.
+            </p>
+            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/80">
+              Kitchens, baths, and repairs — with a clear estimate and a crew that shows up.
+            </p>
+            <div className="mt-6 flex items-center gap-2.5">
+              <TrustBadge>Licensed &amp; Insured</TrustBadge>
+              <TrustBadge>15+ years</TrustBadge>
+            </div>
           </div>
         </div>
-        <div className="relative aspect-[16/10] overflow-hidden rounded-2xl">
-          <img
-            src={houseHero}
-            alt=""
-            draggable={false}
-            className="absolute inset-0 size-full max-w-none object-cover"
-          />
+
+        <div className="absolute bottom-7 right-10 z-10 w-[19rem] rounded-2xl bg-white p-5 shadow-[0_20px_45px_rgb(11_27_58_/_0.3)]">
+          <p className="font-heading text-[15px] font-extrabold">Get a free estimate</p>
+          <p className="mt-1 text-[13px] text-[#5c6678]">Same-week visits, most projects.</p>
+          <div className="mt-3.5 space-y-2">
+            <div className="flex h-9 items-center rounded-lg border border-[#e8edf4] bg-[#f7f9fc] px-3 text-[13px] text-[#9aa4b2]">
+              Full name
+            </div>
+            <div className="flex h-9 items-center rounded-lg border border-[#e8edf4] bg-[#f7f9fc] px-3 text-[13px] text-[#9aa4b2]">
+              Phone number
+            </div>
+          </div>
+          <span className="mt-3.5 flex items-center justify-center rounded-lg bg-[linear-gradient(135deg,#0050F0,#00A0FF)] py-2.5 text-sm font-semibold text-white">
+            Request estimate
+          </span>
         </div>
       </div>
 
-      <div className="grid shrink-0 grid-cols-3 gap-3 px-10 pb-8">
+      <div className="grid shrink-0 grid-cols-4 gap-3 border-t border-[#e8edf4] px-10 py-5">
         {[
-          ["Remodels", "Kitchens & baths"],
-          ["Additions", "Rooms that fit"],
-          ["Repairs", "Same-week visits"],
-        ].map(([title, note]) => (
-          <div key={title} className="rounded-xl border border-[#e8edf4] bg-[#f7f9fc] px-5 py-4">
-            <p className="text-[15px] font-semibold">{title}</p>
-            <p className="mt-1 text-[13px] text-[#5c6678]">{note}</p>
+          ["4.9★", "120+ reviews"],
+          ["15+", "years in business"],
+          ["48 hr", "average response"],
+          ["100%", "satisfaction guarantee"],
+        ].map(([big, note]) => (
+          <div key={note}>
+            <p className="font-heading text-xl font-extrabold text-[#0050F0]">{big}</p>
+            <p className="mt-0.5 text-[13px] text-[#5c6678]">{note}</p>
           </div>
         ))}
       </div>

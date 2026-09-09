@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { adminBlueBtn, adminGhostBtn } from "@/components/admin/adminActionStyles";
 import { AdminAttentionList } from "@/components/admin/list/AdminAttentionList";
 import { AdminEmptyState } from "@/components/admin/list/AdminEmptyState";
@@ -11,7 +11,7 @@ import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission, type StaffPermissionCode } from "@/auth/permissions";
 import { filterAgencyClients, type AgencyClientStatus } from "@/data/agencyClients";
-import { buildClientListAttention, overviewHrefAllowed } from "@/data/adminOverview";
+import { buildClientListAttention, compactAttentionItems, overviewHrefAllowed } from "@/data/adminOverview";
 import type { ClientListRecords } from "@/data/clientList";
 import { fetchContractSummaries, fetchProposalSummaries } from "@/data/documentsRepository";
 import { fetchInvoiceSummaries } from "@/data/invoicesRepository";
@@ -25,10 +25,11 @@ export function AdminClients() {
   const { clients, projects, deliverables, feedback } = useLeads();
   const { conversations } = useMessaging();
   const { profile } = useAuth();
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<AgencyClientStatus | "All">("All");
   const [industry, setIndustry] = useState<LeadIndustry | "All">("All");
-  const [attentionOnly, setAttentionOnly] = useState(false);
+  const [attentionOnly, setAttentionOnly] = useState(() => searchParams.get("attention") === "1");
   const [records, setRecords] = useState<ClientListRecords>(emptyRecords);
 
   const can = (code: StaffPermissionCode) => hasPermission(profile, code);
@@ -67,6 +68,8 @@ export function AdminClients() {
       }).filter((item) => overviewHrefAllowed(item.href, can)),
     [clients, deliverables, feedback, projects, records, profile],
   );
+
+  const attentionDisplay = useMemo(() => compactAttentionItems(attention), [attention]);
 
   const attentionClientIds = useMemo(() => {
     const ids = new Set<string>();
@@ -141,7 +144,7 @@ export function AdminClients() {
       />
 
       <AdminAttentionList
-        items={attention.map((item) => ({
+        items={attentionDisplay.map((item) => ({
           id: item.id,
           name: item.name,
           body: item.body,

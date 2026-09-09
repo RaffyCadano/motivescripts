@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { ArrowDown, ArrowUp, Minus } from "lucide-react";
+import { Sparkline } from "@/components/admin/list/Sparkline";
 import { cn } from "@/lib/cn";
 
 export function AdminStatGrid({
@@ -24,6 +26,43 @@ export function AdminStatGrid({
   );
 }
 
+/** Percent change from the first to the last point of a trend, or null if it can't be expressed as a percent. */
+function trendDeltaPercent(trend: number[]): number | null {
+  if (trend.length < 2) return null;
+  const previous = trend[0];
+  const current = trend[trend.length - 1];
+  if (previous === 0) return current === 0 ? 0 : null;
+  return ((current - previous) / previous) * 100;
+}
+
+function DeltaBadge({ trend, higherIsBetter }: { trend: number[]; higherIsBetter: boolean }) {
+  const previous = trend[0];
+  const current = trend[trend.length - 1];
+  const percent = trendDeltaPercent(trend);
+  const isNew = percent === null && current > previous;
+
+  const direction: "up" | "down" | "flat" = isNew || (percent !== null && percent > 0) ? "up" : percent !== null && percent < 0 ? "down" : "flat";
+  const good = direction === "flat" ? null : direction === "up" === higherIsBetter;
+  const tone =
+    good === null
+      ? "bg-[var(--admin-bg)] text-[var(--admin-muted)]"
+      : good
+        ? "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]"
+        : "bg-[rgb(220_38_38_/_0.08)] text-[#b42318]";
+  const Icon = direction === "up" ? ArrowUp : direction === "down" ? ArrowDown : Minus;
+  const label = isNew ? "New" : direction === "flat" ? "0%" : `${percent! > 0 ? "+" : ""}${Math.round(percent!)}%`;
+
+  return (
+    <span
+      className={cn("inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold", tone)}
+      title="vs. 12 days ago"
+    >
+      <Icon size={10} strokeWidth={2.5} aria-hidden="true" />
+      {label}
+    </span>
+  );
+}
+
 export function AdminStatCard({
   label,
   value,
@@ -31,6 +70,8 @@ export function AdminStatCard({
   secondary = false,
   href,
   onClick,
+  trend,
+  higherIsBetter = true,
 }: {
   label: string;
   value: string | number;
@@ -38,6 +79,10 @@ export function AdminStatCard({
   secondary?: boolean;
   href?: string;
   onClick?: () => void;
+  /** Optional 12-point history ending at `value` -- see buildCumulativeTrend. Also drives the delta badge. */
+  trend?: number[];
+  /** Whether an increase is good news (green) or bad news (red). Defaults to true; set false for backlog-style counts. */
+  higherIsBetter?: boolean;
 }) {
   const className = cn(
     "rounded-[var(--admin-radius)] border bg-[var(--admin-card)] text-left transition-colors",
@@ -48,15 +93,21 @@ export function AdminStatCard({
   );
   const body = (
     <>
-      <p className="text-[12px] text-[var(--admin-muted)]">{label}</p>
-      <p
-        className={cn(
-          "mt-0.5 font-heading font-semibold tracking-tight text-[var(--admin-ink)]",
-          secondary ? "text-xl" : "text-[1.5rem]",
-        )}
-      >
-        {value}
-      </p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[12px] text-[var(--admin-muted)]">{label}</p>
+        {trend ? <DeltaBadge trend={trend} higherIsBetter={higherIsBetter} /> : null}
+      </div>
+      <div className="mt-0.5 flex items-end justify-between gap-2">
+        <p
+          className={cn(
+            "min-w-0 truncate font-heading font-semibold tracking-tight text-[var(--admin-ink)]",
+            secondary ? "text-xl" : "text-[1.5rem]",
+          )}
+        >
+          {value}
+        </p>
+        {trend ? <Sparkline values={trend} className="mb-0.5 shrink-0" /> : null}
+      </div>
     </>
   );
 

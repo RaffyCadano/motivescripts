@@ -6,34 +6,47 @@
 -- Optional local/staging: run this SQL in the Dashboard after schema migrations, never as a production migration.
 
 insert into public.clients (
-  id, contact_name, business_name, email, phone, industry, website, location, status, source, notes, activity, invoices, messages, last_activity_at, created_at
+  id, contact_name, business_name, email, phone, industry, website, location, status, source, last_activity_at, created_at
 ) values
-('20000000-0000-4000-8000-000000000001', 'John Smith', 'ABC Landscaping', 'john@example.com', '(555) 555-5555', 'Landscaping', '', '', 'Active', 'Start a Project',
-  '[{"id":"cnote-001","body":"Client prefers communication by email.","author":"Raffy","createdAt":null}]'::jsonb,
-  '[{"id":"cact-001a","description":"Homepage V3 approved","createdAt":null,"icon":"file"},{"id":"cact-001c","description":"Client record created","createdAt":null,"icon":"created"}]'::jsonb,
-  '[{"id":"inv-1042","number":"#1042","title":"Website Development","amount":"$1,200","status":"Partially Paid"},{"id":"inv-1038","number":"#1038","title":"Deposit","amount":"$1,200","status":"Paid"}]'::jsonb,
-  '[{"id":"msg-a","sender":"John Smith","body":"Can we change the hero image?"},{"id":"msg-b","sender":"MotiveScripts","body":"Absolutely. We’ll update it."}]'::jsonb,
-  now(), now() - interval '12 days'),
-('20000000-0000-4000-8000-000000000002', 'Mike Johnson', 'Smith Auto', 'mike@smithauto.example', '(555) 014-2201', 'Auto', '', '', 'Active', 'Start a Project',
-  '[]'::jsonb, '[{"id":"cact-002b","description":"Client record created","createdAt":null,"icon":"created"}]'::jsonb,
-  '[{"id":"inv-1020","number":"#1020","title":"Design deposit","amount":"$800","status":"Paid"}]'::jsonb,
-  '[{"id":"msg-c","sender":"Mike Johnson","body":"Can we add the inspection special?"}]'::jsonb,
-  now() - interval '1 days', now() - interval '20 days'),
-('20000000-0000-4000-8000-000000000003', 'Sarah Williams', 'XYZ Cleaning', 'sarah@xyzcleaning.example', '(555) 014-3308', 'Cleaning', '', '', 'Active', 'Start a Project',
-  '[]'::jsonb, '[{"id":"cact-003b","description":"Client record created","createdAt":null,"icon":"created"}]'::jsonb,
-  '[{"id":"inv-1011","number":"#1011","title":"Landing page","amount":"$1,400","status":"Paid"}]'::jsonb,
-  '[{"id":"msg-d","sender":"MotiveScripts","body":"The landing page is live."}]'::jsonb,
-  now() - interval '2 days', now() - interval '30 days'),
-('20000000-0000-4000-8000-000000000004', 'Elena Park', 'Harbor & Pine Salon', 'elena@harborpine.example', '(555) 014-5580', 'Salon / barber', '', '', 'Active', 'Start a Project',
-  '[]'::jsonb, '[{"id":"cact-hp-a","description":"Client converted from lead","createdAt":null,"icon":"converted"}]'::jsonb,
-  '[]'::jsonb, '[]'::jsonb, now() - interval '5 days', now() - interval '5 days'),
-('20000000-0000-4000-8000-000000000005', 'Luis Ortega', 'BrightPath Bookkeeping', 'luis@brightpath.example', '(555) 014-8801', 'Professional services', 'https://brightpath.example', 'Austin, TX', 'Inactive', 'Manual',
-  '[]'::jsonb, '[{"id":"cact-004a","description":"Client marked inactive","createdAt":null,"icon":"status"}]'::jsonb,
-  '[]'::jsonb, '[]'::jsonb, now() - interval '21 days', now() - interval '60 days'),
-('20000000-0000-4000-8000-000000000006', 'Nina Cole', 'Cole Home Care', 'nina@colehome.example', '(555) 014-9902', 'Home services', '', '', 'Archived', 'Manual',
-  '[]'::jsonb, '[{"id":"cact-005a","description":"Client archived","createdAt":null,"icon":"status"}]'::jsonb,
-  '[]'::jsonb, '[]'::jsonb, now() - interval '40 days', now() - interval '90 days')
+('20000000-0000-4000-8000-000000000001', 'John Smith', 'ABC Landscaping', 'john@example.com', '(555) 555-5555', 'Landscaping', '', '', 'Active', 'Start a Project', now(), now() - interval '12 days'),
+('20000000-0000-4000-8000-000000000002', 'Mike Johnson', 'Smith Auto', 'mike@smithauto.example', '(555) 014-2201', 'Auto', '', '', 'Active', 'Start a Project', now() - interval '1 days', now() - interval '20 days'),
+('20000000-0000-4000-8000-000000000003', 'Sarah Williams', 'XYZ Cleaning', 'sarah@xyzcleaning.example', '(555) 014-3308', 'Cleaning', '', '', 'Active', 'Start a Project', now() - interval '2 days', now() - interval '30 days'),
+('20000000-0000-4000-8000-000000000004', 'Elena Park', 'Harbor & Pine Salon', 'elena@harborpine.example', '(555) 014-5580', 'Salon / barber', '', '', 'Active', 'Start a Project', now() - interval '5 days', now() - interval '5 days'),
+('20000000-0000-4000-8000-000000000005', 'Luis Ortega', 'BrightPath Bookkeeping', 'luis@brightpath.example', '(555) 014-8801', 'Professional services', 'https://brightpath.example', 'Austin, TX', 'Inactive', 'Manual', now() - interval '21 days', now() - interval '60 days'),
+('20000000-0000-4000-8000-000000000006', 'Nina Cole', 'Cole Home Care', 'nina@colehome.example', '(555) 014-9902', 'Home services', '', '', 'Archived', 'Manual', now() - interval '40 days', now() - interval '90 days')
 on conflict (id) do nothing;
+
+
+update public.client_staff_data set
+  notes = '[{"id":"cnote-001","body":"Client prefers communication by email.","author":"Raffy","createdAt":null}]'::jsonb,
+  activity = '[{"id":"cact-001a","description":"Homepage V3 approved","createdAt":null,"icon":"file"},{"id":"cact-001c","description":"Client record created","createdAt":null,"icon":"created"}]'::jsonb,
+  invoices = '[{"id":"inv-1042","number":"#1042","title":"Website Development","amount":"$1,200","status":"Partially Paid"},{"id":"inv-1038","number":"#1038","title":"Deposit","amount":"$1,200","status":"Paid"}]'::jsonb,
+  messages = '[{"id":"msg-a","sender":"John Smith","body":"Can we change the hero image?"},{"id":"msg-b","sender":"MotiveScripts","body":"Absolutely. We’ll update it."}]'::jsonb
+  where client_id = '20000000-0000-4000-8000-000000000001';
+
+update public.client_staff_data set
+  activity = '[{"id":"cact-002b","description":"Client record created","createdAt":null,"icon":"created"}]'::jsonb,
+  invoices = '[{"id":"inv-1020","number":"#1020","title":"Design deposit","amount":"$800","status":"Paid"}]'::jsonb,
+  messages = '[{"id":"msg-c","sender":"Mike Johnson","body":"Can we add the inspection special?"}]'::jsonb
+  where client_id = '20000000-0000-4000-8000-000000000002';
+
+update public.client_staff_data set
+  activity = '[{"id":"cact-003b","description":"Client record created","createdAt":null,"icon":"created"}]'::jsonb,
+  invoices = '[{"id":"inv-1011","number":"#1011","title":"Landing page","amount":"$1,400","status":"Paid"}]'::jsonb,
+  messages = '[{"id":"msg-d","sender":"MotiveScripts","body":"The landing page is live."}]'::jsonb
+  where client_id = '20000000-0000-4000-8000-000000000003';
+
+update public.client_staff_data set
+  activity = '[{"id":"cact-hp-a","description":"Client converted from lead","createdAt":null,"icon":"converted"}]'::jsonb
+  where client_id = '20000000-0000-4000-8000-000000000004';
+
+update public.client_staff_data set
+  activity = '[{"id":"cact-004a","description":"Client marked inactive","createdAt":null,"icon":"status"}]'::jsonb
+  where client_id = '20000000-0000-4000-8000-000000000005';
+
+update public.client_staff_data set
+  activity = '[{"id":"cact-005a","description":"Client archived","createdAt":null,"icon":"status"}]'::jsonb
+  where client_id = '20000000-0000-4000-8000-000000000006';
 
 
 insert into public.leads (
@@ -83,17 +96,17 @@ values
 ('40000000-0000-4000-8000-000000000011', '30000000-0000-4000-8000-000000000001', 'Discovery', 'Kickoff, goals, and content collection.', 'Completed', 1, (now() - interval '12 days')::date, (now() - interval '9 days')::date),
 ('40000000-0000-4000-8000-000000000012', '30000000-0000-4000-8000-000000000001', 'Design', 'Homepage and inner-page layouts.', 'Completed', 2, (now() - interval '9 days')::date, (now() - interval '5 days')::date),
 ('40000000-0000-4000-8000-000000000013', '30000000-0000-4000-8000-000000000001', 'Development', 'Build the approved designs in code.', 'In Progress', 3, (now() - interval '5 days')::date, (now() + interval '13 days')::date),
-('40000000-0000-4000-8000-000000000014', '30000000-0000-4000-8000-000000000001', 'QA & Client Review', 'Test the staging website, resolve issues, collect client feedback, and obtain approval.', 'Not Started', 4, null, (now() + interval '16 days')::date),
+('40000000-0000-4000-8000-000000000014', '30000000-0000-4000-8000-000000000001', 'Client Review', 'Walkthrough, feedback, and approval.', 'Not Started', 4, null, (now() + interval '16 days')::date),
 ('40000000-0000-4000-8000-000000000015', '30000000-0000-4000-8000-000000000001', 'Launch', 'Go-live and handoff.', 'Not Started', 5, null, (now() + interval '18 days')::date),
 ('40000000-0000-4000-8000-000000000021', '30000000-0000-4000-8000-000000000002', 'Discovery', 'Discovery stage.', 'Completed', 1, (now() - interval '18 days')::date, (now() - interval '16 days')::date),
 ('40000000-0000-4000-8000-000000000022', '30000000-0000-4000-8000-000000000002', 'Design', 'Design stage.', 'Completed', 2, (now() - interval '16 days')::date, (now() - interval '10 days')::date),
 ('40000000-0000-4000-8000-000000000023', '30000000-0000-4000-8000-000000000002', 'Development', 'Development stage.', 'Completed', 3, (now() - interval '10 days')::date, (now() - interval '2 days')::date),
-('40000000-0000-4000-8000-000000000024', '30000000-0000-4000-8000-000000000002', 'QA & Client Review', 'Test the staging website, resolve issues, collect client feedback, and obtain approval.', 'In Progress', 4, (now() - interval '2 days')::date, (now() + interval '4 days')::date),
+('40000000-0000-4000-8000-000000000024', '30000000-0000-4000-8000-000000000002', 'Client Review', 'Client Review stage.', 'In Progress', 4, (now() - interval '2 days')::date, (now() + interval '4 days')::date),
 ('40000000-0000-4000-8000-000000000025', '30000000-0000-4000-8000-000000000002', 'Launch', 'Launch stage.', 'Not Started', 5, null, (now() + interval '6 days')::date),
 ('40000000-0000-4000-8000-000000000031', '30000000-0000-4000-8000-000000000003', 'Discovery', 'Discovery stage.', 'In Progress', 1, (now() - interval '2 days')::date, (now() + interval '5 days')::date),
 ('40000000-0000-4000-8000-000000000032', '30000000-0000-4000-8000-000000000003', 'Design', 'Design stage.', 'Not Started', 2, null, (now() + interval '12 days')::date),
 ('40000000-0000-4000-8000-000000000033', '30000000-0000-4000-8000-000000000003', 'Development', 'Development stage.', 'Not Started', 3, null, (now() + interval '18 days')::date),
-('40000000-0000-4000-8000-000000000034', '30000000-0000-4000-8000-000000000003', 'QA & Client Review', 'Test the staging website, resolve issues, collect client feedback, and obtain approval.', 'Not Started', 4, null, (now() + interval '21 days')::date),
+('40000000-0000-4000-8000-000000000034', '30000000-0000-4000-8000-000000000003', 'Client Review', 'Client Review stage.', 'Not Started', 4, null, (now() + interval '21 days')::date),
 ('40000000-0000-4000-8000-000000000035', '30000000-0000-4000-8000-000000000003', 'Launch', 'Launch stage.', 'Not Started', 5, null, (now() + interval '23 days')::date),
 ('40000000-0000-4000-8000-000000000041', '30000000-0000-4000-8000-000000000004', 'Discovery', 'Discovery stage.', 'Completed', 1, (now() - interval '16 days')::date, (now() - interval '14 days')::date),
 ('40000000-0000-4000-8000-000000000042', '30000000-0000-4000-8000-000000000004', 'Development', 'Development stage.', 'Completed', 2, (now() - interval '14 days')::date, (now() - interval '6 days')::date),
@@ -101,12 +114,12 @@ values
 ('40000000-0000-4000-8000-000000000051', '30000000-0000-4000-8000-000000000005', 'Discovery', 'Discovery stage.', 'Not Started', 1, null, null),
 ('40000000-0000-4000-8000-000000000052', '30000000-0000-4000-8000-000000000005', 'Design', 'Design stage.', 'Not Started', 2, null, null),
 ('40000000-0000-4000-8000-000000000053', '30000000-0000-4000-8000-000000000005', 'Development', 'Development stage.', 'Not Started', 3, null, null),
-('40000000-0000-4000-8000-000000000054', '30000000-0000-4000-8000-000000000005', 'QA & Client Review', 'Test the staging website, resolve issues, collect client feedback, and obtain approval.', 'Not Started', 4, null, null),
+('40000000-0000-4000-8000-000000000054', '30000000-0000-4000-8000-000000000005', 'Client Review', 'Client Review stage.', 'Not Started', 4, null, null),
 ('40000000-0000-4000-8000-000000000055', '30000000-0000-4000-8000-000000000005', 'Launch', 'Launch stage.', 'Not Started', 5, null, null),
 ('40000000-0000-4000-8000-000000000061', '30000000-0000-4000-8000-000000000006', 'Discovery', 'Discovery stage.', 'Completed', 1, null, null),
 ('40000000-0000-4000-8000-000000000062', '30000000-0000-4000-8000-000000000006', 'Design', 'Design stage.', 'Not Started', 2, null, null),
 ('40000000-0000-4000-8000-000000000063', '30000000-0000-4000-8000-000000000006', 'Development', 'Development stage.', 'Not Started', 3, null, null),
-('40000000-0000-4000-8000-000000000064', '30000000-0000-4000-8000-000000000006', 'QA & Client Review', 'Test the staging website, resolve issues, collect client feedback, and obtain approval.', 'Not Started', 4, null, null),
+('40000000-0000-4000-8000-000000000064', '30000000-0000-4000-8000-000000000006', 'Client Review', 'Client Review stage.', 'Not Started', 4, null, null),
 ('40000000-0000-4000-8000-000000000065', '30000000-0000-4000-8000-000000000006', 'Launch', 'Launch stage.', 'Not Started', 5, null, null)
 on conflict (id) do nothing;
 

@@ -114,34 +114,51 @@ sql.push(`-- DEVELOPMENT ONLY. Do not apply this file to production.
 -- Optional local/staging: run this SQL in the Dashboard after schema migrations, never as a production migration.
 
 insert into public.clients (
-  id, contact_name, business_name, email, phone, industry, website, location, status, source, notes, activity, invoices, messages, last_activity_at, created_at
+  id, contact_name, business_name, email, phone, industry, website, location, status, source, last_activity_at, created_at
 ) values
-(${q(I.client001)}, 'John Smith', 'ABC Landscaping', 'john@example.com', '(555) 555-5555', 'Landscaping', '', '', 'Active', 'Start a Project',
-  '[{"id":"cnote-001","body":"Client prefers communication by email.","author":"Raffy","createdAt":null}]'::jsonb,
-  '[{"id":"cact-001a","description":"Homepage V3 approved","createdAt":null,"icon":"file"},{"id":"cact-001c","description":"Client record created","createdAt":null,"icon":"created"}]'::jsonb,
-  '[{"id":"inv-1042","number":"#1042","title":"Website Development","amount":"$1,200","status":"Partially Paid"},{"id":"inv-1038","number":"#1038","title":"Deposit","amount":"$1,200","status":"Paid"}]'::jsonb,
-  '[{"id":"msg-a","sender":"John Smith","body":"Can we change the hero image?"},{"id":"msg-b","sender":"MotiveScripts","body":"Absolutely. We’ll update it."}]'::jsonb,
-  ${days(0)}, ${days(12)}),
-(${q(I.client002)}, 'Mike Johnson', 'Smith Auto', 'mike@smithauto.example', '(555) 014-2201', 'Auto', '', '', 'Active', 'Start a Project',
-  '[]'::jsonb, '[{"id":"cact-002b","description":"Client record created","createdAt":null,"icon":"created"}]'::jsonb,
-  '[{"id":"inv-1020","number":"#1020","title":"Design deposit","amount":"$800","status":"Paid"}]'::jsonb,
-  '[{"id":"msg-c","sender":"Mike Johnson","body":"Can we add the inspection special?"}]'::jsonb,
-  ${days(1)}, ${days(20)}),
-(${q(I.client003)}, 'Sarah Williams', 'XYZ Cleaning', 'sarah@xyzcleaning.example', '(555) 014-3308', 'Cleaning', '', '', 'Active', 'Start a Project',
-  '[]'::jsonb, '[{"id":"cact-003b","description":"Client record created","createdAt":null,"icon":"created"}]'::jsonb,
-  '[{"id":"inv-1011","number":"#1011","title":"Landing page","amount":"$1,400","status":"Paid"}]'::jsonb,
-  '[{"id":"msg-d","sender":"MotiveScripts","body":"The landing page is live."}]'::jsonb,
-  ${days(2)}, ${days(30)}),
-(${q(I.clientHarbor)}, 'Elena Park', 'Harbor & Pine Salon', 'elena@harborpine.example', '(555) 014-5580', 'Salon / barber', '', '', 'Active', 'Start a Project',
-  '[]'::jsonb, '[{"id":"cact-hp-a","description":"Client converted from lead","createdAt":null,"icon":"converted"}]'::jsonb,
-  '[]'::jsonb, '[]'::jsonb, ${days(5)}, ${days(5)}),
-(${q(I.client004)}, 'Luis Ortega', 'BrightPath Bookkeeping', 'luis@brightpath.example', '(555) 014-8801', 'Professional services', 'https://brightpath.example', 'Austin, TX', 'Inactive', 'Manual',
-  '[]'::jsonb, '[{"id":"cact-004a","description":"Client marked inactive","createdAt":null,"icon":"status"}]'::jsonb,
-  '[]'::jsonb, '[]'::jsonb, ${days(21)}, ${days(60)}),
-(${q(I.client005)}, 'Nina Cole', 'Cole Home Care', 'nina@colehome.example', '(555) 014-9902', 'Home services', '', '', 'Archived', 'Manual',
-  '[]'::jsonb, '[{"id":"cact-005a","description":"Client archived","createdAt":null,"icon":"status"}]'::jsonb,
-  '[]'::jsonb, '[]'::jsonb, ${days(40)}, ${days(90)})
+(${q(I.client001)}, 'John Smith', 'ABC Landscaping', 'john@example.com', '(555) 555-5555', 'Landscaping', '', '', 'Active', 'Start a Project', ${days(0)}, ${days(12)}),
+(${q(I.client002)}, 'Mike Johnson', 'Smith Auto', 'mike@smithauto.example', '(555) 014-2201', 'Auto', '', '', 'Active', 'Start a Project', ${days(1)}, ${days(20)}),
+(${q(I.client003)}, 'Sarah Williams', 'XYZ Cleaning', 'sarah@xyzcleaning.example', '(555) 014-3308', 'Cleaning', '', '', 'Active', 'Start a Project', ${days(2)}, ${days(30)}),
+(${q(I.clientHarbor)}, 'Elena Park', 'Harbor & Pine Salon', 'elena@harborpine.example', '(555) 014-5580', 'Salon / barber', '', '', 'Active', 'Start a Project', ${days(5)}, ${days(5)}),
+(${q(I.client004)}, 'Luis Ortega', 'BrightPath Bookkeeping', 'luis@brightpath.example', '(555) 014-8801', 'Professional services', 'https://brightpath.example', 'Austin, TX', 'Inactive', 'Manual', ${days(21)}, ${days(60)}),
+(${q(I.client005)}, 'Nina Cole', 'Cole Home Care', 'nina@colehome.example', '(555) 014-9902', 'Home services', '', '', 'Archived', 'Manual', ${days(40)}, ${days(90)})
 on conflict (id) do nothing;
+`);
+
+// clients_staff_data trigger (see 20260828140000_auth_roles_rls.sql) already created an
+// empty row per client above -- update it with the same internal-only notes/activity/
+// invoices/messages JSON that used to live inline on public.clients before that migration.
+sql.push(`
+update public.client_staff_data set
+  notes = '[{"id":"cnote-001","body":"Client prefers communication by email.","author":"Raffy","createdAt":null}]'::jsonb,
+  activity = '[{"id":"cact-001a","description":"Homepage V3 approved","createdAt":null,"icon":"file"},{"id":"cact-001c","description":"Client record created","createdAt":null,"icon":"created"}]'::jsonb,
+  invoices = '[{"id":"inv-1042","number":"#1042","title":"Website Development","amount":"$1,200","status":"Partially Paid"},{"id":"inv-1038","number":"#1038","title":"Deposit","amount":"$1,200","status":"Paid"}]'::jsonb,
+  messages = '[{"id":"msg-a","sender":"John Smith","body":"Can we change the hero image?"},{"id":"msg-b","sender":"MotiveScripts","body":"Absolutely. We’ll update it."}]'::jsonb
+  where client_id = ${q(I.client001)};
+
+update public.client_staff_data set
+  activity = '[{"id":"cact-002b","description":"Client record created","createdAt":null,"icon":"created"}]'::jsonb,
+  invoices = '[{"id":"inv-1020","number":"#1020","title":"Design deposit","amount":"$800","status":"Paid"}]'::jsonb,
+  messages = '[{"id":"msg-c","sender":"Mike Johnson","body":"Can we add the inspection special?"}]'::jsonb
+  where client_id = ${q(I.client002)};
+
+update public.client_staff_data set
+  activity = '[{"id":"cact-003b","description":"Client record created","createdAt":null,"icon":"created"}]'::jsonb,
+  invoices = '[{"id":"inv-1011","number":"#1011","title":"Landing page","amount":"$1,400","status":"Paid"}]'::jsonb,
+  messages = '[{"id":"msg-d","sender":"MotiveScripts","body":"The landing page is live."}]'::jsonb
+  where client_id = ${q(I.client003)};
+
+update public.client_staff_data set
+  activity = '[{"id":"cact-hp-a","description":"Client converted from lead","createdAt":null,"icon":"converted"}]'::jsonb
+  where client_id = ${q(I.clientHarbor)};
+
+update public.client_staff_data set
+  activity = '[{"id":"cact-004a","description":"Client marked inactive","createdAt":null,"icon":"status"}]'::jsonb
+  where client_id = ${q(I.client004)};
+
+update public.client_staff_data set
+  activity = '[{"id":"cact-005a","description":"Client archived","createdAt":null,"icon":"status"}]'::jsonb
+  where client_id = ${q(I.client005)};
 `);
 
 sql.push(`

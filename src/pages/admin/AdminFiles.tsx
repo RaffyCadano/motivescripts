@@ -5,7 +5,6 @@ import { AdminAttentionList } from "@/components/admin/list/AdminAttentionList";
 import { AdminEmptyState } from "@/components/admin/list/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
-import { AdminStatusChips } from "@/components/admin/list/AdminStatusChips";
 import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { DeliverableStatusBadge } from "@/components/admin/projects/DeliverableStatusBadge";
 import { FileTypeIcon } from "@/components/admin/projects/FileTypeIcon";
@@ -135,25 +134,36 @@ export function AdminFiles({
         }))}
       />
 
-      <div className="space-y-3">
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <label className="min-w-0 flex-1">
-            <span className="sr-only">Search files</span>
-            <input
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search deliverable, client, or project"
-              className={adminFilterControlState(Boolean(query.trim()))}
-            />
-          </label>
-          {searching ? (
-            <button type="button" className={`${adminGhostBtn} shrink-0 justify-center`} onClick={clearFilters}>
-              Clear filters
-            </button>
-          ) : null}
-        </div>
-        <AdminStatusChips items={statusFilters} value={status} onChange={setStatus} label="Deliverable status" />
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Search files</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search deliverable, client, or project"
+            className={adminFilterControlState(Boolean(query.trim()))}
+          />
+        </label>
+        <label className="sm:w-48">
+          <span className="sr-only">Deliverable status</span>
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value as (typeof statusFilters)[number])}
+            className={adminFilterControlState(status !== "All")}
+          >
+            {statusFilters.map((item) => (
+              <option key={item} value={item}>
+                {item === "All" ? "All statuses" : item}
+              </option>
+            ))}
+          </select>
+        </label>
+        {searching ? (
+          <button type="button" className={`${adminGhostBtn} shrink-0 justify-center`} onClick={clearFilters}>
+            Clear filters
+          </button>
+        ) : null}
       </div>
 
       {scopedDeliverables.length === 0 ? (

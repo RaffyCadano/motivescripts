@@ -5,7 +5,6 @@ import { AdminAttentionList } from "@/components/admin/list/AdminAttentionList";
 import { AdminEmptyState } from "@/components/admin/list/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
-import { AdminStatusChips } from "@/components/admin/list/AdminStatusChips";
 import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
@@ -234,58 +233,61 @@ export function AdminInvoices() {
 
       <AdminAttentionList items={attention} />
 
-      <div className="space-y-3">
-        <div className="flex flex-col gap-3 lg:flex-row">
-          <label className="min-w-0 flex-1">
-            <span className="sr-only">Search invoices</span>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search number, client, project, or contract"
-              className={adminFilterControlState(Boolean(query.trim()))}
-            />
-          </label>
-          <label className="lg:w-56">
-            <span className="sr-only">Client</span>
-            <select
-              value={clientId}
-              onChange={(event) => setClientId(event.target.value)}
-              className={adminFilterControlState(clientId !== "All")}
-            >
-              <option value="All">All clients</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.businessName}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="lg:w-44">
-            <span className="sr-only">Sort</span>
-            <select
-              value={sort}
-              onChange={(event) => setSort(event.target.value === "oldest" ? "oldest" : "newest")}
-              className={adminFilterControlState(sort !== "newest")}
-            >
-              <option value="newest">Newest first</option>
-              <option value="oldest">Oldest first</option>
-            </select>
-          </label>
-          {filtering ? (
-            <button type="button" className={`${adminGhostBtn} shrink-0 justify-center`} onClick={clearFilters}>
-              Clear filters
-            </button>
-          ) : null}
-        </div>
-        <AdminStatusChips
-          items={statusFilters}
-          value={status}
-          onChange={setStatus}
-          label="Invoice status"
-          format={(item) =>
-            item === "All" ? "All" : item === "awaiting" ? "Awaiting Payment" : invoiceWorkspaceLabel(item)
-          }
-        />
+      <div className="flex flex-col gap-3 lg:flex-row">
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Search invoices</span>
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search number, client, project, or contract"
+            className={adminFilterControlState(Boolean(query.trim()))}
+          />
+        </label>
+        <label className="lg:w-48">
+          <span className="sr-only">Invoice status</span>
+          <select
+            value={status}
+            onChange={(event) => setStatus(event.target.value as StatusFilter)}
+            className={adminFilterControlState(status !== "All")}
+          >
+            {statusFilters.map((item) => (
+              <option key={item} value={item}>
+                {item === "All" ? "All statuses" : item === "awaiting" ? "Awaiting Payment" : invoiceWorkspaceLabel(item)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="lg:w-56">
+          <span className="sr-only">Client</span>
+          <select
+            value={clientId}
+            onChange={(event) => setClientId(event.target.value)}
+            className={adminFilterControlState(clientId !== "All")}
+          >
+            <option value="All">All clients</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.businessName}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="lg:w-44">
+          <span className="sr-only">Sort</span>
+          <select
+            value={sort}
+            onChange={(event) => setSort(event.target.value === "oldest" ? "oldest" : "newest")}
+            className={adminFilterControlState(sort !== "newest")}
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+        </label>
+        {filtering ? (
+          <button type="button" className={`${adminGhostBtn} shrink-0 justify-center`} onClick={clearFilters}>
+            Clear filters
+          </button>
+        ) : null}
       </div>
 
       {loading ? (
