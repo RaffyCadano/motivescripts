@@ -1,8 +1,8 @@
-export function TeamEmptyState({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-10">
-      <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{title}</p>
-      <p className="mt-1 text-sm text-[var(--admin-muted)]">{body}</p>
-    </div>
-  );
-}
+import { AdminEmptyState } from "@/components/admin/list/AdminEmptyState";
+
+/**
+ * Thin re-export so team pages keep importing from components/team/ (matching
+ * their own module boundary) while there's exactly one empty-state
+ * implementation, not a second copy drifting from the first.
+ */
+export const TeamEmptyState = AdminEmptyState;

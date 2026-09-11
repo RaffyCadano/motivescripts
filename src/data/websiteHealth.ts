@@ -5,9 +5,21 @@ export type WebsiteHealthCheckStatus = (typeof websiteHealthCheckStatuses)[numbe
 /** UI-level state -- adds "unknown" for when no check has completed yet. */
 export type WebsiteHealthState = WebsiteHealthCheckStatus | "unknown";
 
+export const websiteHealthEnvironments = ["production", "staging"] as const;
+export type WebsiteHealthEnvironment = (typeof websiteHealthEnvironments)[number];
+
+export function isWebsiteHealthEnvironment(value: string): value is WebsiteHealthEnvironment {
+  return (websiteHealthEnvironments as readonly string[]).includes(value);
+}
+
+export function websiteHealthEnvironmentLabel(environment: WebsiteHealthEnvironment): string {
+  return environment === "staging" ? "Staging" : "Production";
+}
+
 export type WebsiteHealthCheck = {
   id: string;
   checkedAt: string;
+  environment: WebsiteHealthEnvironment;
   status: WebsiteHealthCheckStatus;
   httpStatus: number | null;
   responseTimeMs: number | null;

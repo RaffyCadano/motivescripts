@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
+import { ClientEmptyState } from "@/components/client/ClientEmptyState";
 import { fetchClientContractSummaries, type ContractSummary } from "@/data/documentsRepository";
 import { formatClientDate } from "@/data/agencyClients";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 export function ClientContracts() {
+  const { profile } = useAuth();
   const { projects, notify } = useLeads();
   const [rows, setRows] = useState<ContractSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    void fetchClientContractSummaries()
+    void fetchClientContractSummaries(profile?.clientId ?? undefined)
       .then((data) => {
         if (active) setRows(data);
       })
@@ -38,10 +41,7 @@ export function ClientContracts() {
       {loading ? (
         <div className="h-40 animate-pulse rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)]" />
       ) : rows.length === 0 ? (
-        <div className="rounded-[var(--client-radius)] border border-dashed border-[var(--client-line)] bg-[var(--client-card)] px-5 py-10">
-          <p className="font-heading text-sm font-semibold">No contracts yet</p>
-          <p className="mt-1 text-sm text-[var(--client-muted)]">Accepted proposals can be followed by an agreement here.</p>
-        </div>
+        <ClientEmptyState title="No contracts yet" body="Accepted proposals can be followed by an agreement here." />
       ) : (
         <>
           <div className="hidden overflow-x-auto rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] md:block">

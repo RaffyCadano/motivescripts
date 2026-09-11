@@ -4,12 +4,13 @@ import { cn } from "@/lib/cn";
 
 type ClientTimelineProps = {
   stages: ProjectStage[];
+  title?: string;
 };
 
-export function ClientTimeline({ stages }: ClientTimelineProps) {
+export function ClientTimeline({ stages, title = "Project timeline" }: ClientTimelineProps) {
   return (
     <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
-      <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--client-ink)]">Project timeline</h2>
+      <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--client-ink)]">{title}</h2>
       <ol className="mt-6 flex flex-col gap-0 md:flex-row md:items-start">
         {stages.map((stage, index) => {
           const complete = stage.status === "complete";

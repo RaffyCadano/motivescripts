@@ -101,8 +101,17 @@ function parseSectionReview(value: unknown): DiscoverySectionReview {
   return out;
 }
 
-function mapIntake(row: DiscoveryIntakeRow, options?: { includeInternal?: boolean }): DiscoveryIntake {
-  const includeInternal = options?.includeInternal ?? true;
+// Client-facing reads/writes must never even select internal_notes -- staff
+// notes about the client shouldn't cross the wire to their browser at all,
+// not just be blanked out after the fact. mapIntake/mapIntakeClientSafe take
+// deliberately different row shapes so a client-safe query can't accidentally
+// carry the column through.
+type DiscoveryIntakeClientRow = Omit<DiscoveryIntakeRow, "internal_notes">;
+
+const DISCOVERY_INTAKE_CLIENT_COLUMNS =
+  "id, project_id, client_id, status, form_data, section_review, scope_flags, follow_up, sent_at, submitted_at, completed_at, updated_at, updated_by";
+
+function mapIntakeCommon(row: DiscoveryIntakeClientRow) {
   return {
     id: row.id,
     projectId: row.project_id,
@@ -112,12 +121,19 @@ function mapIntake(row: DiscoveryIntakeRow, options?: { includeInternal?: boolea
     sectionReview: parseSectionReview(row.section_review),
     scopeFlags: parseScopeFlags(row.scope_flags),
     followUp: parseFollowUp(row.follow_up),
-    internalNotes: includeInternal ? row.internal_notes : "",
     sentAt: row.sent_at,
     submittedAt: row.submitted_at,
     completedAt: row.completed_at,
     updatedAt: row.updated_at,
   };
+}
+
+function mapIntake(row: DiscoveryIntakeRow): DiscoveryIntake {
+  return { ...mapIntakeCommon(row), internalNotes: row.internal_notes };
+}
+
+function mapIntakeClientSafe(row: DiscoveryIntakeClientRow): DiscoveryIntake {
+  return { ...mapIntakeCommon(row), internalNotes: "" };
 }
 
 function mapFile(row: DiscoveryIntakeFileRow): DiscoveryIntakeFile {
@@ -137,9 +153,18 @@ function mapFile(row: DiscoveryIntakeFileRow): DiscoveryIntakeFile {
 
 export async function fetchDiscoveryIntakeByProject(projectId: string, options?: { includeInternal?: boolean }): Promise<DiscoveryIntake | null> {
   const client = db();
+  if (options?.includeInternal === false) {
+    const { data, error } = await client
+      .from("discovery_intakes")
+      .select(DISCOVERY_INTAKE_CLIENT_COLUMNS)
+      .eq("project_id", projectId)
+      .maybeSingle();
+    throwIf(error, "load discovery intake", "Unable to load discovery intake.");
+    return data ? mapIntakeClientSafe(data as DiscoveryIntakeClientRow) : null;
+  }
   const { data, error } = await client.from("discovery_intakes").select("*").eq("project_id", projectId).maybeSingle();
   throwIf(error, "load discovery intake", "Unable to load discovery intake.");
-  return data ? mapIntake(data as DiscoveryIntakeRow, options) : null;
+  return data ? mapIntake(data as DiscoveryIntakeRow) : null;
 }
 
 export async function fetchDiscoveryIntakes(): Promise<DiscoveryIntake[]> {
@@ -200,7 +225,7 @@ export async function saveDiscoveryIntakeDraft(
   const invalid = validateDiscoveryDraftSave();
   if (invalid) throw new AgencyDbError(invalid);
 
-  const intake = await fetchDiscoveryIntakeByProject(projectId);
+  const intake = await fetchDiscoveryIntakeByProject(projectId, { includeInternal: false });
   if (!intake) throw new AgencyDbError("Discovery intake is not available for this project.");
   if (intake.status === "complete") throw new AgencyDbError("Discovery is already complete.");
   if (intake.status === "not_started") throw new AgencyDbError("Discovery intake has not been sent yet.");
@@ -216,10 +241,10 @@ export async function saveDiscoveryIntakeDraft(
       scope_flags: computeScopeFlags(formData, brief, intake.scopeFlags) as unknown as Json,
     })
     .eq("id", intake.id)
-    .select("*")
+    .select(DISCOVERY_INTAKE_CLIENT_COLUMNS)
     .single();
   throwIf(error, "save discovery draft", "Unable to save discovery form.");
-  return mapIntake(data as DiscoveryIntakeRow, { includeInternal: false });
+  return mapIntakeClientSafe(data as DiscoveryIntakeClientRow);
 }
 
 export async function submitDiscoveryIntake(
@@ -230,7 +255,7 @@ export async function submitDiscoveryIntake(
   const invalid = validateDiscoverySubmit(formData);
   if (invalid) throw new AgencyDbError(invalid);
 
-  const intake = await fetchDiscoveryIntakeByProject(projectId);
+  const intake = await fetchDiscoveryIntakeByProject(projectId, { includeInternal: false });
   if (!intake) throw new AgencyDbError("Discovery intake is not available for this project.");
   if (intake.status === "complete") throw new AgencyDbError("Discovery is already complete.");
   if (intake.status === "not_started") throw new AgencyDbError("Discovery intake has not been sent yet.");
@@ -250,10 +275,10 @@ export async function submitDiscoveryIntake(
       follow_up: {} as Json,
     })
     .eq("id", intake.id)
-    .select("*")
+    .select(DISCOVERY_INTAKE_CLIENT_COLUMNS)
     .single();
   throwIf(error, "submit discovery", "Unable to submit discovery form.");
-  return mapIntake(data as DiscoveryIntakeRow, { includeInternal: false });
+  return mapIntakeClientSafe(data as DiscoveryIntakeClientRow);
 }
 
 export async function markDiscoveryUnderReview(projectId: string): Promise<DiscoveryIntake> {

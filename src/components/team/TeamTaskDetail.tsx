@@ -9,13 +9,53 @@ import { TaskChecklistSection } from "@/components/tasks/TaskChecklistSection";
 import { TaskCommentsSection } from "@/components/tasks/TaskCommentsSection";
 import { TaskDeliverableSection } from "@/components/tasks/TaskDeliverableSection";
 import { TaskInstructions } from "@/components/tasks/TaskInstructions";
-import { formatProjectDay, taskStatuses, type AgencyTaskStatus } from "@/data/agencyProjects";
+import {
+  formatProjectDay,
+  taskBlockedReasonLabel,
+  taskBlockedReasons,
+  taskQaResultLabel,
+  taskQaResults,
+  taskStatuses,
+  type AgencyTaskStatus,
+  type TaskBlockedReason,
+  type TaskQaResult,
+} from "@/data/agencyProjects";
 import type { AgencyDeliverable } from "@/data/files";
 import { dueLabel, adminProjectHref, teamProjectHref, WIP_LIMIT, type TeamWorkTask } from "@/data/teamWorkspace";
+import { effectiveTaskType } from "@/data/taskTypes";
 import { isoCalendarDate } from "@/data/invoices";
 import { sumHours, type TimeEntry } from "@/data/timeEntries";
 import { deleteTimeEntry, listTimeEntriesForTask, logTimeEntry } from "@/data/timeEntriesRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
+import { cn } from "@/lib/cn";
+
+function QuickActionButton({
+  children,
+  onClick,
+  disabled,
+  tone = "default",
+}: {
+  children: ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  tone?: "default" | "warn";
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "inline-flex h-9 items-center rounded-[var(--admin-radius)] border px-3 font-heading text-[12px] font-semibold disabled:opacity-50",
+        tone === "warn"
+          ? "border-[rgb(180_83_9_/_0.3)] text-[#b45309] hover:bg-[rgb(180_83_9_/_0.06)]"
+          : "border-[var(--admin-line)] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
 
 type TeamTaskDetailProps = {
   task: TeamWorkTask;
@@ -37,7 +77,7 @@ type TeamTaskDetailProps = {
   /** How many tasks this assignee currently has In Progress (including this one, if it's already In Progress) -- a WIP-limit nudge, never a block. */
   wipCount?: number;
   onClose: () => void;
-  onStatusChange: (status: AgencyTaskStatus) => void;
+  onStatusChange: (status: AgencyTaskStatus, blockedReason?: string | null, qaResult?: string | null) => void;
 };
 
 export function TeamTaskDetail({
@@ -58,6 +98,11 @@ export function TeamTaskDetail({
   const { profile } = useAuth();
   const displayLabel = profile?.fullName?.trim() || "Team";
   const titleId = useId();
+  const [showBlockPicker, setShowBlockPicker] = useState(false);
+  const [pendingBlockReason, setPendingBlockReason] = useState<TaskBlockedReason | "">("");
+  const [showQaPicker, setShowQaPicker] = useState(false);
+  const [pendingQaResult, setPendingQaResult] = useState<TaskQaResult | "">("");
+  const isQaTask = effectiveTaskType(task) === "qa";
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   const busyRef = useRef(busy);
@@ -176,14 +221,165 @@ export function TeamTaskDetail({
             </dl>
 
             {canUpdateStatus ? (
-              <div className="mt-4 border-t border-[var(--admin-line)] pt-4">
+              <div className="mt-4 space-y-3 border-t border-[var(--admin-line)] pt-4">
+                <div className="flex flex-wrap gap-2">
+                  {task.status === "Todo" ? (
+                    <QuickActionButton onClick={() => onStatusChange("In Progress")} disabled={busy}>
+                      Start Work
+                    </QuickActionButton>
+                  ) : null}
+                  {task.status === "In Progress" ? (
+                    <QuickActionButton onClick={() => onStatusChange("In Review")} disabled={busy}>
+                      Submit for Review
+                    </QuickActionButton>
+                  ) : null}
+                  {(task.status === "In Progress" || task.status === "In Review") ? (
+                    <QuickActionButton
+                      onClick={() => {
+                        if (isQaTask) {
+                          setPendingQaResult("");
+                          setShowQaPicker(true);
+                          return;
+                        }
+                        onStatusChange("Completed");
+                      }}
+                      disabled={busy}
+                    >
+                      Mark Complete
+                    </QuickActionButton>
+                  ) : null}
+                  {task.status !== "Blocked" ? (
+                    <QuickActionButton
+                      tone="warn"
+                      onClick={() => {
+                        setPendingBlockReason("");
+                        setShowBlockPicker(true);
+                      }}
+                      disabled={busy}
+                    >
+                      Mark Blocked
+                    </QuickActionButton>
+                  ) : null}
+                </div>
+
+                {task.status === "Blocked" && task.blockedReason && !showBlockPicker ? (
+                  <p className="text-[13px] text-[#b45309]">
+                    Blocked: {taskBlockedReasonLabel(task.blockedReason)}
+                  </p>
+                ) : null}
+
+                {showBlockPicker ? (
+                  <div className="rounded-lg border border-[rgb(180_83_9_/_0.3)] bg-[rgb(180_83_9_/_0.06)] p-3">
+                    <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+                      Why is this blocked?
+                      <select
+                        className="mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                        value={pendingBlockReason}
+                        onChange={(event) => setPendingBlockReason(event.target.value as TaskBlockedReason)}
+                      >
+                        <option value="" disabled>
+                          Choose a reason…
+                        </option>
+                        {taskBlockedReasons.map((reason) => (
+                          <option key={reason} value={reason}>
+                            {taskBlockedReasonLabel(reason)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="mt-3 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        className="inline-flex h-9 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-white"
+                        onClick={() => setShowBlockPicker(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!pendingBlockReason || busy}
+                        className="inline-flex h-9 items-center rounded-[var(--admin-radius)] bg-[#b45309] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
+                        onClick={() => {
+                          onStatusChange("Blocked", pendingBlockReason);
+                          setShowBlockPicker(false);
+                        }}
+                      >
+                        Mark Blocked
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {task.status === "Completed" && isQaTask && task.qaResult && !showQaPicker ? (
+                  <p className={cn("text-[13px]", task.qaResult === "fail" ? "text-[#b45309]" : "text-emerald-700")}>
+                    QA result: {taskQaResultLabel(task.qaResult)}
+                  </p>
+                ) : null}
+
+                {showQaPicker ? (
+                  <div className="rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] p-3">
+                    <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+                      QA result
+                      <select
+                        className="mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                        value={pendingQaResult}
+                        onChange={(event) => setPendingQaResult(event.target.value as TaskQaResult)}
+                      >
+                        <option value="" disabled>
+                          Choose a result…
+                        </option>
+                        {taskQaResults.map((result) => (
+                          <option key={result} value={result}>
+                            {taskQaResultLabel(result)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <div className="mt-3 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        className="inline-flex h-9 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-white"
+                        onClick={() => setShowQaPicker(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!pendingQaResult || busy}
+                        className="inline-flex h-9 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
+                        onClick={() => {
+                          onStatusChange("Completed", null, pendingQaResult);
+                          setShowQaPicker(false);
+                        }}
+                      >
+                        Complete QA
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
                 <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
                   Status
                   <select
                     className="mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
                     value={task.status}
                     disabled={busy}
-                    onChange={(event) => onStatusChange(event.target.value as AgencyTaskStatus)}
+                    onChange={(event) => {
+                      const next = event.target.value as AgencyTaskStatus;
+                      if (next === "Blocked") {
+                        setPendingBlockReason("");
+                        setShowBlockPicker(true);
+                        return;
+                      }
+                      if (next === "Completed" && isQaTask) {
+                        setPendingQaResult("");
+                        setShowQaPicker(true);
+                        return;
+                      }
+                      setShowBlockPicker(false);
+                      setShowQaPicker(false);
+                      onStatusChange(next, null);
+                    }}
                   >
                     {taskStatuses.map((status) => (
                       <option key={status} value={status}>

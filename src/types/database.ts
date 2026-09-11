@@ -109,6 +109,7 @@ export type WebsiteHealthCheckRow = {
   id: string;
   project_id: string;
   checked_at: string;
+  environment: string;
   status: string;
   http_status: number | null;
   response_time_ms: number | null;
@@ -148,6 +149,8 @@ export type TaskRow = {
   estimated_hours: number | null;
   deliverable_id: string | null;
   origin: string;
+  blocked_reason: string | null;
+  qa_result: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -277,6 +280,7 @@ export type DeliverableRow = {
   description: string;
   category: string;
   status: string;
+  design_checkpoint: string | null;
   archived_at: string | null;
   created_by: string | null;
   created_at: string;
@@ -402,7 +406,11 @@ export type NotificationType =
   | "domain_expiring_soon"
   | "domain_expired"
   | "ssl_expiring_soon"
-  | "ssl_expired";
+  | "ssl_expired"
+  | "qa_failed"
+  | "qa_passed"
+  | "client_review_ready"
+  | "launch_completed";
 
 export type NotificationRow = {
   id: string;
@@ -1162,6 +1170,10 @@ export type Database = {
         Args: { p_contract_id: string };
         Returns: string;
       };
+      convert_lead_to_client: {
+        Args: { p_lead_id: string };
+        Returns: string;
+      };
       send_contract: {
         Args: { p_contract_id: string };
         Returns: null;
@@ -1426,12 +1438,16 @@ export type Database = {
         Returns: Json;
       };
       update_my_task_status: {
-        Args: { p_task_id: string; p_status: string };
+        Args: { p_task_id: string; p_status: string; p_blocked_reason?: string | null; p_qa_result?: string | null };
         Returns: null;
       };
       set_task_deliverable: {
         Args: { p_task_id: string; p_deliverable_id: string | null };
         Returns: void;
+      };
+      latest_website_health_checks: {
+        Args: { p_project_ids: string[]; p_environment?: string };
+        Returns: WebsiteHealthCheckRow[];
       };
     };
     Enums: Record<string, never>;

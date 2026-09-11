@@ -1,5 +1,5 @@
 import type { AgencyClient, AgencyNote, AgencyActivityItem } from "@/data/agencyClients";
-import type { AgencyDeliverable, AgencyFileVersion, DeliverableCategory, DeliverableStatus } from "@/data/files";
+import type { AgencyDeliverable, AgencyFileVersion, DeliverableCategory, DeliverableStatus, DesignCheckpoint } from "@/data/files";
 import type { Lead, LeadActivityItem, LeadIndustry, LeadNote, LeadStatus, ReferralSource } from "@/data/leads";
 import { referralSources } from "@/data/leads";
 import type {
@@ -12,8 +12,11 @@ import type {
   AgencyTask,
   AgencyTaskPriority,
   AgencyTaskStatus,
+  TaskBlockedReason,
   TaskOrigin,
+  TaskQaResult,
 } from "@/data/agencyProjects";
+import { taskBlockedReasons, taskQaResults } from "@/data/agencyProjects";
 import { parseStoredRecommendedRole } from "@/data/taskRecommendedRoles";
 import { isTaskType } from "@/data/taskTypes";
 import {
@@ -190,7 +193,17 @@ export function mapTask(row: TaskRow): AgencyTask {
     estimatedHours: row.estimated_hours ?? null,
     deliverableId: row.deliverable_id ?? null,
     origin: row.origin === "client" ? "client" : ("agency" as TaskOrigin),
+    blockedReason: isTaskBlockedReason(row.blocked_reason) ? row.blocked_reason : null,
+    qaResult: isTaskQaResult(row.qa_result) ? row.qa_result : null,
   };
+}
+
+function isTaskBlockedReason(value: string | null): value is TaskBlockedReason {
+  return value !== null && (taskBlockedReasons as readonly string[]).includes(value);
+}
+
+function isTaskQaResult(value: string | null): value is TaskQaResult {
+  return value !== null && (taskQaResults as readonly string[]).includes(value);
 }
 
 const activityIcons = ["created", "status", "task", "milestone", "file", "progress", "review"] as const;
@@ -290,6 +303,7 @@ export function mapDeliverableWithCurrent(
     description: row.description,
     category: (row.category as DeliverableCategory) || "Other",
     status: row.status as DeliverableStatus,
+    designCheckpoint: row.design_checkpoint as DesignCheckpoint | null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     currentVersionId,

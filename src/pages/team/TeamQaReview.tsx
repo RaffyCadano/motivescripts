@@ -13,6 +13,7 @@ import { effectiveTaskType } from "@/data/taskTypes";
 import { dueBucket, inProgressCount, matchesTaskSearch, teamProjectHref, type TeamWorkTask } from "@/data/teamWorkspace";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
+import { displayHttpHost, safeHttpHref } from "@/lib/safeUrl";
 
 function filterTasks(
   tasks: TeamWorkTask[],
@@ -46,14 +47,18 @@ export function TeamQaReview() {
   const filteredQa = useMemo(() => filterTasks(qa, filters), [qa, search, projectId, priority]);
   const filteredReview = useMemo(() => filterTasks(inReview, filters), [inReview, search, projectId, priority]);
   const filtering = search.trim().length > 0 || projectId !== "All" || priority !== "All";
+  const stagingByProject = useMemo(
+    () => new Map(myProjects.map((project) => [project.id, project.development.stagingUrl])),
+    [myProjects],
+  );
 
-  async function onStatusChange(status: TeamWorkTask["status"]) {
+  async function onStatusChange(status: TeamWorkTask["status"], blockedReason?: string | null, qaResult?: string | null) {
     if (!openTask) return;
     setBusy(true);
     setError(null);
     try {
-      await changeTaskStatus(openTask, status);
-      setOpenTask((current) => (current ? { ...current, status } : current));
+      await changeTaskStatus(openTask, status, blockedReason, qaResult);
+      setOpenTask((current) => (current ? { ...current, status, qaResult: (qaResult as TeamWorkTask["qaResult"]) ?? current.qaResult } : current));
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
     } finally {
@@ -137,7 +142,7 @@ export function TeamQaReview() {
           ) : filteredQa.length === 0 ? (
             <TeamEmptyState title="No QA tasks match these filters." body="Try a different search, project, or priority." />
           ) : (
-            <QaReviewTable tasks={filteredQa} onOpen={setOpenTask} />
+            <QaReviewTable tasks={filteredQa} onOpen={setOpenTask} stagingByProject={stagingByProject} />
           )}
         </section>
 
@@ -151,7 +156,7 @@ export function TeamQaReview() {
           ) : filteredReview.length === 0 ? (
             <TeamEmptyState title="No review tasks match these filters." body="Try a different search, project, or priority." />
           ) : (
-            <QaReviewTable tasks={filteredReview} onOpen={setOpenTask} />
+            <QaReviewTable tasks={filteredReview} onOpen={setOpenTask} stagingByProject={stagingByProject} />
           )}
         </section>
       </div>
@@ -183,7 +188,7 @@ export function TeamQaReview() {
             setOpenTask(null);
             setError(null);
           }}
-          onStatusChange={(status) => void onStatusChange(status)}
+          onStatusChange={(status, blockedReason, qaResult) => void onStatusChange(status, blockedReason, qaResult)}
         />
       ) : null}
     </div>
@@ -191,7 +196,15 @@ export function TeamQaReview() {
 }
 
 /** Compact task table for a half-width column -- fewer columns than the admin MyTaskTable, which needs full page width. */
-function QaReviewTable({ tasks, onOpen }: { tasks: TeamWorkTask[]; onOpen: (task: TeamWorkTask) => void }) {
+function QaReviewTable({
+  tasks,
+  onOpen,
+  stagingByProject,
+}: {
+  tasks: TeamWorkTask[];
+  onOpen: (task: TeamWorkTask) => void;
+  stagingByProject: Map<string, string>;
+}) {
   return (
     <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
       <table className="w-full min-w-[520px] text-left text-sm">
@@ -206,6 +219,7 @@ function QaReviewTable({ tasks, onOpen }: { tasks: TeamWorkTask[]; onOpen: (task
         <tbody className="divide-y divide-[var(--admin-line)]">
           {tasks.map((task) => {
             const bucket = dueBucket(task.dueDate);
+            const stagingHref = safeHttpHref(stagingByProject.get(task.projectId) ?? "");
             return (
               <tr key={task.id} className="hover:bg-[var(--admin-bg)]">
                 <td className="px-4 py-3">
@@ -217,6 +231,16 @@ function QaReviewTable({ tasks, onOpen }: { tasks: TeamWorkTask[]; onOpen: (task
                     {task.title}
                   </button>
                   <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">{task.projectName}</p>
+                  {stagingHref ? (
+                    <a
+                      href={stagingHref}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-0.5 inline-block text-[12px] font-medium text-[var(--admin-blue)] hover:underline"
+                    >
+                      Staging: {displayHttpHost(stagingHref)}
+                    </a>
+                  ) : null}
                 </td>
                 <td className={cn("px-4 py-3", bucket === "overdue" ? "font-medium text-[#b45309]" : "text-[var(--admin-muted)]")}>
                   {task.dueDate ? formatProjectDay(task.dueDate) : "Not set"}

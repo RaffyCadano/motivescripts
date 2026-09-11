@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthRedirectHandler } from "@/auth/AuthRedirectHandler";
@@ -5,6 +6,7 @@ import { GuestOnly, RequireAdmin, RequireClient } from "@/auth/guards";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { RequireAdminPermission } from "@/components/admin/RequireAdminPermission";
 import { TeamLayout } from "@/components/team/TeamLayout";
+import { RequireDeveloperRoute } from "@/components/team/RequireDeveloperRoute";
 import { LeadsOutlet } from "@/components/admin/leads/LeadsOutlet";
 import { LeadsProvider } from "@/components/admin/leads/LeadsProvider";
 import { ClientLayout } from "@/components/client/ClientLayout";
@@ -68,7 +70,6 @@ import { ClientPaymentCancelled } from "@/pages/client/ClientPaymentCancelled";
 import { ClientPaymentSuccess } from "@/pages/client/ClientPaymentSuccess";
 import { ClientReview } from "@/pages/client/ClientReview";
 import { ClientSettings } from "@/pages/client/ClientSettings";
-import { CaseStudyPage } from "@/pages/CaseStudy";
 import { ContactPage } from "@/pages/Contact";
 import { HomePage } from "@/pages/Home";
 import { StaffInviteAcceptPage } from "@/pages/StaffInviteAccept";
@@ -78,7 +79,6 @@ import { NotFoundPage } from "@/pages/NotFound";
 import { PricingPage } from "@/pages/Pricing";
 import { ProcessPage } from "@/pages/Process";
 import { ServicesPage } from "@/pages/Services";
-import { WorkPage } from "@/pages/Work";
 import { TeamBlocked } from "@/pages/team/TeamBlocked";
 import { TeamDashboardHome } from "@/pages/team/TeamDashboardHome";
 import { TeamDeployments } from "@/pages/team/TeamDeployments";
@@ -93,6 +93,15 @@ import { TeamTasks } from "@/pages/team/TeamTasks";
 import { TeamTime } from "@/pages/team/TeamTime";
 import { MessagingProvider } from "@/providers/MessagingProvider";
 
+// Lazy: CaseStudy/Work pull in SitePreview.tsx, a ~2000-line module with
+// per-project mockup markup and ~30 images for all 10 case studies. Every
+// other route (Services, Pricing, About, all of /admin, /team, /client)
+// never renders any of it, so it doesn't belong in the eagerly-loaded main
+// bundle. WorkSection (rendered inline on the homepage) is lazy for the same
+// reason -- see sections/WorkSection.tsx's own usage.
+const CaseStudyPage = lazy(() => import("@/pages/CaseStudy").then((m) => ({ default: m.CaseStudyPage })));
+const WorkPage = lazy(() => import("@/pages/Work").then((m) => ({ default: m.WorkPage })));
+
 const adminUnavailablePaths = ["notifications"] as const;
 
 export default function App() {
@@ -102,6 +111,7 @@ export default function App() {
         <LeadsProvider>
           <MessagingProvider>
           <AuthRedirectHandler />
+          <Suspense fallback={null}>
           <Routes>
           <Route
             path="admin"
@@ -170,10 +180,12 @@ export default function App() {
             <Route path="tasks" element={<TeamTasks />} />
             <Route path="projects" element={<TeamProjects />} />
             <Route path="projects/:id" element={<TeamProjectDetails />} />
-            <Route path="qa-review" element={<TeamQaReview />} />
-            <Route path="needs-changes" element={<TeamNeedsChanges />} />
-            <Route path="blocked" element={<TeamBlocked />} />
-            <Route path="deployments" element={<TeamDeployments />} />
+            <Route element={<RequireDeveloperRoute />}>
+              <Route path="qa-review" element={<TeamQaReview />} />
+              <Route path="needs-changes" element={<TeamNeedsChanges />} />
+              <Route path="blocked" element={<TeamBlocked />} />
+              <Route path="deployments" element={<TeamDeployments />} />
+            </Route>
             <Route path="messages" element={<TeamMessages />} />
             <Route path="messages/:conversationId" element={<TeamMessages />} />
             <Route path="files" element={<TeamFiles />} />
@@ -236,6 +248,7 @@ export default function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
+          </Suspense>
           </MessagingProvider>
         </LeadsProvider>
       </AuthProvider>

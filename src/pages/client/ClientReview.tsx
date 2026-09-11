@@ -106,7 +106,7 @@ export function ClientReview() {
       </header>
 
       {archived ? (
-        <p className="text-sm text-[var(--client-muted)]">This deliverable is archived.</p>
+        <p className="text-sm text-[var(--client-muted)]">This file is archived.</p>
       ) : null}
 
       <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
@@ -271,7 +271,7 @@ export function ClientReview() {
         body={
           current
             ? `You're approving ${file.name} ${versionLabel(current.versionNumber)} as the current version.`
-            : "You're approving the current version of this deliverable."
+            : "You're approving the current version of this file."
         }
         confirmLabel="Approve Version"
         onCancel={() => setApproveOpen(false)}

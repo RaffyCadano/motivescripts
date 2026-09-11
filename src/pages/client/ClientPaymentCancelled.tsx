@@ -24,7 +24,7 @@ export function ClientPaymentCancelled() {
         </Link>
         <Link
           to="/client/invoices"
-          className="inline-flex h-11 items-center justify-center rounded-[var(--client-radius)] border border-[var(--client-line)] bg-white px-5 font-heading text-sm font-semibold text-[var(--client-ink)]"
+          className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-5 font-heading text-sm font-semibold text-[var(--client-ink)]"
         >
           All invoices
         </Link>

@@ -259,11 +259,18 @@ export async function fetchMyClientAssignmentIds(userId: string): Promise<string
   return (data ?? []).map((row) => row.client_id);
 }
 
-export async function updateMyTaskStatus(taskId: string, status: string): Promise<void> {
+export async function updateMyTaskStatus(
+  taskId: string,
+  status: string,
+  blockedReason?: string | null,
+  qaResult?: string | null,
+): Promise<void> {
   const client = requireClient();
   const { error } = await client.rpc("update_my_task_status", {
     p_task_id: taskId,
     p_status: status,
+    p_blocked_reason: blockedReason ?? null,
+    p_qa_result: qaResult ?? null,
   });
   if (error) fail("update task", error, "Unable to update this task.");
 }

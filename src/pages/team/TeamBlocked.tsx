@@ -36,12 +36,12 @@ export function TeamBlocked() {
     });
   }, [blocked, priority, search]);
 
-  async function onStatusChange(status: TeamWorkTask["status"]) {
+  async function onStatusChange(status: TeamWorkTask["status"], blockedReason?: string | null, qaResult?: string | null) {
     if (!openTask) return;
     setBusy(true);
     setError(null);
     try {
-      await changeTaskStatus(openTask, status);
+      await changeTaskStatus(openTask, status, blockedReason, qaResult);
       setOpenTask((current) => (current ? { ...current, status } : current));
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
@@ -86,7 +86,41 @@ export function TeamBlocked() {
           {visible.length === 0 ? (
             <TeamEmptyState title="No blocked tasks match your filters." body="Try a different search term or priority." />
           ) : (
-        <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
+        <>
+        <ul className="space-y-3 md:hidden">
+          {visible.map((task) => (
+            <li key={task.id} className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-4">
+              <button
+                type="button"
+                className="text-left font-heading text-sm font-semibold text-[var(--admin-ink)] hover:text-[var(--admin-blue)]"
+                onClick={() => setOpenTask(task)}
+              >
+                {task.title}
+              </button>
+              <p className="mt-1 text-[13px] text-[var(--admin-muted)]">{task.projectName}</p>
+              <div className="mt-2">
+                <TaskPriorityBadge priority={task.priority} />
+              </div>
+              <p className="mt-2 text-[13px] text-[var(--admin-ink)]">{blockedReason(task) ?? "No reason provided"}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+                  onClick={() => setOpenTask(task)}
+                >
+                  Open
+                </button>
+                <Link
+                  to={teamProjectHref(task.projectId, { tab: "tasks" })}
+                  className="font-heading text-[12px] font-semibold text-[var(--admin-muted)] hover:text-[var(--admin-blue)] hover:underline"
+                >
+                  View project
+                </Link>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] md:block">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
               <tr>
@@ -135,6 +169,7 @@ export function TeamBlocked() {
             </tbody>
           </table>
         </div>
+        </>
           )}
         </>
       )}
@@ -166,7 +201,7 @@ export function TeamBlocked() {
             setOpenTask(null);
             setError(null);
           }}
-          onStatusChange={(status) => void onStatusChange(status)}
+          onStatusChange={(status, blockedReason, qaResult) => void onStatusChange(status, blockedReason, qaResult)}
         />
       ) : null}
     </div>

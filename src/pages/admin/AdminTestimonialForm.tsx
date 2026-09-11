@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
+import { isActiveAdmin } from "@/auth/permissions";
 import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
@@ -13,6 +15,8 @@ import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
 
 export function AdminTestimonialForm() {
+  const { profile } = useAuth();
+  const isAdmin = isActiveAdmin(profile);
   const { id } = useParams();
   const editing = Boolean(id);
   const navigate = useNavigate();
@@ -23,6 +27,7 @@ export function AdminTestimonialForm() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isAdmin) return;
     if (!id) return;
     let active = true;
     void fetchTestimonial(id)
@@ -50,7 +55,7 @@ export function AdminTestimonialForm() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
-    if (busy || !draft.clientName.trim() || !draft.quote.trim()) return;
+    if (!isAdmin || busy || !draft.clientName.trim() || !draft.quote.trim()) return;
     setBusy(true);
     setError(null);
     try {
@@ -61,6 +66,18 @@ export function AdminTestimonialForm() {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to save this testimonial.");
       setBusy(false);
     }
+  }
+
+  if (!isAdmin) {
+    return (
+      <div>
+        <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">Testimonials</h1>
+        <p className="mt-1 max-w-xl text-sm text-[var(--admin-muted)]">You don’t have access to this section.</p>
+        <div className="mt-8 rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-10 text-sm text-[var(--admin-muted)]">
+          Managing public testimonials is visible to administrators only.
+        </div>
+      </div>
+    );
   }
 
   if (loading) {

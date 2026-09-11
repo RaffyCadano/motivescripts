@@ -21,7 +21,6 @@ import {
   insertProject,
   insertTask,
   linkClientAccount,
-  markLeadConverted,
   quietUpdateMilestoneStatus,
   resolveFeedbackRecord,
   setCurrentVersionRecord,
@@ -296,22 +295,10 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
         );
       },
       async convertToClient(id) {
-        const lead = snapshotRef.current.leads.find((item) => item.id === id);
-        if (!lead) return null;
-        if (lead.convertedClientId) return lead.convertedClientId;
-        const existing = snapshotRef.current.clients.find((item) => item.sourceLeadId === id);
-        if (existing) {
-          const now = new Date().toISOString();
-          const linked = await run(() =>
-            markLeadConverted(id, existing.id, [
-              { id: createRecordId("act"), description: "Lead converted to client", createdAt: now },
-              ...lead.activity,
-            ]),
-          );
-          return linked === null ? null : existing.id;
-        }
-        const clientId = await run(() => convertLeadToClient(lead), "Lead converted to client.");
-        return clientId;
+        // The RPC is idempotent (locks the lead row, checks for an existing
+        // client server-side) so a double-click or a second tab safely
+        // returns the same client instead of racing a duplicate insert.
+        return run(() => convertLeadToClient(id), "Lead converted to client.");
       },
       async addClient(draft) {
         return run(() => insertClient(draft), "Client created.");
@@ -457,6 +444,8 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
               estimatedHours: draft.estimatedHours,
               deliverableId: null,
               origin: "agency",
+              blockedReason: null,
+              qaResult: null,
               createdAt: new Date().toISOString(),
               completedAt: draft.status === "Completed" ? new Date().toISOString() : null,
             };

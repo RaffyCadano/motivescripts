@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { invoicePeriodLabel, invoicePeriods, type InvoicePeriod, type OverviewInvoiceTotals } from "@/data/adminOverview";
 import { formatMoneyFromCents } from "@/data/money";
@@ -19,6 +20,38 @@ const PAD_RIGHT = 10;
 const PAD_TOP = 16;
 const PAD_BOTTOM = 22;
 const TICKS = 4;
+
+// The <svg> below scales its 320-unit viewBox to fill the card's actual
+// width, so a plain fontSize in SVG units would grow or shrink with the
+// card (wider column, wider screen -> bigger text). These are the actual
+// pixel sizes we want on screen; useChartFontSize converts them to
+// viewBox units based on the SVG's measured rendered width so the text
+// stays a constant, legible size regardless of layout.
+const AXIS_TICK_PX = 9;
+const VALUE_LABEL_PX = 10;
+const CATEGORY_LABEL_PX = 9;
+
+function useChartFontSize() {
+  const ref = useRef<SVGSVGElement>(null);
+  const [unitsPerPixel, setUnitsPerPixel] = useState(1);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const measure = () => {
+      const renderedWidth = el.getBoundingClientRect().width;
+      if (renderedWidth > 0) setUnitsPerPixel(WIDTH / renderedWidth);
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, unitsPerPixel };
+}
 
 /** Round a max value up to a clean 1/2/5/10 * 10^n step, in cents. */
 function niceScaleMax(maxCents: number): number {
@@ -53,6 +86,11 @@ export function OverviewInvoices({ totals, period, onPeriodChange }: OverviewInv
 
   const ticks = Array.from({ length: TICKS + 1 }, (_, i) => (scaleMax * i) / TICKS);
 
+  const { ref: svgRef, unitsPerPixel } = useChartFontSize();
+  const axisTickSize = AXIS_TICK_PX * unitsPerPixel;
+  const valueLabelSize = VALUE_LABEL_PX * unitsPerPixel;
+  const categoryLabelSize = CATEGORY_LABEL_PX * unitsPerPixel;
+
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -78,7 +116,14 @@ export function OverviewInvoices({ totals, period, onPeriodChange }: OverviewInv
         </div>
       </div>
 
-      <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} width="100%" role="img" aria-label="Invoice totals by status" className="mt-3">
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        width="100%"
+        role="img"
+        aria-label="Invoice totals by status"
+        className="mt-3"
+      >
         {ticks.map((tick) => {
           const y = PAD_TOP + innerHeight * (1 - tick / scaleMax);
           return (
@@ -91,7 +136,14 @@ export function OverviewInvoices({ totals, period, onPeriodChange }: OverviewInv
                 stroke="var(--admin-line)"
                 strokeWidth={1}
               />
-              <text x={PAD_LEFT - 5} y={y} textAnchor="end" dominantBaseline="middle" fontSize={5} fill="var(--admin-muted)">
+              <text
+                x={PAD_LEFT - 5}
+                y={y}
+                textAnchor="end"
+                dominantBaseline="middle"
+                fontSize={axisTickSize}
+                fill="var(--admin-muted)"
+              >
                 {formatAxisTick(tick)}
               </text>
             </g>
@@ -107,14 +159,21 @@ export function OverviewInvoices({ totals, period, onPeriodChange }: OverviewInv
           return (
             <g key={row.key}>
               <rect x={x} y={y} width={barWidth} height={Math.max(barHeight, 0)} rx={4} fill={row.color} />
-              <text x={x + barWidth / 2} y={y - 4} textAnchor="middle" fontSize={5} fontWeight={600} fill="var(--admin-ink)">
+              <text
+                x={x + barWidth / 2}
+                y={y - 4}
+                textAnchor="middle"
+                fontSize={valueLabelSize}
+                fontWeight={600}
+                fill="var(--admin-ink)"
+              >
                 {formatMoneyFromCents(value)}
               </text>
               <text
                 x={x + barWidth / 2}
                 y={baselineY + 10}
                 textAnchor="middle"
-                fontSize={5}
+                fontSize={categoryLabelSize}
                 fill="var(--admin-muted)"
               >
                 {row.label}

@@ -12,6 +12,7 @@ import { effectiveTaskType } from "@/data/taskTypes";
 import { isDueSoon, type TeamWorkTask } from "@/data/teamWorkspace";
 import type { ProjectDevelopment } from "@/data/projectDevelopment";
 import type { TimeEntry } from "@/data/timeEntries";
+import { taskBlockedReasonLabel } from "@/data/agencyProjects";
 
 export function activeTasks(tasks: TeamWorkTask[]): TeamWorkTask[] {
   return tasks.filter((task) => task.status === "Todo" || task.status === "In Progress");
@@ -31,7 +32,13 @@ export function qaTasks(tasks: TeamWorkTask[]): TeamWorkTask[] {
 }
 
 /** Non-empty reason for a blocked task, or null if none was written -- never invented. */
-export function blockedReason(task: Pick<TeamWorkTask, "description">): string | null {
+/**
+ * Prefers the structured blocked_reason (set via the "Mark Blocked" picker)
+ * over the free-text description -- the description fallback exists for
+ * tasks blocked before that field existed, or via a path that never set one.
+ */
+export function blockedReason(task: Pick<TeamWorkTask, "description" | "blockedReason">): string | null {
+  if (task.blockedReason) return taskBlockedReasonLabel(task.blockedReason);
   const trimmed = task.description.trim();
   return trimmed.length > 0 ? trimmed : null;
 }

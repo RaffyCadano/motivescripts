@@ -57,12 +57,12 @@ export function AdminMyTasks() {
     [phase, priority, projectId, search, status, tasks],
   );
 
-  async function onStatusChange(next: AgencyTaskStatus) {
+  async function onStatusChange(next: AgencyTaskStatus, blockedReason?: string | null, qaResult?: string | null) {
     if (!openTask) return;
     setBusy(true);
     setError(null);
     try {
-      await changeTaskStatus(openTask, next);
+      await changeTaskStatus(openTask, next, blockedReason, qaResult);
       setOpenTask((current) => (current ? { ...current, status: next } : current));
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
@@ -180,7 +180,7 @@ export function AdminMyTasks() {
             setOpenTask(null);
             setError(null);
           }}
-          onStatusChange={(next) => void onStatusChange(next)}
+          onStatusChange={(next, blockedReason, qaResult) => void onStatusChange(next, blockedReason, qaResult)}
           onOpenDiscovery={() => {
             setOpenTask(null);
             navigate(`${adminProjectHref(openProject.id)}#project-discovery`);

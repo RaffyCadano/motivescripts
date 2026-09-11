@@ -27,8 +27,12 @@ export function AdminLeadDetails() {
   const [statusOpen, setStatusOpen] = useState(false);
   const [noteOpen, setNoteOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
+  const [convertBusy, setConvertBusy] = useState(false);
   const [convertedId, setConvertedId] = useState<string | null>(null);
-  const canConvert = hasPermission(profile, "leads.manage");
+  // convert_lead_to_client requires BOTH grants server-side -- matching only
+  // leads.manage here let a staff member without clients.manage see and
+  // click "Convert to Client" only to have the RPC reject it.
+  const canConvert = hasPermission(profile, "leads.manage") && hasPermission(profile, "clients.manage");
 
   if (!lead) {
     return (
@@ -153,11 +157,18 @@ export function AdminLeadDetails() {
       />
       <ConvertLeadModal
         lead={convertOpen ? lead : null}
+        busy={convertBusy}
         onClose={() => setConvertOpen(false)}
         onConfirm={async () => {
-          const clientId = await convertToClient(lead.id);
-          setConvertOpen(false);
-          if (clientId) setConvertedId(clientId);
+          if (convertBusy) return;
+          setConvertBusy(true);
+          try {
+            const clientId = await convertToClient(lead.id);
+            setConvertOpen(false);
+            if (clientId) setConvertedId(clientId);
+          } finally {
+            setConvertBusy(false);
+          }
         }}
       />
       <ClientFollowUpDialog

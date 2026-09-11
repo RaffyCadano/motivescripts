@@ -443,7 +443,7 @@ export function AdminProjectEdit() {
           disabled={busy}
           className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white disabled:opacity-60"
         >
-          {busy ? "Saving…" : "Save changes"}
+          {busy ? "Saving…" : "Save Changes"}
         </button>
       </form>
     </div>

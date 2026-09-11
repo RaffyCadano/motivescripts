@@ -174,8 +174,13 @@ export async function fetchInvoiceFirstLines(invoiceIds: string[]): Promise<Map<
   return lines;
 }
 
-export async function fetchClientInvoiceSummaries(): Promise<InvoiceSummary[]> {
-  return fetchInvoiceSummaries();
+/**
+ * clientId is optional only because RLS already scopes a client session to
+ * their own rows -- passing it is cheap defense-in-depth against accidental
+ * over-fetching, not the authorization boundary itself.
+ */
+export async function fetchClientInvoiceSummaries(clientId?: string): Promise<InvoiceSummary[]> {
+  return fetchInvoiceSummaries(clientId);
 }
 
 export async function fetchInvoiceDetail(id: string): Promise<InvoiceDetail | null> {

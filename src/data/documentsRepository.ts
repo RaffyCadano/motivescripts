@@ -174,9 +174,16 @@ export async function fetchProposalSummaries(clientId?: string): Promise<Proposa
     .filter((row): row is ProposalSummary => Boolean(row));
 }
 
-export async function fetchClientProposalSummaries(): Promise<ProposalSummary[]> {
+/**
+ * clientId is optional only because RLS already scopes a client session to
+ * their own rows -- passing it is cheap defense-in-depth against accidental
+ * over-fetching, not the authorization boundary itself.
+ */
+export async function fetchClientProposalSummaries(clientId?: string): Promise<ProposalSummary[]> {
   const client = db();
-  const { data, error } = await client.from("proposals").select("*").order("created_at", { ascending: false });
+  let query = client.from("proposals").select("*").order("created_at", { ascending: false });
+  if (clientId) query = query.eq("client_id", clientId);
+  const { data, error } = await query;
   throwIf(error, "load proposals", "Unable to load proposals.");
   const rows = (data ?? []) as ProposalRow[];
   const ids = rows.map((row) => row.published_revision_id).filter((id): id is string => Boolean(id));
@@ -453,9 +460,16 @@ export async function fetchContractSummaries(clientId?: string): Promise<Contrac
     .filter((row): row is ContractSummary => Boolean(row));
 }
 
-export async function fetchClientContractSummaries(): Promise<ContractSummary[]> {
+/**
+ * clientId is optional only because RLS already scopes a client session to
+ * their own rows -- passing it is cheap defense-in-depth against accidental
+ * over-fetching, not the authorization boundary itself.
+ */
+export async function fetchClientContractSummaries(clientId?: string): Promise<ContractSummary[]> {
   const client = db();
-  const { data, error } = await client.from("contracts").select("*").order("created_at", { ascending: false });
+  let query = client.from("contracts").select("*").order("created_at", { ascending: false });
+  if (clientId) query = query.eq("client_id", clientId);
+  const { data, error } = await query;
   throwIf(error, "load contracts", "Unable to load contracts.");
   const rows = (data ?? []) as ContractRow[];
   const ids = rows.map((row) => row.published_revision_id).filter((id): id is string => Boolean(id));

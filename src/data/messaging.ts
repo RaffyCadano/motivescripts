@@ -156,8 +156,16 @@ export function notificationHref(item: AppNotification, role: "admin" | "staff" 
       return agency ? "/admin/clients" : "/client/settings";
     case "project_assigned":
     case "milestone_updated":
+    case "qa_failed":
+    case "qa_passed":
       if (agency) {
         return item.projectId ? `/admin/projects/${item.projectId}` : staff ? "/team/projects" : "/admin/projects";
+      }
+      return item.projectId ? `/client/project/${item.projectId}` : "/client/project";
+    case "client_review_ready":
+    case "launch_completed":
+      if (agency) {
+        return item.projectId ? `/admin/projects/${item.projectId}` : "/admin/projects";
       }
       return item.projectId ? `/client/project/${item.projectId}` : "/client/project";
     case "feedback_received":

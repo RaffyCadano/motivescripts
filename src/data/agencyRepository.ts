@@ -73,6 +73,8 @@ type TaskWriteFields = Partial<
     | "task_type"
     | "reference_url"
     | "estimated_hours"
+    | "blocked_reason"
+    | "qa_result"
   >
 >;
 
@@ -113,6 +115,11 @@ function fail(context: string, error: unknown, fallback: string): never {
 
 function throwIf(error: unknown, context: string, fallback: string) {
   if (error) fail(context, error, fallback);
+}
+
+function firstId(data: string | string[] | null | undefined): string | null {
+  if (!data) return null;
+  return Array.isArray(data) ? (data[0] ?? null) : data;
 }
 
 function mapPortalAccount(row: Pick<ProfileRow, "id" | "email" | "full_name" | "role" | "client_id">): PortalAccount {
@@ -341,52 +348,13 @@ export async function markLeadConverted(leadId: string, clientId: string, activi
   throwIf(error, "convert lead", "Unable to convert lead.");
 }
 
-export async function convertLeadToClient(lead: Lead): Promise<string> {
+export async function convertLeadToClient(leadId: string): Promise<string> {
   const client = db();
-  if (lead.convertedClientId) return lead.convertedClientId;
-
-  const now = new Date().toISOString();
-  const { data: created, error: clientError } = await client
-    .from("clients")
-    .insert({
-      contact_name: lead.name,
-      business_name: lead.businessName,
-      email: lead.email,
-      phone: lead.phone,
-      industry: lead.industry,
-      website: "",
-      location: "",
-      status: "Active",
-      source: lead.source,
-      source_lead_id: lead.id,
-    })
-    .select("*")
-    .single();
-  throwIf(clientError, "convert lead", "Unable to convert lead.");
-  if (!created) fail("convert lead", null, "Unable to convert lead.");
-
-  const clientId = (created as ClientRow).id;
-  const { error: staffError } = await client.from("client_staff_data").update({
-    activity: [
-      { id: createRecordId("cact"), description: "Client converted from lead", createdAt: now, icon: "converted" },
-      { id: createRecordId("cact"), description: "Client record created", createdAt: now, icon: "created" },
-    ] as unknown as Json,
-  }).eq("client_id", clientId);
-  throwIf(staffError, "convert lead", "Unable to convert lead.");
-  const { error: leadError } = await client
-    .from("leads")
-    .update({
-      status: "Won",
-      client_id: clientId,
-      converted_at: now,
-      activity: [
-        { id: createRecordId("act"), description: "Lead converted to client", createdAt: now },
-        ...lead.activity,
-      ] as unknown as Json,
-    })
-    .eq("id", lead.id);
-  throwIf(leadError, "convert lead", "Unable to convert lead.");
-  return clientId;
+  const { data, error } = await client.rpc("convert_lead_to_client", { p_lead_id: leadId });
+  throwIf(error, "convert lead", "Unable to convert lead.");
+  const clientId = firstId(data as string | string[] | null | undefined);
+  if (!clientId) fail("convert lead", null, "Unable to convert lead.");
+  return clientId as string;
 }
 
 export async function insertClient(draft: AgencyClientDraft): Promise<AgencyClient> {
@@ -698,6 +666,8 @@ function taskDraftWriteFields(draft: AgencyTaskDraft, completedAt: string | null
     task_type: draft.taskType ?? null,
     reference_url: emptyToNull(draft.referenceUrl),
     estimated_hours: draft.estimatedHours ?? null,
+    blocked_reason: draft.status === "Blocked" ? (draft.blockedReason ?? null) : null,
+    qa_result: draft.status === "Completed" ? (draft.qaResult ?? null) : null,
   };
   if (completedAt !== undefined) {
     fields.completed_at = completedAt;
@@ -831,6 +801,7 @@ export async function insertDeliverable(
       description: draft.description.trim(),
       category: draft.category,
       status: draft.status === "Archived" ? "Draft" : draft.status,
+      design_checkpoint: draft.designCheckpoint,
     })
     .select("id")
     .single();
@@ -905,7 +876,7 @@ export async function archiveVersionRecord(versionId: string): Promise<void> {
 
 export async function updateDeliverableRecord(
   deliverableId: string,
-  draft: Pick<DeliverableDraft, "name" | "description" | "category">,
+  draft: Pick<DeliverableDraft, "name" | "description" | "category" | "designCheckpoint">,
 ): Promise<void> {
   const client = db();
   const { error } = await client
@@ -914,6 +885,7 @@ export async function updateDeliverableRecord(
       name: draft.name.trim(),
       description: draft.description.trim(),
       category: draft.category,
+      design_checkpoint: draft.designCheckpoint,
     })
     .eq("id", deliverableId);
   throwIf(error, "update deliverable", "Unable to update deliverable.");

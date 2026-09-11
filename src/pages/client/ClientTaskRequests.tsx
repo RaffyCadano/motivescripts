@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { formatClientDate } from "@/data/agencyClients";
 import {
-  fetchTaskClientRequestFiles,
+  fetchTaskClientRequestFilesForRequests,
   fetchTaskClientRequestsForProject,
   insertTaskClientRequestFile,
   submitTaskClientResponse,
@@ -27,10 +27,7 @@ export function ClientTaskRequests() {
     if (!project?.id) return;
     const rows = await fetchTaskClientRequestsForProject(project.id);
     setRequests(rows);
-    const entries = await Promise.all(
-      rows.map(async (row) => [row.id, await fetchTaskClientRequestFiles(row.id)] as const),
-    );
-    setFilesByRequest(Object.fromEntries(entries));
+    setFilesByRequest(await fetchTaskClientRequestFilesForRequests(rows.map((row) => row.id)));
   }
 
   useEffect(() => {

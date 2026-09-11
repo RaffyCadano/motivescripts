@@ -78,14 +78,14 @@ export function ClientFilePreview({ file, version, onClose }: ClientFilePreviewP
             <>
               <Link
                 to="/client/feedback"
-                className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--client-ink)] hover:bg-[var(--client-bg)]"
+                className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--client-ink)] hover:bg-[var(--client-bg)]"
                 onClick={onClose}
               >
                 Leave Feedback
               </Link>
               <Link
                 to="/client/approvals"
-                className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)]"
+                className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)]"
                 onClick={onClose}
               >
                 Approve Version
@@ -94,7 +94,7 @@ export function ClientFilePreview({ file, version, onClose }: ClientFilePreviewP
           ) : (
             <button
               type="button"
-              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)]"
+              className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)]"
               onClick={onClose}
             >
               Close

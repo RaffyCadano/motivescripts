@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAdmin } from "@/auth/permissions";
 import { AdminInfoTip } from "@/components/admin/AdminInfoTip";
@@ -89,6 +89,10 @@ export function AdminSettings() {
   }, []);
 
   useEffect(() => {
+    if (!canEditAgency) {
+      setLoading(false);
+      return;
+    }
     let active = true;
     setLoading(true);
     void fetchAgencySettings()
@@ -276,6 +280,22 @@ export function AdminSettings() {
     } finally {
       setPurgeBusy(false);
     }
+  }
+
+  if (!canEditAgency) {
+    return (
+      <div>
+        <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">Settings</h1>
+        <p className="mt-1 max-w-xl text-sm text-[var(--admin-muted)]">You don’t have access to this section.</p>
+        <div className="mt-8 rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-10 text-sm text-[var(--admin-muted)]">
+          Agency settings are visible to administrators only. Update your own name and job title from{" "}
+          <Link to="/admin/profile" className="font-semibold text-[var(--admin-blue)] hover:underline">
+            My Profile
+          </Link>
+          .
+        </div>
+      </div>
+    );
   }
 
   const showAgencySave = !reviewOnly && Boolean(settings) && sectionNeedsSettings(section);

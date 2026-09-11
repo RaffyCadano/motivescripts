@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
 import { DocumentStatusBadge } from "@/components/documents/DocumentStatusBadge";
+import { ClientEmptyState } from "@/components/client/ClientEmptyState";
 import { fetchClientProposalSummaries, type ProposalSummary } from "@/data/documentsRepository";
 import { formatUsdFromCents } from "@/data/money";
 import { formatClientDate } from "@/data/agencyClients";
@@ -8,13 +10,14 @@ import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 export function ClientProposals() {
+  const { profile } = useAuth();
   const { projects, notify } = useLeads();
   const [rows, setRows] = useState<ProposalSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    void fetchClientProposalSummaries()
+    void fetchClientProposalSummaries(profile?.clientId ?? undefined)
       .then((data) => {
         if (active) setRows(data);
       })
@@ -39,10 +42,7 @@ export function ClientProposals() {
       {loading ? (
         <div className="h-40 animate-pulse rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)]" />
       ) : rows.length === 0 ? (
-        <div className="rounded-[var(--client-radius)] border border-dashed border-[var(--client-line)] bg-[var(--client-card)] px-5 py-10">
-          <p className="font-heading text-sm font-semibold">No proposals yet</p>
-          <p className="mt-1 text-sm text-[var(--client-muted)]">When MotiveScripts sends a proposal, it will appear here.</p>
-        </div>
+        <ClientEmptyState title="No proposals yet" body="When MotiveScripts sends a proposal, it will appear here." />
       ) : (
         <>
           <div className="hidden overflow-x-auto rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] md:block">

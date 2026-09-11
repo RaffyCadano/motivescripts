@@ -7,6 +7,7 @@ import {
   lastSuccessfulCheck,
   websiteHealthStateLabel,
   type WebsiteHealthCheck,
+  type WebsiteHealthEnvironment,
   type WebsiteHealthState,
 } from "@/data/websiteHealth";
 import { checkWebsiteHealthNow, fetchWebsiteHealthHistory } from "@/data/websiteHealthRepository";
@@ -72,11 +73,16 @@ function HistoryRow({ check }: { check: WebsiteHealthCheck }) {
 type WebsiteHealthCardProps = {
   projectId: string;
   productionUrl: string;
+  stagingUrl?: string;
   canCheckNow: boolean;
 };
 
-export function WebsiteHealthCard({ projectId, productionUrl, canCheckNow }: WebsiteHealthCardProps) {
+export function WebsiteHealthCard({ projectId, productionUrl, stagingUrl = "", canCheckNow }: WebsiteHealthCardProps) {
   const productionHref = safeHttpHref(productionUrl);
+  const stagingHref = safeHttpHref(stagingUrl);
+  const [environment, setEnvironment] = useState<WebsiteHealthEnvironment>("production");
+  const activeHref = environment === "staging" ? stagingHref : productionHref;
+
   const [checks, setChecks] = useState<WebsiteHealthCheck[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -85,14 +91,14 @@ export function WebsiteHealthCard({ projectId, productionUrl, canCheckNow }: Web
 
   useEffect(() => {
     let cancelled = false;
-    if (!productionHref) {
+    if (!activeHref) {
       setLoading(false);
       setChecks([]);
       return;
     }
     setLoading(true);
     setLoadError(null);
-    fetchWebsiteHealthHistory(projectId)
+    fetchWebsiteHealthHistory(projectId, environment)
       .then((data) => {
         if (!cancelled) setChecks(data);
       })
@@ -105,13 +111,13 @@ export function WebsiteHealthCard({ projectId, productionUrl, canCheckNow }: Web
     return () => {
       cancelled = true;
     };
-  }, [projectId, productionHref]);
+  }, [projectId, environment, activeHref]);
 
   async function handleCheckNow() {
     setChecking(true);
     setCheckError(null);
     try {
-      const result = await checkWebsiteHealthNow(projectId);
+      const result = await checkWebsiteHealthNow(projectId, environment);
       setChecks((prev) => [result, ...prev].slice(0, 8));
     } catch (error) {
       setCheckError(error instanceof AgencyDbError ? error.message : "Unable to check the website right now.");
@@ -128,7 +134,7 @@ export function WebsiteHealthCard({ projectId, productionUrl, canCheckNow }: Web
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Website Health</h2>
-        {canCheckNow && productionHref ? (
+        {canCheckNow && activeHref ? (
           <button
             type="button"
             className={cn(adminGhostBtn, "h-8 px-3 text-[12px]")}
@@ -140,9 +146,29 @@ export function WebsiteHealthCard({ projectId, productionUrl, canCheckNow }: Web
         ) : null}
       </div>
 
-      {!productionHref ? (
+      {stagingHref ? (
+        <div className="mt-3 inline-flex rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] p-0.5">
+          {(["production", "staging"] as const).map((env) => (
+            <button
+              key={env}
+              type="button"
+              onClick={() => setEnvironment(env)}
+              className={cn(
+                "rounded-md px-3 py-1 font-heading text-[12px] font-semibold transition-colors",
+                environment === env ? "bg-white text-[var(--admin-ink)] shadow-sm" : "text-[var(--admin-muted)]",
+              )}
+            >
+              {env === "staging" ? "Staging" : "Production"}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {!activeHref ? (
         <p className="mt-4 text-sm text-[var(--admin-muted)]">
-          No production URL is configured for this project yet.
+          {environment === "staging"
+            ? "No staging URL is configured for this project yet."
+            : "No production URL is configured for this project yet."}
         </p>
       ) : loading ? (
         <p className="mt-4 text-sm text-[var(--admin-muted)]">Loading…</p>
@@ -157,7 +183,7 @@ export function WebsiteHealthCard({ projectId, productionUrl, canCheckNow }: Web
           {checkError ? <p className="mt-3 text-sm text-[#b42318]">{checkError}</p> : null}
 
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Row label="Production" value={displayHttpHost(productionHref)} />
+            <Row label={environment === "staging" ? "Staging" : "Production"} value={displayHttpHost(activeHref)} />
             {state === "healthy" ? (
               <>
                 <Row label="HTTP Status" value={latest?.httpStatus ? String(latest.httpStatus) : "—"} />

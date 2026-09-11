@@ -114,6 +114,26 @@ export async function fetchTaskClientRequestFiles(requestId: string): Promise<Ta
   return (data ?? []).map((row) => mapFile(row as TaskClientRequestFileRow));
 }
 
+/** One batched query for several requests at once, instead of one fetchTaskClientRequestFiles call per request. */
+export async function fetchTaskClientRequestFilesForRequests(
+  requestIds: string[],
+): Promise<Record<string, TaskClientRequestFile[]>> {
+  const result: Record<string, TaskClientRequestFile[]> = {};
+  if (requestIds.length === 0) return result;
+  const client = db();
+  const { data, error } = await client
+    .from("task_client_request_files")
+    .select("*")
+    .in("request_id", requestIds)
+    .order("created_at", { ascending: false });
+  throwIf(error, "load task request files", "Unable to load files.");
+  for (const row of (data ?? []) as TaskClientRequestFileRow[]) {
+    const file = mapFile(row);
+    (result[file.requestId] ??= []).push(file);
+  }
+  return result;
+}
+
 async function ensureTaskClientRequest(taskId: string, projectId: string, clientId: string): Promise<TaskClientRequest> {
   const existing = await fetchTaskClientRequestByTask(taskId);
   if (existing) return existing;

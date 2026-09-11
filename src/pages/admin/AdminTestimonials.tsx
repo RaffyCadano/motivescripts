@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
+import { isActiveAdmin } from "@/auth/permissions";
 import { adminBlueBtn } from "@/components/admin/adminActionStyles";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
 import { AdminEmptyState } from "@/components/admin/list/AdminEmptyState";
@@ -10,11 +12,14 @@ import type { Testimonial } from "@/data/testimonials";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 export function AdminTestimonials() {
+  const { profile } = useAuth();
+  const isAdmin = isActiveAdmin(profile);
   const [rows, setRows] = useState<Testimonial[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   async function reload() {
+    if (!isAdmin) return;
     try {
       setRows(await fetchAllTestimonials());
       setError(null);
@@ -25,7 +30,20 @@ export function AdminTestimonials() {
 
   useEffect(() => {
     void reload().finally(() => setLoading(false));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]);
+
+  if (!isAdmin) {
+    return (
+      <div>
+        <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">Testimonials</h1>
+        <p className="mt-1 max-w-xl text-sm text-[var(--admin-muted)]">You don’t have access to this section.</p>
+        <div className="mt-8 rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-10 text-sm text-[var(--admin-muted)]">
+          Managing public testimonials is visible to administrators only.
+        </div>
+      </div>
+    );
+  }
 
   async function onDelete(id: string) {
     if (!window.confirm("Delete this testimonial? This cannot be undone.")) return;

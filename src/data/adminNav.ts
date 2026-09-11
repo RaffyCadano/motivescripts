@@ -175,7 +175,8 @@ export function getAdminPageMeta(pathname: string) {
   return items.find((item) => item.end && pathname === item.href) ?? items[0];
 }
 
-const navPermission: Record<string, StaffPermissionCode | null> = {
+/** "admin" is not a grant code -- it means the route requires isActiveAdmin(), not any particular permission. */
+const navPermission: Record<string, StaffPermissionCode | "admin" | null> = {
   "/admin": null,
   "/admin/leads": "leads.view",
   "/admin/clients": "clients.view",
@@ -186,20 +187,20 @@ const navPermission: Record<string, StaffPermissionCode | null> = {
   "/admin/contracts": "contracts.view",
   "/admin/invoices": "invoices.view",
   "/admin/reports": "invoices.view",
-  "/admin/testimonials": null,
+  "/admin/testimonials": "admin",
   "/admin/payments": "invoices.view",
   "/admin/messages": "messages.view",
   "/admin/notifications": null,
   "/admin/team": "team.view",
   "/admin/capacity": "projects.view",
-  "/admin/payroll": null,
+  "/admin/payroll": "admin",
   "/admin/activity": "activity.view",
-  "/admin/settings": null,
+  "/admin/settings": "admin",
   "/admin/profile": null,
 };
 
-/** The permission code required to view this route, or null if any active agency user may. */
-export function getRequiredAdminPermission(pathname: string): StaffPermissionCode | null {
+/** The permission code required to view this route, "admin" if it requires isActiveAdmin(), or null if any active agency user may. */
+export function getRequiredAdminPermission(pathname: string): StaffPermissionCode | "admin" | null {
   return navPermission[resolveAdminNavPath(pathname)] ?? null;
 }
 
@@ -221,12 +222,10 @@ export function filterAdminNavGroups(profile: AppProfile | null): AdminNavGroup[
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
-        if (item.href === "/admin/settings") return isActiveAdmin(profile);
-        if (item.href === "/admin/payroll") return isActiveAdmin(profile);
-        if (item.href === "/admin/testimonials") return isActiveAdmin(profile);
         if (item.href === "/admin/my-tasks" && isActiveAdmin(profile)) return false;
         const required = navPermission[item.href];
         if (!required) return true;
+        if (required === "admin") return isActiveAdmin(profile);
         return hasPermission(profile, required);
       }),
     }))

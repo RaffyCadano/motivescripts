@@ -21,6 +21,31 @@ export const deliverableCategories = [
 ] as const;
 export type DeliverableCategory = (typeof deliverableCategories)[number];
 
+/**
+ * Stable identifier for the design approval checkpoints. Distinct from
+ * `category` (which is a broad grouping) -- this tags which specific
+ * deliverable IS "the" Initial Concept / Logo & Brand / Overall Website
+ * Design / Final Website checkpoint, instead of relying on matching a
+ * free-text name. `overall_design` gates new Development work; `final_website`
+ * gates Launch -- both enforced server-side, see
+ * supabase/migrations/20260930090000_production_workflow_gates.sql.
+ */
+export const designCheckpoints = ["initial_concept", "logo_brand", "overall_design", "final_website"] as const;
+export type DesignCheckpoint = (typeof designCheckpoints)[number];
+
+export function designCheckpointLabel(checkpoint: DesignCheckpoint): string {
+  switch (checkpoint) {
+    case "initial_concept":
+      return "Initial Design / Concept";
+    case "logo_brand":
+      return "Logo / Brand Approval";
+    case "overall_design":
+      return "Overall Website Design";
+    case "final_website":
+      return "Final Website (launch approval)";
+  }
+}
+
 export const fileVersionStatuses = ["Active", "Archived"] as const;
 export type FileVersionStatus = (typeof fileVersionStatuses)[number];
 
@@ -47,6 +72,7 @@ export type AgencyDeliverable = {
   description: string;
   category: DeliverableCategory;
   status: DeliverableStatus;
+  designCheckpoint: DesignCheckpoint | null;
   createdAt: string;
   updatedAt: string;
   currentVersionId: string | null;
@@ -64,6 +90,7 @@ export type DeliverableDraft = {
   description: string;
   category: DeliverableCategory;
   status: DeliverableStatus;
+  designCheckpoint: DesignCheckpoint | null;
 };
 
 export type VersionDraft = {

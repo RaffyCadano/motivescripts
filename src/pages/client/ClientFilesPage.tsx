@@ -17,7 +17,7 @@ export function ClientFilesPage() {
       <header>
         <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight md:text-3xl">Files</h1>
         <p className="mt-1 max-w-2xl text-sm text-[var(--client-muted)]">
-          Review current project deliverables. Approval and change requests apply only to the current version.
+          Review current project files. Approval and change requests apply only to the current version.
         </p>
         {waiting.length > 0 ? (
           <p className="mt-3 text-sm text-[var(--client-ink)]">You have {waiting.length} item{waiting.length === 1 ? "" : "s"} awaiting review.</p>
@@ -26,7 +26,7 @@ export function ClientFilesPage() {
 
       {active.length === 0 ? (
         <p className="text-sm text-[var(--client-muted)]">
-          Deliverables will appear here when they are ready for your review.
+          Files will appear here when they are ready for your review.
         </p>
       ) : grouped ? (
         projects

@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
-import { hasPermission } from "@/auth/permissions";
+import { hasPermission, isActiveAdmin } from "@/auth/permissions";
 import { getAdminPageMeta, getRequiredAdminPermission } from "@/data/adminNav";
 
 /**
@@ -13,8 +13,9 @@ export function RequireAdminPermission() {
   const { pathname } = useLocation();
   const { profile } = useAuth();
   const required = getRequiredAdminPermission(pathname);
+  const allowed = !required || (required === "admin" ? isActiveAdmin(profile) : hasPermission(profile, required));
 
-  if (required && !hasPermission(profile, required)) {
+  if (!allowed) {
     const page = getAdminPageMeta(pathname);
     return (
       <div>

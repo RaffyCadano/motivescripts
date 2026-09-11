@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from "react";
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
 import {
   deliverableCategories,
+  designCheckpointLabel,
+  designCheckpoints,
   fileInputAccept,
   fileTypeFromName,
   formatFileSize,
@@ -9,6 +11,7 @@ import {
   type AgencyDeliverable,
   type DeliverableCategory,
   type DeliverableDraft,
+  type DesignCheckpoint,
   type ReviewStatus,
 } from "@/data/files";
 import { MAX_FILE_SIZE_LABEL, validateUploadFile } from "@/data/fileUploadConfig";
@@ -21,6 +24,7 @@ const emptyDraft: DeliverableDraft = {
   description: "",
   category: "Website Page",
   status: "Draft",
+  designCheckpoint: null,
 };
 
 type DeliverableFormModalProps = {
@@ -46,6 +50,7 @@ export function DeliverableFormModal({ open, deliverable, onClose, onSubmit }: D
             description: deliverable.description,
             category: deliverable.category,
             status: deliverable.status === "Archived" ? "Draft" : deliverable.status,
+            designCheckpoint: deliverable.designCheckpoint,
           }
         : emptyDraft,
     );
@@ -126,6 +131,29 @@ export function DeliverableFormModal({ open, deliverable, onClose, onSubmit }: D
               </option>
             ))}
           </select>
+        </label>
+        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+          Design checkpoint
+          <select
+            value={draft.designCheckpoint ?? ""}
+            onChange={(event) =>
+              setDraft((current) => ({
+                ...current,
+                designCheckpoint: (event.target.value || null) as DesignCheckpoint | null,
+              }))
+            }
+            className={fieldClass}
+          >
+            <option value="">Not a checkpoint</option>
+            {designCheckpoints.map((item) => (
+              <option key={item} value={item}>
+                {designCheckpointLabel(item)}
+              </option>
+            ))}
+          </select>
+          <span className="mt-1 block text-[12px] font-normal text-[var(--admin-muted)]">
+            Only set this for the deliverable that IS one of the three design approval checkpoints.
+          </span>
         </label>
         {editing ? null : (
         <label className="block text-[13px] font-medium text-[var(--admin-ink)]">

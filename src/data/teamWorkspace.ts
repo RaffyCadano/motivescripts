@@ -6,7 +6,9 @@ import {
   type AgencyTask,
   type AgencyTaskPriority,
   type AgencyTaskStatus,
+  type TaskBlockedReason,
   type TaskOrigin,
+  type TaskQaResult,
 } from "@/data/agencyProjects";
 import type { TaskRecommendedRoleId } from "@/data/taskRecommendedRoles";
 import type { TaskType } from "@/data/taskTypes";
@@ -35,6 +37,8 @@ export type TeamWorkTask = {
   estimatedHours: number | null;
   deliverableId: string | null;
   origin: TaskOrigin;
+  blockedReason: TaskBlockedReason | null;
+  qaResult: TaskQaResult | null;
 };
 
 export type TeamAttentionItem = {
@@ -175,6 +179,8 @@ export function collectAssignedTasks(
         estimatedHours: task.estimatedHours,
         deliverableId: task.deliverableId,
         origin: task.origin,
+        blockedReason: task.blockedReason,
+        qaResult: task.qaResult,
       });
     }
   }

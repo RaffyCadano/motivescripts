@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { firstNameFrom } from "@/auth/userDisplay";
 import { adminIcons } from "@/components/admin/adminIcons";
 import { MyTaskMobileList, MyTaskTable } from "@/components/admin/MyTaskList";
+import { MilestoneStatusBadge } from "@/components/admin/projects/MilestoneStatusBadge";
 import { ProgressBar } from "@/components/admin/ProgressBar";
 import { ClientReviewLinkOut } from "@/components/tasks/TaskWorkspace";
 import { AvailabilityDot } from "@/components/team/AvailabilityDot";
@@ -11,6 +12,7 @@ import { TeamProjectCard } from "@/components/team/TeamProjectCard";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import { earlierOpenMilestones } from "@/data/agencyProjects";
+import { formatClientDate } from "@/data/agencyClients";
 import {
   activeTasks,
   blockedTasks,
@@ -21,6 +23,7 @@ import {
   reviewTasks,
 } from "@/data/developerOverview";
 import { effectiveTaskType } from "@/data/taskTypes";
+import { checkpointApproved } from "@/data/productionWorkflow";
 import { listMyTimeEntries } from "@/data/timeEntriesRepository";
 import type { TimeEntry } from "@/data/timeEntries";
 import {
@@ -30,11 +33,21 @@ import {
   teamProjectHref,
   type TeamWorkTask,
 } from "@/data/teamWorkspace";
+import { currentHealthState, websiteHealthStateLabel, type WebsiteHealthCheck } from "@/data/websiteHealth";
+import { fetchLatestWebsiteHealthByProject } from "@/data/websiteHealthRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
+import { cn } from "@/lib/cn";
+
+const healthTone: Record<WebsiteHealthCheck["status"] | "unknown", string> = {
+  healthy: "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]",
+  degraded: "bg-[rgb(245_158_11_/_0.12)] text-[#92610a]",
+  down: "bg-[rgb(220_38_38_/_0.08)] text-[#b42318]",
+  unknown: "bg-[var(--admin-bg)] text-[var(--admin-muted)]",
+};
 
 export function TeamDeveloperDashboard() {
   const navigate = useNavigate();
-  const { profile, clientsById, tasks, myProjects, deliverables, changeTaskStatus } = useTeamWork();
+  const { profile, clientsById, tasks, myProjects, deliverables, feedback, changeTaskStatus } = useTeamWork();
   const [openTask, setOpenTask] = useState<TeamWorkTask | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,6 +55,33 @@ export function TeamDeveloperDashboard() {
 
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [timeLoading, setTimeLoading] = useState(true);
+
+  const [websiteHealth, setWebsiteHealth] = useState<Map<string, WebsiteHealthCheck>>(new Map());
+
+  const projectsWithProductionUrl = useMemo(
+    () => myProjects.filter((project) => project.development.productionUrl.trim().length > 0),
+    [myProjects],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const projectIds = projectsWithProductionUrl.map((project) => project.id);
+    if (projectIds.length === 0) {
+      setWebsiteHealth(new Map());
+      return;
+    }
+    fetchLatestWebsiteHealthByProject(projectIds)
+      .then((result) => {
+        if (!cancelled) setWebsiteHealth(result);
+      })
+      .catch(() => {
+        // Non-fatal: the rest of the dashboard still works if this fails to load.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectsWithProductionUrl.map((project) => project.id).join(",")]);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,6 +111,39 @@ export function TeamDeveloperDashboard() {
   const dueThisWeek = useMemo(() => dueThisWeekTasks(tasks), [tasks]);
   const todayHours = timeLoading ? null : hoursLoggedToday(timeEntries);
   const weekHours = timeLoading ? null : hoursLoggedThisWeek(timeEntries);
+
+  const myProjectIds = useMemo(() => new Set(myProjects.map((project) => project.id)), [myProjects]);
+  const projectsById = useMemo(() => new Map(myProjects.map((project) => [project.id, project])), [myProjects]);
+
+  const upcomingMilestones = useMemo(() => {
+    return myProjects
+      .flatMap((project) =>
+        project.milestones
+          .filter((milestone) => milestone.status !== "Completed")
+          .map((milestone) => ({ project, milestone })),
+      )
+      .sort((a, b) => {
+        if (a.milestone.dueDate && b.milestone.dueDate) return a.milestone.dueDate.localeCompare(b.milestone.dueDate);
+        if (a.milestone.dueDate) return -1;
+        if (b.milestone.dueDate) return 1;
+        return a.milestone.order - b.milestone.order;
+      })
+      .slice(0, 5);
+  }, [myProjects]);
+
+  const recentFeedback = useMemo(() => {
+    return [...feedback]
+      .filter((item) => myProjectIds.has(item.projectId))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, 5);
+  }, [feedback, myProjectIds]);
+
+  const recentlyApproved = useMemo(() => {
+    return deliverables
+      .filter((item) => myProjectIds.has(item.projectId) && item.status === "Approved")
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .slice(0, 5);
+  }, [deliverables, myProjectIds]);
 
   const kpis: {
     id: string;
@@ -114,12 +187,12 @@ export function TeamDeveloperDashboard() {
     },
   ];
 
-  async function onStatusChange(status: TeamWorkTask["status"]) {
+  async function onStatusChange(status: TeamWorkTask["status"], blockedReason?: string | null, qaResult?: string | null) {
     if (!openTask) return;
     setBusy(true);
     setError(null);
     try {
-      await changeTaskStatus(openTask, status);
+      await changeTaskStatus(openTask, status, blockedReason, qaResult);
       setOpenTask((current) => (current ? { ...current, status } : current));
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
@@ -228,6 +301,11 @@ export function TeamDeveloperDashboard() {
                 (task) => task.projectId === project.id && (task.status === "Todo" || task.status === "In Progress"),
               ).length;
               const devProgress = developmentPhaseProgress(project);
+              const projectDeliverables = deliverables.filter((item) => item.projectId === project.id);
+              const designApproved = checkpointApproved(projectDeliverables, "overall_design");
+              const devAlreadyStarted =
+                project.status === "In Development" || project.status === "Client Review" || project.status === "Completed";
+              const developmentUnlocked = designApproved || devAlreadyStarted || devProgress.completed > 0;
               return (
                 <TeamProjectCard
                   key={project.id}
@@ -236,6 +314,11 @@ export function TeamDeveloperDashboard() {
                   assignedTaskCount={myOpenTaskCount(project, profile?.id ?? "", profile?.fullName ?? "")}
                   extra={
                     <div className="mt-3 space-y-2">
+                      {!developmentUnlocked ? (
+                        <p className="rounded-md bg-[rgb(180_83_9_/_0.08)] px-2 py-1 text-[12px] font-medium text-[#b45309]">
+                          Development is locked -- waiting for Overall Design approval.
+                        </p>
+                      ) : null}
                       {devProgress.total === 0 ? (
                         <p className="text-[12px] text-[var(--admin-muted)]">No development tasks yet.</p>
                       ) : (
@@ -272,6 +355,135 @@ export function TeamDeveloperDashboard() {
             })}
           </div>
         )}
+      </section>
+
+      <section className="grid gap-3 lg:grid-cols-2">
+        <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+          <h2 className="font-heading text-sm font-semibold tracking-tight">Upcoming Milestones</h2>
+          {upcomingMilestones.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">No open milestones on your projects.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-[var(--admin-line)]">
+              {upcomingMilestones.map(({ project, milestone }) => (
+                <li key={milestone.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-[var(--admin-ink)]">{milestone.name}</p>
+                    <p className="truncate text-[12px] text-[var(--admin-muted)]">
+                      {project.name} · {milestone.dueDate ? formatClientDate(milestone.dueDate) : "No due date"}
+                    </p>
+                  </div>
+                  <MilestoneStatusBadge status={milestone.status} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+          <h2 className="font-heading text-sm font-semibold tracking-tight">Recent Feedback</h2>
+          {recentFeedback.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">No feedback on your projects yet.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-[var(--admin-line)]">
+              {recentFeedback.map((item) => {
+                const project = projectsById.get(item.projectId);
+                const deliverable = deliverables.find((d) => d.id === item.deliverableId);
+                return (
+                  <li key={item.id} className="py-2.5 first:pt-0 last:pb-0">
+                    <p className="truncate text-[12px] text-[var(--admin-muted)]">
+                      {project?.name ?? "Project"} · {deliverable?.name ?? "Deliverable"} · {formatClientDate(item.createdAt)}
+                    </p>
+                    <p className="mt-0.5 line-clamp-2 text-sm text-[var(--admin-ink)]">{item.message}</p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+          <h2 className="font-heading text-sm font-semibold tracking-tight">Approved Deliverables</h2>
+          {recentlyApproved.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">Nothing approved yet.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-[var(--admin-line)]">
+              {recentlyApproved.map((item) => (
+                <li key={item.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-[var(--admin-ink)]">{item.name}</p>
+                    <p className="truncate text-[12px] text-[var(--admin-muted)]">
+                      {projectsById.get(item.projectId)?.name ?? "Project"} · {item.category}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-[12px] text-[var(--admin-muted)]">{formatClientDate(item.updatedAt)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+          <h2 className="font-heading text-sm font-semibold tracking-tight">Website Health</h2>
+          {projectsWithProductionUrl.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">No production websites configured on your projects.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-[var(--admin-line)]">
+              {projectsWithProductionUrl.map((project) => {
+                const check = websiteHealth.get(project.id);
+                const state = check ? currentHealthState([check]) : "unknown";
+                return (
+                  <li key={project.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-[var(--admin-ink)]">{project.name}</p>
+                      <p className="truncate text-[12px] text-[var(--admin-muted)]">
+                        {check ? `HTTP ${check.httpStatus ?? "—"} · ${check.responseTimeMs ?? "—"} ms` : "No checks yet"}
+                      </p>
+                    </div>
+                    <span
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 font-heading text-[11px] font-semibold tracking-tight",
+                        healthTone[state],
+                      )}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+                      {websiteHealthStateLabel(state)}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+        <h2 className="font-heading text-sm font-semibold tracking-tight">Quick Actions</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link
+            to="/team/tasks"
+            className="inline-flex h-9 items-center justify-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-3.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+          >
+            View My Tasks
+          </Link>
+          <Link
+            to="/team/files"
+            className="inline-flex h-9 items-center justify-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-3.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+          >
+            Upload File
+          </Link>
+          <Link
+            to="/team/needs-changes"
+            className="inline-flex h-9 items-center justify-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-3.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+          >
+            View Feedback
+          </Link>
+          <Link
+            to="/team/qa-review"
+            className="inline-flex h-9 items-center justify-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-3.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+          >
+            Submit Work for Review
+          </Link>
+        </div>
       </section>
 
       <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
@@ -333,7 +545,7 @@ export function TeamDeveloperDashboard() {
             setOpenTask(null);
             setError(null);
           }}
-          onStatusChange={(status) => void onStatusChange(status)}
+          onStatusChange={(status, blockedReason, qaResult) => void onStatusChange(status, blockedReason, qaResult)}
         />
       ) : null}
     </div>

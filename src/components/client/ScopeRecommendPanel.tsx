@@ -49,7 +49,7 @@ export function ScopeRecommendPanel({ kind, industry, suggestions, selected, onA
           <button
             type="button"
             onClick={openPanel}
-            className="mt-3 inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-4 font-heading text-[12px] font-semibold text-[var(--client-ink)] hover:bg-[var(--client-hover)]"
+            className="mt-3 inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-4 font-heading text-[12px] font-semibold text-[var(--client-ink)] hover:bg-[var(--client-hover)]"
           >
             {isPages ? "Recommend Pages" : "Recommend Features"}
           </button>
@@ -94,7 +94,7 @@ export function ScopeRecommendPanel({ kind, industry, suggestions, selected, onA
               type="button"
               onClick={addPicks}
               disabled={picks.length === 0}
-              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-[12px] font-semibold text-white hover:bg-[var(--client-bright)] disabled:opacity-60"
+              className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-[12px] font-semibold text-white hover:bg-[var(--client-bright)] disabled:opacity-60"
             >
               {isPages
                 ? newCount > 0
@@ -107,7 +107,7 @@ export function ScopeRecommendPanel({ kind, industry, suggestions, selected, onA
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-4 font-heading text-[12px] font-semibold text-[var(--client-ink)] hover:bg-[var(--client-hover)]"
+              className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-4 font-heading text-[12px] font-semibold text-[var(--client-ink)] hover:bg-[var(--client-hover)]"
             >
               Cancel
             </button>

@@ -10,6 +10,7 @@ import { EditWebsiteUrlsModal } from "@/components/admin/projects/EditWebsiteUrl
 import { WebsiteHealthCard } from "@/components/admin/projects/WebsiteHealthCard";
 import { ProjectDiscoveryPanel } from "@/components/admin/projects/ProjectDiscoveryPanel";
 import { ProjectCommercialProgress } from "@/components/admin/projects/ProjectCommercialProgress";
+import { ProjectDeliveryProgress } from "@/components/admin/projects/ProjectDeliveryProgress";
 import { ProjectNextAction } from "@/components/admin/projects/ProjectNextAction";
 import { ProjectOverviewTeam } from "@/components/admin/projects/ProjectOverviewTeam";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
@@ -79,6 +80,11 @@ export function ProjectOverview({ project, client, workflow, onOpenTab }: Projec
   return (
     <div className="space-y-6">
       <ProjectCommercialProgress items={workflow.items} loading={workflow.loading} />
+      <ProjectDeliveryProgress
+        project={project}
+        deliverables={deliverables}
+        invoiceStatuses={workflow.invoices.map((item) => item.status)}
+      />
       <ProjectNextAction
         project={project}
         action={workflow.action}
@@ -245,6 +251,7 @@ export function ProjectOverview({ project, client, workflow, onOpenTab }: Projec
       <WebsiteHealthCard
         projectId={project.id}
         productionUrl={project.development.productionUrl}
+        stagingUrl={project.development.stagingUrl}
         canCheckNow={hasPermission(profile, "projects.manage")}
       />
 

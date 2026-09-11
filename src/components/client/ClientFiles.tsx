@@ -21,7 +21,7 @@ export function ClientFiles() {
         <div className="px-5 py-6">
           <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">No files yet</p>
           <p className="mt-1 text-sm text-[var(--client-muted)]">
-            Deliverables will appear here when they are ready for your review.
+            Files will appear here when they are ready for your review.
           </p>
         </div>
       ) : (

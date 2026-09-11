@@ -4,11 +4,12 @@ import type { Lead } from "@/data/leads";
 
 type ConvertLeadModalProps = {
   lead: Lead | null;
+  busy?: boolean;
   onClose: () => void;
   onConfirm: () => void;
 };
 
-export function ConvertLeadModal({ lead, onClose, onConfirm }: ConvertLeadModalProps) {
+export function ConvertLeadModal({ lead, busy = false, onClose, onConfirm }: ConvertLeadModalProps) {
   const alreadyConverted = Boolean(lead?.convertedClientId);
 
   return (
@@ -30,7 +31,8 @@ export function ConvertLeadModal({ lead, onClose, onConfirm }: ConvertLeadModalP
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <button
           type="button"
-          className="inline-flex h-10 items-center justify-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+          disabled={busy}
+          className="inline-flex h-10 items-center justify-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:cursor-not-allowed disabled:opacity-60"
           onClick={onClose}
         >
           {alreadyConverted ? "Close" : "Cancel"}
@@ -46,10 +48,11 @@ export function ConvertLeadModal({ lead, onClose, onConfirm }: ConvertLeadModalP
         ) : (
           <button
             type="button"
-            className="inline-flex h-10 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white"
+            disabled={busy}
+            className="inline-flex h-10 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             onClick={onConfirm}
           >
-            Convert to Client
+            {busy ? "Converting…" : "Convert to Client"}
           </button>
         )}
       </div>

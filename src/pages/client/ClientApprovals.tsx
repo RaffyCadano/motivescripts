@@ -65,7 +65,7 @@ export function ClientApprovals() {
                   </span>
                   <div>
                     <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">
-                      {deliverable?.name ?? "Deliverable"} {version ? versionLabel(version.versionNumber) : ""}
+                      {deliverable?.name ?? "File"} {version ? versionLabel(version.versionNumber) : ""}
                     </p>
                     <p className="mt-1 text-[12px] text-[var(--client-muted)]">
                       Approved {formatReviewLong(item.approvedAt)} · {item.approvedBy}

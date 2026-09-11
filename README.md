@@ -19,6 +19,14 @@ npm run dev
 
 Never put a service-role key, Stripe secret (`sk_…`, `whsec_…`), or Resend API key in a `VITE_` variable. Those values would be exposed in the browser bundle.
 
+### Sandbox vs. Production
+
+This project runs against two separate Supabase projects, not one project with environment flags: a **Sandbox** project for local development, migration testing, and seed data, and the **Production** project the live site actually uses. There is no code-level switch between them — which one you're pointed at is entirely determined by `VITE_SUPABASE_URL`/`VITE_SUPABASE_PUBLISHABLE_KEY` in your own `.env.local` and by whichever project the Supabase CLI is currently linked to (`supabase status`, or check `supabase/.temp/project-ref` if present — both are gitignored, so this is per-machine, not committed).
+
+`src/components/DevEnvironmentBadge.tsx` renders a small `DEV · <project-ref>` badge in the corner of the screen whenever `import.meta.env.DEV` is true, so a glance at a locally-running app confirms which project it's actually talking to — it reads the configured URL at runtime rather than comparing against a hardcoded ref, so it stays correct even if the two projects' refs change.
+
+Before running any database-changing command (`supabase db push`, `supabase db reset`, `supabase functions deploy`, or a direct `supabase db query` that writes), confirm which project is linked. Running one of these against Production without meaning to is not reversible the way it is against Sandbox.
+
 ## Production
 
 Phase 21 hardens security, errors, and launch docs. It does **not** mean the product is live-verified.

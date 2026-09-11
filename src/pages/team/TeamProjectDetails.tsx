@@ -162,6 +162,8 @@ export function TeamProjectDetails() {
         estimatedHours: openProjectTask.estimatedHours,
         deliverableId: openProjectTask.deliverableId,
         origin: openProjectTask.origin,
+        blockedReason: openProjectTask.blockedReason,
+        qaResult: openProjectTask.qaResult,
       })
     : null;
 
@@ -176,12 +178,12 @@ export function TeamProjectDetails() {
     setSearchParams(nextParams);
   }
 
-  async function onStatusChange(status: AgencyTaskStatus) {
+  async function onStatusChange(status: AgencyTaskStatus, blockedReason?: string | null, qaResult?: string | null) {
     if (!openTask) return;
     setBusy(true);
     setError(null);
     try {
-      await changeTaskStatus(openTask, status);
+      await changeTaskStatus(openTask, status, blockedReason, qaResult);
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
     } finally {
@@ -341,7 +343,7 @@ export function TeamProjectDetails() {
             setOpenTask(null);
             setError(null);
           }}
-          onStatusChange={(status) => void onStatusChange(status)}
+          onStatusChange={(status, blockedReason, qaResult) => void onStatusChange(status, blockedReason, qaResult)}
         />
       ) : null}
     </div>
@@ -450,6 +452,7 @@ function TeamProjectOverview({
         <WebsiteHealthCard
           projectId={project.id}
           productionUrl={project.development.productionUrl}
+          stagingUrl={project.development.stagingUrl}
           canCheckNow={canCheckWebsiteHealth}
         />
       </div>

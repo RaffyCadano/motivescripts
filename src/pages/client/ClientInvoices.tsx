@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
 import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
+import { ClientEmptyState } from "@/components/client/ClientEmptyState";
 import { fetchClientInvoiceSummaries, type InvoiceSummary } from "@/data/invoicesRepository";
 import { canPayInvoiceOnline } from "@/data/invoices";
 import { formatMoneyFromCents } from "@/data/money";
@@ -9,13 +11,14 @@ import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 export function ClientInvoices() {
+  const { profile } = useAuth();
   const { projects, notify } = useLeads();
   const [rows, setRows] = useState<InvoiceSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    void fetchClientInvoiceSummaries()
+    void fetchClientInvoiceSummaries(profile?.clientId ?? undefined)
       .then((data) => {
         if (active) setRows(data);
       })
@@ -40,10 +43,7 @@ export function ClientInvoices() {
       {loading ? (
         <div className="h-40 animate-pulse rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)]" />
       ) : rows.length === 0 ? (
-        <div className="rounded-[var(--client-radius)] border border-dashed border-[var(--client-line)] bg-[var(--client-card)] px-5 py-10">
-          <p className="font-heading text-sm font-semibold">No invoices yet</p>
-          <p className="mt-1 text-sm text-[var(--client-muted)]">When MotiveScripts sends an invoice, it will appear here.</p>
-        </div>
+        <ClientEmptyState title="No invoices yet" body="When MotiveScripts sends an invoice, it will appear here." />
       ) : (
         <>
           <div className="hidden overflow-x-auto rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] md:block">

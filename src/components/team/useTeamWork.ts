@@ -16,7 +16,7 @@ import {
 
 export function useTeamWork() {
   const { profile } = useAuth();
-  const { clients, projects, deliverables, updateTask, reload, loadStatus } = useLeads();
+  const { clients, projects, deliverables, feedback, updateTask, reload, loadStatus } = useLeads();
   const [assignedProjectIds, setAssignedProjectIds] = useState<string[]>([]);
   const [assignedClientIds, setAssignedClientIds] = useState<string[]>([]);
   const [assignmentError, setAssignmentError] = useState<string | null>(null);
@@ -61,10 +61,15 @@ export function useTeamWork() {
   const upcoming = useMemo(() => sortUpcomingTasks(tasks), [tasks]);
   const canManageTasks = hasPermission(profile, "projects.manage");
 
-  async function changeTaskStatus(task: TeamWorkTask, status: AgencyTaskStatus) {
+  async function changeTaskStatus(
+    task: TeamWorkTask,
+    status: AgencyTaskStatus,
+    blockedReason?: string | null,
+    qaResult?: string | null,
+  ) {
     const mine = isAssignedToMe(task, profile?.id ?? "", profile?.fullName ?? "");
     if (mine) {
-      await updateMyTaskStatus(task.id, status);
+      await updateMyTaskStatus(task.id, status, blockedReason, qaResult);
       await reload();
       return;
     }
@@ -81,12 +86,14 @@ export function useTeamWork() {
       taskType: task.taskType,
       referenceUrl: task.referenceUrl,
       estimatedHours: task.estimatedHours,
+      blockedReason: (blockedReason as AgencyTaskDraft["blockedReason"]) ?? null,
+      qaResult: (qaResult as AgencyTaskDraft["qaResult"]) ?? null,
     };
     if (canManageTasks) {
       await updateTask(task.projectId, task.id, draft);
       return;
     }
-    await updateMyTaskStatus(task.id, status);
+    await updateMyTaskStatus(task.id, status, blockedReason, qaResult);
     await reload();
   }
 
@@ -96,6 +103,7 @@ export function useTeamWork() {
     tasks,
     myProjects,
     deliverables,
+    feedback,
     stats,
     upcoming,
     assignmentError,

@@ -13,7 +13,7 @@ import { useClientPortalAction } from "@/components/client/useClientPortalAction
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { currentMilestone } from "@/data/agencyProjects";
 import { displayMilestoneName } from "@/data/projectMilestones";
-import { timelineStagesFromProject } from "@/data/clientProjectProgress";
+import { clientDeliveryStages, timelineStagesFromProject } from "@/data/clientProjectProgress";
 
 export function ClientProject() {
   const { projectId } = useParams();
@@ -24,6 +24,8 @@ export function ClientProject() {
     : session.project;
   const milestone = project ? currentMilestone(project) : null;
   const stages = timelineStagesFromProject(project);
+  const projectFiles = project ? session.files.filter((item) => item.projectId === project.id) : [];
+  const deliveryStages = clientDeliveryStages(project, projectFiles);
   const discovery = useClientDiscovery(project?.id);
   const taskRequests = useClientTaskRequests(project?.id);
 
@@ -81,6 +83,8 @@ export function ClientProject() {
       {project ? <ClientWebsiteSection projectName={project.name} development={project.development} /> : null}
 
       {stages.length > 0 ? <ClientTimeline stages={stages} /> : null}
+
+      {deliveryStages.length > 0 ? <ClientTimeline stages={deliveryStages} title="What do you need from us?" /> : null}
 
       {waiting.length > 1 && action?.kind === "review" ? (
         <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">

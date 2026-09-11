@@ -135,12 +135,12 @@ export function PmOverview() {
 
   const firstName = firstNameFrom(profile?.fullName || "there");
 
-  async function onStatusChange(status: TeamWorkTask["status"]) {
+  async function onStatusChange(status: TeamWorkTask["status"], blockedReason?: string | null, qaResult?: string | null) {
     if (!openTask) return;
     setBusy(true);
     setError(null);
     try {
-      await changeTaskStatus(openTask, status);
+      await changeTaskStatus(openTask, status, blockedReason, qaResult);
       setOpenTask((current) => (current ? { ...current, status } : current));
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
@@ -313,7 +313,7 @@ export function PmOverview() {
             setOpenTask(null);
             setError(null);
           }}
-          onStatusChange={(status) => void onStatusChange(status)}
+          onStatusChange={(status, blockedReason, qaResult) => void onStatusChange(status, blockedReason, qaResult)}
         />
       ) : null}
     </div>

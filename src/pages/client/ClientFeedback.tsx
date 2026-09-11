@@ -28,7 +28,7 @@ export function ClientFeedback() {
               return (
                 <li key={item.id}>
                   <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">
-                    {deliverable?.name ?? "Deliverable"} {version ? versionLabel(version.versionNumber) : ""}
+                    {deliverable?.name ?? "File"} {version ? versionLabel(version.versionNumber) : ""}
                   </p>
                   <p className="mt-1 text-sm text-[var(--client-ink)]">“{item.message}”</p>
                   <p className="mt-1 text-[12px] text-[var(--client-muted)]">
@@ -62,7 +62,7 @@ export function ClientFeedback() {
                 <li key={item.id}>
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">
-                      {deliverable?.name ?? "Deliverable"} {version ? versionLabel(version.versionNumber) : ""}
+                      {deliverable?.name ?? "File"} {version ? versionLabel(version.versionNumber) : ""}
                     </p>
                     <ClientStatusBadge label="Resolved" tone="done" />
                   </div>

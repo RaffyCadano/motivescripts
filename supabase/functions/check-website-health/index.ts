@@ -27,8 +27,9 @@ import { validateProductionUrl } from "../_shared/websiteUrl.ts";
 const TIMEOUT_MS = 10_000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-type RequestBody = { projectId?: string };
+type RequestBody = { projectId?: string; environment?: string };
 type CheckStatus = "healthy" | "degraded" | "down";
+type CheckEnvironment = "production" | "staging";
 
 type CheckResult = {
   status: CheckStatus;
@@ -96,6 +97,7 @@ Deno.serve(async (req) => {
   }
   const projectId = (body.projectId ?? "").trim();
   if (!UUID_RE.test(projectId)) return fail("invalid_project");
+  const environment: CheckEnvironment = body.environment === "staging" ? "staging" : "production";
 
   const authHeader = req.headers.get("Authorization") ?? "";
   const userClient = createClient(supabaseUrl, anonKey, {
@@ -121,7 +123,7 @@ Deno.serve(async (req) => {
   });
   const { data: project, error: projectError } = await admin
     .from("projects")
-    .select("production_url")
+    .select("production_url, staging_url")
     .eq("id", projectId)
     .maybeSingle();
   if (projectError) {
@@ -130,8 +132,9 @@ Deno.serve(async (req) => {
   }
   if (!project) return fail("not_found", 404);
 
-  const url = validateProductionUrl(project.production_url);
-  if (!url) return fail("no_production_url");
+  const targetUrl = environment === "staging" ? project.staging_url : project.production_url;
+  const url = validateProductionUrl(targetUrl);
+  if (!url) return fail(environment === "staging" ? "no_staging_url" : "no_production_url");
 
   const result = await runCheck(url);
 
@@ -139,6 +142,7 @@ Deno.serve(async (req) => {
     .from("website_health_checks")
     .insert({
       project_id: projectId,
+      environment,
       status: result.status,
       http_status: result.httpStatus,
       response_time_ms: result.responseTimeMs,
@@ -157,6 +161,7 @@ Deno.serve(async (req) => {
     check: {
       id: inserted.id,
       checkedAt: inserted.checked_at,
+      environment,
       status: result.status,
       httpStatus: result.httpStatus,
       responseTimeMs: result.responseTimeMs,

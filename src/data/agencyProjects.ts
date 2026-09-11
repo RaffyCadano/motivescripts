@@ -33,6 +33,44 @@ export type AgencyProjectStatus = (typeof projectStatuses)[number];
 export const milestoneStatuses = ["Not Started", "In Progress", "Completed", "On Hold"] as const;
 export type AgencyMilestoneStatus = (typeof milestoneStatuses)[number];
 
+export const taskBlockedReasons = [
+  "waiting_on_client",
+  "waiting_on_pm",
+  "waiting_on_designer",
+  "waiting_on_content",
+  "technical_issue",
+  "external_dependency",
+  "other",
+] as const;
+export type TaskBlockedReason = (typeof taskBlockedReasons)[number];
+
+export function taskBlockedReasonLabel(reason: TaskBlockedReason): string {
+  switch (reason) {
+    case "waiting_on_client":
+      return "Waiting for client";
+    case "waiting_on_pm":
+      return "Waiting for PM";
+    case "waiting_on_designer":
+      return "Waiting for designer";
+    case "waiting_on_content":
+      return "Waiting for content";
+    case "technical_issue":
+      return "Technical issue";
+    case "external_dependency":
+      return "External dependency";
+    case "other":
+      return "Other";
+  }
+}
+
+/** QA verdict for a task_type = 'qa' task, required when it's marked Completed. See docs/production-workflow.md. */
+export const taskQaResults = ["pass", "fail"] as const;
+export type TaskQaResult = (typeof taskQaResults)[number];
+
+export function taskQaResultLabel(result: TaskQaResult): string {
+  return result === "pass" ? "Passed" : "Failed";
+}
+
 export const taskStatuses = ["Todo", "In Progress", "In Review", "Completed", "Blocked"] as const;
 export type AgencyTaskStatus = (typeof taskStatuses)[number];
 
@@ -75,6 +113,8 @@ export type AgencyTask = {
   estimatedHours: number | null;
   deliverableId: string | null;
   origin: TaskOrigin;
+  blockedReason: TaskBlockedReason | null;
+  qaResult: TaskQaResult | null;
 };
 
 export type AgencyProjectFeedback = {
@@ -149,6 +189,8 @@ export type AgencyTaskDraft = {
   taskType: TaskType | null;
   referenceUrl: string;
   estimatedHours: number | null;
+  blockedReason?: TaskBlockedReason | null;
+  qaResult?: TaskQaResult | null;
 };
 
 export function taskStatusLabel(status: AgencyTaskStatus): string {
