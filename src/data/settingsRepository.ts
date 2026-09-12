@@ -178,6 +178,21 @@ export async function fetchAgencySettings(): Promise<AgencySettings> {
   return mapSettings(row);
 }
 
+/**
+ * Document-creation prefill only (due days, currency, default terms/notes) --
+ * available to any staff member who can create proposals/contracts/invoices,
+ * not just admins. get_agency_settings() (above) carries the full row
+ * including sensitive business info and stays admin-only; use this instead
+ * when the caller only needs the operational defaults.
+ */
+export async function fetchAgencyDocumentDefaults(): Promise<AgencySettings> {
+  const client = requireClient();
+  const { data, error } = await client.rpc("get_agency_document_defaults");
+  const row = asSettingsRow(data);
+  if (error || !row) fail("load agency defaults", error ?? new Error("empty"), "Unable to load settings.");
+  return mapSettings(row);
+}
+
 export async function saveAgencySettings(settings: AgencySettingsPatch): Promise<AgencySettings> {
   const client = requireClient();
   const { data, error } = await client.rpc("update_agency_settings", { p_patch: toPatch(settings) });

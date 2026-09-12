@@ -39,7 +39,7 @@ import {
 import { createInvoice, fetchInvoiceSummaries, saveInvoiceDraft, sendInvoice, type InvoiceSummary } from "@/data/invoicesRepository";
 import { formatMoneyFromCents, formatUsdFromCents } from "@/data/money";
 import { invoiceNotesFromSettings } from "@/data/settings";
-import { fetchAgencySettings } from "@/data/settingsRepository";
+import { fetchAgencyDocumentDefaults } from "@/data/settingsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 type AcceptedContract = { id: string; number: string; clientId: string; projectId: string | null };
@@ -98,7 +98,7 @@ export function AdminInvoiceNew() {
 
   useEffect(() => {
     let active = true;
-    void fetchAgencySettings()
+    void fetchAgencyDocumentDefaults()
       .then((row) => {
         if (!active) return;
         setForm((current) => ({

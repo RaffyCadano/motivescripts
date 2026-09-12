@@ -1421,6 +1421,10 @@ export type Database = {
         Args: Record<string, never>;
         Returns: AgencySettingsRow;
       };
+      get_agency_document_defaults: {
+        Args: Record<string, never>;
+        Returns: AgencySettingsRow;
+      };
       update_agency_settings: {
         Args: { p_patch: Json };
         Returns: AgencySettingsRow;

@@ -26,7 +26,7 @@ import {
   saveContractDraft,
 } from "@/data/documentsRepository";
 import { formatUsdFromCents } from "@/data/money";
-import { fetchAgencySettings } from "@/data/settingsRepository";
+import { fetchAgencyDocumentDefaults } from "@/data/settingsRepository";
 import { isoCalendarDate } from "@/data/invoices";
 import { AgencyDbError } from "@/lib/dbErrors";
 
@@ -433,7 +433,7 @@ async function seedDraft(clientId: string, companyName: string, proposalId: stri
     expiresAt: defaultProposalValidUntil(undefined, DEFAULT_CONTRACT_VALID_DAYS),
   };
 
-  const settings = await fetchAgencySettings().catch(() => null);
+  const settings = await fetchAgencyDocumentDefaults().catch(() => null);
   if (settings?.defaultContractTerms.trim()) {
     next = { ...next, generalTerms: settings.defaultContractTerms.trim() };
   }

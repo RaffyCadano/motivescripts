@@ -46,7 +46,7 @@ import {
   proposalWebsitePriceCents,
   type AgencySettings,
 } from "@/data/settings";
-import { fetchAgencySettings } from "@/data/settingsRepository";
+import { fetchAgencyDocumentDefaults } from "@/data/settingsRepository";
 import {
   cancelProposal,
   deleteProposal,
@@ -170,7 +170,7 @@ export function AdminProposalDetails() {
     if (!id) return;
     const [next, settings] = await Promise.all([
       fetchProposalDetail(id),
-      fetchAgencySettings().catch(() => settingsRef.current),
+      fetchAgencyDocumentDefaults().catch(() => settingsRef.current),
     ]);
     if (settings) settingsRef.current = settings;
     if (generation != null && generation !== loadGen.current) return;
