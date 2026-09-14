@@ -187,6 +187,7 @@ export function mapTask(row: TaskRow): AgencyTask {
     dueDate: dateField(row.due_date),
     createdAt: row.created_at,
     completedAt: row.completed_at,
+    updatedAt: row.updated_at,
     recommendedRole: parseStoredRecommendedRole(row.recommended_role),
     taskType: isTaskType(row.task_type) ? row.task_type : null,
     referenceUrl: row.reference_url ?? "",

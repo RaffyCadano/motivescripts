@@ -107,6 +107,7 @@ export type AgencyTask = {
   dueDate: string;
   createdAt: string;
   completedAt: string | null;
+  updatedAt: string;
   recommendedRole: TaskRecommendedRoleId | null;
   taskType: TaskType | null;
   referenceUrl: string;

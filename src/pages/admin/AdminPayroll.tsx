@@ -1,22 +1,36 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAdmin } from "@/auth/permissions";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { RecordPayrollPaymentModal } from "@/components/admin/payroll/RecordPayrollPaymentModal";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
-import { amountOwedCents, sumHours, unpaidEntries, type TimeEntry } from "@/data/timeEntries";
+import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { sumHours, unpaidEntries, unpaidHoursByProject, type TimeEntry } from "@/data/timeEntries";
 import { listMyTimeEntries } from "@/data/timeEntriesRepository";
-import { listStaffPayRates, markTimeEntriesPaid, setStaffPayRate } from "@/data/payrollRepository";
-import { type PayrollPaymentMethod, type StaffPayRate } from "@/data/payroll";
+import {
+  listStaffPayRates,
+  listStaffProjectPayRates,
+  markTimeEntriesPaid,
+  removeStaffProjectPayRate,
+  setStaffPayRate,
+  setStaffProjectPayRate,
+} from "@/data/payrollRepository";
+import { projectPayBreakdown, type PayrollPaymentMethod, type StaffPayRate, type StaffProjectPayRate } from "@/data/payroll";
 import { centsInputValue, formatUsdFromCents, parseDollarsToCents } from "@/data/money";
 import { AgencyDbError } from "@/lib/dbErrors";
+
+function projectRateKey(staffId: string, projectId: string): string {
+  return `${staffId}:${projectId}`;
+}
 
 export function AdminPayroll() {
   const { profile } = useAuth();
   const isAdmin = isActiveAdmin(profile);
   const { data } = useTeamDirectory();
+  const { projects } = useLeads();
   const [rates, setRates] = useState<Map<string, StaffPayRate>>(new Map());
+  const [projectRates, setProjectRates] = useState<Map<string, StaffProjectPayRate>>(new Map());
   const [entriesByStaff, setEntriesByStaff] = useState<Map<string, TimeEntry[]>>(new Map());
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -29,6 +43,12 @@ export function AdminPayroll() {
   const [query, setQuery] = useState("");
   const [role, setRole] = useState("All");
   const [payStatus, setPayStatus] = useState<"All" | "unpaid" | "paid" | "no-rate">("All");
+  const [expandedStaffId, setExpandedStaffId] = useState<string | null>(null);
+  const [projectRateDrafts, setProjectRateDrafts] = useState<Map<string, string>>(new Map());
+  const [projectRowError, setProjectRowError] = useState<Map<string, string>>(new Map());
+  const [projectPayModal, setProjectPayModal] = useState<{ staffId: string; projectId: string } | null>(null);
+
+  const projectsById = useMemo(() => new Map(projects.map((project) => [project.id, project.name])), [projects]);
 
   const members = useMemo(() => (data?.members ?? []).filter((member) => member.isActive), [data?.members]);
   const filteredMembers = useMemo(() => {
@@ -57,6 +77,8 @@ export function AdminPayroll() {
     try {
       const rateRows = await listStaffPayRates();
       setRates(new Map(rateRows.map((row) => [row.userId, row])));
+      const projectRateRows = await listStaffProjectPayRates();
+      setProjectRates(new Map(projectRateRows.map((row) => [projectRateKey(row.staffId, row.projectId), row])));
       const entryLists = await Promise.all(members.map((member) => listMyTimeEntries(member.id)));
       setEntriesByStaff(new Map(members.map((member, index) => [member.id, entryLists[index]])));
     } catch (caught) {
@@ -149,6 +171,82 @@ export function AdminPayroll() {
     }
   }
 
+  async function onSaveProjectRate(staffId: string, projectId: string) {
+    const key = projectRateKey(staffId, projectId);
+    const draft = projectRateDrafts.get(key) ?? "";
+    const cents = parseDollarsToCents(draft);
+    if (cents === null || cents < 0) {
+      setProjectRowError((current) => new Map(current).set(key, "Enter a valid pay rate."));
+      return;
+    }
+    setBusyId(key);
+    setProjectRowError((current) => {
+      const next = new Map(current);
+      next.delete(key);
+      return next;
+    });
+    try {
+      await setStaffProjectPayRate(staffId, projectId, cents);
+      await reload();
+      setProjectRateDrafts((current) => {
+        const next = new Map(current);
+        next.delete(key);
+        return next;
+      });
+    } catch (caught) {
+      setProjectRowError((current) =>
+        new Map(current).set(key, caught instanceof AgencyDbError ? caught.message : "Unable to save this rate."),
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function onRemoveProjectRate(staffId: string, projectId: string) {
+    const key = projectRateKey(staffId, projectId);
+    setBusyId(key);
+    setProjectRowError((current) => {
+      const next = new Map(current);
+      next.delete(key);
+      return next;
+    });
+    try {
+      await removeStaffProjectPayRate(staffId, projectId);
+      await reload();
+    } catch (caught) {
+      setProjectRowError((current) =>
+        new Map(current).set(key, caught instanceof AgencyDbError ? caught.message : "Unable to remove this override."),
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function onRecordProjectPayment(
+    staffId: string,
+    projectId: string,
+    input: { method: PayrollPaymentMethod; reference: string; notes: string },
+  ) {
+    const key = projectRateKey(staffId, projectId);
+    setBusyId(key);
+    setProjectRowError((current) => {
+      const next = new Map(current);
+      next.delete(key);
+      return next;
+    });
+    try {
+      await markTimeEntriesPaid(staffId, { ...input, projectId });
+      setProjectPayModal(null);
+      await reload();
+    } catch (caught) {
+      setProjectRowError((current) =>
+        new Map(current).set(key, caught instanceof AgencyDbError ? caught.message : "Unable to record this payment."),
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <AdminPageHeader
@@ -223,20 +321,38 @@ export function AdminPayroll() {
                     <th className="px-3 py-2.5">Payout contact (Zelle / PayPal)</th>
                     <th className="px-3 py-2.5">Unpaid hours</th>
                     <th className="px-3 py-2.5">Amount owed</th>
-                    <th className="px-3 py-2.5" />
+                    <th className="px-3 py-2.5">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredMembers.map((member) => {
                 const rate = rates.get(member.id);
                 const entries = entriesByStaff.get(member.id) ?? [];
-                const unpaidHours = sumHours(unpaidEntries(entries));
-                const owedCents = rate ? amountOwedCents(entries, rate.payRateCents) : 0;
+                const breakdown = rate
+                  ? projectPayBreakdown(
+                      unpaidHoursByProject(entries),
+                      rate.payRateCents,
+                      new Map(
+                        [...projectRates.values()]
+                          .filter((item) => item.staffId === member.id)
+                          .map((item) => [item.projectId, item.payRateCents]),
+                      ),
+                    )
+                  : [];
+                const overriddenProjectIds = new Set(breakdown.filter((item) => item.hasOverride).map((item) => item.projectId));
+                // "Mark paid" below only settles projects WITHOUT their own override -- see
+                // mark_time_entries_paid's p_project_id-omitted branch. These two numbers
+                // must match what that button actually pays, not every unpaid hour.
+                const globalPortion = breakdown.filter((item) => !item.hasOverride);
+                const unpaidHours = sumHours(unpaidEntries(entries).filter((entry) => !overriddenProjectIds.has(entry.projectId)));
+                const owedCents = globalPortion.reduce((total, item) => total + item.amountCents, 0);
                 const draft = rateDrafts.has(member.id) ? rateDrafts.get(member.id)! : centsInputValue(rate?.payRateCents ?? 0);
                 const busy = busyId === member.id;
                 const error = rowError.get(member.id);
+                const expanded = expandedStaffId === member.id;
                 return (
-                  <tr key={member.id} className="border-t border-[var(--admin-line)]">
+                  <Fragment key={member.id}>
+                  <tr className="border-t border-[var(--admin-line)]">
                     <td className="px-3 py-2.5">
                       <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{member.fullName}</p>
                       <p className="text-[12px] text-[var(--admin-muted)]">{member.jobTitle.trim() || member.templateLabel}</p>
@@ -289,17 +405,124 @@ export function AdminPayroll() {
                       {rate ? formatUsdFromCents(owedCents) : "—"}
                     </td>
                     <td className="px-3 py-2.5">
-                      <button
-                        type="button"
-                        disabled={busy || unpaidHours <= 0 || !rate}
-                        className="h-9 rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-40"
-                        onClick={() => setPayModalFor(member.id)}
-                      >
-                        Mark paid
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={busy || unpaidHours <= 0 || !rate}
+                          className="h-9 rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-40"
+                          onClick={() => setPayModalFor(member.id)}
+                        >
+                          Mark paid
+                        </button>
+                        {breakdown.length > 0 ? (
+                          <button
+                            type="button"
+                            className="h-9 rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                            onClick={() => setExpandedStaffId(expanded ? null : member.id)}
+                          >
+                            {expanded ? "Hide" : "Per project"}
+                          </button>
+                        ) : null}
+                      </div>
                       {error ? <p className="mt-1 text-[12px] text-[#b45309]">{error}</p> : null}
                     </td>
                   </tr>
+                  {expanded ? (
+                    <tr className="border-t border-[var(--admin-line)] bg-[var(--admin-bg)]">
+                      <td colSpan={6} className="px-3 py-3">
+                        <div className="overflow-x-auto rounded-lg border border-[var(--admin-line)] bg-white">
+                          <table className="w-full min-w-[640px] border-collapse text-left">
+                            <thead>
+                              <tr className="text-[10px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                                <th className="px-3 py-2">Project</th>
+                                <th className="px-3 py-2">Unpaid hours</th>
+                                <th className="px-3 py-2">Rate</th>
+                                <th className="px-3 py-2">Amount</th>
+                                <th className="px-3 py-2" />
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {breakdown.length === 0 ? (
+                                <tr>
+                                  <td colSpan={5} className="px-3 py-3 text-[13px] text-[var(--admin-muted)]">
+                                    No unpaid hours logged against any project yet.
+                                  </td>
+                                </tr>
+                              ) : (
+                                breakdown.map((item) => {
+                                  const key = projectRateKey(member.id, item.projectId);
+                                  const rateDraft = projectRateDrafts.has(key)
+                                    ? projectRateDrafts.get(key)!
+                                    : item.hasOverride
+                                      ? centsInputValue(item.rateCents)
+                                      : "";
+                                  const rowBusy = busyId === key;
+                                  const rowErr = projectRowError.get(key);
+                                  return (
+                                    <tr key={item.projectId} className="border-t border-[var(--admin-line)]">
+                                      <td className="px-3 py-2 text-[13px] text-[var(--admin-ink)]">
+                                        {projectsById.get(item.projectId) ?? "Unknown project"}
+                                      </td>
+                                      <td className="px-3 py-2 text-[13px] text-[var(--admin-ink)]">{item.hours}h</td>
+                                      <td className="px-3 py-2">
+                                        <div className="flex items-center gap-1.5">
+                                          <input
+                                            inputMode="decimal"
+                                            placeholder={centsInputValue(rate?.payRateCents ?? 0)}
+                                            value={rateDraft}
+                                            disabled={rowBusy}
+                                            onChange={(event) =>
+                                              setProjectRateDrafts((current) => new Map(current).set(key, event.target.value))
+                                            }
+                                            className="h-8 w-20 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-[13px] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                                          />
+                                          <button
+                                            type="button"
+                                            disabled={rowBusy}
+                                            className="h-8 rounded-lg border border-[var(--admin-line)] px-2 font-heading text-[11px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-50"
+                                            onClick={() => void onSaveProjectRate(member.id, item.projectId)}
+                                          >
+                                            Set
+                                          </button>
+                                          {item.hasOverride ? (
+                                            <button
+                                              type="button"
+                                              disabled={rowBusy}
+                                              className="h-8 rounded-lg px-2 font-heading text-[11px] font-semibold text-[var(--admin-muted)] hover:text-[#b45309] disabled:opacity-50"
+                                              onClick={() => void onRemoveProjectRate(member.id, item.projectId)}
+                                            >
+                                              Use default
+                                            </button>
+                                          ) : (
+                                            <span className="text-[11px] text-[var(--admin-muted)]">default</span>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="px-3 py-2 text-[13px] font-semibold text-[var(--admin-ink)]">
+                                        {formatUsdFromCents(item.amountCents)}
+                                      </td>
+                                      <td className="px-3 py-2">
+                                        <button
+                                          type="button"
+                                          disabled={rowBusy || item.hours <= 0}
+                                          className="h-8 rounded-lg bg-[var(--admin-navy)] px-2.5 font-heading text-[11px] font-semibold text-white disabled:opacity-40"
+                                          onClick={() => setProjectPayModal({ staffId: member.id, projectId: item.projectId })}
+                                        >
+                                          Pay this project
+                                        </button>
+                                        {rowErr ? <p className="mt-1 text-[11px] text-[#b45309]">{rowErr}</p> : null}
+                                      </td>
+                                    </tr>
+                                  );
+                                })
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : null}
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -314,8 +537,18 @@ export function AdminPayroll() {
             const member = members.find((item) => item.id === payModalFor);
             const rate = rates.get(payModalFor);
             const entries = entriesByStaff.get(payModalFor) ?? [];
-            const unpaidHours = sumHours(unpaidEntries(entries));
-            const owedCents = rate ? amountOwedCents(entries, rate.payRateCents) : 0;
+            const overrides = new Map(
+              [...projectRates.values()].filter((item) => item.staffId === payModalFor).map((item) => [item.projectId, item.payRateCents]),
+            );
+            const overriddenProjectIds = new Set(overrides.keys());
+            // Matches mark_time_entries_paid's p_project_id-omitted branch exactly:
+            // hours on a project with its own rate are excluded here.
+            const unpaidHours = sumHours(unpaidEntries(entries).filter((entry) => !overriddenProjectIds.has(entry.projectId)));
+            const owedCents = rate
+              ? projectPayBreakdown(unpaidHoursByProject(entries), rate.payRateCents, overrides)
+                  .filter((item) => !item.hasOverride)
+                  .reduce((total, item) => total + item.amountCents, 0)
+              : 0;
             return (
               <RecordPayrollPaymentModal
                 open
@@ -327,6 +560,35 @@ export function AdminPayroll() {
                 paypalEmail={rate?.paypalEmail}
                 onClose={() => setPayModalFor(null)}
                 onConfirm={(input) => void onRecordPayment(payModalFor, input)}
+              />
+            );
+          })()
+        : null}
+
+      {projectPayModal
+        ? (() => {
+            const member = members.find((item) => item.id === projectPayModal.staffId);
+            const rate = rates.get(projectPayModal.staffId);
+            const entries = entriesByStaff.get(projectPayModal.staffId) ?? [];
+            const override = projectRates.get(projectRateKey(projectPayModal.staffId, projectPayModal.projectId));
+            const effectiveRateCents = override?.payRateCents ?? rate?.payRateCents ?? 0;
+            const unpaidHours = sumHours(
+              unpaidEntries(entries).filter((entry) => entry.projectId === projectPayModal.projectId),
+            );
+            const owedCents = Math.round(unpaidHours * effectiveRateCents);
+            const key = projectRateKey(projectPayModal.staffId, projectPayModal.projectId);
+            return (
+              <RecordPayrollPaymentModal
+                open
+                busy={busyId === key}
+                staffName={member?.fullName ?? "this staff member"}
+                projectLabel={projectsById.get(projectPayModal.projectId) ?? "this project"}
+                unpaidHours={unpaidHours}
+                owedCents={owedCents}
+                zelleContact={rate?.zelleContact}
+                paypalEmail={rate?.paypalEmail}
+                onClose={() => setProjectPayModal(null)}
+                onConfirm={(input) => void onRecordProjectPayment(projectPayModal.staffId, projectPayModal.projectId, input)}
               />
             );
           })()

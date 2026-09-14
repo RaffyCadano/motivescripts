@@ -38,17 +38,17 @@ export function qaTasks(project: Pick<AgencyProject, "tasks">): AgencyTask[] {
   return project.tasks.filter((task) => effectiveTaskType(task) === "qa");
 }
 
-/** Mirrors qa_latest_result(): the most recently completed QA-typed task's verdict, or null if QA has never run. */
+/** Mirrors qa_latest_result(): the QA-typed task with a result that was updated most recently, or null if QA has never run. Sorts by updatedAt (not completedAt) to match the SQL source of truth exactly. */
 export function qaLatestResult(project: Pick<AgencyProject, "tasks">): "pass" | "fail" | null {
   const withResult = qaTasks(project).filter((task) => task.qaResult);
   if (withResult.length === 0) return null;
-  const latest = [...withResult].sort((a, b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""))[0];
+  const latest = [...withResult].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
   return latest.qaResult;
 }
 
-/** Mirrors project_client_review_complete(): at least one client_review-typed task, all Completed. */
-export function clientReviewComplete(project: Pick<AgencyProject, "tasks">): boolean {
-  const tasks = project.tasks.filter((task) => effectiveTaskType(task) === "client_review");
+/** Mirrors project_client_review_complete(): at least one client_review-typed task under the review milestone, all Completed. */
+export function clientReviewComplete(project: Pick<AgencyProject, "milestones" | "tasks">): boolean {
+  const tasks = tasksForMilestoneKey(project, "review").filter((task) => effectiveTaskType(task) === "client_review");
   return tasks.length > 0 && tasks.every((task) => task.status === "Completed");
 }
 

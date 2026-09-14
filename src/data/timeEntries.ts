@@ -35,3 +35,12 @@ export function unpaidEntries(entries: TimeEntry[]): TimeEntry[] {
 export function amountOwedCents(entries: TimeEntry[], payRateCents: number): number {
   return Math.round(sumHours(unpaidEntries(entries)) * payRateCents);
 }
+
+/** Unpaid hours summed per project -- the input projectPayBreakdown() (src/data/payroll.ts) expects. */
+export function unpaidHoursByProject(entries: TimeEntry[]): Map<string, number> {
+  const byProject = new Map<string, number>();
+  for (const entry of unpaidEntries(entries)) {
+    byProject.set(entry.projectId, (byProject.get(entry.projectId) ?? 0) + entry.hours);
+  }
+  return byProject;
+}

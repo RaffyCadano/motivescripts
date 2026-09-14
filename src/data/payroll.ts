@@ -6,6 +6,14 @@ export type StaffPayRate = {
   updatedAt: string;
 };
 
+/** Optional override of a staff member's default hourly rate for one specific project. Absence means "use their default rate" for that project. */
+export type StaffProjectPayRate = {
+  staffId: string;
+  projectId: string;
+  payRateCents: number;
+  updatedAt: string;
+};
+
 export const payrollPaymentMethods = ["bank_transfer", "zelle", "paypal", "cash", "check", "other"] as const;
 export type PayrollPaymentMethod = (typeof payrollPaymentMethods)[number];
 
@@ -40,6 +48,8 @@ export type PayrollPayment = {
   recordedBy: string | null;
   recordedByLabel: string;
   createdAt: string;
+  /** Set when this payment was scoped to one project (see markTimeEntriesPaid's projectId option); null for a payment spanning every project without its own rate override. */
+  projectId: string | null;
 };
 
 export type MarkPaidResult = {
@@ -47,6 +57,7 @@ export type MarkPaidResult = {
   amountCents: number;
   hours: number;
   entries: number;
+  projectId: string | null;
 };
 
 export function payrollErrorMessage(code: string): string {
@@ -68,6 +79,41 @@ export function payrollErrorMessage(code: string): string {
     default:
       return "Something went wrong. Please try again.";
   }
+}
+
+export type ProjectPayBreakdown = {
+  projectId: string;
+  hours: number;
+  rateCents: number;
+  hasOverride: boolean;
+  amountCents: number;
+};
+
+/**
+ * Unpaid hours grouped by project, each priced at its own override rate if
+ * one is set for that project, else the staff member's default rate.
+ * Mirrors exactly how mark_time_entries_paid() prices things server-side --
+ * see supabase/migrations/20260930190000_staff_project_pay_rates.sql.
+ */
+export function projectPayBreakdown(
+  unpaidEntriesByProject: Map<string, number>,
+  defaultRateCents: number,
+  overridesByProject: Map<string, number>,
+): ProjectPayBreakdown[] {
+  return [...unpaidEntriesByProject.entries()]
+    .filter(([, hours]) => hours > 0)
+    .map(([projectId, hours]) => {
+      const override = overridesByProject.get(projectId);
+      const rateCents = override ?? defaultRateCents;
+      const roundedHours = Math.round(hours * 100) / 100;
+      return {
+        projectId,
+        hours: roundedHours,
+        rateCents,
+        hasOverride: override !== undefined,
+        amountCents: Math.round(roundedHours * rateCents),
+      };
+    });
 }
 
 export function payrollErrorCode(message: string): string {

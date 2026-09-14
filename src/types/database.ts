@@ -193,6 +193,15 @@ export type PayrollPaymentRow = {
   recorded_by: string | null;
   recorded_by_label: string;
   created_at: string;
+  project_id: string | null;
+};
+
+export type StaffProjectPayRateRow = {
+  staff_id: string;
+  project_id: string;
+  pay_rate_cents: number;
+  updated_at: string;
+  updated_by: string | null;
 };
 
 export type PinCommentRow = {
@@ -1032,6 +1041,10 @@ export type Database = {
         PayrollPaymentRow,
         Partial<PayrollPaymentRow> & { staff_id: string; amount_cents: number; hours: number; pay_rate_cents: number }
       >;
+      staff_project_pay_rates: Table<
+        StaffProjectPayRateRow,
+        Partial<StaffProjectPayRateRow> & { staff_id: string; project_id: string; pay_rate_cents: number }
+      >;
       website_health_checks: Table<
         WebsiteHealthCheckRow,
         Partial<WebsiteHealthCheckRow> & { project_id: string; status: string }
@@ -1305,8 +1318,17 @@ export type Database = {
           p_method?: string;
           p_reference?: string;
           p_notes?: string;
+          p_project_id?: string | null;
         };
         Returns: Json;
+      };
+      set_staff_project_pay_rate: {
+        Args: { p_staff_id: string; p_project_id: string; p_pay_rate_cents: number };
+        Returns: void;
+      };
+      remove_staff_project_pay_rate: {
+        Args: { p_staff_id: string; p_project_id: string };
+        Returns: void;
       };
       resolve_pin_comment: {
         Args: { p_pin_id: string };

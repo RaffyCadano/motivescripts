@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
 
   const { data: plan } = await admin
     .from("service_plans")
-    .select("id, client_id, project_id, plan_type, label, amount_cents, status, stripe_subscription_id")
+    .select("id, client_id, project_id, plan_type, label, amount_cents, status, stripe_subscription_id, stripe_checkout_session_id")
     .eq("id", planId)
     .maybeSingle();
   if (!plan) return fail("not_found");
@@ -104,10 +104,27 @@ async function createCheckout(
     label: string;
     amount_cents: number;
     status: string;
+    stripe_checkout_session_id: string | null;
   },
   json: JsonFn,
 ) {
   if (plan.status !== "pending") return json({ ok: false, error: "not_payable" });
+
+  // A prior "Get checkout link" click may have left a still-open session on
+  // this row. Without expiring it first, that older link stays live -- if a
+  // client completes it after we've overwritten stripe_checkout_session_id
+  // below, activate_service_plan() won't find a matching row (it matches on
+  // the CURRENT session id) and the plan never activates in our database,
+  // even though Stripe just started a real, charging subscription. Best
+  // effort: Stripe returns an error for an already-completed/expired
+  // session, which is fine to ignore here.
+  if (plan.stripe_checkout_session_id) {
+    try {
+      await stripe.checkout.sessions.expire(plan.stripe_checkout_session_id);
+    } catch {
+      /* already completed or expired -- nothing to do */
+    }
+  }
 
   const origin = publicSiteBaseUrl(req);
   if (!origin) return json({ ok: false, error: "missing_site_url" });

@@ -116,7 +116,8 @@ Deno.serve(async (req) => {
     (body.kind !== "proposal" &&
       body.kind !== "contract" &&
       body.kind !== "invoice" &&
-      body.kind !== "payment") ||
+      body.kind !== "payment" &&
+      body.kind !== "invoice_overdue") ||
     !body.id
   ) {
     return fail("invalid_action");
@@ -130,7 +131,11 @@ Deno.serve(async (req) => {
   });
   let userClient: ReturnType<typeof createClient> | null = null;
 
-  if (body.kind === "payment") {
+  // Same as "payment": no interactive user triggers this one either -- it's
+  // called only by the daily overdue-reminder cron job (see
+  // notify_invoices_overdue_email() in the database), authenticated with the
+  // service role key, never by a browser session.
+  if (body.kind === "payment" || body.kind === "invoice_overdue") {
     if (!isServiceRole) return fail("not_allowed", 403);
   } else {
     userClient = createClient(supabaseUrl, anonKey, {
@@ -281,6 +286,53 @@ Deno.serve(async (req) => {
       }
       await sendResend(apiKey, emails, "Your MotiveScripts invoice is ready", html, attachments);
       console.log("document-email sent", { kind: "invoice", id: invoice.id, attached: Boolean(attachments?.length) });
+      return json({ ok: true });
+    }
+
+    if (body.kind === "invoice_overdue") {
+      const { data: invoice } = await admin
+        .from("invoices")
+        .select("id, client_id, invoice_number, amount_due_cents, due_date, status")
+        .eq("id", body.id)
+        .maybeSingle();
+      if (!invoice || invoice.status === "draft" || invoice.status === "cancelled") return fail("not_found");
+      const { data: clientRow } = await admin
+        .from("clients")
+        .select("business_name, email")
+        .eq("id", invoice.client_id)
+        .maybeSingle();
+      const { data: recipients } = await admin
+        .from("profiles")
+        .select("email")
+        .eq("client_id", invoice.client_id)
+        .eq("role", "client");
+      const emails = [
+        ...new Set(
+          [...(recipients ?? []).map((row: { email: string | null }) => row.email), clientRow?.email]
+            .map((value) => (value ?? "").trim().toLowerCase())
+            .filter((value) => value.includes("@")),
+        ),
+      ];
+      if (emails.length === 0) return fail("no_recipient");
+      const daysOverdue = invoice.due_date
+        ? Math.max(1, Math.floor((Date.now() - new Date(invoice.due_date).getTime()) / 86400000))
+        : null;
+      const wasDue = invoice.due_date
+        ? `Was due ${new Date(invoice.due_date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}${daysOverdue ? ` (${daysOverdue} day${daysOverdue === 1 ? "" : "s"} ago)` : ""}.`
+        : "This invoice is past due.";
+      const html = brandedEmail({
+        heading: "Your invoice is overdue.",
+        company: clientRow?.business_name ?? "your team",
+        number: invoice.invoice_number,
+        title: "Invoice overdue",
+        summary: `Amount due ${formatUsdFromCents(Number(invoice.amount_due_cents ?? 0))}.`,
+        expiresLabel: wasDue,
+        url: `${origin}/client/invoices/${invoice.id}`,
+        cta: "Pay invoice",
+        supportEmail,
+      });
+      await sendResend(apiKey, emails, `Overdue: invoice ${invoice.invoice_number}`, html);
+      console.log("document-email sent", { kind: "invoice_overdue", id: invoice.id });
       return json({ ok: true });
     }
 

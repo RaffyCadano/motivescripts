@@ -14,6 +14,8 @@ export function RecordPayrollPaymentModal({
   owedCents,
   zelleContact,
   paypalEmail,
+  /** When set, this payment is scoped to one project (its own rate override, if any) rather than every unpaid project at once. */
+  projectLabel,
   onClose,
   onConfirm,
 }: {
@@ -24,6 +26,7 @@ export function RecordPayrollPaymentModal({
   owedCents: number;
   zelleContact?: string | null;
   paypalEmail?: string | null;
+  projectLabel?: string;
   onClose: () => void;
   onConfirm: (input: { method: PayrollPaymentMethod; reference: string; notes: string }) => void;
 }) {
@@ -43,7 +46,11 @@ export function RecordPayrollPaymentModal({
       open={open}
       busy={busy}
       title="Record payroll payment"
-      description={`Paying ${staffName} for ${unpaidHours}h — ${formatUsdFromCents(owedCents)} at their current rate. This records that you paid them; it does not move money.`}
+      description={
+        projectLabel
+          ? `Paying ${staffName} for ${unpaidHours}h on ${projectLabel} — ${formatUsdFromCents(owedCents)} at that project's rate. This records that you paid them; it does not move money.`
+          : `Paying ${staffName} for ${unpaidHours}h — ${formatUsdFromCents(owedCents)} at their current rate. This records that you paid them; it does not move money.`
+      }
       onClose={onClose}
     >
       <div className="space-y-3">

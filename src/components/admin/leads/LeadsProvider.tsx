@@ -448,6 +448,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
               qaResult: null,
               createdAt: new Date().toISOString(),
               completedAt: draft.status === "Completed" ? new Date().toISOString() : null,
+              updatedAt: new Date().toISOString(),
             };
             await persistMilestoneSync(project, { ...project, tasks: [created, ...project.tasks] });
           }

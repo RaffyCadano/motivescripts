@@ -5,10 +5,11 @@ import {
   type PayrollPayment,
   type PayrollPaymentMethod,
   type StaffPayRate,
+  type StaffProjectPayRate,
 } from "@/data/payroll";
 import { AgencyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
-import type { PayrollPaymentRow, StaffPayRateRow } from "@/types/database";
+import type { PayrollPaymentRow, StaffPayRateRow, StaffProjectPayRateRow } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -60,6 +61,43 @@ export async function setStaffPayRate(
   if (error) fail("set pay rate", error);
 }
 
+function mapProjectPayRate(row: StaffProjectPayRateRow): StaffProjectPayRate {
+  return {
+    staffId: row.staff_id,
+    projectId: row.project_id,
+    payRateCents: Number(row.pay_rate_cents),
+    updatedAt: row.updated_at,
+  };
+}
+
+/** Admin: every per-project rate override that's been set. Staff: RLS narrows this to just their own rows. */
+export async function listStaffProjectPayRates(): Promise<StaffProjectPayRate[]> {
+  const client = db();
+  const { data, error } = await client.from("staff_project_pay_rates").select("*");
+  if (error) fail("load project pay rates", error);
+  return (data ?? []).map((row) => mapProjectPayRate(row as StaffProjectPayRateRow));
+}
+
+export async function setStaffProjectPayRate(staffId: string, projectId: string, payRateCents: number): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("set_staff_project_pay_rate", {
+    p_staff_id: staffId,
+    p_project_id: projectId,
+    p_pay_rate_cents: payRateCents,
+  });
+  if (error) fail("set project pay rate", error);
+}
+
+/** Removes the override, reverting that project back to the staff member's default rate. */
+export async function removeStaffProjectPayRate(staffId: string, projectId: string): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("remove_staff_project_pay_rate", {
+    p_staff_id: staffId,
+    p_project_id: projectId,
+  });
+  if (error) fail("remove project pay rate", error);
+}
+
 function mapPayrollPayment(row: PayrollPaymentRow): PayrollPayment {
   return {
     id: row.id,
@@ -75,6 +113,7 @@ function mapPayrollPayment(row: PayrollPaymentRow): PayrollPayment {
     recordedBy: row.recorded_by,
     recordedByLabel: row.recorded_by_label,
     createdAt: row.created_at,
+    projectId: row.project_id,
   };
 }
 
@@ -90,7 +129,7 @@ export async function listPayrollPayments(staffId?: string): Promise<PayrollPaym
 
 export async function markTimeEntriesPaid(
   staffId: string,
-  input: { throughDate?: string; method: PayrollPaymentMethod; reference?: string; notes?: string },
+  input: { throughDate?: string; method: PayrollPaymentMethod; reference?: string; notes?: string; projectId?: string },
 ): Promise<MarkPaidResult> {
   const client = db();
   const { data, error } = await client.rpc("mark_time_entries_paid", {
@@ -99,13 +138,15 @@ export async function markTimeEntriesPaid(
     p_method: input.method,
     p_reference: input.reference ?? "",
     p_notes: input.notes ?? "",
+    p_project_id: input.projectId ?? null,
   });
   if (error) fail("mark time entries paid", error);
-  const result = data as { payment_id: string; amount_cents: number; hours: number; entries: number };
+  const result = data as { payment_id: string; amount_cents: number; hours: number; entries: number; project_id: string | null };
   return {
     paymentId: result.payment_id,
     amountCents: Number(result.amount_cents),
     hours: Number(result.hours),
     entries: Number(result.entries),
+    projectId: result.project_id,
   };
 }

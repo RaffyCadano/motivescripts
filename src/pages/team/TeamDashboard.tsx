@@ -48,7 +48,16 @@ export function TeamDashboard() {
     setError(null);
     try {
       await changeTaskStatus(openTask, status, blockedReason, qaResult);
-      setOpenTask((current) => (current ? { ...current, status } : current));
+      setOpenTask((current) =>
+        current
+          ? {
+              ...current,
+              status,
+              blockedReason: status === "Blocked" ? ((blockedReason as TeamWorkTask["blockedReason"]) ?? null) : null,
+              qaResult: status === "Completed" ? ((qaResult as TeamWorkTask["qaResult"]) ?? null) : null,
+            }
+          : current,
+      );
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
     } finally {
