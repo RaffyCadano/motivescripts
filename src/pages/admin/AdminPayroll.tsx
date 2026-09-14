@@ -213,6 +213,11 @@ export function AdminPayroll() {
     try {
       await removeStaffProjectPayRate(staffId, projectId);
       await reload();
+      setProjectRateDrafts((current) => {
+        const next = new Map(current);
+        next.delete(key);
+        return next;
+      });
     } catch (caught) {
       setProjectRowError((current) =>
         new Map(current).set(key, caught instanceof AgencyDbError ? caught.message : "Unable to remove this override."),

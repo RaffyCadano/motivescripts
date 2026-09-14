@@ -332,6 +332,22 @@ Deno.serve(async (req) => {
       p_body: `${plan.label} payment failed. The plan is now past due.`,
       p_project_id: plan.project_id,
     });
+    try {
+      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/document-email`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          apikey: serviceKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ kind: "plan_past_due", id: plan.id }),
+      });
+      if (!emailResponse.ok) {
+        console.error("stripe-webhook plan_past_due email http failed", emailResponse.status);
+      }
+    } catch {
+      console.error("stripe-webhook plan_past_due email failed");
+    }
     await markProcessed();
     return json({ ok: true });
   }
@@ -364,6 +380,22 @@ Deno.serve(async (req) => {
       p_body: `${plan.label} was canceled in Stripe.`,
       p_project_id: plan.project_id,
     });
+    try {
+      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/document-email`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${serviceKey}`,
+          apikey: serviceKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ kind: "plan_canceled", id: plan.id }),
+      });
+      if (!emailResponse.ok) {
+        console.error("stripe-webhook plan_canceled email http failed", emailResponse.status);
+      }
+    } catch {
+      console.error("stripe-webhook plan_canceled email failed");
+    }
     await markProcessed();
     return json({ ok: true });
   }

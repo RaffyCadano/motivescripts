@@ -117,7 +117,9 @@ Deno.serve(async (req) => {
       body.kind !== "contract" &&
       body.kind !== "invoice" &&
       body.kind !== "payment" &&
-      body.kind !== "invoice_overdue") ||
+      body.kind !== "invoice_overdue" &&
+      body.kind !== "plan_past_due" &&
+      body.kind !== "plan_canceled") ||
     !body.id
   ) {
     return fail("invalid_action");
@@ -131,11 +133,16 @@ Deno.serve(async (req) => {
   });
   let userClient: ReturnType<typeof createClient> | null = null;
 
-  // Same as "payment": no interactive user triggers this one either -- it's
-  // called only by the daily overdue-reminder cron job (see
-  // notify_invoices_overdue_email() in the database), authenticated with the
-  // service role key, never by a browser session.
-  if (body.kind === "payment" || body.kind === "invoice_overdue") {
+  // Same as "payment": no interactive user triggers these either -- invoice_overdue
+  // is called by the daily overdue-reminder cron job, and plan_past_due /
+  // plan_canceled are called by the stripe-webhook function reacting to a Stripe
+  // event. Both are authenticated with the service role key, never a browser session.
+  if (
+    body.kind === "payment" ||
+    body.kind === "invoice_overdue" ||
+    body.kind === "plan_past_due" ||
+    body.kind === "plan_canceled"
+  ) {
     if (!isServiceRole) return fail("not_allowed", 403);
   } else {
     userClient = createClient(supabaseUrl, anonKey, {
@@ -333,6 +340,57 @@ Deno.serve(async (req) => {
       });
       await sendResend(apiKey, emails, `Overdue: invoice ${invoice.invoice_number}`, html);
       console.log("document-email sent", { kind: "invoice_overdue", id: invoice.id });
+      return json({ ok: true });
+    }
+
+    if (body.kind === "plan_past_due" || body.kind === "plan_canceled") {
+      const { data: plan } = await admin
+        .from("service_plans")
+        .select("id, client_id, label, amount_cents, status")
+        .eq("id", body.id)
+        .maybeSingle();
+      if (!plan) return fail("not_found");
+      const { data: clientRow } = await admin
+        .from("clients")
+        .select("business_name, email")
+        .eq("id", plan.client_id)
+        .maybeSingle();
+      const { data: recipients } = await admin
+        .from("profiles")
+        .select("email")
+        .eq("client_id", plan.client_id)
+        .eq("role", "client");
+      const emails = [
+        ...new Set(
+          [...(recipients ?? []).map((row: { email: string | null }) => row.email), clientRow?.email]
+            .map((value) => (value ?? "").trim().toLowerCase())
+            .filter((value) => value.includes("@")),
+        ),
+      ];
+      if (emails.length === 0) return fail("no_recipient");
+      const isPastDue = body.kind === "plan_past_due";
+      const html = brandedEmail({
+        heading: isPastDue ? "Your recurring payment didn't go through." : "Your recurring plan was canceled.",
+        company: clientRow?.business_name ?? "your team",
+        number: plan.label,
+        title: isPastDue ? "Payment issue" : "Plan canceled",
+        summary: isPastDue
+          ? `The ${formatUsdFromCents(Number(plan.amount_cents ?? 0))}/mo charge for this plan didn't go through. Please check the card on file so service isn't interrupted.`
+          : `This plan (${formatUsdFromCents(Number(plan.amount_cents ?? 0))}/mo) has been canceled and will no longer be billed.`,
+        expiresLabel: isPastDue
+          ? "We'll retry the charge automatically, but updating your card sooner avoids any gap in service."
+          : "Contact us if this wasn't expected or you'd like to restart the plan.",
+        url: `${origin}/client/settings`,
+        cta: isPastDue ? "Update payment info" : "View your plans",
+        supportEmail,
+      });
+      await sendResend(
+        apiKey,
+        emails,
+        isPastDue ? "Action needed: recurring payment failed" : "Your recurring plan was canceled",
+        html,
+      );
+      console.log("document-email sent", { kind: body.kind, id: plan.id });
       return json({ ok: true });
     }
 
