@@ -36,6 +36,19 @@ type SitePreviewProps = {
 };
 
 export function SitePreview({ project }: SitePreviewProps) {
+  if (project.screenshot) {
+    const url = project.liveUrl ? project.liveUrl.replace(/^https?:\/\//, "").replace(/\/$/, "") : project.name;
+    return (
+      <BrowserFrame url={url}>
+        <img
+          src={project.screenshot}
+          alt={`Screenshot of the live ${project.name} website`}
+          className="absolute inset-0 size-full object-cover object-top"
+        />
+      </BrowserFrame>
+    );
+  }
+
   return (
     <BrowserFrame url={`${project.slug.replace(/-/g, "")}.com`}>
       <MiniPage>

@@ -15,8 +15,8 @@ export function WorkSection() {
             <div>
               <SectionHeader eyebrow="Selected work" title="Websites we've built." />
               <p className="mt-4 max-w-xl text-sm text-faint">
-                Concept projects that show how we approach websites for local service businesses. They
-                are labeled as concepts — not client work.
+                Real client work alongside concept projects that show how we approach websites for local
+                service businesses — each is labeled accordingly.
               </p>
             </div>
             <Button to="/work" variant="secondary" className="shrink-0 sm:mt-11">

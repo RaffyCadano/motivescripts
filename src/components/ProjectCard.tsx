@@ -43,7 +43,7 @@ export function ProjectCard({
           )}
         >
           <span className="rounded-full border border-[var(--color-line)] px-2.5 py-1 text-cyan">
-            Concept project
+            {project.concept ? "Concept project" : "Client project"}
           </span>
           <span className="text-faint">{project.industry}</span>
         </div>
@@ -65,14 +65,27 @@ export function ProjectCard({
         >
           {project.summary}
         </p>
-        <Link
-          to={`/work/${project.slug}`}
-          className="mt-5 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
-          aria-label={linkLabel}
-        >
-          {ctaLabel}
-          <span aria-hidden="true">→</span>
-        </Link>
+        <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2">
+          <Link
+            to={`/work/${project.slug}`}
+            className="inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
+            aria-label={linkLabel}
+          >
+            {ctaLabel}
+            <span aria-hidden="true">→</span>
+          </Link>
+          {project.liveUrl ? (
+            <a
+              href={project.liveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 font-heading text-sm font-semibold text-muted-strong transition-colors hover:text-blue"
+            >
+              Visit live site
+              <span aria-hidden="true">↗</span>
+            </a>
+          ) : null}
+        </div>
       </div>
     </article>
   );

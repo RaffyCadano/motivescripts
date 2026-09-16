@@ -20,7 +20,7 @@ import { getProject, type Project } from "@/data/projects";
 import { usePageMeta } from "@/lib/usePageMeta";
 
 /** Every project now has a full, multi-section scrollable page for the lightbox. */
-const fullPagesByPreview: Partial<Record<Project["preview"], () => ReactElement>> = {
+const fullPagesByPreview: Partial<Record<NonNullable<Project["preview"]>, () => ReactElement>> = {
   trees: TreesFullPage,
   landscape: RidgeLandscapeFullPage,
   cleaning: MarlowCleaningFullPage,
@@ -72,7 +72,10 @@ function SitePreviewLightbox({ project, onClose }: { project: Project; onClose: 
     };
   }, [onClose]);
 
-  const fullPage = fullPagesByPreview[project.preview];
+  const fullPage = project.preview ? fullPagesByPreview[project.preview] : undefined;
+  const chromeUrl = project.liveUrl
+    ? project.liveUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")
+    : `${project.slug.replace(/-/g, "")}.com`;
 
   return createPortal(
     <div
@@ -91,7 +94,7 @@ function SitePreviewLightbox({ project, onClose }: { project: Project; onClose: 
         ✕
       </button>
       <div className="relative w-full">
-        {fullPage ? (
+        {project.screenshot ? (
           <div className="overflow-hidden rounded-t-[var(--radius-lg)] bg-white shadow-[var(--shadow-card)]">
             <div className="flex items-center gap-3 border-b border-[rgb(0_80_240_/_0.28)] bg-[rgb(0_80_240_/_0.03)] px-3 py-2.5">
               <div className="flex gap-1.5" aria-hidden="true">
@@ -100,7 +103,23 @@ function SitePreviewLightbox({ project, onClose }: { project: Project; onClose: 
                 <span className="size-2 rounded-full bg-[#c5ccd6]" />
               </div>
               <p className="min-w-0 flex-1 truncate rounded-full bg-[rgb(0_16_48_/_0.04)] px-3 py-1 text-center font-heading text-[10px] tracking-wide text-faint">
-                {project.slug.replace(/-/g, "")}.com
+                {chromeUrl}
+              </p>
+            </div>
+            <div className="max-h-[90vh] overflow-y-auto overscroll-contain">
+              <img src={project.screenshot} alt={`Screenshot of the live ${project.name} website`} className="w-full" />
+            </div>
+          </div>
+        ) : fullPage ? (
+          <div className="overflow-hidden rounded-t-[var(--radius-lg)] bg-white shadow-[var(--shadow-card)]">
+            <div className="flex items-center gap-3 border-b border-[rgb(0_80_240_/_0.28)] bg-[rgb(0_80_240_/_0.03)] px-3 py-2.5">
+              <div className="flex gap-1.5" aria-hidden="true">
+                <span className="size-2 rounded-full bg-[#c5ccd6]" />
+                <span className="size-2 rounded-full bg-[#c5ccd6]" />
+                <span className="size-2 rounded-full bg-[#c5ccd6]" />
+              </div>
+              <p className="min-w-0 flex-1 truncate rounded-full bg-[rgb(0_16_48_/_0.04)] px-3 py-1 text-center font-heading text-[10px] tracking-wide text-faint">
+                {chromeUrl}
               </p>
             </div>
             <div className="h-[90vh] overflow-y-auto overscroll-contain">
@@ -153,7 +172,7 @@ export function CaseStudyPage() {
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <span className="rounded-full border border-[var(--color-line)] px-2.5 py-1 font-heading text-xs font-semibold uppercase tracking-[0.14em] text-cyan">
-              Concept project
+              {project.concept ? "Concept project" : "Client project"}
             </span>
             <span className="text-sm text-muted">{project.industry}</span>
           </div>
@@ -185,7 +204,7 @@ export function CaseStudyPage() {
             <p className="mt-3 text-sm leading-relaxed text-muted">{project.challenge}</p>
           </section>
           <section className="lg:col-span-2 lg:row-span-2">
-            <h2 className="text-xl">How we would approach it</h2>
+            <h2 className="text-xl">{project.concept ? "How we would approach it" : "How we approached it"}</h2>
             <ol className="mt-4 space-y-3">
               {project.approach.map((item, index) => (
                 <li key={item} className="flex gap-3 text-sm text-muted">
@@ -199,6 +218,17 @@ export function CaseStudyPage() {
             <p className="mt-8 max-w-2xl text-sm text-muted">{project.outcome}</p>
           </section>
           <div className="flex flex-col gap-3 sm:flex-row">
+            {project.liveUrl ? (
+              <a
+                href={project.liveUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-white px-6 font-heading text-[0.95rem] font-semibold text-ink transition-[filter,background-color,border-color,box-shadow,color,transform] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:border-[rgb(0_80_240_/_0.45)] hover:bg-[rgb(0_80_240_/_0.04)] active:translate-y-px md:h-[3.25rem]"
+              >
+                Visit live site
+                <span aria-hidden="true">↗</span>
+              </a>
+            ) : null}
             <Button to="/start-a-project" size="lg">
               Start a Project
             </Button>

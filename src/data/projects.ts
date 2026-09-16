@@ -1,8 +1,12 @@
 /**
  * Public marketing case studies for the Work / Case Study pages.
- * These are labeled demonstration concepts. They are not CRM records and are
- * never used as Admin/Client fallbacks when Supabase is empty.
+ * Most of these are labeled demonstration concepts; a project with
+ * `concept: false` is real, shipped client work shown with an actual
+ * screenshot and a live-site link instead of a hand-built mockup.
+ * They are not CRM records and are never used as Admin/Client fallbacks
+ * when Supabase is empty.
  */
+import garageHero from "@/assets/previews/unlisted-garage-hero.jpg";
 
 export type Project = {
   slug: string;
@@ -10,9 +14,15 @@ export type Project = {
   industry: string;
   services: string;
   summary: string;
-  concept: true;
+  /** false for real, shipped client work -- shows "Client project" and a live-site link instead of the concept framing. */
+  concept: boolean;
   accent: string;
-  preview:
+  /**
+   * Which hand-built mock preview to render. Omit this and set `screenshot` +
+   * `liveUrl` instead for a real project, which renders an actual screenshot
+   * of the live site rather than a fake mockup.
+   */
+  preview?:
     | "trees"
     | "landscape"
     | "cleaning"
@@ -23,6 +33,10 @@ export type Project = {
     | "restaurant"
     | "salon"
     | "professional_services";
+  /** Real screenshot of a shipped site (import path). Takes over from `preview` when set. */
+  screenshot?: string;
+  /** Real, live URL for a shipped client project. */
+  liveUrl?: string;
   challenge: string;
   approach: string[];
   outcome: string;
@@ -228,6 +242,27 @@ export const projects: Project[] = [
     ],
     outcome:
       "A credibility-first advisory-firm site built around expertise and a clear next step. This is a concept project.",
+  },
+  {
+    slug: "unlisted-wrap-garage",
+    name: "Unlisted Wrap Garage",
+    industry: "Vehicle Wraps & Paint Protection",
+    services: "Website Design / Development",
+    summary:
+      "A quote-first website for a vehicle wrap and paint protection shop, built to turn Instagram-quality work into booked appointments.",
+    concept: false,
+    accent: "#0f7a5c",
+    screenshot: garageHero,
+    liveUrl: "http://unlistedgarage.us/",
+    challenge:
+      "Wrap and PPF shops sell on visual proof, but most sites bury the gallery behind a generic layout and make getting a quote feel like a chore. The site needed to put real work and a fast quote path front and center.",
+    approach: [
+      "Lead with a strong hero and real shop photography instead of stock imagery, so the craftsmanship sells itself.",
+      "Surface trust signals — rating, vehicles wrapped, turnaround time — right under the fold, before any scrolling.",
+      "Keep 'Get a Free Quote' and 'Book Now' reachable from the first screen and throughout the page.",
+    ],
+    outcome:
+      "A live site for Unlisted Wrap Garage (Winston-Salem, NC) built around fast quote requests and real shop credibility — services, gallery, testimonials, and booking all one scroll away.",
   },
 ];
 

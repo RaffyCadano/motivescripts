@@ -8,7 +8,7 @@ import { usePageMeta } from "@/lib/usePageMeta";
 export function WorkPage() {
   usePageMeta(
     "Work — MotiveScripts",
-    "Selected website concepts for small businesses, showing how MotiveScripts structures websites for local service companies.",
+    "Selected client work and website concepts, showing how MotiveScripts structures websites for local service companies.",
     "/work",
   );
 
@@ -26,11 +26,11 @@ export function WorkPage() {
         <AnimateIn>
           <div className="max-w-2xl">
             <p className="font-heading text-sm font-semibold text-ink">
-              Selected concepts for local businesses and growing companies.
+              Real client work and selected concepts for local businesses and growing companies.
             </p>
             <p className="mt-2 text-sm text-faint">
-              These projects are design concepts created to demonstrate how MotiveScripts approaches
-              strategy, design, and development across different industries.
+              Each project is labeled as either real client work or a design concept created to
+              demonstrate how MotiveScripts approaches strategy, design, and development.
             </p>
           </div>
         </AnimateIn>
