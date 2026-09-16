@@ -1475,6 +1475,17 @@ export type Database = {
         Args: { p_project_ids: string[]; p_environment?: string };
         Returns: WebsiteHealthCheckRow[];
       };
+      client_project_delivery_gates: {
+        Args: { p_project_id: string };
+        Returns: {
+          design_approved: boolean;
+          development_complete: boolean;
+          qa_passed: boolean;
+          client_review_complete: boolean;
+          final_approved: boolean;
+          is_launched: boolean;
+        }[];
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

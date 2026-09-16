@@ -8,12 +8,13 @@ import { ClientTaskRequestsCard } from "@/components/client/ClientTaskRequestsCa
 import { ClientScopePrompt } from "@/components/client/ClientScopePrompt";
 import { useClientDiscovery } from "@/components/client/useClientDiscovery";
 import { useClientTaskRequests } from "@/components/client/useClientTaskRequests";
+import { useClientDeliveryGates } from "@/components/client/useClientDeliveryGates";
 import { ClientTimeline } from "@/components/client/ClientTimeline";
 import { useClientPortalAction } from "@/components/client/useClientPortalAction";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { currentMilestone } from "@/data/agencyProjects";
 import { displayMilestoneName } from "@/data/projectMilestones";
-import { clientDeliveryStages, timelineStagesFromProject } from "@/data/clientProjectProgress";
+import { clientDeliveryStagesFromGates, timelineStagesFromProject } from "@/data/clientProjectProgress";
 
 export function ClientProject() {
   const { projectId } = useParams();
@@ -24,8 +25,8 @@ export function ClientProject() {
     : session.project;
   const milestone = project ? currentMilestone(project) : null;
   const stages = timelineStagesFromProject(project);
-  const projectFiles = project ? session.files.filter((item) => item.projectId === project.id) : [];
-  const deliveryStages = clientDeliveryStages(project, projectFiles);
+  const { gates: deliveryGates } = useClientDeliveryGates(project?.id);
+  const deliveryStages = clientDeliveryStagesFromGates(deliveryGates);
   const discovery = useClientDiscovery(project?.id);
   const taskRequests = useClientTaskRequests(project?.id);
 

@@ -1,13 +1,8 @@
 import type { ClientTask, ProjectStage, ProjectStageStatus } from "@/data/clientPortal";
 import type { AgencyMilestone, AgencyProject, AgencyTask } from "@/data/agencyProjects";
-import type { AgencyDeliverable } from "@/data/files";
 import { displayMilestoneName } from "@/data/projectMilestones";
-import {
-  checkpointApproved,
-  clientReviewComplete,
-  developmentComplete,
-  qaLatestResult,
-} from "@/data/productionWorkflow";
+import { getSupabase } from "@/lib/supabase";
+import { AgencyDbError } from "@/lib/dbErrors";
 
 function milestoneStageStatus(milestones: AgencyMilestone[], index: number): ProjectStageStatus {
   const sorted = milestones;
@@ -28,28 +23,63 @@ export function timelineStagesFromProject(project: AgencyProject | null | undefi
   }));
 }
 
+export type ClientDeliveryGates = {
+  designApproved: boolean;
+  developmentComplete: boolean;
+  qaPassed: boolean;
+  clientReviewComplete: boolean;
+  finalApproved: boolean;
+  isLaunched: boolean;
+};
+
 /**
  * Simple 6-step delivery checklist for the client portal (Section 20 of the
  * production workflow spec): "what do you need from me?" -- distinct from
  * timelineStagesFromProject() above, which shows raw milestone status.
- * These steps mirror the same server-enforced gates as
- * src/data/productionWorkflow.ts's Admin/PM summary, simplified to what a
- * client needs to see (payment status is shown separately in Invoices, so
- * it's intentionally not a step here). No internal tasks, staff, or
- * deployment details -- only checkpoint/gate booleans.
+ *
+ * These gates are computed server-side (client_project_delivery_gates RPC,
+ * see supabase/migrations/20260930240000_client_portal_gate_status.sql), not
+ * from tasks/project_development fetched into this session: RLS deliberately
+ * hides agency-origin tasks and all of project_development from a client
+ * role, so recomputing developmentComplete()/qaLatestResult() etc. from
+ * locally-fetched data always read as not-done for a real client, no matter
+ * how complete the project actually was. The RPC mirrors the same checks
+ * launch_blocking_reasons() already trusts, just scoped to the caller's own
+ * project via owns_project().
  */
-export function clientDeliveryStages(
-  project: AgencyProject | null | undefined,
-  deliverables: AgencyDeliverable[],
-): ProjectStage[] {
-  if (!project) return [];
+export async function fetchClientDeliveryGates(projectId: string): Promise<ClientDeliveryGates | null> {
+  const client = getSupabase();
+  if (!client) throw new AgencyDbError("Supabase isn’t connected yet.");
+  const { data, error } = await client.rpc("client_project_delivery_gates", { p_project_id: projectId });
+  if (error) throw new AgencyDbError("Unable to load your project status.", error);
+  const row = (Array.isArray(data) ? data[0] : data) as {
+    design_approved: boolean;
+    development_complete: boolean;
+    qa_passed: boolean;
+    client_review_complete: boolean;
+    final_approved: boolean;
+    is_launched: boolean;
+  } | null;
+  if (!row) return null;
+  return {
+    designApproved: row.design_approved,
+    developmentComplete: row.development_complete,
+    qaPassed: row.qa_passed,
+    clientReviewComplete: row.client_review_complete,
+    finalApproved: row.final_approved,
+    isLaunched: row.is_launched,
+  };
+}
+
+export function clientDeliveryStagesFromGates(gates: ClientDeliveryGates | null): ProjectStage[] {
+  if (!gates) return [];
   const steps = [
-    { id: "design", label: "Design Approved", done: checkpointApproved(deliverables, "overall_design") },
-    { id: "development", label: "Development", done: developmentComplete(project) },
-    { id: "qa", label: "QA", done: qaLatestResult(project) === "pass" },
-    { id: "review", label: "Your Review", done: clientReviewComplete(project) },
-    { id: "final_approval", label: "Final Approval", done: checkpointApproved(deliverables, "final_website") },
-    { id: "launch", label: "Launch", done: project.development.deploymentStatus === "Production" },
+    { id: "design", label: "Design Approved", done: gates.designApproved },
+    { id: "development", label: "Development", done: gates.developmentComplete },
+    { id: "qa", label: "QA", done: gates.qaPassed },
+    { id: "review", label: "Your Review", done: gates.clientReviewComplete },
+    { id: "final_approval", label: "Final Approval", done: gates.finalApproved },
+    { id: "launch", label: "Launch", done: gates.isLaunched },
   ];
   const currentIndex = steps.findIndex((step) => !step.done);
   return steps.map((step, index) => ({
