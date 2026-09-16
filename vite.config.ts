@@ -4,7 +4,11 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  base: process.env.GITHUB_PAGES === "true" ? "/motivescripts/" : "/",
+  // Served from a custom domain (motivescripts.com) at the root, not the
+  // /motivescripts/ subpath the bare raffycadano.github.io/motivescripts
+  // URL used before -- GitHub Pages redirects that old URL to the custom
+  // domain once one is configured, so there's no longer a subpath to serve.
+  base: "/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
