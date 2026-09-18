@@ -65,10 +65,28 @@ function stringList(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
-function mapBrief(row: ClientScopeBriefRow): ClientScopeBrief {
+/** Live Feature Catalog names, so a page/feature added after this file's hardcoded constants doesn't get silently stripped. Omit to fall back to the hardcoded SCOPE_PAGE_OPTIONS/SCOPE_FEATURE_OPTIONS allow-list. */
+export type ScopeCatalogAllowList = { pages: Set<string>; features: Set<string> };
+
+function withStoredValues(allowed: Set<string> | undefined, stored: readonly string[]): Set<string> | undefined {
+  if (!allowed) return undefined;
+  const union = new Set(allowed);
+  for (const value of stored) union.add(value.trim());
+  return union;
+}
+
+/**
+ * A catalog item renamed or deactivated after a client already selected it must not vanish from
+ * their (possibly already-submitted) brief on the next load -- only saving a *new* selection is
+ * restricted to the live active catalog. So on load, `allowed` is widened to also include whatever
+ * is already stored on the row, meaning already-persisted values always pass through unchanged.
+ */
+function mapBrief(row: ClientScopeBriefRow, allowed?: ScopeCatalogAllowList): ClientScopeBrief {
   const legacy = splitLegacySelections(row.selected_pages ?? []);
-  const storedFeatures = normalizeScopeFeatures(stringList(row.features));
-  const pages = normalizeScopePages(legacy.pages.length ? legacy.pages : stringList(row.selected_pages));
+  const rawFeatures = stringList(row.features);
+  const rawPages = legacy.pages.length ? legacy.pages : stringList(row.selected_pages);
+  const storedFeatures = normalizeScopeFeatures(rawFeatures, withStoredValues(allowed?.features, rawFeatures));
+  const pages = normalizeScopePages(rawPages, withStoredValues(allowed?.pages, rawPages));
   const features = storedFeatures.length ? storedFeatures : legacy.features;
   return {
     id: row.id,
@@ -90,31 +108,34 @@ function mapBrief(row: ClientScopeBriefRow): ClientScopeBrief {
   };
 }
 
-export async function fetchClientScopeBrief(clientId: string): Promise<ClientScopeBrief | null> {
+export async function fetchClientScopeBrief(
+  clientId: string,
+  allowed?: ScopeCatalogAllowList,
+): Promise<ClientScopeBrief | null> {
   const client = db();
   const { data, error } = await client.from("client_scope_briefs").select("*").eq("client_id", clientId).maybeSingle();
   throwIf(error, "load scope brief", "Unable to load this scope form.");
-  return data ? mapBrief(asRow(data)) : null;
+  return data ? mapBrief(asRow(data), allowed) : null;
 }
 
-export async function fetchScopeBriefs(): Promise<ClientScopeBrief[]> {
+export async function fetchScopeBriefs(allowed?: ScopeCatalogAllowList): Promise<ClientScopeBrief[]> {
   const client = db();
   const { data, error } = await client.from("client_scope_briefs").select("*");
   throwIf(error, "load scope briefs", "Unable to load scope forms.");
-  return (data ?? []).map((row) => mapBrief(asRow(row)));
+  return (data ?? []).map((row) => mapBrief(asRow(row), allowed));
 }
 
 export async function saveClientScopeBrief(
   clientId: string,
   input: ScopeBriefDraft,
-  options: { submit?: boolean } = {},
+  options: { submit?: boolean; allowed?: ScopeCatalogAllowList } = {},
 ): Promise<ClientScopeBrief> {
   const submit = options.submit === true;
   const draft: ScopeBriefDraft = {
     ...emptyScopeDraft(),
     ...input,
-    pages: normalizeScopePages(input.pages),
-    features: normalizeScopeFeatures(input.features),
+    pages: normalizeScopePages(input.pages, options.allowed?.pages),
+    features: normalizeScopeFeatures(input.features, options.allowed?.features),
     styles: normalizeScopeStyles(input.styles),
     otherPages: input.otherPages.trim(),
     otherFeatures: input.otherFeatures.trim(),
@@ -162,7 +183,7 @@ export async function saveClientScopeBrief(
       .select("*")
       .single();
     throwIf(error, "save scope brief", "Unable to save this scope form.");
-    return mapBrief(asRow(data));
+    return mapBrief(asRow(data), options.allowed);
   }
 
   const { data, error } = await client
@@ -175,7 +196,7 @@ export async function saveClientScopeBrief(
     .select("*")
     .single();
   throwIf(error, "save scope brief", "Unable to save this scope form.");
-  return mapBrief(asRow(data));
+  return mapBrief(asRow(data), options.allowed);
 }
 
 export async function seedProposalDraftFromBrief(proposalId: string, clientId: string): Promise<void> {

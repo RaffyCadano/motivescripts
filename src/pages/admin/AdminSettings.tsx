@@ -10,6 +10,7 @@ import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { BrandMark } from "@/components/BrandMark";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { FeatureCatalogSection } from "@/components/admin/settings/FeatureCatalogSection";
 import {
   SETTINGS_CURRENCIES,
   SETTINGS_TIMEZONES,
@@ -883,6 +884,8 @@ export function AdminSettings() {
               ) : null}
             </Card>
           ) : null}
+
+          {section === "featureCatalog" ? <FeatureCatalogSection /> : null}
 
           {!loading && settings && section === "portal" ? (
             <Card

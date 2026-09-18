@@ -662,6 +662,19 @@ export type TestimonialRow = {
   updated_at: string;
 };
 
+export type FeatureCatalogRow = {
+  id: string;
+  category: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  default_price_cents: number | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ServicePlanType = "care" | "seo_retainer" | "hosting" | "custom";
 export type ServicePlanStatus = "pending" | "active" | "past_due" | "canceled";
 
@@ -927,6 +940,7 @@ export type Database = {
       payments: Table<PaymentRow, Partial<PaymentRow> & { invoice_id: string; amount_cents: number; payment_method: PaymentMethod }>;
       invoice_admin_notes: Table<InvoiceAdminNoteRow, Partial<InvoiceAdminNoteRow> & { invoice_id: string }>;
       testimonials: Table<TestimonialRow, Partial<TestimonialRow> & { client_name: string; quote: string }>;
+      feature_catalog: Table<FeatureCatalogRow, Partial<FeatureCatalogRow> & { category: string; name: string; slug: string }>;
       service_plans: Table<
         ServicePlanRow,
         Partial<ServicePlanRow> & { client_id: string; plan_type: ServicePlanType; label: string; amount_cents: number }

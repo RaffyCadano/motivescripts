@@ -164,12 +164,19 @@ function uniqueAllowed(values: readonly string[], allowed: Set<string>): string[
   return next;
 }
 
-export function normalizeScopePages(pages: readonly string[]): string[] {
-  return uniqueAllowed(pages, PAGE_SET);
+// `allowed` defaults to the hardcoded option set for backward compatibility
+// (scopeRecommendations.ts and any other caller that doesn't pass one keep
+// exactly their prior behavior). The live client scope form now passes the
+// active Feature Catalog's page/feature names instead, so a page/feature
+// added through Admin -> Settings -> Feature Catalog isn't silently
+// stripped back out on save/reload just because it postdates this file's
+// hardcoded constants.
+export function normalizeScopePages(pages: readonly string[], allowed: Set<string> = PAGE_SET): string[] {
+  return uniqueAllowed(pages, allowed);
 }
 
-export function normalizeScopeFeatures(features: readonly string[]): string[] {
-  return uniqueAllowed(features, FEATURE_SET);
+export function normalizeScopeFeatures(features: readonly string[], allowed: Set<string> = FEATURE_SET): string[] {
+  return uniqueAllowed(features, allowed);
 }
 
 export function normalizeScopeStyles(styles: readonly string[]): string[] {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { ClientConfirmDialog } from "@/components/client/ClientConfirmDialog";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { useUnsavedNavigation } from "@/components/documents/UnsavedChangesDialog";
@@ -9,14 +9,14 @@ import {
   scopeStatus,
   scopeStatusLabel,
   validateScopeBrief,
-  SCOPE_FEATURE_OPTIONS,
   SCOPE_PACKAGE_INCLUDED,
-  SCOPE_PAGE_OPTIONS,
   SCOPE_STYLE_OPTIONS,
   type ScopeBriefDraft,
   type ScopeStatus,
 } from "@/data/scopeBriefs";
-import { fetchClientScopeBrief, saveClientScopeBrief } from "@/data/scopeBriefsRepository";
+import { fetchClientScopeBrief, saveClientScopeBrief, type ScopeCatalogAllowList } from "@/data/scopeBriefsRepository";
+import { fetchActiveFeatureCatalog } from "@/data/featureCatalogRepository";
+import type { FeatureCatalogItem } from "@/data/featureCatalog";
 import {
   applyFeatureRecommendations,
   applyPageRecommendations,
@@ -35,11 +35,19 @@ function draftSnapshot(draft: ScopeBriefDraft) {
   return JSON.stringify(draft);
 }
 
+function catalogAllowList(items: FeatureCatalogItem[]): ScopeCatalogAllowList {
+  return {
+    pages: new Set(items.filter((item) => item.category === "page").map((item) => item.name)),
+    features: new Set(items.filter((item) => item.category === "feature").map((item) => item.name)),
+  };
+}
+
 export function ClientScope() {
   const { client } = usePortalSession();
   const [draft, setDraft] = useState<ScopeBriefDraft>(emptyScopeDraft);
   const [status, setStatus] = useState<ScopeStatus>("not_started");
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
+  const [catalog, setCatalog] = useState<FeatureCatalogItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<"draft" | "submit" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,15 +68,20 @@ export function ClientScope() {
       return;
     }
     let active = true;
-    void fetchClientScopeBrief(client.id)
-      .then((brief) => {
-        if (!active) return;
-        const next = brief ? draftFromBrief(brief) : emptyScopeDraft();
-        setDraft(next);
-        setStatus(scopeStatus(brief));
-        setSubmittedAt(brief?.submittedAt ?? null);
-        remember(next);
-      })
+    async function load(clientId: string) {
+      const items = await fetchActiveFeatureCatalog();
+      if (!active) return;
+      setCatalog(items);
+      const allowed = catalogAllowList(items);
+      const brief = await fetchClientScopeBrief(clientId, allowed);
+      if (!active) return;
+      const next = brief ? draftFromBrief(brief) : emptyScopeDraft();
+      setDraft(next);
+      setStatus(scopeStatus(brief));
+      setSubmittedAt(brief?.submittedAt ?? null);
+      remember(next);
+    }
+    load(client.id)
       .catch((caught) => {
         if (active) {
           setError(caught instanceof AgencyDbError ? caught.message : "Unable to load this form.");
@@ -81,6 +94,9 @@ export function ClientScope() {
       active = false;
     };
   }, [client?.id]);
+
+  const catalogPages = useMemo(() => catalog.filter((item) => item.category === "page"), [catalog]);
+  const catalogFeatures = useMemo(() => catalog.filter((item) => item.category === "feature"), [catalog]);
 
   function patch(next: Partial<ScopeBriefDraft>) {
     setNotice(null);
@@ -125,7 +141,7 @@ export function ClientScope() {
     setBusy(submit ? "submit" : "draft");
     setError(null);
     try {
-      const brief = await saveClientScopeBrief(client.id, draft, { submit });
+      const brief = await saveClientScopeBrief(client.id, draft, { submit, allowed: catalogAllowList(catalog) });
       const next = draftFromBrief(brief);
       setDraft(next);
       setStatus(scopeStatus(brief));
@@ -253,8 +269,8 @@ export function ClientScope() {
               Select any additional pages you’d like included in the first build.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {SCOPE_PAGE_OPTIONS.map((item) => (
-                <Chip key={item} label={item} on={draft.pages.includes(item)} onClick={() => toggle("pages", item)} />
+              {catalogPages.map((item) => (
+                <Chip key={item.id} label={item.name} on={draft.pages.includes(item.name)} onClick={() => toggle("pages", item.name)} />
               ))}
             </div>
             {draft.pages.includes("Other") ? (
@@ -281,8 +297,8 @@ export function ClientScope() {
             <legend className="font-heading text-sm font-semibold text-[var(--client-ink)]">What should your website do?</legend>
             <p className="mt-1 text-[12px] text-[var(--client-muted)]">Select the features or functionality you need.</p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {SCOPE_FEATURE_OPTIONS.map((item) => (
-                <Chip key={item} label={item} on={draft.features.includes(item)} onClick={() => toggle("features", item)} />
+              {catalogFeatures.map((item) => (
+                <Chip key={item.id} label={item.name} on={draft.features.includes(item.name)} onClick={() => toggle("features", item.name)} />
               ))}
             </div>
             {draft.features.includes("Other") ? (

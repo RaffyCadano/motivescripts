@@ -21,6 +21,7 @@ export type SettingsSectionId =
   | "agency"
   | "branding"
   | "documents"
+  | "featureCatalog"
   | "portal"
   | "notifications"
   | "email"
@@ -50,6 +51,7 @@ export const settingsNavGroups: SettingsNavGroup[] = [
     hint: "Documents, portal, and notifications",
     items: [
       { id: "documents", label: "Document Defaults" },
+      { id: "featureCatalog", label: "Feature Catalog" },
       { id: "portal", label: "Client Portal" },
       { id: "notifications", label: "Notifications" },
     ],
