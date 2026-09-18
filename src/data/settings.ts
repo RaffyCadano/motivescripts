@@ -22,6 +22,7 @@ export type SettingsSectionId =
   | "branding"
   | "documents"
   | "featureCatalog"
+  | "taskTemplates"
   | "portal"
   | "notifications"
   | "email"
@@ -52,6 +53,7 @@ export const settingsNavGroups: SettingsNavGroup[] = [
     items: [
       { id: "documents", label: "Document Defaults" },
       { id: "featureCatalog", label: "Feature Catalog" },
+      { id: "taskTemplates", label: "Task Templates" },
       { id: "portal", label: "Client Portal" },
       { id: "notifications", label: "Notifications" },
     ],

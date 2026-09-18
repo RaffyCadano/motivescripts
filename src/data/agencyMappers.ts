@@ -193,6 +193,7 @@ export function mapTask(row: TaskRow): AgencyTask {
     referenceUrl: row.reference_url ?? "",
     estimatedHours: row.estimated_hours ?? null,
     deliverableId: row.deliverable_id ?? null,
+    productionScopeKey: row.production_scope_key ?? null,
     origin: row.origin === "client" ? "client" : ("agency" as TaskOrigin),
     blockedReason: isTaskBlockedReason(row.blocked_reason) ? row.blocked_reason : null,
     qaResult: isTaskQaResult(row.qa_result) ? row.qa_result : null,

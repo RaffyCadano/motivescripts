@@ -11,6 +11,7 @@ import { BrandMark } from "@/components/BrandMark";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { FeatureCatalogSection } from "@/components/admin/settings/FeatureCatalogSection";
+import { TaskTemplatesSection } from "@/components/admin/settings/TaskTemplatesSection";
 import {
   SETTINGS_CURRENCIES,
   SETTINGS_TIMEZONES,
@@ -886,6 +887,8 @@ export function AdminSettings() {
           ) : null}
 
           {section === "featureCatalog" ? <FeatureCatalogSection /> : null}
+
+          {section === "taskTemplates" ? <TaskTemplatesSection /> : null}
 
           {!loading && settings && section === "portal" ? (
             <Card

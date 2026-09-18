@@ -443,6 +443,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
               referenceUrl: draft.referenceUrl,
               estimatedHours: draft.estimatedHours,
               deliverableId: null,
+              productionScopeKey: null,
               origin: "agency",
               blockedReason: null,
               qaResult: null,

@@ -4,13 +4,18 @@ import { TaskClientRequestPanel } from "@/components/tasks/TaskClientRequestPane
 import { adminGhostBtn } from "@/components/admin/adminActionStyles";
 import type { AgencyDeliverable } from "@/data/files";
 import { earlierOpenMilestones, type AgencyProject, type AgencyTask, type AgencyTaskStatus } from "@/data/agencyProjects";
-import { contentWriterPageForTitle } from "@/data/productionTaskInstructions";
+import { contentWriterPageForTitle, displayPage } from "@/data/productionTaskInstructions";
 import { checkpointApproved, developmentComplete, qaLatestResult } from "@/data/productionWorkflow";
 import type { ProjectDevelopment } from "@/data/projectDevelopment";
-import { recommendedRoleForTaskTitle } from "@/data/taskRecommendedRoles";
+import { resolveTaskRecommendedRole } from "@/data/taskRecommendedRoles";
 import { effectiveTaskType, type TaskType } from "@/data/taskTypes";
 import type { TeamWorkTask } from "@/data/teamWorkspace";
 import { safeHttpHref } from "@/lib/safeUrl";
+
+const PAGE_SCOPE_KEYS = new Set([
+  "homepage", "about", "services", "contact", "gallery",
+  "testimonials", "faq", "pricing", "team", "locations", "blog",
+]);
 
 type TaskWorkspaceProps = {
   task: AgencyTask;
@@ -202,13 +207,26 @@ export function ContentWriterRepositoryPanel({ page, development }: { page: stri
  * wired into any admin-only view.
  */
 export function taskContextExtra(
-  task: { title: string },
+  task: { title: string; recommendedRole?: AgencyTask["recommendedRole"]; productionScopeKey?: AgencyTask["productionScopeKey"] },
   taskType: TaskType,
   project: Pick<AgencyProject, "milestones" | "tasks" | "development">,
   projectDeliverables: AgencyDeliverable[],
   onOpenFiles: () => void,
 ): ReactElement | null {
-  const contentWriterPage = contentWriterPageForTitle(task.title);
+  // Prefer the stored scope-key provenance (set at generation time from the
+  // task's originating template) over re-parsing the title -- a template
+  // can be renamed without breaking this panel. Only applies to an actual
+  // "write page copy" task (task_type production + recommended_role
+  // content_writer + a page-shaped scope key) -- Build/Design tasks share
+  // the same page scope keys but must keep going to their own panels below,
+  // and content-writer tasks NOT tied to one page (Prepare contact
+  // information, Migrate approved content) must not get a page name at all.
+  // Falls back to title parsing only for tasks generated before this
+  // column existed.
+  const contentWriterPage =
+    task.productionScopeKey && taskType === "production" && task.recommendedRole === "content_writer" && PAGE_SCOPE_KEYS.has(task.productionScopeKey)
+      ? displayPage(task.productionScopeKey)
+      : contentWriterPageForTitle(task.title);
   if (contentWriterPage) {
     return <ContentWriterRepositoryPanel page={contentWriterPage} development={project.development} />;
   }
@@ -244,8 +262,11 @@ export function taskContextExtra(
   // task that classifies as task_type 'internal' (no title pattern matches
   // it), so it falls through every check above even though it's recommended
   // to the same role as QA. Catch it, and any other non-qa task recommended
-  // to Team Member, by recommended role instead of task_type.
-  if (recommendedRoleForTaskTitle(task.title) === "team_member") {
+  // to Team Member, by the task's own resolved recommended role (stored
+  // column first, title-matching fallback only for legacy tasks) rather
+  // than re-parsing the title directly -- a renamed template must not
+  // silently drop this panel.
+  if (resolveTaskRecommendedRole({ title: task.title, recommendedRole: task.recommendedRole ?? null }) === "team_member") {
     return (
       <ProductionVerificationPanel
         productionHref={safeHttpHref(project.development.productionUrl)}

@@ -148,6 +148,8 @@ export type TaskRow = {
   reference_url: string | null;
   estimated_hours: number | null;
   deliverable_id: string | null;
+  task_template_id: string | null;
+  production_scope_key: string | null;
   origin: string;
   blocked_reason: string | null;
   qa_result: string | null;
@@ -675,6 +677,41 @@ export type FeatureCatalogRow = {
   updated_at: string;
 };
 
+export type TaskTemplateRow = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  instructions: string | null;
+  milestone_key: string;
+  task_type: string;
+  recommended_role: string | null;
+  requires_content_scope: boolean;
+  estimated_hours: number | null;
+  is_required: boolean;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TaskTemplateScopeItemRow = {
+  id: string;
+  task_template_id: string;
+  scope_item_key: string;
+  created_at: string;
+};
+
+export type TaskTemplateChecklistItemRow = {
+  id: string;
+  task_template_id: string;
+  title: string;
+  description: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ServicePlanType = "care" | "seo_retainer" | "hosting" | "custom";
 export type ServicePlanStatus = "pending" | "active" | "past_due" | "canceled";
 
@@ -941,6 +978,9 @@ export type Database = {
       invoice_admin_notes: Table<InvoiceAdminNoteRow, Partial<InvoiceAdminNoteRow> & { invoice_id: string }>;
       testimonials: Table<TestimonialRow, Partial<TestimonialRow> & { client_name: string; quote: string }>;
       feature_catalog: Table<FeatureCatalogRow, Partial<FeatureCatalogRow> & { category: string; name: string; slug: string }>;
+      task_templates: Table<TaskTemplateRow, Partial<TaskTemplateRow> & { slug: string; title: string; milestone_key: string; task_type: string }>;
+      task_template_scope_items: Table<TaskTemplateScopeItemRow, Partial<TaskTemplateScopeItemRow> & { task_template_id: string; scope_item_key: string }>;
+      task_template_checklist_items: Table<TaskTemplateChecklistItemRow, Partial<TaskTemplateChecklistItemRow> & { task_template_id: string; title: string }>;
       service_plans: Table<
         ServicePlanRow,
         Partial<ServicePlanRow> & { client_id: string; plan_type: ServicePlanType; label: string; amount_cents: number }

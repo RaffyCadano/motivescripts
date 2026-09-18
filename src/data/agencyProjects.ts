@@ -113,6 +113,7 @@ export type AgencyTask = {
   referenceUrl: string;
   estimatedHours: number | null;
   deliverableId: string | null;
+  productionScopeKey: string | null;
   origin: TaskOrigin;
   blockedReason: TaskBlockedReason | null;
   qaResult: TaskQaResult | null;
