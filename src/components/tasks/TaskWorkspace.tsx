@@ -7,6 +7,7 @@ import { earlierOpenMilestones, type AgencyProject, type AgencyTask, type Agency
 import { contentWriterPageForTitle } from "@/data/productionTaskInstructions";
 import { checkpointApproved, developmentComplete, qaLatestResult } from "@/data/productionWorkflow";
 import type { ProjectDevelopment } from "@/data/projectDevelopment";
+import { recommendedRoleForTaskTitle } from "@/data/taskRecommendedRoles";
 import { effectiveTaskType, type TaskType } from "@/data/taskTypes";
 import type { TeamWorkTask } from "@/data/teamWorkspace";
 import { safeHttpHref } from "@/lib/safeUrl";
@@ -239,6 +240,19 @@ export function taskContextExtra(
       />
     );
   }
+  // Team Member also owns "Verify production website" -- a Launch-milestone
+  // task that classifies as task_type 'internal' (no title pattern matches
+  // it), so it falls through every check above even though it's recommended
+  // to the same role as QA. Catch it, and any other non-qa task recommended
+  // to Team Member, by recommended role instead of task_type.
+  if (recommendedRoleForTaskTitle(task.title) === "team_member") {
+    return (
+      <ProductionVerificationPanel
+        productionHref={safeHttpHref(project.development.productionUrl)}
+        stagingHref={safeHttpHref(project.development.stagingUrl)}
+      />
+    );
+  }
   return null;
 }
 
@@ -353,6 +367,48 @@ function QaContextPanel({
           Open Staging ↗
         </a>
       ) : null}
+    </section>
+  );
+}
+
+/** Team Member's post-launch task: confirm production actually matches what staging had approved. */
+function ProductionVerificationPanel({
+  productionHref,
+  stagingHref,
+}: {
+  productionHref: string | null;
+  stagingHref: string | null;
+}) {
+  return (
+    <section className="rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4">
+      <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Production Verification</h3>
+      <p className="mt-1 text-sm text-[var(--admin-muted)]">
+        Confirm the live production site matches what was approved on staging before marking this complete.
+      </p>
+      <div className="mt-3 space-y-1">
+        {productionHref ? (
+          <a
+            href={productionHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-sm font-medium text-[var(--admin-blue)] hover:underline"
+          >
+            Open Production ↗
+          </a>
+        ) : (
+          <p className="text-[12px] text-[var(--admin-muted)]">No production URL recorded yet.</p>
+        )}
+        {stagingHref ? (
+          <a
+            href={stagingHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-sm font-medium text-[var(--admin-blue)] hover:underline"
+          >
+            Open Staging ↗
+          </a>
+        ) : null}
+      </div>
     </section>
   );
 }
