@@ -30,6 +30,7 @@ export type ClientDeliveryGates = {
   clientReviewComplete: boolean;
   finalApproved: boolean;
   isLaunched: boolean;
+  isCompleted: boolean;
 };
 
 /**
@@ -59,6 +60,7 @@ export async function fetchClientDeliveryGates(projectId: string): Promise<Clien
     client_review_complete: boolean;
     final_approved: boolean;
     is_launched: boolean;
+    is_completed: boolean;
   } | null;
   if (!row) return null;
   return {
@@ -68,6 +70,7 @@ export async function fetchClientDeliveryGates(projectId: string): Promise<Clien
     clientReviewComplete: row.client_review_complete,
     finalApproved: row.final_approved,
     isLaunched: row.is_launched,
+    isCompleted: row.is_completed,
   };
 }
 
@@ -80,6 +83,7 @@ export function clientDeliveryStagesFromGates(gates: ClientDeliveryGates | null)
     { id: "review", label: "Your Review", done: gates.clientReviewComplete },
     { id: "final_approval", label: "Final Approval", done: gates.finalApproved },
     { id: "launch", label: "Launch", done: gates.isLaunched },
+    { id: "delivered", label: "Delivered", done: gates.isCompleted },
   ];
   const currentIndex = steps.findIndex((step) => !step.done);
   return steps.map((step, index) => ({

@@ -164,6 +164,7 @@ export function TeamProjectDetails() {
         origin: openProjectTask.origin,
         blockedReason: openProjectTask.blockedReason,
         qaResult: openProjectTask.qaResult,
+        qaFailNote: openProjectTask.qaFailNote,
       })
     : null;
 
@@ -178,12 +179,17 @@ export function TeamProjectDetails() {
     setSearchParams(nextParams);
   }
 
-  async function onStatusChange(status: AgencyTaskStatus, blockedReason?: string | null, qaResult?: string | null) {
+  async function onStatusChange(
+    status: AgencyTaskStatus,
+    blockedReason?: string | null,
+    qaResult?: string | null,
+    qaFailNote?: string | null,
+  ) {
     if (!openTask) return;
     setBusy(true);
     setError(null);
     try {
-      await changeTaskStatus(openTask, status, blockedReason, qaResult);
+      await changeTaskStatus(openTask, status, blockedReason, qaResult, qaFailNote);
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
     } finally {
@@ -343,7 +349,9 @@ export function TeamProjectDetails() {
             setOpenTask(null);
             setError(null);
           }}
-          onStatusChange={(status, blockedReason, qaResult) => void onStatusChange(status, blockedReason, qaResult)}
+          onStatusChange={(status, blockedReason, qaResult, qaFailNote) =>
+            void onStatusChange(status, blockedReason, qaResult, qaFailNote)
+          }
         />
       ) : null}
     </div>

@@ -3,6 +3,7 @@ import { awaitingResponse } from "@/data/documents";
 import type { ContractSummary, ProposalSummary } from "@/data/documentsRepository";
 import { awaitingInvoicePayment } from "@/data/invoices";
 import type { InvoiceSummary } from "@/data/invoicesRepository";
+import { clientWebsitePhase } from "@/data/projectDevelopment";
 import { scopeStatus, type ClientScopeBrief, type ScopeStatus } from "@/data/scopeBriefs";
 
 export type PortalPhase =
@@ -143,6 +144,15 @@ export function salesFlags(input: {
     invoiceNumber: actionInvoice?.number ?? null,
     invoiceAwaiting: Boolean(awaitingInvoice),
     invoicePaid: input.invoices.some((row) => row.effectiveStatus === "paid"),
+    // deploymentStatus lives on project_development, which is only fetched
+    // for agency roles (agencyRepository.ts) -- for a real client session it
+    // always reads as the "Not deployed" default, so it's never a safe
+    // signal here. clientWebsitePhase() already solves exactly this by
+    // keying off productionUrl presence instead (sourced from the projects
+    // row directly, which a client can read) -- reuse it rather than
+    // introduce a second, client-broken way to detect "launched".
+    isLaunched: input.project ? clientWebsitePhase(input.project.development) === "live" : false,
+    productionUrl: input.project?.development.productionUrl ?? "",
   };
 }
 

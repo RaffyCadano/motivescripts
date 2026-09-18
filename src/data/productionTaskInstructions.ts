@@ -86,6 +86,7 @@ const LEGACY_PRODUCTION_DESCRIPTIONS = new Set([
   "Deploy the approved website to the production URL. Hosting stays external.",
   "Confirm the live website matches the approved staging version.",
   "Complete final QA on the production website before handoff.",
+  "Deliver final assets/credentials and confirm the client has everything needed to own the live website.",
   "Included in the accepted commercial scope.",
 ]);
 
@@ -136,6 +137,7 @@ const EXACT_ESTIMATED_HOURS: Record<string, number> = {
   "set up ad campaign": 2,
   "set up social media & content calendar": 2,
   "final qa": 1,
+  "complete client handoff": 1,
   "write homepage copy": 2,
   "design homepage": 4,
   "build homepage": 5,
@@ -596,6 +598,18 @@ const EXACT_INSTRUCTIONS: Record<string, string> = {
     ].join("\n"),
     Deliverable: "Final pre-launch QA result.",
     "Done when": "No blocking launch issues remain.",
+  }),
+  "complete client handoff": sectioned({
+    Objective: "Deliver everything the client needs to own and maintain the live website.",
+    "What to do": [
+      "- Confirm the production website is live and verified.",
+      "- Send the client any final assets, credentials, or documentation owed under the accepted scope.",
+      "- Confirm domain and hosting are configured the way the client expects going forward.",
+      "- Confirm the final invoice is paid.",
+      "- Let the client know the project is complete.",
+    ].join("\n"),
+    Deliverable: "Client has everything needed to own the live website.",
+    "Done when": "The client has been notified and has what they need; nothing outstanding remains on this delivery.",
   }),
   "implement e-commerce functionality": implementFeatureInstructions("e-commerce functionality"),
   "implement online store": implementFeatureInstructions("e-commerce functionality"),

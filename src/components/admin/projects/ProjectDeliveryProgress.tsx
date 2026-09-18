@@ -10,6 +10,7 @@ const PHASES: { id: ProductionPhase; label: string }[] = [
   { id: "client_review", label: "Client Review" },
   { id: "final_approval", label: "Final Approval" },
   { id: "launch_ready", label: "Launch" },
+  { id: "handoff", label: "Handoff" },
 ];
 
 /**
@@ -24,19 +25,19 @@ export function ProjectDeliveryProgress({
   deliverables,
   invoiceStatuses,
 }: {
-  project: Pick<AgencyProject, "milestones" | "tasks" | "development">;
+  project: Pick<AgencyProject, "milestones" | "tasks" | "development" | "status">;
   deliverables: AgencyDeliverable[];
   invoiceStatuses: string[];
 }) {
   const summary = productionPhaseSummary(project, deliverables, invoiceStatuses);
-  const currentIndex = summary.phase === "launched" ? PHASES.length : PHASES.findIndex((item) => item.id === summary.phase);
+  const currentIndex = summary.phase === "completed" ? PHASES.length : PHASES.findIndex((item) => item.id === summary.phase);
 
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-4 py-3">
       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">Delivery progress</p>
       <ol className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1 text-[13px]">
         {PHASES.map((item, index) => {
-          const done = index < currentIndex || summary.phase === "launched";
+          const done = index < currentIndex || summary.phase === "completed";
           const current = index === currentIndex;
           return (
             <li key={item.id} className="flex items-center gap-1">

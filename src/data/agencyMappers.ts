@@ -196,6 +196,7 @@ export function mapTask(row: TaskRow): AgencyTask {
     origin: row.origin === "client" ? "client" : ("agency" as TaskOrigin),
     blockedReason: isTaskBlockedReason(row.blocked_reason) ? row.blocked_reason : null,
     qaResult: isTaskQaResult(row.qa_result) ? row.qa_result : null,
+    qaFailNote: row.qa_fail_note ?? "",
   };
 }
 
@@ -227,6 +228,11 @@ export function mapProjectDevelopment(row: ProjectDevelopmentRow): ProjectDevelo
     repositoryUrl: row.repository_url ?? "",
     repositoryBranch: row.repository_branch ?? "",
     templateRepositoryUrl: row.template_repository_url ?? "",
+    // staging_url/production_url live on `projects`, not `project_development`
+    // (ProjectDevelopmentRow has no such columns) -- mapProject() below always
+    // overrides these two fields from the parent project row. Left blank here
+    // rather than omitted so this object still satisfies ProjectDevelopment
+    // on its own if ever used before that merge happens.
     stagingUrl: "",
     productionUrl: "",
     hostingProvider: row.hosting_provider ?? "",

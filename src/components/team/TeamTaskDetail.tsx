@@ -77,7 +77,12 @@ type TeamTaskDetailProps = {
   /** How many tasks this assignee currently has In Progress (including this one, if it's already In Progress) -- a WIP-limit nudge, never a block. */
   wipCount?: number;
   onClose: () => void;
-  onStatusChange: (status: AgencyTaskStatus, blockedReason?: string | null, qaResult?: string | null) => void;
+  onStatusChange: (
+    status: AgencyTaskStatus,
+    blockedReason?: string | null,
+    qaResult?: string | null,
+    qaFailNote?: string | null,
+  ) => void;
 };
 
 export function TeamTaskDetail({
@@ -102,6 +107,7 @@ export function TeamTaskDetail({
   const [pendingBlockReason, setPendingBlockReason] = useState<TaskBlockedReason | "">("");
   const [showQaPicker, setShowQaPicker] = useState(false);
   const [pendingQaResult, setPendingQaResult] = useState<TaskQaResult | "">("");
+  const [pendingQaFailNote, setPendingQaFailNote] = useState("");
   const isQaTask = effectiveTaskType(task) === "qa";
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
@@ -238,6 +244,7 @@ export function TeamTaskDetail({
                       onClick={() => {
                         if (isQaTask) {
                           setPendingQaResult("");
+                          setPendingQaFailNote("");
                           setShowQaPicker(true);
                           return;
                         }
@@ -311,9 +318,12 @@ export function TeamTaskDetail({
                 ) : null}
 
                 {task.status === "Completed" && isQaTask && task.qaResult && !showQaPicker ? (
-                  <p className={cn("text-[13px]", task.qaResult === "fail" ? "text-[#b45309]" : "text-emerald-700")}>
-                    QA result: {taskQaResultLabel(task.qaResult)}
-                  </p>
+                  <div className={cn("text-[13px]", task.qaResult === "fail" ? "text-[#b45309]" : "text-emerald-700")}>
+                    <p>QA result: {taskQaResultLabel(task.qaResult)}</p>
+                    {task.qaResult === "fail" && task.qaFailNote ? (
+                      <p className="mt-0.5 text-[var(--admin-ink)]">Reason: {task.qaFailNote}</p>
+                    ) : null}
+                  </div>
                 ) : null}
 
                 {showQaPicker ? (
@@ -335,6 +345,18 @@ export function TeamTaskDetail({
                         ))}
                       </select>
                     </label>
+                    {pendingQaResult === "fail" ? (
+                      <label className="mt-3 block text-[13px] font-medium text-[var(--admin-ink)]">
+                        Why did QA fail?
+                        <textarea
+                          rows={3}
+                          className="mt-1.5 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 py-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                          placeholder="e.g. Checkout button broken on mobile Safari"
+                          value={pendingQaFailNote}
+                          onChange={(event) => setPendingQaFailNote(event.target.value)}
+                        />
+                      </label>
+                    ) : null}
                     <div className="mt-3 flex justify-end gap-2">
                       <button
                         type="button"
@@ -345,10 +367,10 @@ export function TeamTaskDetail({
                       </button>
                       <button
                         type="button"
-                        disabled={!pendingQaResult || busy}
+                        disabled={!pendingQaResult || (pendingQaResult === "fail" && !pendingQaFailNote.trim()) || busy}
                         className="inline-flex h-9 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
                         onClick={() => {
-                          onStatusChange("Completed", null, pendingQaResult);
+                          onStatusChange("Completed", null, pendingQaResult, pendingQaResult === "fail" ? pendingQaFailNote : null);
                           setShowQaPicker(false);
                         }}
                       >
@@ -373,6 +395,7 @@ export function TeamTaskDetail({
                       }
                       if (next === "Completed" && isQaTask) {
                         setPendingQaResult("");
+                        setPendingQaFailNote("");
                         setShowQaPicker(true);
                         return;
                       }

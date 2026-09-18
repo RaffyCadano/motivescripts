@@ -39,6 +39,7 @@ export type TeamWorkTask = {
   origin: TaskOrigin;
   blockedReason: TaskBlockedReason | null;
   qaResult: TaskQaResult | null;
+  qaFailNote: string;
 };
 
 export type TeamAttentionItem = {
@@ -181,6 +182,7 @@ export function collectAssignedTasks(
         origin: task.origin,
         blockedReason: task.blockedReason,
         qaResult: task.qaResult,
+        qaFailNote: task.qaFailNote,
       });
     }
   }

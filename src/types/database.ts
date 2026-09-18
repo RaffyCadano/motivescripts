@@ -151,6 +151,7 @@ export type TaskRow = {
   origin: string;
   blocked_reason: string | null;
   qa_result: string | null;
+  qa_fail_note: string;
   created_at: string;
   updated_at: string;
 };
@@ -1464,7 +1465,13 @@ export type Database = {
         Returns: Json;
       };
       update_my_task_status: {
-        Args: { p_task_id: string; p_status: string; p_blocked_reason?: string | null; p_qa_result?: string | null };
+        Args: {
+          p_task_id: string;
+          p_status: string;
+          p_blocked_reason?: string | null;
+          p_qa_result?: string | null;
+          p_qa_fail_note?: string | null;
+        };
         Returns: null;
       };
       set_task_deliverable: {
@@ -1484,6 +1491,7 @@ export type Database = {
           client_review_complete: boolean;
           final_approved: boolean;
           is_launched: boolean;
+          is_completed: boolean;
         }[];
       };
     };

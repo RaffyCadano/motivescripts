@@ -21,7 +21,12 @@ type TaskWorkspaceProps = {
   /** Rendered above the title in "page" variant only. */
   breadcrumb?: ReactNode;
   onClose: () => void;
-  onStatusChange: (status: AgencyTaskStatus, blockedReason?: string | null, qaResult?: string | null) => void;
+  onStatusChange: (
+    status: AgencyTaskStatus,
+    blockedReason?: string | null,
+    qaResult?: string | null,
+    qaFailNote?: string | null,
+  ) => void;
   onOpenDiscovery: () => void;
   onOpenFiles: () => void;
 };
@@ -75,6 +80,7 @@ export function TaskWorkspace({
     origin: task.origin,
     blockedReason: task.blockedReason,
     qaResult: task.qaResult,
+    qaFailNote: task.qaFailNote,
   };
 
   const projectFiles = deliverables.filter((item) => item.projectId === project.id);

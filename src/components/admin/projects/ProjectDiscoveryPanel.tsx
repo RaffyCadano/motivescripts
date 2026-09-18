@@ -50,7 +50,7 @@ export function ProjectDiscoveryPanel({ projectId, clientId, projectName, brief 
   const [notes, setNotes] = useState("");
 
   async function reload() {
-    const row = await fetchDiscoveryIntakeByProject(projectId);
+    const row = await fetchDiscoveryIntakeByProject(projectId, { includeInternal: true });
     setIntake(row);
     if (row) {
       setNotes(row.internalNotes);

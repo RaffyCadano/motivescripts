@@ -66,10 +66,11 @@ export function useTeamWork() {
     status: AgencyTaskStatus,
     blockedReason?: string | null,
     qaResult?: string | null,
+    qaFailNote?: string | null,
   ) {
     const mine = isAssignedToMe(task, profile?.id ?? "", profile?.fullName ?? "");
     if (mine) {
-      await updateMyTaskStatus(task.id, status, blockedReason, qaResult);
+      await updateMyTaskStatus(task.id, status, blockedReason, qaResult, qaFailNote);
       await reload();
       return;
     }
@@ -88,12 +89,13 @@ export function useTeamWork() {
       estimatedHours: task.estimatedHours,
       blockedReason: (blockedReason as AgencyTaskDraft["blockedReason"]) ?? null,
       qaResult: (qaResult as AgencyTaskDraft["qaResult"]) ?? null,
+      qaFailNote: qaFailNote ?? null,
     };
     if (canManageTasks) {
       await updateTask(task.projectId, task.id, draft);
       return;
     }
-    await updateMyTaskStatus(task.id, status, blockedReason, qaResult);
+    await updateMyTaskStatus(task.id, status, blockedReason, qaResult, qaFailNote);
     await reload();
   }
 

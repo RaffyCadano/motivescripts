@@ -75,6 +75,7 @@ type TaskWriteFields = Partial<
     | "estimated_hours"
     | "blocked_reason"
     | "qa_result"
+    | "qa_fail_note"
   >
 >;
 
@@ -668,6 +669,7 @@ function taskDraftWriteFields(draft: AgencyTaskDraft, completedAt: string | null
     estimated_hours: draft.estimatedHours ?? null,
     blocked_reason: draft.status === "Blocked" ? (draft.blockedReason ?? null) : null,
     qa_result: draft.status === "Completed" ? (draft.qaResult ?? null) : null,
+    qa_fail_note: draft.status === "Completed" && draft.qaResult === "fail" ? (draft.qaFailNote?.trim() ?? "") : "",
   };
   if (completedAt !== undefined) {
     fields.completed_at = completedAt;

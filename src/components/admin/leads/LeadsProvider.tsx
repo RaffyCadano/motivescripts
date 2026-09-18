@@ -446,6 +446,7 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
               origin: "agency",
               blockedReason: null,
               qaResult: null,
+              qaFailNote: "",
               createdAt: new Date().toISOString(),
               completedAt: draft.status === "Completed" ? new Date().toISOString() : null,
               updatedAt: new Date().toISOString(),

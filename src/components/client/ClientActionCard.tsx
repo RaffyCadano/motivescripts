@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import type { ClientAction } from "@/data/clientPortal";
 import { cn } from "@/lib/cn";
+import { safeHttpHref } from "@/lib/safeUrl";
 
 type ClientActionCardProps = {
   action: ClientAction | null;
@@ -9,7 +10,13 @@ type ClientActionCardProps = {
 
 export function ClientActionCard({ action, loading = false }: ClientActionCardProps) {
   const needsAction = Boolean(action?.href && action.buttonLabel);
-  const informational = action?.kind === "waiting_production" || action?.kind === "in_development";
+  const informational =
+    action?.kind === "waiting_production" || action?.kind === "in_development" || action?.kind === "launched";
+  // action.href is normally an internal route (e.g. /client/proposals/:id).
+  // The "launched" action is the one case where it's a real production URL
+  // -- render that as an actual external link instead of an internal <Link>,
+  // which would try to route to it as a path instead of opening the site.
+  const externalHref = action?.href ? safeHttpHref(action.href) : null;
 
   return (
     <section
@@ -44,12 +51,23 @@ export function ClientActionCard({ action, loading = false }: ClientActionCardPr
           <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">{action.body}</p>
           {needsAction && action.href && action.buttonLabel ? (
             <div className="mt-5">
-              <Link
-                to={action.href}
-                className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-5 font-heading text-sm font-semibold text-white transition-colors hover:bg-[var(--client-bright)]"
-              >
-                {action.buttonLabel}
-              </Link>
+              {externalHref ? (
+                <a
+                  href={externalHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-5 font-heading text-sm font-semibold text-white transition-colors hover:bg-[var(--client-bright)]"
+                >
+                  {action.buttonLabel}
+                </a>
+              ) : (
+                <Link
+                  to={action.href}
+                  className="inline-flex h-11 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-5 font-heading text-sm font-semibold text-white transition-colors hover:bg-[var(--client-bright)]"
+                >
+                  {action.buttonLabel}
+                </Link>
+              )}
             </div>
           ) : null}
         </>

@@ -116,6 +116,7 @@ export type AgencyTask = {
   origin: TaskOrigin;
   blockedReason: TaskBlockedReason | null;
   qaResult: TaskQaResult | null;
+  qaFailNote: string;
 };
 
 export type AgencyProjectFeedback = {
@@ -192,6 +193,7 @@ export type AgencyTaskDraft = {
   estimatedHours: number | null;
   blockedReason?: TaskBlockedReason | null;
   qaResult?: TaskQaResult | null;
+  qaFailNote?: string | null;
 };
 
 export function taskStatusLabel(status: AgencyTaskStatus): string {

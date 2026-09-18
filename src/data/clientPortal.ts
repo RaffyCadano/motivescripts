@@ -6,6 +6,7 @@
 
 import type { AgencyProjectStatus } from "@/data/agencyProjects";
 import { isProductionProject } from "@/data/preProject";
+import { safeHttpHref } from "@/lib/safeUrl";
 
 export type ProjectStageStatus = "complete" | "current" | "upcoming";
 
@@ -28,6 +29,7 @@ export type ClientActionKind =
   | "review"
   | "waiting_production"
   | "in_development"
+  | "launched"
   | "idle";
 
 export type ClientAction = {
@@ -52,6 +54,8 @@ export type ClientActionFlags = {
   invoiceAwaiting: boolean;
   invoicePaid: boolean;
   projectStatus: AgencyProjectStatus | null;
+  isLaunched: boolean;
+  productionUrl: string;
 };
 
 export function deriveClientPortalAction(
@@ -128,6 +132,20 @@ export function deriveClientPortalAction(
       kind: "in_development",
       title: "Your project is now in development.",
       body: "We’re building your website. You’ll see files and reviews here as work is ready.",
+    };
+  }
+
+  if (flags.isLaunched) {
+    const liveUrl = safeHttpHref(flags.productionUrl);
+    return {
+      id: "launched",
+      kind: "launched",
+      eyebrow: "Live ✓",
+      title: "Your website is live",
+      body: liveUrl
+        ? "Your project has launched and your website is live."
+        : "Your project has launched. Your website link will appear here once it's added.",
+      ...(liveUrl ? { href: liveUrl, buttonLabel: "Visit Website" } : {}),
     };
   }
 

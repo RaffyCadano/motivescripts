@@ -57,12 +57,17 @@ export function AdminMyTasks() {
     [phase, priority, projectId, search, status, tasks],
   );
 
-  async function onStatusChange(next: AgencyTaskStatus, blockedReason?: string | null, qaResult?: string | null) {
+  async function onStatusChange(
+    next: AgencyTaskStatus,
+    blockedReason?: string | null,
+    qaResult?: string | null,
+    qaFailNote?: string | null,
+  ) {
     if (!openTask) return;
     setBusy(true);
     setError(null);
     try {
-      await changeTaskStatus(openTask, next, blockedReason, qaResult);
+      await changeTaskStatus(openTask, next, blockedReason, qaResult, qaFailNote);
       setOpenTask((current) =>
         current
           ? {
@@ -70,6 +75,7 @@ export function AdminMyTasks() {
               status: next,
               blockedReason: next === "Blocked" ? ((blockedReason as TeamWorkTask["blockedReason"]) ?? null) : null,
               qaResult: next === "Completed" ? ((qaResult as TeamWorkTask["qaResult"]) ?? null) : null,
+              qaFailNote: next === "Completed" && qaResult === "fail" ? (qaFailNote ?? "") : "",
             }
           : current,
       );
@@ -189,7 +195,9 @@ export function AdminMyTasks() {
             setOpenTask(null);
             setError(null);
           }}
-          onStatusChange={(next, blockedReason, qaResult) => void onStatusChange(next, blockedReason, qaResult)}
+          onStatusChange={(next, blockedReason, qaResult, qaFailNote) =>
+            void onStatusChange(next, blockedReason, qaResult, qaFailNote)
+          }
           onOpenDiscovery={() => {
             setOpenTask(null);
             navigate(`${adminProjectHref(openProject.id)}#project-discovery`);

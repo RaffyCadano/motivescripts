@@ -135,12 +135,17 @@ export function PmOverview() {
 
   const firstName = firstNameFrom(profile?.fullName || "there");
 
-  async function onStatusChange(status: TeamWorkTask["status"], blockedReason?: string | null, qaResult?: string | null) {
+  async function onStatusChange(
+    status: TeamWorkTask["status"],
+    blockedReason?: string | null,
+    qaResult?: string | null,
+    qaFailNote?: string | null,
+  ) {
     if (!openTask) return;
     setBusy(true);
     setError(null);
     try {
-      await changeTaskStatus(openTask, status, blockedReason, qaResult);
+      await changeTaskStatus(openTask, status, blockedReason, qaResult, qaFailNote);
       setOpenTask((current) =>
         current
           ? {
@@ -148,6 +153,7 @@ export function PmOverview() {
               status,
               blockedReason: status === "Blocked" ? ((blockedReason as TeamWorkTask["blockedReason"]) ?? null) : null,
               qaResult: status === "Completed" ? ((qaResult as TeamWorkTask["qaResult"]) ?? null) : null,
+              qaFailNote: status === "Completed" && qaResult === "fail" ? (qaFailNote ?? "") : "",
             }
           : current,
       );
@@ -322,7 +328,9 @@ export function PmOverview() {
             setOpenTask(null);
             setError(null);
           }}
-          onStatusChange={(status, blockedReason, qaResult) => void onStatusChange(status, blockedReason, qaResult)}
+          onStatusChange={(status, blockedReason, qaResult, qaFailNote) =>
+            void onStatusChange(status, blockedReason, qaResult, qaFailNote)
+          }
         />
       ) : null}
     </div>

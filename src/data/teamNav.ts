@@ -98,8 +98,15 @@ export function filterTeamNavGroups(profile: AppProfile | null): TeamNavGroup[] 
     .filter((group) => group.items.length > 0);
 }
 
-export function getTeamPageMeta(pathname: string): TeamNavItem {
-  const items = teamNavGroups.flatMap((group) => group.items);
+export function getTeamPageMeta(pathname: string, profile: AppProfile | null): TeamNavItem {
+  // Mirrors filterTeamNavGroups' own choice of nav list -- without this, a
+  // Developer visiting a developer-only page (QA & Review, Needs Changes,
+  // Blocked, Deployments) would never find a match here (those pages only
+  // exist in developerNavGroups, not teamNavGroups) and silently fall
+  // through to the items[0] fallback below, showing "Dashboard" as the page
+  // title no matter which of those pages they're actually on.
+  const baseGroups = isDeveloper(profile) ? developerNavGroups : teamNavGroups;
+  const items = baseGroups.flatMap((group) => group.items);
   const exact = items.find((item) => item.href === pathname);
   if (exact) return exact;
   const nested = items

@@ -21,7 +21,7 @@ export function TeamHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMob
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   const display = user ? userDisplay(user, profile) : { name: "Account", initials: "A", role: "User" };
-  const page = getTeamPageMeta(pathname);
+  const page = getTeamPageMeta(pathname, profile);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);

@@ -264,6 +264,7 @@ export async function updateMyTaskStatus(
   status: string,
   blockedReason?: string | null,
   qaResult?: string | null,
+  qaFailNote?: string | null,
 ): Promise<void> {
   const client = requireClient();
   const { error } = await client.rpc("update_my_task_status", {
@@ -271,6 +272,7 @@ export async function updateMyTaskStatus(
     p_status: status,
     p_blocked_reason: blockedReason ?? null,
     p_qa_result: qaResult ?? null,
+    p_qa_fail_note: qaFailNote ?? null,
   });
   if (error) fail("update task", error, "Unable to update this task.");
 }

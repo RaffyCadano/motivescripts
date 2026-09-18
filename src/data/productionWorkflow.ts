@@ -82,7 +82,15 @@ export type ProductionPhase =
   | "client_review"
   | "final_approval"
   | "launch_ready"
-  | "launched";
+  | "launched"
+  | "handoff"
+  | "completed";
+
+/** Mirrors project_handoff_complete(): every handoff-typed Launch-milestone task Completed, or none exist (nothing to require -- see 20260930280000). */
+export function handoffComplete(project: Pick<AgencyProject, "milestones" | "tasks">): boolean {
+  const tasks = tasksForMilestoneKey(project, "launch").filter((task) => effectiveTaskType(task) === "handoff");
+  return tasks.length === 0 || tasks.every((task) => task.status === "Completed");
+}
 
 export type ProductionPhaseSummary = {
   phase: ProductionPhase;
@@ -98,12 +106,29 @@ export type ProductionPhaseSummary = {
  * enforcement (the database triggers are).
  */
 export function productionPhaseSummary(
-  project: Pick<AgencyProject, "milestones" | "tasks" | "development">,
+  project: Pick<AgencyProject, "milestones" | "tasks" | "development" | "status">,
   deliverables: AgencyDeliverable[],
   invoiceStatuses: string[],
 ): ProductionPhaseSummary {
+  if (project.status === "Completed") {
+    return { phase: "completed", phaseLabel: "Completed", blocking: null, nextAction: "Delivered and handed off." };
+  }
+
   if (project.development.deploymentStatus === "Production") {
-    return { phase: "launched", phaseLabel: "Launched", blocking: null, nextAction: "Live -- ready for handoff." };
+    if (!handoffComplete(project)) {
+      return {
+        phase: "handoff",
+        phaseLabel: "Handoff",
+        blocking: null,
+        nextAction: "Complete the handoff task, then mark the project Completed.",
+      };
+    }
+    return {
+      phase: "handoff",
+      phaseLabel: "Handoff",
+      blocking: null,
+      nextAction: "Handoff is done. Mark the project Completed.",
+    };
   }
 
   const overallDesignApproved = checkpointApproved(deliverables, "overall_design");

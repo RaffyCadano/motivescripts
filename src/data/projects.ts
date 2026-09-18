@@ -253,7 +253,7 @@ export const projects: Project[] = [
     concept: false,
     accent: "#0f7a5c",
     screenshot: garageHero,
-    liveUrl: "http://unlistedgarage.us/",
+    liveUrl: "https://unlistedgarage.us/",
     challenge:
       "Wrap and PPF shops sell on visual proof, but most sites bury the gallery behind a generic layout and make getting a quote feel like a chore. The site needed to put real work and a fast quote path front and center.",
     approach: [

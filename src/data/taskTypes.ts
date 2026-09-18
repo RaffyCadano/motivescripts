@@ -5,6 +5,7 @@ export const TASK_TYPES = [
   "production",
   "client_review",
   "qa",
+  "handoff",
   "internal",
 ] as const;
 
@@ -28,6 +29,8 @@ export function taskTypeLabel(type: TaskType): string {
       return "Client Review";
     case "qa":
       return "QA";
+    case "handoff":
+      return "Handoff";
     case "internal":
       return "Internal";
   }
@@ -48,6 +51,7 @@ const EXACT_TITLE_TYPES: Record<string, TaskType> = {
   "test staging website": "qa",
   "test responsive layouts": "qa",
   "final qa": "qa",
+  "complete client handoff": "handoff",
 };
 
 const PREFIX_TYPES: [RegExp, TaskType][] = [

@@ -151,20 +151,24 @@ function mapFile(row: DiscoveryIntakeFileRow): DiscoveryIntakeFile {
   };
 }
 
+// Client-safe by default: a caller that just does fetchDiscoveryIntakeByProject(id)
+// must never receive internal_notes. Internal/staff call sites must opt in
+// explicitly with { includeInternal: true } -- the unsafe option is never
+// the default.
 export async function fetchDiscoveryIntakeByProject(projectId: string, options?: { includeInternal?: boolean }): Promise<DiscoveryIntake | null> {
   const client = db();
-  if (options?.includeInternal === false) {
-    const { data, error } = await client
-      .from("discovery_intakes")
-      .select(DISCOVERY_INTAKE_CLIENT_COLUMNS)
-      .eq("project_id", projectId)
-      .maybeSingle();
+  if (options?.includeInternal === true) {
+    const { data, error } = await client.from("discovery_intakes").select("*").eq("project_id", projectId).maybeSingle();
     throwIf(error, "load discovery intake", "Unable to load discovery intake.");
-    return data ? mapIntakeClientSafe(data as DiscoveryIntakeClientRow) : null;
+    return data ? mapIntake(data as DiscoveryIntakeRow) : null;
   }
-  const { data, error } = await client.from("discovery_intakes").select("*").eq("project_id", projectId).maybeSingle();
+  const { data, error } = await client
+    .from("discovery_intakes")
+    .select(DISCOVERY_INTAKE_CLIENT_COLUMNS)
+    .eq("project_id", projectId)
+    .maybeSingle();
   throwIf(error, "load discovery intake", "Unable to load discovery intake.");
-  return data ? mapIntake(data as DiscoveryIntakeRow) : null;
+  return data ? mapIntakeClientSafe(data as DiscoveryIntakeClientRow) : null;
 }
 
 export async function fetchDiscoveryIntakes(): Promise<DiscoveryIntake[]> {
@@ -186,7 +190,7 @@ export async function fetchDiscoveryIntakeFiles(intakeId: string): Promise<Disco
 }
 
 export async function ensureDiscoveryIntake(projectId: string, clientId: string): Promise<DiscoveryIntake> {
-  const existing = await fetchDiscoveryIntakeByProject(projectId);
+  const existing = await fetchDiscoveryIntakeByProject(projectId, { includeInternal: true });
   if (existing) return existing;
 
   const client = db();
@@ -292,7 +296,7 @@ export async function markDiscoveryUnderReview(projectId: string): Promise<Disco
     .maybeSingle();
   throwIf(error, "review discovery", "Unable to update discovery status.");
   if (!data) {
-    const current = await fetchDiscoveryIntakeByProject(projectId);
+    const current = await fetchDiscoveryIntakeByProject(projectId, { includeInternal: true });
     if (!current) throw new AgencyDbError("Discovery intake not found.");
     return current;
   }
