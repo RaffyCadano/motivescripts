@@ -35,6 +35,7 @@ import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
 
 type Filter = "all" | "active" | "inactive";
+type RoleFilter = "all" | "none" | TaskRecommendedRoleId;
 
 const fieldClass =
   "mt-1.5 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 py-2 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)] disabled:bg-[var(--admin-bg)]";
@@ -44,6 +45,7 @@ export function TaskTemplatesSection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [modal, setModal] = useState<{ item: TaskTemplateItem | null; draft: TaskTemplateDraft } | null>(null);
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -64,11 +66,13 @@ export function TaskTemplatesSection() {
 
   const visible = useMemo(() => {
     return items.filter((item) => {
-      if (filter === "active") return item.isActive;
-      if (filter === "inactive") return !item.isActive;
+      if (filter === "active" && !item.isActive) return false;
+      if (filter === "inactive" && item.isActive) return false;
+      if (roleFilter === "none" && item.recommendedRole !== null) return false;
+      if (roleFilter !== "all" && roleFilter !== "none" && item.recommendedRole !== roleFilter) return false;
       return true;
     });
-  }, [items, filter]);
+  }, [items, filter, roleFilter]);
 
   function openCreate() {
     setFormError(null);
@@ -185,6 +189,23 @@ export function TaskTemplatesSection() {
             {option}
           </button>
         ))}
+
+        <label className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[var(--admin-ink)]">
+          Role
+          <select
+            className="h-8 rounded-full border border-[var(--admin-line)] bg-white px-2.5 text-[12px] font-semibold text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            value={roleFilter}
+            onChange={(event) => setRoleFilter(event.target.value as RoleFilter)}
+          >
+            <option value="all">All roles</option>
+            {TASK_RECOMMENDED_ROLE_OPTIONS.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.label}
+              </option>
+            ))}
+            <option value="none">No role set</option>
+          </select>
+        </label>
       </div>
 
       {loading ? (
