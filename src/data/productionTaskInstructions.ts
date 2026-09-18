@@ -182,7 +182,7 @@ export function estimatedHoursForTitle(title: string): number | null {
   return null;
 }
 
-function displayPage(subject: string): string {
+export function displayPage(subject: string): string {
   const key = subject.trim().replace(/\s+copy$/i, "").replace(/\s+page$/i, "");
   const labels: Record<string, string> = {
     homepage: "homepage",
@@ -673,6 +673,23 @@ const EXACT_INSTRUCTIONS: Record<string, string> = {
 function subjectAfterPrefix(title: string, prefix: string): string | null {
   if (!title.startsWith(prefix)) return null;
   return title.slice(prefix.length).trim() || null;
+}
+
+/**
+ * Which page a "Write <page> copy" task is for, or null for anything else
+ * (including other content_writer-recommended tasks like "Migrate approved
+ * content" -- those aren't tied to one page, so there's nothing to name).
+ * Used only for the content writer's read-only "where this goes" panel --
+ * not part of task classification/instructions.
+ */
+export function contentWriterPageForTitle(title: string): string | null {
+  const key = normalizeProductionTaskTitle(title);
+  if (!key) return null;
+  const writeSubject = subjectAfterPrefix(key, "write ");
+  if (writeSubject && writeSubject.endsWith(" copy")) {
+    return displayPage(writeSubject.replace(/ copy$/, ""));
+  }
+  return null;
 }
 
 export function catalogInstructionsForTitle(title: string): string | null {

@@ -5,7 +5,7 @@ import { adminIcons } from "@/components/admin/adminIcons";
 import { MyTaskMobileList, MyTaskTable } from "@/components/admin/MyTaskList";
 import { MilestoneStatusBadge } from "@/components/admin/projects/MilestoneStatusBadge";
 import { ProgressBar } from "@/components/admin/ProgressBar";
-import { ClientReviewLinkOut } from "@/components/tasks/TaskWorkspace";
+import { ClientReviewLinkOut, taskContextExtra } from "@/components/tasks/TaskWorkspace";
 import { AvailabilityDot } from "@/components/team/AvailabilityDot";
 import { TeamEmptyState } from "@/components/team/TeamEmptyState";
 import { TeamProjectCard } from "@/components/team/TeamProjectCard";
@@ -545,17 +545,25 @@ export function TeamDeveloperDashboard() {
             return project ? earlierOpenMilestones(project, openTask.milestoneId) : undefined;
           })()}
           wipCount={inProgressCount(tasks, profile?.id ?? "", profile?.fullName ?? "")}
-          extra={
-            effectiveTaskType(openTask) === "client_review" ? (
-              <ClientReviewLinkOut
-                onOpenFiles={() => {
-                  const projectId = openTask.projectId;
-                  setOpenTask(null);
-                  navigate(teamProjectHref(projectId, { tab: "files" }));
-                }}
-              />
-            ) : undefined
-          }
+          extra={(() => {
+            const onOpenFiles = () => {
+              const projectId = openTask.projectId;
+              setOpenTask(null);
+              navigate(teamProjectHref(projectId, { tab: "files" }));
+            };
+            if (effectiveTaskType(openTask) === "client_review") {
+              return <ClientReviewLinkOut onOpenFiles={onOpenFiles} />;
+            }
+            const project = myProjects.find((item) => item.id === openTask.projectId);
+            if (!project) return undefined;
+            return taskContextExtra(
+              openTask,
+              effectiveTaskType(openTask),
+              project,
+              deliverables.filter((item) => item.projectId === project.id),
+              onOpenFiles,
+            ) ?? undefined;
+          })()}
           onClose={() => {
             setOpenTask(null);
             setError(null);

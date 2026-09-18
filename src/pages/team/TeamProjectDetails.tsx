@@ -21,7 +21,7 @@ import { ProjectTeamRoster } from "@/components/admin/projects/ProjectTeamRoster
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge";
 import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
-import { ClientReviewLinkOut } from "@/components/tasks/TaskWorkspace";
+import { ClientReviewLinkOut, taskContextExtra } from "@/components/tasks/TaskWorkspace";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import {
@@ -335,16 +335,24 @@ export function TeamProjectDetails() {
           error={error}
           earlierOpen={earlierOpenMilestones(project, openTask.milestoneId)}
           wipCount={inProgressCount(tasks, profile?.id ?? "", profile?.fullName ?? "")}
-          extra={
-            effectiveTaskType(openTask) === "client_review" ? (
-              <ClientReviewLinkOut
-                onOpenFiles={() => {
-                  setOpenTask(null);
-                  setTab("files");
-                }}
-              />
-            ) : undefined
-          }
+          extra={(() => {
+            const onOpenFiles = () => {
+              setOpenTask(null);
+              setTab("files");
+            };
+            if (effectiveTaskType(openTask) === "client_review") {
+              return <ClientReviewLinkOut onOpenFiles={onOpenFiles} />;
+            }
+            return (
+              taskContextExtra(
+                openTask,
+                effectiveTaskType(openTask),
+                project,
+                deliverables.filter((item) => item.projectId === project.id),
+                onOpenFiles,
+              ) ?? undefined
+            );
+          })()}
           onClose={() => {
             setOpenTask(null);
             setError(null);

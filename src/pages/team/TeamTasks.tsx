@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { MyTaskMobileList, MyTaskTable } from "@/components/admin/MyTaskList";
-import { ClientReviewLinkOut } from "@/components/tasks/TaskWorkspace";
+import { ClientReviewLinkOut, taskContextExtra } from "@/components/tasks/TaskWorkspace";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import { earlierOpenMilestones, taskPriorities, type AgencyTaskPriority } from "@/data/agencyProjects";
@@ -158,17 +158,25 @@ export function TeamTasks() {
             return project ? earlierOpenMilestones(project, openTask.milestoneId) : undefined;
           })()}
           wipCount={inProgressCount(tasks, profile?.id ?? "", profile?.fullName ?? "")}
-          extra={
-            effectiveTaskType(openTask) === "client_review" ? (
-              <ClientReviewLinkOut
-                onOpenFiles={() => {
-                  const projectId = openTask.projectId;
-                  setOpenTask(null);
-                  navigate(teamProjectHref(projectId, { tab: "files" }));
-                }}
-              />
-            ) : undefined
-          }
+          extra={(() => {
+            const onOpenFiles = () => {
+              const projectId = openTask.projectId;
+              setOpenTask(null);
+              navigate(teamProjectHref(projectId, { tab: "files" }));
+            };
+            if (effectiveTaskType(openTask) === "client_review") {
+              return <ClientReviewLinkOut onOpenFiles={onOpenFiles} />;
+            }
+            const project = myProjects.find((item) => item.id === openTask.projectId);
+            if (!project) return undefined;
+            return taskContextExtra(
+              openTask,
+              effectiveTaskType(openTask),
+              project,
+              deliverables.filter((item) => item.projectId === project.id),
+              onOpenFiles,
+            ) ?? undefined;
+          })()}
           onClose={() => {
             setOpenTask(null);
             setError(null);
