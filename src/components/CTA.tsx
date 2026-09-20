@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Button } from "@/components/Button";
 import { AnimateIn } from "@/components/AnimateIn";
 import { cn } from "@/lib/cn";
@@ -6,12 +7,15 @@ type CTAProps = {
   className?: string;
   title?: string;
   description?: string;
+  /** Optional secondary line under the button, e.g. a "questions? email us" link. */
+  secondary?: ReactNode;
 };
 
 export function CTA({
   className,
   title = "Ready to build a better website?",
   description = "Tell us about your business and let's create a website that helps you grow.",
+  secondary,
 }: CTAProps) {
   return (
     <section className={cn("relative py-20 md:py-28", className)} aria-labelledby="cta-heading">
@@ -44,6 +48,7 @@ export function CTA({
                   <span aria-hidden="true">→</span>
                 </Button>
               </div>
+              {secondary ? <p className="mt-5 text-sm text-muted">{secondary}</p> : null}
             </div>
           </div>
         </AnimateIn>

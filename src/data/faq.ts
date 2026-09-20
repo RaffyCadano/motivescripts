@@ -1,3 +1,5 @@
+import { websiteStartingPrice } from "@/data/pricing";
+
 export const faqs = [
   {
     question: "How long does a website take?",
@@ -7,7 +9,7 @@ export const faqs = [
   {
     question: "How much does a website cost?",
     answer:
-      "Every project is scoped and quoted individually based on pages, features, and requirements. See our pricing tiers for a starting point, or start a project and we'll put together a quote.",
+      `Websites start at ${websiteStartingPrice}. Every project is scoped and quoted individually based on pages, features, and requirements, so your final price reflects what you need. See our pricing page, or start a project and we'll put together a quote.`,
   },
   {
     question: "Do you provide hosting?",

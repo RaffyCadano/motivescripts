@@ -4,7 +4,9 @@ import { Button } from "@/components/Button";
 import { CTA } from "@/components/CTA";
 import { FaqItem } from "@/components/FaqItem";
 import { PageHero } from "@/components/PageHero";
-import { pricingTiers } from "@/data/pricing";
+import { TierPrice } from "@/components/TierPrice";
+import { commonAddOns, pricingTiers, websiteStartingPrice } from "@/data/pricing";
+import { site } from "@/data/site";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { cn } from "@/lib/cn";
 
@@ -14,6 +16,7 @@ const priceFactors = [
   "Custom functionality, like booking or e-commerce",
   "Integrations with other tools",
   "Amount of content to design around",
+  "Hosting setup, domain, or business email, if you need them",
 ];
 
 const quoteSteps = [
@@ -25,6 +28,25 @@ const quoteSteps = [
 ];
 
 const pricingFaqs = [
+  {
+    question: "How much does a website cost?",
+    answer: `Websites start at ${websiteStartingPrice}. That's a starting price, not a fixed one — your final quote reflects the pages, functionality, and integrations your project needs.`,
+  },
+  {
+    question: "Why does pricing vary?",
+    answer:
+      "Every website is scoped around your goals, content, functionality, and integrations. A simple site and one with booking, payments, or custom features are different amounts of work, so they're quoted differently.",
+  },
+  {
+    question: "Do you offer custom projects?",
+    answer:
+      "Yes. If you need something beyond a standard website — like e-commerce, customer login, or complex integrations — we'll scope it around your requirements and quote it individually.",
+  },
+  {
+    question: "Are hosting and domain costs included?",
+    answer:
+      "Not automatically. Hosting setup, domain registration, and business email are quoted as separate line items when your project needs them, so you can see exactly what each one costs in your proposal.",
+  },
   {
     question: "Do I need to know exactly what I need before contacting you?",
     answer:
@@ -47,8 +69,8 @@ const pricingFaqs = [
 
 export function PricingPage() {
   usePageMeta(
-    "Pricing — MotiveScripts",
-    "Engagement options for small-business websites, from a focused starter site to a custom build. Every project is scoped and quoted individually.",
+    "Website Pricing — MotiveScripts",
+    `Websites start at ${websiteStartingPrice}. Every project is scoped individually, and your final quote reflects your goals, content, and functionality.`,
     "/pricing",
   );
   return (
@@ -56,7 +78,7 @@ export function PricingPage() {
       <PageHero
         eyebrow="Pricing"
         title="Simple pricing for websites built around your business."
-        description="Every project is scoped around what your business actually needs, so you get a clear quote before development begins."
+        description={`Websites start at ${websiteStartingPrice}. Every project is scoped around what your business needs, so you get a clear quote before development begins.`}
       />
 
       <div className="container-wide py-16 md:py-24">
@@ -71,16 +93,15 @@ export function PricingPage() {
                     : "border-[var(--color-line)]",
                 )}
               >
-                {tier.highlighted ? (
+                {tier.badge ? (
                   <span className="absolute -top-3 left-7 rounded-full bg-[linear-gradient(135deg,#0050F0,#00A0FF)] px-3 py-1 font-heading text-[11px] font-bold uppercase tracking-[0.1em] text-white">
-                    Most popular
+                    {tier.badge}
                   </span>
                 ) : null}
                 <h2 className="text-2xl font-bold">{tier.name}</h2>
                 <p className="mt-3 text-muted">{tier.tagline}</p>
-                <p className="mt-6 font-heading text-xl font-semibold text-ink">{tier.price}</p>
-                <p className="mt-1 text-xs text-faint">Pricing based on your project's scope and requirements.</p>
-                <ul className="mt-6 space-y-3">
+                <TierPrice className="mt-6" lead={tier.priceLead} price={tier.price} note={tier.priceNote} />
+                <ul className="mt-6 flex-1 space-y-3 border-t border-[var(--color-line)] pt-6">
                   {tier.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2 text-sm text-muted-strong">
                       <span className="mt-2 size-1 shrink-0 rounded-full bg-cyan" aria-hidden="true" />
@@ -102,13 +123,40 @@ export function PricingPage() {
       </div>
 
       <div className="border-t border-[var(--color-line)]">
+        <div className="container-wide py-16 md:py-24">
+          <AnimateIn>
+            <section aria-labelledby="add-ons-heading">
+              <h2 id="add-ons-heading" className="text-2xl md:text-3xl">
+                Common add-ons.
+              </h2>
+              <p className="mt-4 max-w-2xl text-muted">
+                Some projects need more than the base website. These are a few examples of what can be added — they&apos;re
+                examples, not a price list. Add-ons are scoped and priced in your proposal.
+              </p>
+              <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {commonAddOns.map((item) => (
+                  <li
+                    key={item.name}
+                    className="rounded-[var(--radius-lg)] border border-[var(--color-line)] p-5"
+                  >
+                    <h3 className="text-base font-bold">{item.name}</h3>
+                    <p className="mt-2 text-sm text-muted">{item.description}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </AnimateIn>
+        </div>
+      </div>
+
+      <div className="border-t border-[var(--color-line)]">
         <div className="container-wide grid gap-16 py-16 md:py-24 lg:grid-cols-2 lg:gap-20">
           <AnimateIn>
             <section>
               <h2 className="text-2xl md:text-3xl">What determines the price?</h2>
               <p className="mt-4 text-muted">
-                Every business is different, so no two websites cost exactly the same. A few things shape the
-                scope and price of a project:
+                Every website is scoped around your goals, content, functionality, and integrations. Your final
+                proposal reflects the specific requirements of your project. A few things shape the scope and price:
               </p>
               <ul className="mt-6 space-y-3">
                 {priceFactors.map((factor) => (
@@ -193,6 +241,17 @@ export function PricingPage() {
       <CTA
         title="Ready to get a clear quote for your website?"
         description="Tell us about your business, your goals, and what you're looking to build."
+        secondary={
+          <>
+            Have questions first?{" "}
+            <a
+              href={`mailto:${site.email}`}
+              className="font-semibold text-ink underline-offset-4 transition-colors hover:text-blue hover:underline"
+            >
+              Email {site.email}
+            </a>
+          </>
+        }
       />
     </main>
   );

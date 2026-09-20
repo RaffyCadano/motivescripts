@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { SectionHeader } from "@/components/SectionHeader";
-import { pricingTiers } from "@/data/pricing";
+import { TierPrice } from "@/components/TierPrice";
+import { pricingTiers, websiteStartingPrice } from "@/data/pricing";
 import { cn } from "@/lib/cn";
 
 export function PricingSection() {
@@ -10,7 +11,7 @@ export function PricingSection() {
       <div className="container-wide">
         <AnimateIn>
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
-            <SectionHeader eyebrow="Pricing" title="Engagement options for every stage of growth." />
+            <SectionHeader eyebrow="Pricing" title={`Websites start at ${websiteStartingPrice}. Every project is scoped.`} />
             <Link
               to="/pricing"
               className="mt-1 inline-flex shrink-0 items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue sm:mt-11"
@@ -32,15 +33,14 @@ export function PricingSection() {
                     : "border-[var(--color-line)]",
                 )}
               >
-                {tier.highlighted ? (
+                {tier.badge ? (
                   <span className="absolute -top-3 left-6 rounded-full bg-[linear-gradient(135deg,#0050F0,#00A0FF)] px-3 py-1 font-heading text-[11px] font-bold uppercase tracking-[0.1em] text-white">
-                    Most popular
+                    {tier.badge}
                   </span>
                 ) : null}
                 <h3 className="text-xl font-bold">{tier.name}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted">{tier.tagline}</p>
-                <p className="mt-5 font-heading text-lg font-semibold text-ink">{tier.price}</p>
-                <p className="mt-1 text-xs text-faint">Pricing based on your project's scope and requirements.</p>
+                <TierPrice className="mt-5" lead={tier.priceLead} price={tier.price} note={tier.priceNote} />
                 <ul className="mt-5 space-y-2.5">
                   {tier.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2 text-sm text-muted-strong">
