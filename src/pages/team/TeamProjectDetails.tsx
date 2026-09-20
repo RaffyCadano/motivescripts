@@ -291,14 +291,24 @@ export function TeamProjectDetails() {
                       onClick={() => setTab(item.id)}
                       aria-current={tab === item.id ? "page" : undefined}
                       className={cn(
-                        "inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 font-heading text-[12px] font-semibold lg:w-full lg:rounded-lg lg:px-2.5 lg:py-2 lg:text-left lg:text-[13px]",
+                        "group flex shrink-0 items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium tracking-tight transition-colors duration-[var(--duration-fast)] lg:w-full lg:text-left",
                         tab === item.id
-                          ? "bg-[var(--admin-navy)] text-white"
-                          : "bg-white text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)] hover:bg-[var(--admin-hover)] lg:bg-transparent lg:ring-0",
+                          ? "bg-[var(--admin-hover)] text-[var(--admin-blue)]"
+                          : "text-[var(--admin-ink)]/75 hover:bg-[var(--admin-bg)] hover:text-[var(--admin-ink)]",
                       )}
                     >
-                      <Icon size={15} className="shrink-0" aria-hidden="true" />
-                      {item.label}
+                      <Icon
+                        size={18}
+                        strokeWidth={1.75}
+                        className={cn(
+                          "shrink-0",
+                          tab === item.id
+                            ? "text-[var(--admin-blue)]"
+                            : "text-[var(--admin-muted)] group-hover:text-[var(--admin-ink)]",
+                        )}
+                        aria-hidden="true"
+                      />
+                      <span className="truncate">{item.label}</span>
                     </button>
                   );
                 })}
