@@ -1459,6 +1459,14 @@ export type Database = {
         Args: { p_token: string };
         Returns: null;
       };
+      my_pending_invitation: {
+        Args: Record<string, never>;
+        Returns: { invite_kind: string; invite_label: string }[];
+      };
+      accept_my_pending_invitation: {
+        Args: Record<string, never>;
+        Returns: string;
+      };
       touch_staff_last_active: {
         Args: Record<string, never>;
         Returns: null;

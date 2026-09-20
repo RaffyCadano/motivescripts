@@ -234,12 +234,15 @@ async function revokeInvitation(admin: ServiceClient, invitationId: string | und
     return json({ ok: true, invitationId: data.id });
   }
 
-  const { error: updateError } = await admin
+  const { data: revoked, error: updateError } = await admin
     .from("staff_invitations")
     .update({ status: "revoked", revoked_at: new Date().toISOString() })
     .eq("id", invitationId)
-    .in("status", ["pending", "expired"]);
+    .in("status", ["pending", "expired"])
+    .select("id");
   if (updateError) throw new Error("server_error");
+  // Accepted between the read above and this update: report it instead of claiming success.
+  if (!revoked || revoked.length === 0) throw new Error("not_pending");
 
   return json({ ok: true, invitationId: data.id });
 }
@@ -276,10 +279,12 @@ async function sendOrResend(
     ? [...new Set(input.permissionCodes.map((code) => code.trim()).filter((code) => PERMISSION_PATTERN.test(code)))]
     : [];
 
+  // Exact match, not ilike: `_` and `%` in an address are LIKE wildcards, so
+  // `jo_hn@x.com` would also match `joXhn@x.com`. Emails are stored lowercased.
   const { data: existingProfile } = await admin
     .from("profiles")
     .select("id, role, client_id")
-    .ilike("email", email)
+    .eq("email", email)
     .limit(1)
     .maybeSingle();
 
@@ -293,28 +298,41 @@ async function sendOrResend(
       .select("is_active")
       .eq("user_id", existingProfile.id)
       .maybeSingle();
-    if (existingStaff?.is_active) throw new Error("already_staff");
+    // An admin with no staff_profiles row still counts as an active admin
+    // (is_admin() treats a missing row as active), so they must not be invitable.
+    if (existingStaff?.is_active || (existingProfile.role === "admin" && !existingStaff)) {
+      throw new Error("already_staff");
+    }
   }
 
   const { data: pending } = await admin
     .from("staff_invitations")
-    .select("id")
+    .select("id, expires_at")
     .eq("email", email)
     .eq("status", "pending")
     .maybeSingle();
 
-  if (pending && input.action === "send") {
+  // A pending row past its expiry is dead but keeps status='pending' (nothing flips it),
+  // and the unique index would otherwise make a plain "send" fail with pending_exists.
+  const pendingIsLive = Boolean(pending && new Date(pending.expires_at).getTime() > Date.now());
+  if (pending && pendingIsLive && input.action === "send") {
     throw new Error("pending_exists");
   }
+
+  // Everything that can fail cheaply runs BEFORE the still-valid invitation is
+  // replaced, so a failure here never leaves the invitee with no working link.
+  const origin = siteUrl();
+  if (!origin) throw new Error("missing_site_url");
+  await ensureAuthUser(admin, email, fullName);
 
   if (pending) {
     await admin.from("staff_invitations").update({ status: "expired" }).eq("id", pending.id);
   }
-
-  await ensureAuthUser(admin, email, fullName);
-
-  const origin = siteUrl();
-  if (!origin) throw new Error("missing_site_url");
+  const restorePrevious = async () => {
+    if (pending && pendingIsLive) {
+      await admin.from("staff_invitations").update({ status: "pending" }).eq("id", pending.id);
+    }
+  };
 
   const token = randomToken();
   const tokenHash = await sha256Hex(token);
@@ -328,6 +346,9 @@ async function sendOrResend(
       job_title: jobTitle,
       template_key: templateKey,
       permission_codes: permissionCodes,
+      // An explicit selection (even an empty one) must not silently fall back to the
+      // template's full default grants when the invite is accepted.
+      explicit_permissions: Array.isArray(input.permissionCodes),
       token_hash: tokenHash,
       status: "pending",
       expires_at: expiresAt,
@@ -335,7 +356,10 @@ async function sendOrResend(
     })
     .select("id")
     .single();
-  if (insertError || !created) throw new Error("server_error");
+  if (insertError || !created) {
+    await restorePrevious();
+    throw new Error("server_error");
+  }
 
   const inviteUrl = `${origin}/staff-invite/${token}`;
   const expiresLabel = new Date(expiresAt).toLocaleDateString("en-US", {
@@ -354,6 +378,7 @@ async function sendOrResend(
     });
   } catch {
     await admin.from("staff_invitations").update({ status: "expired" }).eq("id", created.id);
+    await restorePrevious();
     throw new Error("email_failed");
   }
 

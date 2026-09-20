@@ -90,6 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profileStatus, setProfileStatus] = useState<ProfileStatus>("idle");
   const [loading, setLoading] = useState(configured);
   const loadSeq = useRef(0);
+  const profileRef = useRef<AppProfile | null>(null);
+  profileRef.current = profile;
 
   useEffect(() => {
     const supabase = getSupabase();
@@ -111,15 +113,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setLoading(true);
-      setProfileStatus("loading");
+      // supabase-js re-emits SIGNED_IN on tab refocus and fires TOKEN_REFRESHED hourly.
+      // For the user already loaded, re-check the profile silently (so a deactivation is
+      // still picked up) instead of flipping to "loading", which made every guard unmount
+      // the whole workspace and drop unsaved form/upload state.
+      const sameUser = profileRef.current?.id === nextSession.user.id;
+      if (!sameUser) {
+        setLoading(true);
+        setProfileStatus("loading");
+      }
       void loadCurrentProfile(nextSession.user.id)
         .then((result) => {
           if (seq !== loadSeq.current) return;
           if (result.status === "ready") {
-            setProfile(result.profile);
+            setProfile((current) =>
+              current && JSON.stringify(current) === JSON.stringify(result.profile) ? current : result.profile,
+            );
             setProfileStatus("ready");
             markStaffActive(result.profile);
+          } else if (sameUser && result.status === "error") {
+            // A transient failure must not sign a working user out of the page.
           } else {
             setProfile(null);
             setProfileStatus(result.status);
@@ -127,6 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
         .catch(() => {
           if (seq !== loadSeq.current) return;
+          if (sameUser) return;
           setProfile(null);
           setProfileStatus("error");
         })

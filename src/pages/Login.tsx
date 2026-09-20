@@ -164,6 +164,19 @@ export function LoginPage() {
                   {status === "sending" ? "Sending link…" : status === "sent" ? "Link sent" : "Login"}
                 </Button>
 
+                {status === "sent" ? (
+                  <button
+                    type="button"
+                    className="mt-3 w-full text-center font-heading text-sm font-semibold text-ink underline-offset-2 hover:underline"
+                    onClick={(event) => {
+                      event.currentTarget.form?.reset();
+                      setStatus("idle");
+                    }}
+                  >
+                    Use a different email
+                  </button>
+                ) : null}
+
                 {user ? (
                   <button
                     type="button"

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
-import { prefillInviteEmail } from "@/data/invitation";
+import { normalizeInviteEmail, prefillInviteEmail } from "@/data/invitation";
 import type { AgencyClient } from "@/data/agencyClients";
 import { sendClientInvitation } from "@/data/invitationRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
@@ -64,7 +64,11 @@ export function InviteClientDialog({
       title={mode === "resend" ? "Resend invitation" : "Invite Client"}
       description={
         mode === "resend"
-          ? `Send a new invitation email for ${client.businessName}. The previous pending link will stop working.`
+          ? `Send a new invitation email for ${client.businessName}. ${
+              defaultEmail && normalizeInviteEmail(email) !== normalizeInviteEmail(defaultEmail)
+                ? "You changed the address, so the earlier invitation stays open until you revoke it."
+                : "The previous pending link will stop working."
+            }`
           : `Invite this person to the client portal for ${client.businessName}. They’ll receive a secure email link. After they accept, they fill out the scope form before you create a project.`
       }
       onClose={onClose}

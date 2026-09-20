@@ -285,7 +285,7 @@ export function StaffInviteAcceptPage() {
               ) : null}
 
               {screen === "accepted" && authenticated && isAgencyRole(profile?.role) ? (
-                <Button className="mt-8 w-full" size="lg" to="/admin">
+                <Button className="mt-8 w-full" size="lg" to={profile ? agencyHomePath(profile) : "/admin"}>
                   Open workspace
                 </Button>
               ) : null}

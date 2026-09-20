@@ -261,12 +261,15 @@ async function revokeInvitation(admin: ServiceClient, invitationId: string | und
     return json({ ok: true, invitationId: data.id });
   }
 
-  const { error: updateError } = await admin
+  const { data: revoked, error: updateError } = await admin
     .from("client_invitations")
     .update({ status: "revoked", revoked_at: new Date().toISOString() })
     .eq("id", invitationId)
-    .in("status", ["pending", "expired"]);
+    .in("status", ["pending", "expired"])
+    .select("id");
   if (updateError) throw new Error("server_error");
+  // Accepted between the read above and this update: report it instead of claiming success.
+  if (!revoked || revoked.length === 0) throw new Error("not_pending");
 
   await admin.rpc("append_client_staff_activity", {
     p_client_id: data.client_id,
@@ -298,10 +301,11 @@ async function sendOrResend(
     .maybeSingle();
   if (clientError || !client) throw new Error("client_not_found");
 
+  // Exact match, not ilike: `_` and `%` in an address are LIKE wildcards. Emails are stored lowercased.
   const { data: existingProfile } = await admin
     .from("profiles")
     .select("id, role, client_id")
-    .ilike("email", email)
+    .eq("email", email)
     .limit(1)
     .maybeSingle();
 
@@ -312,24 +316,33 @@ async function sendOrResend(
 
   const { data: pending } = await admin
     .from("client_invitations")
-    .select("id")
+    .select("id, expires_at")
     .eq("client_id", input.clientId)
     .eq("email", email)
     .eq("status", "pending")
     .maybeSingle();
 
-  if (pending && input.action === "send") {
+  // A pending row past its expiry is dead but keeps status='pending', and the unique
+  // (client_id, email) index would otherwise make a plain "send" fail with pending_exists.
+  const pendingIsLive = Boolean(pending && new Date(pending.expires_at).getTime() > Date.now());
+  if (pending && pendingIsLive && input.action === "send") {
     throw new Error("pending_exists");
   }
+
+  // Cheap failure points run BEFORE the still-valid invitation is replaced, so a failure
+  // never leaves the invitee with no working link.
+  const origin = siteUrl();
+  if (!origin) throw new Error("missing_site_url");
+  await ensureAuthUser(admin, email, fullName);
 
   if (pending) {
     await admin.from("client_invitations").update({ status: "expired" }).eq("id", pending.id);
   }
-
-  await ensureAuthUser(admin, email, fullName);
-
-  const origin = siteUrl();
-  if (!origin) throw new Error("missing_site_url");
+  const restorePrevious = async () => {
+    if (pending && pendingIsLive) {
+      await admin.from("client_invitations").update({ status: "pending" }).eq("id", pending.id);
+    }
+  };
 
   const token = randomToken();
   const tokenHash = await sha256Hex(token);
@@ -348,7 +361,10 @@ async function sendOrResend(
     })
     .select("id")
     .single();
-  if (insertError || !created) throw new Error("server_error");
+  if (insertError || !created) {
+    await restorePrevious();
+    throw new Error("server_error");
+  }
 
   const inviteUrl = `${origin}/invite/${token}`;
   const expiresLabel = new Date(expiresAt).toLocaleDateString("en-US", {
@@ -367,6 +383,7 @@ async function sendOrResend(
     });
   } catch {
     await admin.from("client_invitations").update({ status: "expired" }).eq("id", created.id);
+    await restorePrevious();
     throw new Error("email_failed");
   }
 

@@ -11,6 +11,9 @@ type AuthStatusScreenProps = {
   showLoginLink?: boolean;
   actionLabel?: string;
   onAction?: () => void;
+  actionBusy?: boolean;
+  secondaryLabel?: string;
+  onSecondary?: () => void;
   inSiteLayout?: boolean;
 };
 
@@ -22,6 +25,9 @@ export function AuthStatusScreen({
   showLoginLink = false,
   actionLabel,
   onAction,
+  actionBusy = false,
+  secondaryLabel,
+  onSecondary,
   inSiteLayout = false,
 }: AuthStatusScreenProps) {
   return (
@@ -88,8 +94,21 @@ export function AuthStatusScreen({
             ) : null}
 
             {actionLabel && onAction ? (
-              <Button type="button" className="mt-7 w-full" size="lg" onClick={onAction}>
+              <Button type="button" className="mt-7 w-full" size="lg" onClick={onAction} disabled={actionBusy}>
                 {actionLabel}
+              </Button>
+            ) : null}
+
+            {secondaryLabel && onSecondary ? (
+              <Button
+                type="button"
+                variant="secondary"
+                className="mt-3 w-full"
+                size="lg"
+                onClick={onSecondary}
+                disabled={actionBusy}
+              >
+                {secondaryLabel}
               </Button>
             ) : null}
 
