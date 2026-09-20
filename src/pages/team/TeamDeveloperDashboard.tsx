@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { firstNameFrom } from "@/auth/userDisplay";
-import { adminIcons } from "@/components/admin/adminIcons";
+import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
 import { MyTaskMobileList, MyTaskTable } from "@/components/admin/MyTaskList";
 import { MilestoneStatusBadge } from "@/components/admin/projects/MilestoneStatusBadge";
 import { ProgressBar } from "@/components/admin/ProgressBar";
 import { ClientReviewLinkOut, taskContextExtra } from "@/components/tasks/TaskWorkspace";
 import { AvailabilityDot } from "@/components/team/AvailabilityDot";
+import { HoursLineChart, TaskStatusBarChart } from "@/components/team/DashboardCharts";
 import { TeamEmptyState } from "@/components/team/TeamEmptyState";
 import { TeamProjectCard } from "@/components/team/TeamProjectCard";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
+import { buildCumulativeTrend } from "@/data/adminOverview";
 import { earlierOpenMilestones } from "@/data/agencyProjects";
 import { formatClientDate } from "@/data/agencyClients";
 import {
@@ -18,9 +20,11 @@ import {
   blockedTasks,
   developmentPhaseProgress,
   dueThisWeekTasks,
+  hoursByDay,
   hoursLoggedThisWeek,
   hoursLoggedToday,
   reviewTasks,
+  taskStatusCounts,
 } from "@/data/developerOverview";
 import { effectiveTaskType } from "@/data/taskTypes";
 import { checkpointApproved } from "@/data/productionWorkflow";
@@ -145,47 +149,16 @@ export function TeamDeveloperDashboard() {
       .slice(0, 5);
   }, [deliverables, myProjectIds]);
 
-  const kpis: {
-    id: string;
-    value: number;
-    label: string;
-    caption: string;
-    href: string;
-    icon: keyof typeof adminIcons;
-  }[] = [
-    {
-      id: "active",
-      value: active.length,
-      label: "Active Tasks",
-      caption: "tasks assigned",
-      href: "/team/tasks",
-      icon: "tasks",
-    },
-    {
-      id: "due-today",
-      value: dueToday.length,
-      label: "Due Today",
-      caption: "due today",
-      href: "#today-work",
-      icon: "time",
-    },
-    {
-      id: "review",
-      value: inReview.length,
-      label: "In Review",
-      caption: "waiting for review",
-      href: "/team/qa-review",
-      icon: "activity",
-    },
-    {
-      id: "blocked",
-      value: blocked.length,
-      label: "Blocked",
-      caption: "need your attention",
-      href: "/team/blocked",
-      icon: "blocked",
-    },
-  ];
+  // Each trend is a cumulative-by-day history of the same cohort as its stat,
+  // built from real task timestamps, so it always ends at the count shown.
+  const activeTrend = useMemo(() => buildCumulativeTrend(active.map((task) => ({ at: task.createdAt }))), [active]);
+  const reviewTrend = useMemo(() => buildCumulativeTrend(inReview.map((task) => ({ at: task.createdAt }))), [inReview]);
+  const blockedTrend = useMemo(() => buildCumulativeTrend(blocked.map((task) => ({ at: task.createdAt }))), [blocked]);
+
+  const dailyHours = useMemo(() => hoursByDay(timeEntries, 14), [timeEntries]);
+  const dailyHoursTotal = dailyHours.reduce((sum, day) => sum + day.hours, 0);
+  const statusCounts = useMemo(() => taskStatusCounts(tasks), [tasks]);
+  const totalTasks = statusCounts.reduce((sum, item) => sum + item.count, 0);
 
   async function onStatusChange(
     status: TeamWorkTask["status"],
@@ -226,40 +199,67 @@ export function TeamDeveloperDashboard() {
       </div>
 
       <section aria-label="Key metrics">
-        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-          {kpis.map((item) => {
-            const Icon = adminIcons[item.icon];
-            const cardClass =
-              "group block rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-4 py-4 transition-all hover:border-[var(--admin-blue)] hover:shadow-[0_2px_10px_rgb(7_17_31_/_0.06)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-blue)]";
-            const content = (
-              <>
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-muted)]">
-                    {item.label}
-                  </p>
-                  <Icon
-                    size={16}
-                    strokeWidth={2}
-                    className="shrink-0 text-[var(--admin-muted)] transition-colors group-hover:text-[var(--admin-blue)]"
-                    aria-hidden="true"
-                  />
-                </div>
-                <p className="mt-2 font-heading text-[2.25rem] leading-none font-bold tracking-tight text-[var(--admin-ink)]">
-                  {item.value}
-                </p>
-                <p className="mt-1.5 text-[12px] text-[var(--admin-muted)]">{item.caption}</p>
-              </>
-            );
-            return item.href.startsWith("#") ? (
-              <a key={item.id} href={item.href} className={cardClass}>
-                {content}
-              </a>
+        <AdminStatGrid columns={4}>
+          <AdminStatCard label="Active tasks" value={active.length} href="/team/tasks" trend={activeTrend} />
+          <AdminStatCard
+            label="Due today"
+            value={dueToday.length}
+            onClick={() => document.getElementById("today-work")?.scrollIntoView({ behavior: "smooth" })}
+          />
+          <AdminStatCard label="In review" value={inReview.length} href="/team/qa-review" trend={reviewTrend} />
+          <AdminStatCard
+            label="Blocked"
+            value={blocked.length}
+            href="/team/blocked"
+            trend={blockedTrend}
+            higherIsBetter={false}
+          />
+        </AdminStatGrid>
+      </section>
+
+      <section aria-label="Charts" className="grid items-start gap-3 lg:grid-cols-[1.65fr_1fr]">
+        <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-heading text-sm font-semibold tracking-tight">Hours logged</h2>
+              <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
+                {timeLoading ? "Loading…" : `${todayHours}h today · ${weekHours}h this week · last 14 days`}
+              </p>
+            </div>
+            <Link to="/team/time" className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
+              View time tracking
+            </Link>
+          </div>
+          <div className="mt-3">
+            {timeLoading ? (
+              <div className="h-44 animate-pulse rounded-[var(--admin-radius)] bg-[var(--admin-bg)]" />
+            ) : dailyHoursTotal === 0 ? (
+              <p className="py-12 text-center text-sm text-[var(--admin-muted)]">No hours logged in the last 14 days.</p>
             ) : (
-              <Link key={item.id} to={item.href} className={cardClass}>
-                {content}
-              </Link>
-            );
-          })}
+              <HoursLineChart data={dailyHours} />
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-heading text-sm font-semibold tracking-tight">Tasks by status</h2>
+              <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
+                {totalTasks} task{totalTasks === 1 ? "" : "s"} assigned to you
+              </p>
+            </div>
+            <Link to="/team/tasks" className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
+              View tasks
+            </Link>
+          </div>
+          <div className="mt-3">
+            {totalTasks === 0 ? (
+              <p className="py-12 text-center text-sm text-[var(--admin-muted)]">No tasks assigned to you yet.</p>
+            ) : (
+              <TaskStatusBarChart data={statusCounts} />
+            )}
+          </div>
         </div>
       </section>
 
@@ -499,23 +499,6 @@ export function TeamDeveloperDashboard() {
             Submit Work for Review
           </Link>
         </div>
-      </section>
-
-      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-heading text-sm font-semibold tracking-tight">Time Tracking</h2>
-          <Link to="/team/time" className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
-            View Time Tracking
-          </Link>
-        </div>
-        {timeLoading ? (
-          <p className="mt-3 text-sm text-[var(--admin-muted)]">Loading…</p>
-        ) : (
-          <p className="mt-3 text-sm text-[var(--admin-ink)]">
-            <span className="font-heading text-xl font-semibold">{todayHours}h</span>{" "}
-            <span className="text-[var(--admin-muted)]">logged today · {weekHours}h this week</span>
-          </p>
-        )}
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2">

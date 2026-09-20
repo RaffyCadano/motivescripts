@@ -132,6 +132,32 @@ export function hoursLoggedThisWeek(entries: TimeEntry[], now = new Date()): num
   );
 }
 
+export type DailyHours = { date: string; label: string; hours: number };
+
+/** Hours logged per local calendar day for the last `days` days, oldest first, ending today. Days with no entries are 0. */
+export function hoursByDay(entries: TimeEntry[], days = 14, now = new Date()): DailyHours[] {
+  const byDate = new Map<string, number>();
+  for (const entry of entries) byDate.set(entry.entryDate, (byDate.get(entry.entryDate) ?? 0) + entry.hours);
+
+  return Array.from({ length: days }, (_, index) => {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (days - 1 - index));
+    const date = isoDate(day);
+    return {
+      date,
+      label: day.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      hours: round2(byDate.get(date) ?? 0),
+    };
+  });
+}
+
+export type TaskStatusCount = { status: TeamWorkTask["status"]; count: number };
+
+/** Task count per status, in workflow order, including zero counts so the chart's categories stay stable. */
+export function taskStatusCounts(tasks: TeamWorkTask[]): TaskStatusCount[] {
+  const order: TeamWorkTask["status"][] = ["Todo", "In Progress", "In Review", "Blocked", "Completed"];
+  return order.map((status) => ({ status, count: tasks.filter((task) => task.status === status).length }));
+}
+
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
 }
