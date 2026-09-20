@@ -94,12 +94,13 @@ export type DeveloperDeploymentRow = {
   projectId: string;
   projectName: string;
   development: ProjectDevelopment;
+  project: AgencyProject;
 };
 
 export function developerDeploymentRows(projects: AgencyProject[]): DeveloperDeploymentRow[] {
   return projects
     .filter((project) => !project.archived)
-    .map((project) => ({ projectId: project.id, projectName: project.name, development: project.development }));
+    .map((project) => ({ projectId: project.id, projectName: project.name, development: project.development, project }));
 }
 
 function isoDate(date: Date): string {
@@ -169,7 +170,7 @@ export function hoursByProject(entries: TimeEntry[], nameOf: (projectId: string)
   ];
 }
 
-export type TaskStatusCount ={ status: TeamWorkTask["status"]; count: number };
+export type TaskStatusCount = { status: TeamWorkTask["status"]; count: number };
 
 /** Task count per status, in workflow order, including zero counts so the chart's categories stay stable. */
 export function taskStatusCounts(tasks: TeamWorkTask[]): TaskStatusCount[] {

@@ -81,6 +81,7 @@ import { ProcessPage } from "@/pages/Process";
 import { ServicesPage } from "@/pages/Services";
 import { TeamBlocked } from "@/pages/team/TeamBlocked";
 import { TeamDashboardHome } from "@/pages/team/TeamDashboardHome";
+import { TeamDeploymentDetail } from "@/pages/team/TeamDeploymentDetail";
 import { TeamDeployments } from "@/pages/team/TeamDeployments";
 import { TeamFiles } from "@/pages/team/TeamFiles";
 import { TeamMessages } from "@/pages/team/TeamMessages";
@@ -185,6 +186,7 @@ export default function App() {
               <Route path="needs-changes" element={<TeamNeedsChanges />} />
               <Route path="blocked" element={<TeamBlocked />} />
               <Route path="deployments" element={<TeamDeployments />} />
+              <Route path="deployments/:id" element={<TeamDeploymentDetail />} />
             </Route>
             <Route path="messages" element={<TeamMessages />} />
             <Route path="messages/:conversationId" element={<TeamMessages />} />

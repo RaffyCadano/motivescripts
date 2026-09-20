@@ -73,6 +73,10 @@ export function teamProjectHref(projectId: string, options?: { tab?: string; fil
   return buildProjectHref("/team/projects", projectId, options);
 }
 
+export function teamDeploymentHref(projectId: string): string {
+  return `/team/deployments/${encodeURIComponent(projectId)}`;
+}
+
 export function adminProjectHref(projectId: string, options?: { tab?: string; file?: string }): string {
   return buildProjectHref("/admin/projects", projectId, options);
 }

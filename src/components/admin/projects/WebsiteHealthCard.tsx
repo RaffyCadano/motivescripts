@@ -5,6 +5,7 @@ import {
   formatCheckIssue,
   formatHealthRelativeTime,
   lastSuccessfulCheck,
+  websiteHealthEnvironmentLabel,
   websiteHealthStateLabel,
   type WebsiteHealthCheck,
   type WebsiteHealthEnvironment,
@@ -22,7 +23,7 @@ const stateTone: Record<WebsiteHealthState, string> = {
   unknown: "bg-[var(--admin-bg)] text-[var(--admin-muted)]",
 };
 
-function HealthStateBadge({ state }: { state: WebsiteHealthState }) {
+export function HealthStateBadge({ state }: { state: WebsiteHealthState }) {
   return (
     <span
       className={cn(
@@ -36,11 +37,19 @@ function HealthStateBadge({ state }: { state: WebsiteHealthState }) {
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, href }: { label: string; value: string; href?: string | null }) {
   return (
     <div>
       <dt className="text-[12px] text-[var(--admin-muted)]">{label}</dt>
-      <dd className="mt-1 font-heading text-sm font-semibold text-[var(--admin-ink)]">{value}</dd>
+      <dd className="mt-1 break-all font-heading text-sm font-semibold text-[var(--admin-ink)]">
+        {href ? (
+          <a href={href} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--admin-blue)] hover:underline">
+            {value}
+          </a>
+        ) : (
+          value
+        )}
+      </dd>
     </div>
   );
 }
@@ -75,12 +84,23 @@ type WebsiteHealthCardProps = {
   productionUrl: string;
   stagingUrl?: string;
   canCheckNow: boolean;
+  /** Pin the card to one environment: hides the Production/Staging toggle and titles the card after it. */
+  fixedEnvironment?: WebsiteHealthEnvironment;
+  /** Called with the latest known state whenever the loaded checks change (including after Check Now). */
+  onStateChange?: (environment: WebsiteHealthEnvironment, state: WebsiteHealthState) => void;
 };
 
-export function WebsiteHealthCard({ projectId, productionUrl, stagingUrl = "", canCheckNow }: WebsiteHealthCardProps) {
+export function WebsiteHealthCard({
+  projectId,
+  productionUrl,
+  stagingUrl = "",
+  canCheckNow,
+  fixedEnvironment,
+  onStateChange,
+}: WebsiteHealthCardProps) {
   const productionHref = safeHttpHref(productionUrl);
   const stagingHref = safeHttpHref(stagingUrl);
-  const [environment, setEnvironment] = useState<WebsiteHealthEnvironment>("production");
+  const [environment, setEnvironment] = useState<WebsiteHealthEnvironment>(fixedEnvironment ?? "production");
   const activeHref = environment === "staging" ? stagingHref : productionHref;
 
   const [checks, setChecks] = useState<WebsiteHealthCheck[]>([]);
@@ -127,13 +147,19 @@ export function WebsiteHealthCard({ projectId, productionUrl, stagingUrl = "", c
   }
 
   const state = currentHealthState(checks);
+  useEffect(() => {
+    if (!loading && !loadError) onStateChange?.(environment, state);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, loadError, environment, state]);
   const latest = checks[0] ?? null;
   const lastSuccess = lastSuccessfulCheck(checks);
 
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Website Health</h2>
+        <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
+          {fixedEnvironment ? `${websiteHealthEnvironmentLabel(fixedEnvironment)} health` : "Website Health"}
+        </h2>
         {canCheckNow && activeHref ? (
           <button
             type="button"
@@ -146,7 +172,7 @@ export function WebsiteHealthCard({ projectId, productionUrl, stagingUrl = "", c
         ) : null}
       </div>
 
-      {stagingHref ? (
+      {stagingHref && !fixedEnvironment ? (
         <div className="mt-3 inline-flex rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] p-0.5">
           {(["production", "staging"] as const).map((env) => (
             <button
@@ -183,7 +209,7 @@ export function WebsiteHealthCard({ projectId, productionUrl, stagingUrl = "", c
           {checkError ? <p className="mt-3 text-sm text-[#b42318]">{checkError}</p> : null}
 
           <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Row label={environment === "staging" ? "Staging" : "Production"} value={displayHttpHost(activeHref)} />
+            <Row label={environment === "staging" ? "Staging" : "Production"} value={displayHttpHost(activeHref)} href={activeHref} />
             {state === "healthy" ? (
               <>
                 <Row label="HTTP Status" value={latest?.httpStatus ? String(latest.httpStatus) : "—"} />

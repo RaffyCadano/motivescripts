@@ -65,13 +65,14 @@ export async function fetchWebsiteHealthHistory(
  */
 export async function fetchLatestWebsiteHealthByProject(
   projectIds: string[],
+  environment: WebsiteHealthEnvironment = "production",
 ): Promise<Map<string, WebsiteHealthCheck>> {
   const result = new Map<string, WebsiteHealthCheck>();
   if (projectIds.length === 0) return result;
   const client = db();
   const { data, error } = await client.rpc("latest_website_health_checks", {
     p_project_ids: projectIds,
-    p_environment: "production",
+    p_environment: environment,
   });
   if (error) fail("load website health", error, "Unable to load website health.");
   for (const row of (data ?? []) as WebsiteHealthCheckRow[]) {
