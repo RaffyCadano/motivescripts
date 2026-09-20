@@ -84,7 +84,11 @@ export function PricingPage() {
       <div className="container-wide py-16 md:py-24">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {pricingTiers.map((tier, index) => (
-            <AnimateIn key={tier.id} className="flex h-full" delay={index * 80}>
+            <AnimateIn
+              key={tier.id}
+              className={cn("flex h-full", index === pricingTiers.length - 1 && "sm:col-span-2 lg:col-span-1")}
+              delay={index * 80}
+            >
               <article
                 className={cn(
                   "relative flex h-full w-full flex-col rounded-[var(--radius-lg)] border p-7 md:p-8",
@@ -99,7 +103,7 @@ export function PricingPage() {
                   </span>
                 ) : null}
                 <h2 className="text-2xl font-bold">{tier.name}</h2>
-                <p className="mt-3 text-muted">{tier.tagline}</p>
+                <p className="mt-3 text-muted sm:min-h-[3.3rem]">{tier.tagline}</p>
                 <TierPrice className="mt-6" lead={tier.priceLead} price={tier.price} note={tier.priceNote} />
                 <ul className="mt-6 flex-1 space-y-3 border-t border-[var(--color-line)] pt-6">
                   {tier.features.map((feature) => (

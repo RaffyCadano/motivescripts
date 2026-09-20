@@ -32,7 +32,7 @@ export const pricingTiers = [
     id: "growth",
     name: "Growth",
     tagline: "For projects that need more pages or added functionality.",
-    priceLead: null,
+    priceLead: "Pricing",
     price: "Quoted to scope",
     priceNote: "Built on the base website, with the extra scope priced in your proposal.",
     features: [
@@ -48,7 +48,7 @@ export const pricingTiers = [
     id: "custom",
     name: "Custom",
     tagline: "For requirements outside the standard website.",
-    priceLead: null,
+    priceLead: "Pricing",
     price: "Custom quote",
     priceNote: "Scoped and quoted around your exact requirements.",
     features: [

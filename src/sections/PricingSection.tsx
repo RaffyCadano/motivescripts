@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
+import { Button } from "@/components/Button";
 import { SectionHeader } from "@/components/SectionHeader";
 import { TierPrice } from "@/components/TierPrice";
 import { pricingTiers, websiteStartingPrice } from "@/data/pricing";
@@ -24,7 +25,11 @@ export function PricingSection() {
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
           {pricingTiers.map((tier, index) => (
-            <AnimateIn key={tier.id} className="flex h-full" delay={index * 70}>
+            <AnimateIn
+              key={tier.id}
+              className={cn("flex h-full", index === pricingTiers.length - 1 && "sm:col-span-2 lg:col-span-1")}
+              delay={index * 70}
+            >
               <article
                 className={cn(
                   "relative flex h-full w-full flex-col rounded-[var(--radius-lg)] border p-6 md:p-7",
@@ -39,9 +44,9 @@ export function PricingSection() {
                   </span>
                 ) : null}
                 <h3 className="text-xl font-bold">{tier.name}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">{tier.tagline}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted sm:min-h-[2.9rem]">{tier.tagline}</p>
                 <TierPrice className="mt-5" lead={tier.priceLead} price={tier.price} note={tier.priceNote} />
-                <ul className="mt-5 space-y-2.5">
+                <ul className="mt-5 flex-1 space-y-2.5 border-t border-[var(--color-line)] pt-5">
                   {tier.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2 text-sm text-muted-strong">
                       <span className="mt-2 size-1 shrink-0 rounded-full bg-cyan" aria-hidden="true" />
@@ -49,6 +54,9 @@ export function PricingSection() {
                     </li>
                   ))}
                 </ul>
+                <Button to="/start-a-project" className="mt-7" variant={tier.highlighted ? "primary" : "secondary"}>
+                  Start a Project
+                </Button>
               </article>
             </AnimateIn>
           ))}
