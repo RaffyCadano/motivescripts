@@ -256,112 +256,121 @@ export function TeamProjectDetails() {
         </section>
       ) : null}
 
-      <nav aria-label="Project sections" className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
-        {visibleTabs.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setTab(item.id)}
-            className={cn(
-              "shrink-0 rounded-full px-3 py-1.5 font-heading text-[12px] font-semibold",
-              tab === item.id
-                ? "bg-[var(--admin-navy)] text-white"
-                : "bg-white text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)] hover:bg-[var(--admin-hover)]",
-            )}
-          >
-            {item.label}
-          </button>
-        ))}
-      </nav>
+      <div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start">
+        <nav
+          aria-label="Project sections"
+          className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:sticky lg:top-4 lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-[var(--admin-radius)] lg:border lg:border-[var(--admin-line)] lg:bg-[var(--admin-card)] lg:p-2"
+        >
+          {visibleTabs.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setTab(item.id)}
+              aria-current={tab === item.id ? "page" : undefined}
+              className={cn(
+                "shrink-0 rounded-full px-3 py-1.5 font-heading text-[12px] font-semibold lg:w-full lg:rounded-lg lg:px-3 lg:py-2 lg:text-left lg:text-[13px]",
+                tab === item.id
+                  ? "bg-[var(--admin-navy)] text-white"
+                  : "bg-white text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)] hover:bg-[var(--admin-hover)] lg:bg-transparent lg:ring-0",
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
 
-      {tab === "overview" ? (
-        <TeamProjectOverview
-          project={project}
-          clientName={client?.businessName ?? "Not set"}
-          work={work}
-          milestone={milestone}
-          nextMilestone={nextMilestone}
-          myOpen={myOpen}
-          canManageDomainHosting={canCoordinateAssignedWork(profile)}
-          canCheckWebsiteHealth={hasPermission(profile, "projects.manage")}
-          onOpenTasks={() => setTab("tasks")}
-          onDevelopmentSaved={reload}
-        />
-      ) : null}
-      {tab === "tasks" && !openTask ? (
-        <TeamProjectTasks
-          project={project}
-          userId={profile?.id ?? ""}
-          fullName={profile?.fullName ?? ""}
-          onOpenTask={setOpenTask}
-        />
-      ) : null}
-      {tab === "milestones" ? <ProjectMilestonesPanel project={project} /> : null}
-      {tab === "files" ? (
-        <ProjectFilesPanel
-          project={project}
-          selectedId={selectedFileId}
-          onSelect={setSelectedFile}
-          breadcrumbItems={filesBreadcrumb}
-        />
-      ) : null}
-      {tab === "time" ? <ProjectTimePanel project={project} /> : null}
-      {tab === "feedback" ? <ProjectFeedbackPanel project={project} fileHref={fileHref} /> : null}
-      {tab === "approvals" ? <ProjectApprovalsPanel project={project} fileHref={fileHref} /> : null}
-      {tab === "activity" ? <ProjectActivityPanel project={project} /> : null}
+        <div className="min-w-0 space-y-6">
 
-      {openTask ? (
-        <TeamTaskDetail
-          task={openTask}
-          files={deliverables.filter((item) => item.projectId === openTask.projectId)}
-          variant="page"
-          breadcrumb={
-            <Breadcrumbs
-              items={[
-                { label: "My Projects", href: "/team/projects" },
-                { label: project.name, href: `/team/projects/${project.id}` },
-                { label: openTask.title },
-              ]}
+          {tab === "overview" ? (
+            <TeamProjectOverview
+              project={project}
+              clientName={client?.businessName ?? "Not set"}
+              work={work}
+              milestone={milestone}
+              nextMilestone={nextMilestone}
+              myOpen={myOpen}
+              canManageDomainHosting={canCoordinateAssignedWork(profile)}
+              canCheckWebsiteHealth={hasPermission(profile, "projects.manage")}
+              onOpenTasks={() => setTab("tasks")}
+              onDevelopmentSaved={reload}
             />
-          }
-          canUpdateStatus={Boolean(
-            profile?.id &&
-              (openTask.assignedTo === profile.id ||
-                (!openTask.assignedTo &&
-                  profile.fullName.trim() &&
-                  openTask.assignee.trim().toLowerCase() === profile.fullName.trim().toLowerCase())),
-          )}
-          busy={busy}
-          error={error}
-          earlierOpen={earlierOpenMilestones(project, openTask.milestoneId)}
-          wipCount={inProgressCount(tasks, profile?.id ?? "", profile?.fullName ?? "")}
-          extra={(() => {
-            const onOpenFiles = () => {
-              setOpenTask(null);
-              setTab("files");
-            };
-            if (effectiveTaskType(openTask) === "client_review") {
-              return <ClientReviewLinkOut onOpenFiles={onOpenFiles} />;
-            }
-            return (
-              taskContextExtra(
-                openTask,
-                effectiveTaskType(openTask),
-                project,
-                deliverables.filter((item) => item.projectId === project.id),
-                onOpenFiles,
-              ) ?? undefined
-            );
-          })()}
-          onClose={() => {
-            setOpenTask(null);
-            setError(null);
-          }}
-          onStatusChange={(status, blockedReason, qaResult, qaFailNote) =>
-            void onStatusChange(status, blockedReason, qaResult, qaFailNote)
-          }
-        />
-      ) : null}
+          ) : null}
+          {tab === "tasks" && !openTask ? (
+            <TeamProjectTasks
+              project={project}
+              userId={profile?.id ?? ""}
+              fullName={profile?.fullName ?? ""}
+              onOpenTask={setOpenTask}
+            />
+          ) : null}
+          {tab === "milestones" ? <ProjectMilestonesPanel project={project} /> : null}
+          {tab === "files" ? (
+            <ProjectFilesPanel
+              project={project}
+              selectedId={selectedFileId}
+              onSelect={setSelectedFile}
+              breadcrumbItems={filesBreadcrumb}
+            />
+          ) : null}
+          {tab === "time" ? <ProjectTimePanel project={project} /> : null}
+          {tab === "feedback" ? <ProjectFeedbackPanel project={project} fileHref={fileHref} /> : null}
+          {tab === "approvals" ? <ProjectApprovalsPanel project={project} fileHref={fileHref} /> : null}
+          {tab === "activity" ? <ProjectActivityPanel project={project} /> : null}
+
+          {openTask ? (
+            <TeamTaskDetail
+              task={openTask}
+              files={deliverables.filter((item) => item.projectId === openTask.projectId)}
+              variant="page"
+              breadcrumb={
+                <Breadcrumbs
+                  items={[
+                    { label: "My Projects", href: "/team/projects" },
+                    { label: project.name, href: `/team/projects/${project.id}` },
+                    { label: openTask.title },
+                  ]}
+                />
+              }
+              canUpdateStatus={Boolean(
+                profile?.id &&
+                  (openTask.assignedTo === profile.id ||
+                    (!openTask.assignedTo &&
+                      profile.fullName.trim() &&
+                      openTask.assignee.trim().toLowerCase() === profile.fullName.trim().toLowerCase())),
+              )}
+              busy={busy}
+              error={error}
+              earlierOpen={earlierOpenMilestones(project, openTask.milestoneId)}
+              wipCount={inProgressCount(tasks, profile?.id ?? "", profile?.fullName ?? "")}
+              extra={(() => {
+                const onOpenFiles = () => {
+                  setOpenTask(null);
+                  setTab("files");
+                };
+                if (effectiveTaskType(openTask) === "client_review") {
+                  return <ClientReviewLinkOut onOpenFiles={onOpenFiles} />;
+                }
+                return (
+                  taskContextExtra(
+                    openTask,
+                    effectiveTaskType(openTask),
+                    project,
+                    deliverables.filter((item) => item.projectId === project.id),
+                    onOpenFiles,
+                  ) ?? undefined
+                );
+              })()}
+              onClose={() => {
+                setOpenTask(null);
+                setError(null);
+              }}
+              onStatusChange={(status, blockedReason, qaResult, qaFailNote) =>
+                void onStatusChange(status, blockedReason, qaResult, qaFailNote)
+              }
+            />
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
