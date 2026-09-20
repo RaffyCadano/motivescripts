@@ -113,51 +113,17 @@ export function TeamDeployments() {
           {visible.length === 0 ? (
             <TeamEmptyState title="No deployments match your filters." body="Try a different search term or status." />
           ) : (
-            <>
-              {/* Wide layout: table. Below lg it collapses to cards, so nothing needs horizontal scrolling. */}
-              <div className="hidden overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] lg:block">
-                <table className="w-full min-w-[1000px] text-left text-sm">
-                  <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
-                    <tr>
-                      <th className="px-4 py-3 font-heading">Project</th>
-                      <th className="px-4 py-3 font-heading">Status</th>
-                      <th className="px-4 py-3 font-heading">Staging</th>
-                      <th className="px-4 py-3 font-heading">Production</th>
-                      <th className="px-4 py-3 font-heading">Source</th>
-                      <th className="px-4 py-3 font-heading">Hosting &amp; domain</th>
-                      <th className="px-4 py-3 font-heading">Launch</th>
-                      <th className="px-4 py-3 font-heading">Last deployed</th>
-                      <th className="px-4 py-3 font-heading">
-                        <span className="sr-only">Actions</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--admin-line)]">
-                    {visible.map((row) => (
-                      <DeploymentTableRow
-                        key={row.projectId}
-                        row={row}
-                        health={health}
-                        healthLoaded={healthLoaded}
-                        deliverables={deliverables}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="grid gap-3 lg:hidden">
-                {visible.map((row) => (
-                  <DeploymentCard
-                    key={row.projectId}
-                    row={row}
-                    health={health}
-                    healthLoaded={healthLoaded}
-                    deliverables={deliverables}
-                  />
-                ))}
-              </div>
-            </>
+            <div className="grid gap-3 lg:grid-cols-2">
+              {visible.map((row) => (
+                <DeploymentCard
+                  key={row.projectId}
+                  row={row}
+                  health={health}
+                  healthLoaded={healthLoaded}
+                  deliverables={deliverables}
+                />
+              ))}
+            </div>
           )}
         </>
       )}
@@ -289,48 +255,6 @@ function LaunchCell({ row, deliverables }: { row: DeveloperDeploymentRow; delive
     >
       {counts.met} of {counts.total} gates
     </Link>
-  );
-}
-
-function DeploymentTableRow({ row, health, healthLoaded, deliverables }: RowProps) {
-  const { development } = row;
-  return (
-    <tr className="align-top hover:bg-[var(--admin-bg)]">
-      <td className="px-4 py-3">
-        <Link
-          to={teamDeploymentHref(row.projectId)}
-          className="font-medium text-[var(--admin-ink)] hover:text-[var(--admin-blue)] hover:underline"
-        >
-          {row.projectName}
-        </Link>
-      </td>
-      <td className="px-4 py-3">
-        <DeploymentStatusBadge status={development.deploymentStatus} />
-      </td>
-      <td className="px-4 py-3">
-        <EnvironmentCell url={development.stagingUrl} check={health.staging.get(row.projectId)} healthLoaded={healthLoaded} />
-      </td>
-      <td className="px-4 py-3">
-        <EnvironmentCell
-          url={development.productionUrl}
-          check={health.production.get(row.projectId)}
-          healthLoaded={healthLoaded}
-        />
-      </td>
-      <td className="px-4 py-3">
-        <SourceCell row={row} />
-      </td>
-      <td className="px-4 py-3">
-        <HostingDomainCell row={row} />
-      </td>
-      <td className="px-4 py-3">
-        <LaunchCell row={row} deliverables={deliverables} />
-      </td>
-      <td className="px-4 py-3 text-[var(--admin-muted)]">{formatDeploymentWhen(development.lastDeployedAt)}</td>
-      <td className="px-4 py-3">
-        <AdminActionsMenu ariaLabel={`Actions for ${row.projectName}`} iconOnly items={actionItems(row)} />
-      </td>
-    </tr>
   );
 }
 
