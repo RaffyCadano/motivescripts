@@ -1,4 +1,15 @@
 import { useState } from "react";
+import {
+  Activity,
+  BadgeCheck,
+  Clock,
+  FolderOpen,
+  LayoutDashboard,
+  ListChecks,
+  MessageSquare,
+  Flag,
+  type LucideIcon,
+} from "lucide-react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { canCoordinateAssignedWork, hasPermission, type StaffPermissionCode } from "@/auth/permissions";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
@@ -52,15 +63,17 @@ import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
 
 const tabs = [
-  { id: "overview", label: "Overview" },
-  { id: "tasks", label: "Tasks" },
-  { id: "milestones", label: "Milestones" },
-  { id: "files", label: "Files", permission: "files.view" },
-  { id: "time", label: "Time" },
-  { id: "feedback", label: "Feedback", permission: "files.view" },
-  { id: "approvals", label: "Approvals", permission: "files.view" },
-  { id: "activity", label: "Activity", permission: "activity.view" },
-] as const;
+  { id: "overview", label: "Overview", group: "Main", icon: LayoutDashboard },
+  { id: "tasks", label: "Tasks", group: "Main", icon: ListChecks },
+  { id: "activity", label: "Activity", group: "Main", icon: Activity, permission: "activity.view" },
+  { id: "milestones", label: "Milestones", group: "Delivery", icon: Flag },
+  { id: "files", label: "Files", group: "Delivery", icon: FolderOpen, permission: "files.view" },
+  { id: "time", label: "Time", group: "Delivery", icon: Clock },
+  { id: "feedback", label: "Feedback", group: "Communication", icon: MessageSquare, permission: "files.view" },
+  { id: "approvals", label: "Approvals", group: "Communication", icon: BadgeCheck, permission: "files.view" },
+] as const satisfies ReadonlyArray<{ id: string; label: string; group: string; icon: LucideIcon; permission?: string }>;
+
+const tabGroups = ["Main", "Delivery", "Communication"] as const;
 
 type TabId = (typeof tabs)[number]["id"];
 
@@ -259,24 +272,39 @@ export function TeamProjectDetails() {
       <div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start">
         <nav
           aria-label="Project sections"
-          className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:sticky lg:top-4 lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-[var(--admin-radius)] lg:border lg:border-[var(--admin-line)] lg:bg-[var(--admin-card)] lg:p-2"
+          className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:sticky lg:top-4 lg:mx-0 lg:flex-col lg:gap-4 lg:overflow-visible lg:rounded-[var(--admin-radius)] lg:border lg:border-[var(--admin-line)] lg:bg-[var(--admin-card)] lg:p-3"
         >
-          {visibleTabs.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setTab(item.id)}
-              aria-current={tab === item.id ? "page" : undefined}
-              className={cn(
-                "shrink-0 rounded-full px-3 py-1.5 font-heading text-[12px] font-semibold lg:w-full lg:rounded-lg lg:px-3 lg:py-2 lg:text-left lg:text-[13px]",
-                tab === item.id
-                  ? "bg-[var(--admin-navy)] text-white"
-                  : "bg-white text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)] hover:bg-[var(--admin-hover)] lg:bg-transparent lg:ring-0",
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
+          {tabGroups.map((group) => {
+            const items = visibleTabs.filter((item) => item.group === group);
+            if (items.length === 0) return null;
+            return (
+              <div key={group} className="flex gap-1 lg:flex-col lg:gap-0.5">
+                <p className="hidden px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)] lg:block">
+                  {group}
+                </p>
+                {items.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setTab(item.id)}
+                      aria-current={tab === item.id ? "page" : undefined}
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-2 rounded-full px-3 py-1.5 font-heading text-[12px] font-semibold lg:w-full lg:rounded-lg lg:px-2.5 lg:py-2 lg:text-left lg:text-[13px]",
+                        tab === item.id
+                          ? "bg-[var(--admin-navy)] text-white"
+                          : "bg-white text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)] hover:bg-[var(--admin-hover)] lg:bg-transparent lg:ring-0",
+                      )}
+                    >
+                      <Icon size={15} className="shrink-0" aria-hidden="true" />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="min-w-0 space-y-6">
