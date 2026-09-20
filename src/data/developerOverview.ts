@@ -150,7 +150,26 @@ export function hoursByDay(entries: TimeEntry[], days = 14, now = new Date()): D
   });
 }
 
-export type TaskStatusCount = { status: TeamWorkTask["status"]; count: number };
+export type ProjectHours = { projectId: string; name: string; hours: number };
+
+/** Total hours per project, largest first. Anything beyond `limit` rows is folded into one "Other projects" row. */
+export function hoursByProject(entries: TimeEntry[], nameOf: (projectId: string) => string, limit = 6): ProjectHours[] {
+  const totals = new Map<string, number>();
+  for (const entry of entries) totals.set(entry.projectId, (totals.get(entry.projectId) ?? 0) + entry.hours);
+
+  const rows = [...totals.entries()]
+    .map(([projectId, hours]) => ({ projectId, name: nameOf(projectId), hours: round2(hours) }))
+    .sort((a, b) => b.hours - a.hours);
+  if (rows.length <= limit) return rows;
+
+  const rest = rows.slice(limit - 1);
+  return [
+    ...rows.slice(0, limit - 1),
+    { projectId: "other", name: "Other projects", hours: round2(rest.reduce((sum, row) => sum + row.hours, 0)) },
+  ];
+}
+
+export type TaskStatusCount ={ status: TeamWorkTask["status"]; count: number };
 
 /** Task count per status, in workflow order, including zero counts so the chart's categories stay stable. */
 export function taskStatusCounts(tasks: TeamWorkTask[]): TaskStatusCount[] {

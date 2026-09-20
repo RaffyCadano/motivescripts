@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { HoursByProjectChart, HoursLineChart } from "@/components/team/DashboardCharts";
 import { useTeamWork } from "@/components/team/useTeamWork";
+import { hoursByDay, hoursByProject } from "@/data/developerOverview";
 import { formatProjectDay } from "@/data/agencyProjects";
 import { formatUsdFromCents } from "@/data/money";
 import { listPayrollPayments, listStaffPayRates } from "@/data/payrollRepository";
@@ -89,6 +91,10 @@ export function TeamTime() {
   }, [entries]);
   const weekChartTotal = weekChart.reduce((sum, day) => sum + day.hours, 0);
   const weekChartMax = Math.max(1, ...weekChart.map((day) => day.hours));
+
+  const last30Days = useMemo(() => hoursByDay(entries, 30), [entries]);
+  const last30Total = Math.round(last30Days.reduce((sum, day) => sum + day.hours, 0) * 100) / 100;
+  const projectHours = useMemo(() => hoursByProject(entries, projectName), [entries, projectName]);
 
   const filteredPayments = useMemo(() => {
     const needle = paymentSearch.trim().toLowerCase();
@@ -209,6 +215,36 @@ export function TeamTime() {
             ))}
           </div>
         )}
+      </section>
+
+      <section aria-label="Charts" className="grid items-start gap-3 lg:grid-cols-[1.65fr_1fr]">
+        <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Last 30 days</h2>
+          <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">{last30Total}h total, shown per day</p>
+          <div className="mt-3">
+            {loading ? (
+              <div className="h-44 animate-pulse rounded-[var(--admin-radius)] bg-[var(--admin-bg)]" />
+            ) : last30Total === 0 ? (
+              <p className="py-12 text-center text-sm text-[var(--admin-muted)]">No hours logged in the last 30 days.</p>
+            ) : (
+              <HoursLineChart data={last30Days} />
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+          <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Hours by project</h2>
+          <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">All time</p>
+          <div className="mt-3">
+            {loading ? (
+              <div className="h-44 animate-pulse rounded-[var(--admin-radius)] bg-[var(--admin-bg)]" />
+            ) : projectHours.length === 0 ? (
+              <p className="py-12 text-center text-sm text-[var(--admin-muted)]">No hours logged yet.</p>
+            ) : (
+              <HoursByProjectChart data={projectHours} />
+            )}
+          </div>
+        </div>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">

@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
-import type { DailyHours, TaskStatusCount } from "@/data/developerOverview";
+import type { DailyHours, ProjectHours, TaskStatusCount } from "@/data/developerOverview";
 
 // Fixed on-screen pixel sizes for chart text. The <svg>s scale a fixed viewBox
 // to the card's width, so plain SVG font sizes would grow and shrink with the
@@ -79,6 +79,7 @@ export function HoursLineChart({ data }: { data: DailyHours[] }) {
   }
 
   const lastIndex = data.length - 1;
+  const labelStep = Math.max(1, Math.round(lastIndex / 4));
   const hovered = hover !== null ? data[hover] : null;
   const hoveredPoint = hover !== null ? points[hover] : null;
 
@@ -118,7 +119,7 @@ export function HoursLineChart({ data }: { data: DailyHours[] }) {
         <path d={linePath} fill="none" stroke="var(--admin-blue)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
 
         {data.map((day, index) =>
-          (lastIndex - index) % 3 === 0 && index > 0 ? (
+          (lastIndex - index) % labelStep === 0 && index > 0 ? (
             <text
               key={day.date}
               x={points[index].x}
@@ -286,5 +287,29 @@ export function TaskStatusBarChart({ data }: { data: TaskStatusCount[] }) {
         </Tooltip>
       ) : null}
     </div>
+  );
+}
+
+/** Hours per project as horizontal bars, largest first. Each row carries its own name and value, so no legend is needed. */
+export function HoursByProjectChart({ data }: { data: ProjectHours[] }) {
+  const max = Math.max(...data.map((row) => row.hours), 0);
+
+  return (
+    <ul className="space-y-3" aria-label="Hours logged by project">
+      {data.map((row) => (
+        <li key={row.projectId} title={`${row.name}: ${row.hours}h`}>
+          <div className="flex items-baseline justify-between gap-3 text-[12px]">
+            <span className="min-w-0 truncate text-[var(--admin-ink)]">{row.name}</span>
+            <span className="shrink-0 font-semibold text-[var(--admin-ink)]">{row.hours}h</span>
+          </div>
+          <div className="mt-1 h-2 rounded-full bg-[var(--admin-bg)]">
+            <div
+              className="h-2 rounded-full bg-[var(--admin-blue)]"
+              style={{ width: `${max > 0 ? Math.max(2, (row.hours / max) * 100) : 0}%` }}
+            />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
