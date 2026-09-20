@@ -390,7 +390,7 @@ function TeamProjectOverview({
   onDevelopmentSaved: () => void;
 }) {
   const [devEditorOpen, setDevEditorOpen] = useState(false);
-  const milestoneCounts = milestone ? milestoneTaskCounts(project, milestone.id) : null;
+  const milestoneCounts = milestone ? milestoneTaskCounts(project, milestone.id, milestone.status) : null;
   const files = useProjectDeliverables(project.id);
   const deliverableStats = deliverableApprovalStats(files);
   const team = useTeamDirectory();

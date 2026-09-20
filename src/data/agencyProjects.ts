@@ -238,15 +238,24 @@ export function milestoneProductionRows(project: Pick<AgencyProject, "milestones
       id: milestone.id,
       name: milestone.name,
       status: milestone.status,
-      ...milestoneTaskCounts(project, milestone.id),
+      ...milestoneTaskCounts(project, milestone.id, milestone.status),
     }));
 }
 
-export function milestoneTaskCounts(project: Pick<AgencyProject, "tasks">, milestoneId: string) {
+/**
+ * Pass the milestone's own status so a stage that was marked Completed without ever having
+ * tasks (a hand-managed project, or tasks that were removed) reads 100%, not a 0% bar under a
+ * "Completed" badge. With no tasks and any other status the percent stays 0.
+ */
+export function milestoneTaskCounts(
+  project: Pick<AgencyProject, "tasks">,
+  milestoneId: string,
+  status?: AgencyMilestoneStatus,
+) {
   const tasks = project.tasks.filter((task) => task.milestoneId === milestoneId);
   const completed = tasks.filter((task) => task.status === "Completed").length;
   const total = tasks.length;
-  const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
+  const percent = total === 0 ? (status === "Completed" ? 100 : 0) : Math.round((completed / total) * 100);
   return { total, completed, percent };
 }
 

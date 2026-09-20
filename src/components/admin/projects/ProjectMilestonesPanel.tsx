@@ -62,7 +62,8 @@ export function ProjectMilestonesPanel({
       ) : (
         <ol className="mt-5 space-y-3">
           {ordered.map((milestone, index) => {
-            const counts = milestoneTaskCounts(project, milestone.id);
+            const counts = milestoneTaskCounts(project, milestone.id, milestone.status);
+            const completedWithoutTasks = counts.total === 0 && milestone.status === "Completed";
             const remaining = counts.total - counts.completed;
             const purpose = websiteMilestonePurpose(milestone.name, milestone.description);
             const name = displayMilestoneName(milestone.name);
@@ -77,7 +78,11 @@ export function ProjectMilestonesPanel({
                   </div>
                   <MilestoneStatusBadge status={milestone.status} />
                 </div>
-                {counts.total === 0 ? (
+                {completedWithoutTasks ? (
+                  <p className="mt-3 text-[12px] text-[var(--admin-muted)]">
+                    Marked complete. No tasks were tracked for this stage.
+                  </p>
+                ) : counts.total === 0 ? (
                   <p className="mt-3 text-[12px] text-[var(--admin-muted)]">
                     No tasks yet. Add tasks when the project reaches this stage.
                   </p>
@@ -87,7 +92,7 @@ export function ProjectMilestonesPanel({
                   </p>
                 )}
                 <div className="mt-2">
-                  <ProgressBar value={counts.percent} label={counts.total === 0 ? "No tasks yet" : "Progress"} />
+                  <ProgressBar value={counts.percent} label={completedWithoutTasks ? "Complete" : counts.total === 0 ? "No tasks yet" : "Progress"} />
                 </div>
                 <p className="mt-2 text-[12px] text-[var(--admin-muted)]">Due: {formatProjectDay(milestone.dueDate)}</p>
                 {canEdit || onAddTask ? (
