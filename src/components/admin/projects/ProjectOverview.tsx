@@ -332,7 +332,7 @@ export function ProjectOverview({ project, client, workflow, onOpenTab }: Projec
   );
 }
 
-function SummaryCard({ title, children }: { title: string; children: ReactNode }) {
+export function SummaryCard({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
       <h2 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">{title}</h2>
@@ -341,7 +341,7 @@ function SummaryCard({ title, children }: { title: string; children: ReactNode }
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: ReactNode }) {
+export function SummaryRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-3 py-1.5">
       <dt className="text-[12px] text-[var(--admin-muted)]">{label}</dt>

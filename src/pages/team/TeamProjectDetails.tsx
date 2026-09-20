@@ -21,6 +21,7 @@ import { ProjectApprovalsPanel } from "@/components/admin/projects/ProjectApprov
 import { ProjectFeedbackPanel } from "@/components/admin/projects/ProjectFeedbackPanel";
 import { ProjectFilesPanel } from "@/components/admin/projects/ProjectFilesPanel";
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
+import { SummaryCard, SummaryRow } from "@/components/admin/projects/ProjectOverview";
 import { ProjectDevelopmentSection } from "@/components/admin/projects/ProjectDevelopmentSection";
 import { WebsiteHealthCard } from "@/components/admin/projects/WebsiteHealthCard";
 import { ProjectTimePanel } from "@/components/admin/projects/ProjectTimePanel";
@@ -39,6 +40,7 @@ import {
   calculateProjectProgress,
   currentMilestone,
   earlierOpenMilestones,
+  formatProjectDate,
   formatProjectDay,
   milestoneTaskCounts,
   upcomingMilestone,
@@ -329,7 +331,9 @@ export function TeamProjectDetails() {
               myOpen={myOpen}
               canManageDomainHosting={canCoordinateAssignedWork(profile)}
               canCheckWebsiteHealth={hasPermission(profile, "projects.manage")}
+              canViewActivity={visibleTabs.some((item) => item.id === "activity")}
               onOpenTasks={() => setTab("tasks")}
+              onOpenActivity={() => setTab("activity")}
               onDevelopmentSaved={reload}
             />
           ) : null}
@@ -422,7 +426,9 @@ function TeamProjectOverview({
   myOpen,
   canManageDomainHosting,
   canCheckWebsiteHealth,
+  canViewActivity,
   onOpenTasks,
+  onOpenActivity,
   onDevelopmentSaved,
 }: {
   project: AgencyProject;
@@ -433,7 +439,9 @@ function TeamProjectOverview({
   myOpen: number;
   canManageDomainHosting: boolean;
   canCheckWebsiteHealth: boolean;
+  canViewActivity: boolean;
   onOpenTasks: () => void;
+  onOpenActivity: () => void;
   onDevelopmentSaved: () => void;
 }) {
   const [devEditorOpen, setDevEditorOpen] = useState(false);
@@ -451,74 +459,132 @@ function TeamProjectOverview({
       )
     : {};
 
+  const milestoneNote =
+    milestoneCounts && milestoneCounts.total > 0
+      ? `${milestoneCounts.completed} of ${milestoneCounts.total} tasks in this milestone`
+      : milestone?.status === "Completed"
+        ? "Marked complete. No tasks were tracked for this stage."
+        : "No tasks yet. Tasks can be added when the project reaches this stage.";
+
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
-      <div className="space-y-6">
-        <ProjectProductionPipeline project={project} />
-        {team.data ? (
-          <ProjectTeamRoster
-            members={team.data.members}
-            projectId={project.id}
-            clientId={project.clientId}
-            assignedLabels={assignedLabels}
-          />
-        ) : null}
-        <ProjectProductionTasksCard project={project} onOpenTasks={onOpenTasks} />
-        <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-          <h2 className="font-heading text-sm font-semibold tracking-tight">Progress</h2>
-          {work.total === 0 ? (
-            <p className="mt-3 text-sm text-[var(--admin-muted)]">No production tasks on this project yet.</p>
-          ) : (
-            <>
-              <p className="mt-3 font-heading text-3xl font-semibold tracking-tight">{work.progress}%</p>
-              <p className="mt-1 text-sm text-[var(--admin-muted)]">
-                {work.completed} of {work.total} tasks completed · {myOpen} assigned to you
-              </p>
-              <div className="mt-4">
-                <ProgressBar value={work.progress} />
-              </div>
-            </>
-          )}
-          {deliverableStats.total > 0 ? (
-            <p className="mt-3 text-sm text-[var(--admin-muted)]">
-              Deliverables: {deliverableStats.approved} of {deliverableStats.total} approved
+    <div className="space-y-6">
+      <ProjectProductionPipeline project={project} />
+
+      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+        <h2 className="font-heading text-sm font-semibold tracking-tight">Progress</h2>
+        {work.total === 0 ? (
+          <p className="mt-3 text-sm text-[var(--admin-muted)]">No production tasks on this project yet.</p>
+        ) : (
+          <>
+            <p className="mt-3 font-heading text-3xl font-semibold tracking-tight">{work.progress}%</p>
+            <p className="mt-1 text-sm text-[var(--admin-muted)]">
+              {work.completed} of {work.total} tasks completed · {myOpen} assigned to you
             </p>
+            <div className="mt-4">
+              <ProgressBar value={work.progress} />
+            </div>
+          </>
+        )}
+        {deliverableStats.total > 0 ? (
+          <p className="mt-3 text-sm text-[var(--admin-muted)]">
+            Deliverables: {deliverableStats.approved} of {deliverableStats.total} approved
+          </p>
+        ) : null}
+        <button
+          type="button"
+          className="mt-4 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+          onClick={onOpenTasks}
+        >
+          View tasks
+        </button>
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <SummaryCard title="Project">
+          <SummaryRow label="Status" value={<ProjectStatusBadge status={project.status} />} />
+          <SummaryRow label="Progress" value={`${work.progress}%`} />
+          <SummaryRow label="Type" value={project.type} />
+          <SummaryRow label="Target launch" value={formatProjectDay(project.targetLaunchDate) || "Not set"} />
+          <SummaryRow label="Files" value={String(files.length)} />
+          {deliverableStats.total > 0 ? (
+            <SummaryRow label="Deliverables" value={`${deliverableStats.approved}/${deliverableStats.total} approved`} />
           ) : null}
+        </SummaryCard>
+
+        <SummaryCard title="Client">
+          <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{clientName}</p>
+          <p className="mt-2 text-sm text-[var(--admin-muted)]">{project.name}</p>
+        </SummaryCard>
+
+        <SummaryCard title="Milestone">
           {milestone ? (
-            <div className="mt-5 border-t border-[var(--admin-line)] pt-4">
-              <p className="text-[12px] text-[var(--admin-muted)]">Current milestone</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <p className="font-heading text-sm font-semibold">{displayMilestoneName(milestone.name)}</p>
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
+                  {displayMilestoneName(milestone.name)}
+                </p>
                 <MilestoneStatusBadge status={milestone.status} />
               </div>
-              <p className="mt-2 text-sm text-[var(--admin-muted)]">
-                {milestoneCounts && milestoneCounts.total > 0
-                  ? `${milestoneCounts.completed} of ${milestoneCounts.total} tasks in this milestone`
-                  : "No tasks yet. Tasks can be added when the project reaches this stage."}
-              </p>
-            </div>
-          ) : null}
-          {nextMilestone ? (
-            <p className="mt-3 text-sm text-[var(--admin-muted)]">Upcoming: {nextMilestone.name}</p>
-          ) : null}
-          <button
-            type="button"
-            className="mt-4 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-            onClick={onOpenTasks}
-          >
-            View tasks
-          </button>
-        </section>
-
-        <ProjectDevelopmentSection development={project.development} onEditClick={() => setDevEditorOpen(true)} />
-
-        <WebsiteHealthCard
-          projectId={project.id}
-          productionUrl={project.development.productionUrl}
-          stagingUrl={project.development.stagingUrl}
-          canCheckNow={canCheckWebsiteHealth}
-        />
+              <p className="mt-2 text-sm text-[var(--admin-muted)]">{milestoneNote}</p>
+              {nextMilestone ? (
+                <p className="mt-2 text-[12px] text-[var(--admin-muted)]">
+                  Upcoming: {displayMilestoneName(nextMilestone.name)}
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <p className="text-sm text-[var(--admin-muted)]">No milestones yet.</p>
+          )}
+        </SummaryCard>
       </div>
+
+      {team.data ? (
+        <ProjectTeamRoster
+          members={team.data.members}
+          projectId={project.id}
+          clientId={project.clientId}
+          assignedLabels={assignedLabels}
+        />
+      ) : null}
+
+      <ProjectProductionTasksCard project={project} onOpenTasks={onOpenTasks} />
+
+      <ProjectDevelopmentSection development={project.development} onEditClick={() => setDevEditorOpen(true)} />
+
+      <WebsiteHealthCard
+        projectId={project.id}
+        productionUrl={project.development.productionUrl}
+        stagingUrl={project.development.stagingUrl}
+        canCheckNow={canCheckWebsiteHealth}
+      />
+
+      {canViewActivity ? (
+        <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Recent activity</h2>
+            <button
+              type="button"
+              className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+              onClick={onOpenActivity}
+            >
+              View all
+            </button>
+          </div>
+          {project.activity.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">No activity yet.</p>
+          ) : (
+            <ul className="mt-3 space-y-3">
+              {project.activity.slice(0, 5).map((item) => (
+                <li key={item.id}>
+                  <p className="text-sm text-[var(--admin-ink)]">{item.description}</p>
+                  <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">{formatProjectDate(item.createdAt)}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
+
       {devEditorOpen ? (
         <TeamDevelopmentEditor
           projectId={project.id}
@@ -528,29 +594,6 @@ function TeamProjectOverview({
           onSaved={onDevelopmentSaved}
         />
       ) : null}
-      <aside className="space-y-4">
-        <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-          <h2 className="font-heading text-sm font-semibold tracking-tight">Details</h2>
-          <dl className="mt-4 space-y-3 text-sm">
-            <div>
-              <dt className="text-[12px] text-[var(--admin-muted)]">Client</dt>
-              <dd className="mt-0.5 font-medium">{clientName}</dd>
-            </div>
-            <div>
-              <dt className="text-[12px] text-[var(--admin-muted)]">Status</dt>
-              <dd className="mt-0.5 font-medium">{project.status}</dd>
-            </div>
-            <div>
-              <dt className="text-[12px] text-[var(--admin-muted)]">Target launch</dt>
-              <dd className="mt-0.5 font-medium">{formatProjectDay(project.targetLaunchDate)}</dd>
-            </div>
-            <div>
-              <dt className="text-[12px] text-[var(--admin-muted)]">Files</dt>
-              <dd className="mt-0.5 font-medium">{files.length}</dd>
-            </div>
-          </dl>
-        </section>
-      </aside>
     </div>
   );
 }
