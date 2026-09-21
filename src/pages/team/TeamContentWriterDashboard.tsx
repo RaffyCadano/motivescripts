@@ -5,9 +5,10 @@ import { firstNameFrom } from "@/auth/userDisplay";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
 import { MyTaskMobileList, MyTaskTable } from "@/components/admin/MyTaskList";
 import { MilestoneStatusBadge } from "@/components/admin/projects/MilestoneStatusBadge";
+import { TaskStatusBadge } from "@/components/admin/projects/TaskStatusBadge";
 import { ProgressBar } from "@/components/admin/ProgressBar";
 import { ClientReviewLinkOut, taskContextExtra } from "@/components/tasks/TaskWorkspace";
-import { CategoryBarChart, HoursLineChart } from "@/components/team/DashboardCharts";
+import { HoursLineChart, TaskStatusBarChart } from "@/components/team/DashboardCharts";
 import { TeamEmptyState } from "@/components/team/TeamEmptyState";
 import { TeamProjectCard } from "@/components/team/TeamProjectCard";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
@@ -15,23 +16,16 @@ import { useTeamWork } from "@/components/team/useTeamWork";
 import { buildCumulativeTrend } from "@/data/adminOverview";
 import { formatClientDate } from "@/data/agencyClients";
 import { earlierOpenMilestones, formatProjectDay } from "@/data/agencyProjects";
-import {
-  checkpointRows,
-  deliverableStatusCounts,
-  designPhaseProgress,
-  openFeedbackFor,
-  type CheckpointState,
-} from "@/data/designerOverview";
+import { contentFilesFor, copyPageFor, copyPipeline, copyProgress } from "@/data/contentWriterOverview";
 import {
   activeTasks,
   dueThisWeekTasks,
   hoursByDay,
   hoursLoggedThisWeek,
   hoursLoggedToday,
-  needsChangesDeliverables,
   reviewTasks,
+  taskStatusCounts,
 } from "@/data/developerOverview";
-import { designCheckpointLabel } from "@/data/files";
 import { effectiveTaskType } from "@/data/taskTypes";
 import { listMyTimeEntries } from "@/data/timeEntriesRepository";
 import type { TimeEntry } from "@/data/timeEntries";
@@ -46,46 +40,16 @@ import {
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
 
-// Status colors match the file-status badges used across the app. Every bar also has a count and a text
-// label, so status is never conveyed by color alone.
-const fileStatusColor = {
-  Draft: "#94a3b8",
-  "In Review": "#f59e0b",
-  "Needs Changes": "#dc2626",
-  Approved: "#10b981",
-} as const;
-
-const checkpointTone: Record<CheckpointState, string> = {
-  Approved: "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]",
-  "In Review": "bg-[rgb(245_158_11_/_0.12)] text-[#92610a]",
-  "Needs Changes": "bg-[rgb(220_38_38_/_0.08)] text-[#b42318]",
-  Draft: "bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]",
-  "Not uploaded": "bg-[var(--admin-bg)] text-[var(--admin-muted)]",
-};
-
 const cardClass = "min-w-0 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5";
 const cardTitleClass = "font-heading text-sm font-semibold tracking-tight";
 const linkClass = "font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline";
-
-function CheckpointBadge({ state }: { state: CheckpointState }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight",
-        checkpointTone[state],
-      )}
-    >
-      {state}
-    </span>
-  );
-}
 
 function todayIso(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-export function TeamDesignerDashboard() {
+export function TeamContentWriterDashboard() {
   const navigate = useNavigate();
   const { profile, clientsById, tasks, myProjects, deliverables, feedback, changeTaskStatus } = useTeamWork();
   const [openTask, setOpenTask] = useState<TeamWorkTask | null>(null);
@@ -118,10 +82,8 @@ export function TeamDesignerDashboard() {
 
   const myProjectIds = useMemo(() => new Set(myProjects.map((project) => project.id)), [myProjects]);
   const projectsById = useMemo(() => new Map(myProjects.map((project) => [project.id, project])), [myProjects]);
-  const myFiles = useMemo(
-    () => deliverables.filter((item) => myProjectIds.has(item.projectId) && item.status !== "Archived"),
-    [deliverables, myProjectIds],
-  );
+  const contentFiles = useMemo(() => contentFilesFor(deliverables, myProjectIds), [deliverables, myProjectIds]);
+  const contentFileIds = useMemo(() => new Set(contentFiles.map((item) => item.id)), [contentFiles]);
 
   const active = useMemo(() => activeTasks(tasks), [tasks]);
   const inReview = useMemo(() => reviewTasks(tasks), [tasks]);
@@ -130,11 +92,18 @@ export function TeamDesignerDashboard() {
     [tasks],
   );
   const dueThisWeek = useMemo(() => dueThisWeekTasks(tasks), [tasks]);
-  const needsChanges = useMemo(() => needsChangesDeliverables(deliverables, myProjectIds), [deliverables, myProjectIds]);
+  const statusCounts = useMemo(() => taskStatusCounts(tasks), [tasks]);
+  const totalTasks = statusCounts.reduce((sum, item) => sum + item.count, 0);
+  const pipeline = useMemo(() => copyPipeline(tasks), [tasks]);
+  const openCopy = pipeline.filter((task) => task.status !== "Completed");
+
+  const needsChanges = useMemo(() => contentFiles.filter((item) => item.status === "Needs Changes"), [contentFiles]);
   const openFeedback = useMemo(
     () =>
-      [...openFeedbackFor(feedback, myProjectIds)].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    [feedback, myProjectIds],
+      feedback
+        .filter((item) => item.status === "Open" && contentFileIds.has(item.deliverableId))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [feedback, contentFileIds],
   );
   const todayHours = timeLoading ? null : hoursLoggedToday(timeEntries);
   const weekHours = timeLoading ? null : hoursLoggedThisWeek(timeEntries);
@@ -149,8 +118,6 @@ export function TeamDesignerDashboard() {
 
   const dailyHours = useMemo(() => hoursByDay(timeEntries, 14), [timeEntries]);
   const dailyHoursTotal = dailyHours.reduce((sum, day) => sum + day.hours, 0);
-  const fileCounts = useMemo(() => deliverableStatusCounts(myFiles), [myFiles]);
-  const totalFiles = fileCounts.reduce((sum, item) => sum + item.count, 0);
 
   const upcomingMilestones = useMemo(() => {
     return myProjects
@@ -170,15 +137,14 @@ export function TeamDesignerDashboard() {
 
   const recentlyApproved = useMemo(
     () =>
-      myFiles
+      contentFiles
         .filter((item) => item.status === "Approved")
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
         .slice(0, 5),
-    [myFiles],
+    [contentFiles],
   );
 
   const recentActivity = useMemo(() => collectRecentProjectActivity(myProjects, 5), [myProjects]);
-  const approvalProjects = myProjects.slice(0, 3);
 
   async function onStatusChange(
     status: TeamWorkTask["status"],
@@ -228,7 +194,7 @@ export function TeamDesignerDashboard() {
           />
           <AdminStatCard label="Tasks in review" value={inReview.length} href="/team/tasks" trend={reviewTrend} />
           <AdminStatCard
-            label="Files needing changes"
+            label="Content needing changes"
             value={needsChanges.length}
             href={canFiles ? "/team/files" : "/team/projects"}
             trend={changesTrend}
@@ -264,87 +230,71 @@ export function TeamDesignerDashboard() {
         <div className={cardClass}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className={cardTitleClass}>Files by status</h2>
+              <h2 className={cardTitleClass}>Tasks by status</h2>
               <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                {totalFiles} file{totalFiles === 1 ? "" : "s"} on your projects
+                {totalTasks} task{totalTasks === 1 ? "" : "s"} assigned to you
               </p>
             </div>
-            {canFiles ? (
-              <Link to="/team/files" className={linkClass}>
-                View files
-              </Link>
-            ) : null}
+            <Link to="/team/tasks" className={linkClass}>
+              View tasks
+            </Link>
           </div>
           <div className="mt-3">
-            {totalFiles === 0 ? (
-              <p className="py-12 text-center text-sm text-[var(--admin-muted)]">No files on your projects yet.</p>
+            {totalTasks === 0 ? (
+              <p className="py-12 text-center text-sm text-[var(--admin-muted)]">No tasks assigned yet.</p>
             ) : (
-              <CategoryBarChart
-                ariaLabel="Files on your projects by status"
-                unit="file"
-                data={fileCounts.map((item) => ({
-                  key: item.status,
-                  label: item.status,
-                  count: item.count,
-                  color: fileStatusColor[item.status],
-                }))}
-              />
+              <TaskStatusBarChart data={statusCounts} />
             )}
           </div>
         </div>
       </section>
 
-      <section aria-label="Design review" className="grid items-start gap-3 lg:grid-cols-2">
+      <section aria-label="Content review" className="grid items-start gap-3 lg:grid-cols-2">
         <div className={cardClass}>
           <div className="flex items-center justify-between gap-3">
-            <h2 className={cardTitleClass}>Design approvals</h2>
-            <Link to="/team/projects" className={linkClass}>
-              View projects
+            <div>
+              <h2 className={cardTitleClass}>Copy pipeline</h2>
+              <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
+                {openCopy.length} open copy task{openCopy.length === 1 ? "" : "s"}
+              </p>
+            </div>
+            <Link to="/team/tasks" className={linkClass}>
+              View all tasks
             </Link>
           </div>
-          {approvalProjects.length === 0 ? (
-            <p className="mt-3 text-sm text-[var(--admin-muted)]">No projects yet.</p>
+          {pipeline.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">No copy tasks assigned to you yet.</p>
           ) : (
-            <div className="mt-3 space-y-5">
-              {approvalProjects.map((project) => {
-                const rows = checkpointRows(deliverables.filter((item) => item.projectId === project.id));
+            <ul className="mt-3 divide-y divide-[var(--admin-line)]">
+              {pipeline.slice(0, 6).map((task) => {
+                const page = copyPageFor(task);
                 return (
-                  <div key={project.id}>
-                    <Link
-                      to={teamProjectHref(project.id)}
-                      className="text-sm font-medium text-[var(--admin-ink)] hover:text-[var(--admin-blue)] hover:underline"
-                    >
-                      {project.name}
-                    </Link>
-                    <ul className="mt-1.5 divide-y divide-[var(--admin-line)]">
-                      {rows.map((row) => (
-                        <li key={row.checkpoint} className="flex items-center justify-between gap-3 py-2">
-                          <span className="min-w-0 truncate text-[13px] text-[var(--admin-muted)]">
-                            {designCheckpointLabel(row.checkpoint)}
-                          </span>
-                          {row.deliverableId ? (
-                            <Link
-                              to={teamProjectHref(project.id, { tab: "files", file: row.deliverableId })}
-                              aria-label={`${designCheckpointLabel(row.checkpoint)}: ${row.state}`}
-                            >
-                              <CheckpointBadge state={row.state} />
-                            </Link>
-                          ) : (
-                            <CheckpointBadge state={row.state} />
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                  <li key={task.id} className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                    <div className="min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => setOpenTask(task)}
+                        className="block max-w-full truncate text-left text-sm font-medium text-[var(--admin-ink)] hover:text-[var(--admin-blue)] hover:underline"
+                      >
+                        {task.title}
+                      </button>
+                      <p className="truncate text-[12px] text-[var(--admin-muted)]">
+                        {task.projectName}
+                        {page ? ` · ${page}` : ""}
+                        {task.dueDate && task.status !== "Completed" ? ` · Due ${formatProjectDay(task.dueDate)}` : ""}
+                      </p>
+                    </div>
+                    <span className="shrink-0"><TaskStatusBadge status={task.status} /></span>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
         </div>
 
         <div className={cardClass}>
           <div className="flex items-center justify-between gap-3">
-            <h2 className={cardTitleClass}>Files needing changes</h2>
+            <h2 className={cardTitleClass}>Content needing changes</h2>
             {canFiles ? (
               <Link to="/team/files" className={linkClass}>
                 View files
@@ -352,7 +302,7 @@ export function TeamDesignerDashboard() {
             ) : null}
           </div>
           {needsChanges.length === 0 ? (
-            <p className="mt-3 text-sm text-[var(--admin-muted)]">Nothing needs changes right now.</p>
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">No content needs changes right now.</p>
           ) : (
             <ul className="mt-3 divide-y divide-[var(--admin-line)]">
               {needsChanges.slice(0, 5).map((item) => {
@@ -427,10 +377,10 @@ export function TeamDesignerDashboard() {
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
             {myProjects.slice(0, 4).map((project) => {
-              const design = designPhaseProgress(project);
-              const projectFiles = myFiles.filter((item) => item.projectId === project.id);
-              const filesInReview = projectFiles.filter((item) => item.status === "In Review").length;
-              const filesNeedChanges = projectFiles.filter((item) => item.status === "Needs Changes").length;
+              const copy = copyProgress(project);
+              const projectContent = contentFiles.filter((item) => item.projectId === project.id);
+              const contentInReview = projectContent.filter((item) => item.status === "In Review").length;
+              const contentNeedChanges = projectContent.filter((item) => item.status === "Needs Changes").length;
               const activeCount = tasks.filter(
                 (task) => task.projectId === project.id && (task.status === "Todo" || task.status === "In Progress"),
               ).length;
@@ -442,30 +392,30 @@ export function TeamDesignerDashboard() {
                   assignedTaskCount={myOpenTaskCount(project, profile?.id ?? "", profile?.fullName ?? "")}
                   extra={
                     <div className="mt-3 space-y-2">
-                      {design.total === 0 ? (
-                        <p className="text-[12px] text-[var(--admin-muted)]">No design tasks yet.</p>
+                      {copy.total === 0 ? (
+                        <p className="text-[12px] text-[var(--admin-muted)]">No copy tasks yet.</p>
                       ) : (
                         <div>
-                          <ProgressBar value={Math.round((design.completed / design.total) * 100)} label="Design" />
+                          <ProgressBar value={Math.round((copy.completed / copy.total) * 100)} label="Copy" />
                           <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
-                            {design.completed} / {design.total} design tasks complete
+                            {copy.completed} / {copy.total} copy tasks complete
                           </p>
                         </div>
                       )}
                       <p className="text-[12px] text-[var(--admin-muted)]">
-                        {activeCount} active task{activeCount === 1 ? "" : "s"} · {projectFiles.length} file
-                        {projectFiles.length === 1 ? "" : "s"}
+                        {activeCount} active task{activeCount === 1 ? "" : "s"} · {projectContent.length} content file
+                        {projectContent.length === 1 ? "" : "s"}
                       </p>
-                      {filesInReview > 0 || filesNeedChanges > 0 ? (
+                      {contentInReview > 0 || contentNeedChanges > 0 ? (
                         <div className="flex flex-wrap items-center gap-1.5">
-                          {filesInReview > 0 ? (
+                          {contentInReview > 0 ? (
                             <span className="inline-flex items-center rounded-full bg-[rgb(245_158_11_/_0.12)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[#92610a]">
-                              {filesInReview} in review
+                              {contentInReview} in review
                             </span>
                           ) : null}
-                          {filesNeedChanges > 0 ? (
+                          {contentNeedChanges > 0 ? (
                             <span className="inline-flex items-center rounded-full bg-[rgb(220_38_38_/_0.08)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[#b42318]">
-                              {filesNeedChanges} need changes
+                              {contentNeedChanges} need changes
                             </span>
                           ) : null}
                         </div>
@@ -504,11 +454,11 @@ export function TeamDesignerDashboard() {
         <div className={cardClass}>
           <h2 className={cardTitleClass}>Client Feedback</h2>
           {openFeedback.length === 0 ? (
-            <p className="mt-3 text-sm text-[var(--admin-muted)]">No open feedback on your projects.</p>
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">No open feedback on your content.</p>
           ) : (
             <ul className="mt-3 divide-y divide-[var(--admin-line)]">
               {openFeedback.slice(0, 5).map((item) => {
-                const file = deliverables.find((entry) => entry.id === item.deliverableId);
+                const file = contentFiles.find((entry) => entry.id === item.deliverableId);
                 return (
                   <li key={item.id} className="py-2.5 first:pt-0 last:pb-0">
                     <p className="truncate text-[12px] text-[var(--admin-muted)]">
@@ -524,7 +474,7 @@ export function TeamDesignerDashboard() {
         </div>
 
         <div className={cardClass}>
-          <h2 className={cardTitleClass}>Approved Files</h2>
+          <h2 className={cardTitleClass}>Approved Content</h2>
           {recentlyApproved.length === 0 ? (
             <p className="mt-3 text-sm text-[var(--admin-muted)]">Nothing approved yet.</p>
           ) : (

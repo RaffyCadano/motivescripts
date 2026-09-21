@@ -13,7 +13,7 @@ import { TeamProjectCard } from "@/components/team/TeamProjectCard";
 import { TeamTaskDetail } from "@/components/team/TeamTaskDetail";
 import { useTeamWork } from "@/components/team/useTeamWork";
 import { buildCumulativeTrend } from "@/data/adminOverview";
-import { earlierOpenMilestones } from "@/data/agencyProjects";
+import { earlierOpenMilestones, formatProjectDay } from "@/data/agencyProjects";
 import { formatClientDate } from "@/data/agencyClients";
 import {
   activeTasks,
@@ -384,7 +384,7 @@ export function TeamDeveloperDashboard() {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-[var(--admin-ink)]">{milestone.name}</p>
                     <p className="truncate text-[12px] text-[var(--admin-muted)]">
-                      {project.name} · {milestone.dueDate ? formatClientDate(milestone.dueDate) : "No due date"}
+                      {project.name} · {milestone.dueDate ? formatProjectDay(milestone.dueDate) : "No due date"}
                     </p>
                   </div>
                   <MilestoneStatusBadge status={milestone.status} />

@@ -95,6 +95,18 @@ export function isDeveloper(
   return profile?.role === "staff" && profile.templateKey === "developer";
 }
 
+export function isTeamMember(
+  profile: { role?: string | null; templateKey?: string | null } | null | undefined,
+): boolean {
+  return profile?.role === "staff" && profile.templateKey === "team_member";
+}
+
+export function isContentWriter(
+  profile: { role?: string | null; templateKey?: string | null } | null | undefined,
+): boolean {
+  return profile?.role === "staff" && profile.templateKey === "content_writer";
+}
+
 export function isDesigner(
   profile: { role?: string | null; templateKey?: string | null } | null | undefined,
 ): boolean {

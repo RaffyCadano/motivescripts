@@ -16,22 +16,16 @@ import { buildCumulativeTrend } from "@/data/adminOverview";
 import { formatClientDate } from "@/data/agencyClients";
 import { earlierOpenMilestones, formatProjectDay } from "@/data/agencyProjects";
 import {
-  checkpointRows,
-  deliverableStatusCounts,
-  designPhaseProgress,
-  openFeedbackFor,
-  type CheckpointState,
-} from "@/data/designerOverview";
-import {
   activeTasks,
+  blockedReason,
+  blockedTasks,
   dueThisWeekTasks,
   hoursByDay,
   hoursLoggedThisWeek,
   hoursLoggedToday,
-  needsChangesDeliverables,
-  reviewTasks,
 } from "@/data/developerOverview";
-import { designCheckpointLabel } from "@/data/files";
+import { developmentComplete, qaLatestResult } from "@/data/productionWorkflow";
+import { isQaTask, outstandingFailedChecks, qaProgress, qaResultCounts } from "@/data/qaOverview";
 import { effectiveTaskType } from "@/data/taskTypes";
 import { listMyTimeEntries } from "@/data/timeEntriesRepository";
 import type { TimeEntry } from "@/data/timeEntries";
@@ -44,50 +38,39 @@ import {
   type TeamWorkTask,
 } from "@/data/teamWorkspace";
 import { AgencyDbError } from "@/lib/dbErrors";
+import { safeHttpHref } from "@/lib/safeUrl";
 import { cn } from "@/lib/cn";
 
-// Status colors match the file-status badges used across the app. Every bar also has a count and a text
-// label, so status is never conveyed by color alone.
-const fileStatusColor = {
-  Draft: "#94a3b8",
-  "In Review": "#f59e0b",
-  "Needs Changes": "#dc2626",
-  Approved: "#10b981",
-} as const;
+// Same green/red as the pass/fail badges elsewhere. Every bar also has a count and a text label, so the
+// outcome is never conveyed by color alone.
+const qaBarColor = { toTest: "#94a3b8", passed: "#10b981", failed: "#dc2626" } as const;
 
-const checkpointTone: Record<CheckpointState, string> = {
-  Approved: "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]",
-  "In Review": "bg-[rgb(245_158_11_/_0.12)] text-[#92610a]",
-  "Needs Changes": "bg-[rgb(220_38_38_/_0.08)] text-[#b42318]",
-  Draft: "bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]",
-  "Not uploaded": "bg-[var(--admin-bg)] text-[var(--admin-muted)]",
-};
+function QaResultBadge({ result }: { result: "pass" | "fail" | null }) {
+  const tone =
+    result === "pass"
+      ? "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]"
+      : result === "fail"
+        ? "bg-[rgb(220_38_38_/_0.08)] text-[#b42318]"
+        : "bg-[var(--admin-bg)] text-[var(--admin-muted)]";
+  return (
+    <span className={cn("inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight", tone)}>
+      {result === "pass" ? "Last QA passed" : result === "fail" ? "Last QA failed" : "Not tested"}
+    </span>
+  );
+}
 
 const cardClass = "min-w-0 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5";
 const cardTitleClass = "font-heading text-sm font-semibold tracking-tight";
 const linkClass = "font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline";
-
-function CheckpointBadge({ state }: { state: CheckpointState }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight",
-        checkpointTone[state],
-      )}
-    >
-      {state}
-    </span>
-  );
-}
 
 function todayIso(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
-export function TeamDesignerDashboard() {
+export function TeamQaDashboard() {
   const navigate = useNavigate();
-  const { profile, clientsById, tasks, myProjects, deliverables, feedback, changeTaskStatus } = useTeamWork();
+  const { profile, clientsById, tasks, myProjects, deliverables, changeTaskStatus } = useTeamWork();
   const [openTask, setOpenTask] = useState<TeamWorkTask | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -116,41 +99,48 @@ export function TeamDesignerDashboard() {
     };
   }, [profile?.id]);
 
-  const myProjectIds = useMemo(() => new Set(myProjects.map((project) => project.id)), [myProjects]);
-  const projectsById = useMemo(() => new Map(myProjects.map((project) => [project.id, project])), [myProjects]);
-  const myFiles = useMemo(
-    () => deliverables.filter((item) => myProjectIds.has(item.projectId) && item.status !== "Archived"),
-    [deliverables, myProjectIds],
-  );
 
   const active = useMemo(() => activeTasks(tasks), [tasks]);
-  const inReview = useMemo(() => reviewTasks(tasks), [tasks]);
+  const blocked = useMemo(() => blockedTasks(tasks), [tasks]);
   const dueToday = useMemo(
     () => tasks.filter((task) => task.status !== "Completed" && task.dueDate === todayIso()),
     [tasks],
   );
   const dueThisWeek = useMemo(() => dueThisWeekTasks(tasks), [tasks]);
-  const needsChanges = useMemo(() => needsChangesDeliverables(deliverables, myProjectIds), [deliverables, myProjectIds]);
-  const openFeedback = useMemo(
+  const qaCounts = useMemo(() => qaResultCounts(tasks), [tasks]);
+  const totalChecks = qaCounts.toTest + qaCounts.passed + qaCounts.failed;
+  const failedChecks = useMemo(() => outstandingFailedChecks(tasks, myProjects), [tasks, myProjects]);
+  const recentPasses = useMemo(
     () =>
-      [...openFeedbackFor(feedback, myProjectIds)].sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    [feedback, myProjectIds],
+      tasks
+        .filter((task) => isQaTask(task) && task.status === "Completed" && task.qaResult === "pass")
+        .sort((a, b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""))
+        .slice(0, 5),
+    [tasks],
+  );
+  // Projects Development has finished are ready to test; the rest are still waiting on development.
+  const testingQueue = useMemo(
+    () =>
+      myProjects
+        .map((project) => ({
+          project,
+          ready: developmentComplete(project),
+          result: qaLatestResult(project),
+          stagingHref: safeHttpHref(project.development.stagingUrl),
+        }))
+        .sort((a, b) => Number(b.ready) - Number(a.ready)),
+    [myProjects],
   );
   const todayHours = timeLoading ? null : hoursLoggedToday(timeEntries);
   const weekHours = timeLoading ? null : hoursLoggedThisWeek(timeEntries);
 
   // Trends are real cumulative-by-day histories of the same cohort as the number shown (see buildCumulativeTrend).
   const activeTrend = useMemo(() => buildCumulativeTrend(active.map((task) => ({ at: task.createdAt }))), [active]);
-  const reviewTrend = useMemo(() => buildCumulativeTrend(inReview.map((task) => ({ at: task.createdAt }))), [inReview]);
-  const changesTrend = useMemo(
-    () => buildCumulativeTrend(needsChanges.map((item) => ({ at: item.updatedAt }))),
-    [needsChanges],
-  );
+  const blockedTrend = useMemo(() => buildCumulativeTrend(blocked.map((task) => ({ at: task.createdAt }))), [blocked]);
+  const failedTrend = useMemo(() => buildCumulativeTrend(failedChecks.map((task) => ({ at: task.completedAt ?? task.createdAt }))), [failedChecks]);
 
   const dailyHours = useMemo(() => hoursByDay(timeEntries, 14), [timeEntries]);
   const dailyHoursTotal = dailyHours.reduce((sum, day) => sum + day.hours, 0);
-  const fileCounts = useMemo(() => deliverableStatusCounts(myFiles), [myFiles]);
-  const totalFiles = fileCounts.reduce((sum, item) => sum + item.count, 0);
 
   const upcomingMilestones = useMemo(() => {
     return myProjects
@@ -168,17 +158,7 @@ export function TeamDesignerDashboard() {
       .slice(0, 5);
   }, [myProjects]);
 
-  const recentlyApproved = useMemo(
-    () =>
-      myFiles
-        .filter((item) => item.status === "Approved")
-        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-        .slice(0, 5),
-    [myFiles],
-  );
-
   const recentActivity = useMemo(() => collectRecentProjectActivity(myProjects, 5), [myProjects]);
-  const approvalProjects = myProjects.slice(0, 3);
 
   async function onStatusChange(
     status: TeamWorkTask["status"],
@@ -226,14 +206,8 @@ export function TeamDesignerDashboard() {
             value={dueToday.length}
             onClick={() => document.getElementById("today-work")?.scrollIntoView({ behavior: "smooth" })}
           />
-          <AdminStatCard label="Tasks in review" value={inReview.length} href="/team/tasks" trend={reviewTrend} />
-          <AdminStatCard
-            label="Files needing changes"
-            value={needsChanges.length}
-            href={canFiles ? "/team/files" : "/team/projects"}
-            trend={changesTrend}
-            higherIsBetter={false}
-          />
+          <AdminStatCard label="Blocked" value={blocked.length} href="/team/tasks" trend={blockedTrend} higherIsBetter={false} />
+          <AdminStatCard label="Failed checks" value={failedChecks.length} href="/team/tasks" trend={failedTrend} higherIsBetter={false} />
         </AdminStatGrid>
       </section>
 
@@ -264,118 +238,111 @@ export function TeamDesignerDashboard() {
         <div className={cardClass}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className={cardTitleClass}>Files by status</h2>
+              <h2 className={cardTitleClass}>QA checks</h2>
               <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                {totalFiles} file{totalFiles === 1 ? "" : "s"} on your projects
+                {totalChecks} check{totalChecks === 1 ? "" : "s"} assigned to you
               </p>
             </div>
-            {canFiles ? (
-              <Link to="/team/files" className={linkClass}>
-                View files
-              </Link>
-            ) : null}
+            <Link to="/team/tasks" className={linkClass}>
+              View tasks
+            </Link>
           </div>
           <div className="mt-3">
-            {totalFiles === 0 ? (
-              <p className="py-12 text-center text-sm text-[var(--admin-muted)]">No files on your projects yet.</p>
+            {totalChecks === 0 ? (
+              <p className="py-12 text-center text-sm text-[var(--admin-muted)]">No QA checks assigned yet.</p>
             ) : (
               <CategoryBarChart
-                ariaLabel="Files on your projects by status"
-                unit="file"
-                data={fileCounts.map((item) => ({
-                  key: item.status,
-                  label: item.status,
-                  count: item.count,
-                  color: fileStatusColor[item.status],
-                }))}
+                ariaLabel="Your QA checks by outcome"
+                unit="check"
+                data={[
+                  { key: "toTest", label: "To test", count: qaCounts.toTest, color: qaBarColor.toTest },
+                  { key: "passed", label: "Passed", count: qaCounts.passed, color: qaBarColor.passed },
+                  { key: "failed", label: "Failed", count: qaCounts.failed, color: qaBarColor.failed },
+                ]}
               />
             )}
           </div>
         </div>
       </section>
 
-      <section aria-label="Design review" className="grid items-start gap-3 lg:grid-cols-2">
+      <section aria-label="Testing" className="grid items-start gap-3 lg:grid-cols-2">
         <div className={cardClass}>
           <div className="flex items-center justify-between gap-3">
-            <h2 className={cardTitleClass}>Design approvals</h2>
+            <h2 className={cardTitleClass}>Testing queue</h2>
             <Link to="/team/projects" className={linkClass}>
               View projects
             </Link>
           </div>
-          {approvalProjects.length === 0 ? (
+          {testingQueue.length === 0 ? (
             <p className="mt-3 text-sm text-[var(--admin-muted)]">No projects yet.</p>
           ) : (
-            <div className="mt-3 space-y-5">
-              {approvalProjects.map((project) => {
-                const rows = checkpointRows(deliverables.filter((item) => item.projectId === project.id));
-                return (
-                  <div key={project.id}>
+            <ul className="mt-3 divide-y divide-[var(--admin-line)]">
+              {testingQueue.slice(0, 5).map(({ project, ready, result, stagingHref }) => (
+                <li key={project.id} className="flex items-start justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <div className="min-w-0">
                     <Link
-                      to={teamProjectHref(project.id)}
-                      className="text-sm font-medium text-[var(--admin-ink)] hover:text-[var(--admin-blue)] hover:underline"
+                      to={teamProjectHref(project.id, { tab: "tasks" })}
+                      className="block truncate text-sm font-medium text-[var(--admin-ink)] hover:text-[var(--admin-blue)] hover:underline"
                     >
                       {project.name}
                     </Link>
-                    <ul className="mt-1.5 divide-y divide-[var(--admin-line)]">
-                      {rows.map((row) => (
-                        <li key={row.checkpoint} className="flex items-center justify-between gap-3 py-2">
-                          <span className="min-w-0 truncate text-[13px] text-[var(--admin-muted)]">
-                            {designCheckpointLabel(row.checkpoint)}
-                          </span>
-                          {row.deliverableId ? (
-                            <Link
-                              to={teamProjectHref(project.id, { tab: "files", file: row.deliverableId })}
-                              aria-label={`${designCheckpointLabel(row.checkpoint)}: ${row.state}`}
-                            >
-                              <CheckpointBadge state={row.state} />
-                            </Link>
-                          ) : (
-                            <CheckpointBadge state={row.state} />
-                          )}
-                        </li>
-                      ))}
-                    </ul>
+                    <p className="truncate text-[12px] text-[var(--admin-muted)]">
+                      {ready ? "Ready to test" : "Waiting on development"}
+                      {ready && !stagingHref ? " · No staging link yet" : ""}
+                    </p>
+                    {ready && stagingHref ? (
+                      <a
+                        href={stagingHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline"
+                      >
+                        Open staging ↗
+                      </a>
+                    ) : null}
                   </div>
-                );
-              })}
-            </div>
+                  <QaResultBadge result={result} />
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 
         <div className={cardClass}>
           <div className="flex items-center justify-between gap-3">
-            <h2 className={cardTitleClass}>Files needing changes</h2>
-            {canFiles ? (
-              <Link to="/team/files" className={linkClass}>
-                View files
-              </Link>
-            ) : null}
+            <h2 className={cardTitleClass}>Failed checks</h2>
+            <Link to="/team/tasks" className={linkClass}>
+              View all tasks
+            </Link>
           </div>
-          {needsChanges.length === 0 ? (
-            <p className="mt-3 text-sm text-[var(--admin-muted)]">Nothing needs changes right now.</p>
+          {failedChecks.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">No failed checks waiting on a re-test.</p>
           ) : (
             <ul className="mt-3 divide-y divide-[var(--admin-line)]">
-              {needsChanges.slice(0, 5).map((item) => {
-                const note = feedback
-                  .filter((entry) => entry.deliverableId === item.id && entry.status === "Open")
-                  .sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
-                return (
-                  <li key={item.id} className="py-2.5 first:pt-0 last:pb-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-[var(--admin-ink)]">{item.name}</p>
-                        <p className="truncate text-[12px] text-[var(--admin-muted)]">
-                          {projectsById.get(item.projectId)?.name ?? "Project"} · {item.category}
-                        </p>
-                      </div>
-                      <Link to={teamProjectHref(item.projectId, { tab: "files", file: item.id })} className={linkClass}>
-                        Open
-                      </Link>
+              {failedChecks.slice(0, 5).map((task) => (
+                <li key={task.id} className="py-2.5 first:pt-0 last:pb-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => setOpenTask(task)}
+                        className="block max-w-full truncate text-left text-sm font-medium text-[var(--admin-ink)] hover:text-[var(--admin-blue)] hover:underline"
+                      >
+                        {task.title}
+                      </button>
+                      <p className="truncate text-[12px] text-[var(--admin-muted)]">
+                        {task.projectName} · {formatClientDate(task.completedAt ?? task.createdAt)}
+                      </p>
                     </div>
-                    {note ? <p className="mt-1 line-clamp-2 text-[13px] text-[var(--admin-ink)]">{note.message}</p> : null}
-                  </li>
-                );
-              })}
+                    <Link to={teamProjectHref(task.projectId, { tab: "tasks" })} className={cn(linkClass, "shrink-0")}>
+                      Open
+                    </Link>
+                  </div>
+                  {task.qaFailNote.trim() ? (
+                    <p className="mt-1 line-clamp-2 text-[13px] text-[var(--admin-ink)]">{task.qaFailNote}</p>
+                  ) : null}
+                </li>
+              ))}
             </ul>
           )}
         </div>
@@ -427,10 +394,9 @@ export function TeamDesignerDashboard() {
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
             {myProjects.slice(0, 4).map((project) => {
-              const design = designPhaseProgress(project);
-              const projectFiles = myFiles.filter((item) => item.projectId === project.id);
-              const filesInReview = projectFiles.filter((item) => item.status === "In Review").length;
-              const filesNeedChanges = projectFiles.filter((item) => item.status === "Needs Changes").length;
+              const qa = qaProgress(project);
+              const ready = developmentComplete(project);
+              const latest = qaLatestResult(project);
               const activeCount = tasks.filter(
                 (task) => task.projectId === project.id && (task.status === "Todo" || task.status === "In Progress"),
               ).length;
@@ -442,34 +408,20 @@ export function TeamDesignerDashboard() {
                   assignedTaskCount={myOpenTaskCount(project, profile?.id ?? "", profile?.fullName ?? "")}
                   extra={
                     <div className="mt-3 space-y-2">
-                      {design.total === 0 ? (
-                        <p className="text-[12px] text-[var(--admin-muted)]">No design tasks yet.</p>
+                      {qa.total === 0 ? (
+                        <p className="text-[12px] text-[var(--admin-muted)]">No QA tasks yet.</p>
                       ) : (
                         <div>
-                          <ProgressBar value={Math.round((design.completed / design.total) * 100)} label="Design" />
+                          <ProgressBar value={Math.round((qa.completed / qa.total) * 100)} label="QA" />
                           <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
-                            {design.completed} / {design.total} design tasks complete
+                            {qa.completed} / {qa.total} QA tasks complete
                           </p>
                         </div>
                       )}
                       <p className="text-[12px] text-[var(--admin-muted)]">
-                        {activeCount} active task{activeCount === 1 ? "" : "s"} · {projectFiles.length} file
-                        {projectFiles.length === 1 ? "" : "s"}
+                        {activeCount} active task{activeCount === 1 ? "" : "s"} · {ready ? "Ready to test" : "Waiting on development"}
                       </p>
-                      {filesInReview > 0 || filesNeedChanges > 0 ? (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {filesInReview > 0 ? (
-                            <span className="inline-flex items-center rounded-full bg-[rgb(245_158_11_/_0.12)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[#92610a]">
-                              {filesInReview} in review
-                            </span>
-                          ) : null}
-                          {filesNeedChanges > 0 ? (
-                            <span className="inline-flex items-center rounded-full bg-[rgb(220_38_38_/_0.08)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[#b42318]">
-                              {filesNeedChanges} need changes
-                            </span>
-                          ) : null}
-                        </div>
-                      ) : null}
+                      <QaResultBadge result={latest} />
                     </div>
                   }
                 />
@@ -502,20 +454,24 @@ export function TeamDesignerDashboard() {
         </div>
 
         <div className={cardClass}>
-          <h2 className={cardTitleClass}>Client Feedback</h2>
-          {openFeedback.length === 0 ? (
-            <p className="mt-3 text-sm text-[var(--admin-muted)]">No open feedback on your projects.</p>
+          <h2 className={cardTitleClass}>Blocked Tasks</h2>
+          {blocked.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">Nothing is blocked.</p>
           ) : (
             <ul className="mt-3 divide-y divide-[var(--admin-line)]">
-              {openFeedback.slice(0, 5).map((item) => {
-                const file = deliverables.find((entry) => entry.id === item.deliverableId);
+              {blocked.slice(0, 5).map((task) => {
+                const reason = blockedReason(task);
                 return (
-                  <li key={item.id} className="py-2.5 first:pt-0 last:pb-0">
-                    <p className="truncate text-[12px] text-[var(--admin-muted)]">
-                      {projectsById.get(item.projectId)?.name ?? "Project"} · {file?.name ?? "File"} ·{" "}
-                      {formatClientDate(item.createdAt)}
-                    </p>
-                    <p className="mt-0.5 line-clamp-2 text-sm text-[var(--admin-ink)]">{item.message}</p>
+                  <li key={task.id} className="py-2.5 first:pt-0 last:pb-0">
+                    <button
+                      type="button"
+                      onClick={() => setOpenTask(task)}
+                      className="block max-w-full truncate text-left text-sm font-medium text-[var(--admin-ink)] hover:text-[var(--admin-blue)] hover:underline"
+                    >
+                      {task.title}
+                    </button>
+                    <p className="truncate text-[12px] text-[var(--admin-muted)]">{task.projectName}</p>
+                    {reason ? <p className="mt-0.5 line-clamp-2 text-[13px] text-[var(--admin-ink)]">{reason}</p> : null}
                   </li>
                 );
               })}
@@ -524,20 +480,18 @@ export function TeamDesignerDashboard() {
         </div>
 
         <div className={cardClass}>
-          <h2 className={cardTitleClass}>Approved Files</h2>
-          {recentlyApproved.length === 0 ? (
-            <p className="mt-3 text-sm text-[var(--admin-muted)]">Nothing approved yet.</p>
+          <h2 className={cardTitleClass}>Passed Checks</h2>
+          {recentPasses.length === 0 ? (
+            <p className="mt-3 text-sm text-[var(--admin-muted)]">No checks passed yet.</p>
           ) : (
             <ul className="mt-3 divide-y divide-[var(--admin-line)]">
-              {recentlyApproved.map((item) => (
-                <li key={item.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
+              {recentPasses.map((task) => (
+                <li key={task.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[var(--admin-ink)]">{item.name}</p>
-                    <p className="truncate text-[12px] text-[var(--admin-muted)]">
-                      {projectsById.get(item.projectId)?.name ?? "Project"} · {item.category}
-                    </p>
+                    <p className="truncate text-sm font-medium text-[var(--admin-ink)]">{task.title}</p>
+                    <p className="truncate text-[12px] text-[var(--admin-muted)]">{task.projectName}</p>
                   </div>
-                  <span className="shrink-0 text-[12px] text-[var(--admin-muted)]">{formatClientDate(item.updatedAt)}</span>
+                  <span className="shrink-0 text-[12px] text-[var(--admin-muted)]">{formatClientDate(task.completedAt ?? task.createdAt)}</span>
                 </li>
               ))}
             </ul>
