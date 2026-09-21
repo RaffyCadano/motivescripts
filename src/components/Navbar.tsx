@@ -62,7 +62,8 @@ export function Navbar() {
         )}
       >
       <div className="container-wide relative z-50 flex h-[var(--nav-height)] items-center justify-between gap-3 sm:gap-6">
-        <Logo />
+        {/* Larger below lg, where the nav collapses to the menu button and the wordmark is the only text in the bar. */}
+        <Logo wordmarkClassName="max-lg:text-[1.2rem]!" />
 
         <nav className="hidden items-center gap-5 xl:gap-7 lg:flex" aria-label="Primary">
           {site.nav.map((item) => (

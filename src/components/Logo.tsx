@@ -5,10 +5,12 @@ import { cn } from "@/lib/cn";
 type LogoProps = {
   className?: string;
   markClassName?: string;
+  /** Extra classes for the "MotiveScripts" text, e.g. to size it up in the top nav. */
+  wordmarkClassName?: string;
   wordmark?: boolean;
 };
 
-export function Logo({ className, markClassName, wordmark = true }: LogoProps) {
+export function Logo({ className, markClassName, wordmarkClassName, wordmark = true }: LogoProps) {
   return (
     <Link
       to="/"
@@ -17,7 +19,12 @@ export function Logo({ className, markClassName, wordmark = true }: LogoProps) {
     >
       <BrandMark className={cn("h-8 w-auto", markClassName)} decorative />
       {wordmark ? (
-        <span className="font-heading text-sm font-extrabold tracking-tight whitespace-nowrap sm:text-[1.05rem]">
+        <span
+          className={cn(
+            "font-heading text-sm font-extrabold tracking-tight whitespace-nowrap sm:text-[1.05rem]",
+            wordmarkClassName,
+          )}
+        >
           MotiveScripts
         </span>
       ) : null}
