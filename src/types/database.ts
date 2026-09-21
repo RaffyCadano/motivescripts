@@ -422,7 +422,8 @@ export type NotificationType =
   | "qa_failed"
   | "qa_passed"
   | "client_review_ready"
-  | "launch_completed";
+  | "launch_completed"
+  | "lead_submitted";
 
 export type NotificationRow = {
   id: string;
@@ -437,8 +438,27 @@ export type NotificationRow = {
   proposal_id: string | null;
   contract_id: string | null;
   invoice_id: string | null;
+  lead_id: string | null;
   read_at: string | null;
   created_at: string;
+};
+
+/** The eight in-app events a person can switch off. No row means on. See notification_preferences in SQL. */
+export type NotificationEvent =
+  | "proposal_accepted"
+  | "contract_accepted"
+  | "invoice_paid"
+  | "payment_received"
+  | "file_feedback"
+  | "approval_activity"
+  | "new_message"
+  | "lead_submitted";
+
+export type NotificationPreferenceRow = {
+  user_id: string;
+  event: NotificationEvent;
+  in_app: boolean;
+  updated_at: string;
 };
 
 export type InvitationStatus = "pending" | "accepted" | "expired" | "revoked";
@@ -952,6 +972,10 @@ export type Database = {
       >;
       messages: Table<MessageRow, Partial<MessageRow> & { conversation_id: string; body: string }>;
       notifications: Table<NotificationRow, Partial<NotificationRow> & { user_id: string; type: NotificationType; title: string }>;
+      notification_preferences: Table<
+        NotificationPreferenceRow,
+        Partial<NotificationPreferenceRow> & { user_id: string; event: NotificationEvent }
+      >;
       client_invitations: Table<
         ClientInvitationRow,
         Partial<ClientInvitationRow> & { client_id: string; email: string; token_hash: string; expires_at: string }

@@ -54,6 +54,7 @@ export type AppNotification = {
   proposalId: string | null;
   contractId: string | null;
   invoiceId: string | null;
+  leadId: string | null;
   readAt: string | null;
   createdAt: string;
 };
@@ -105,6 +106,7 @@ export function mapNotificationRow(row: NotificationRow): AppNotification {
     proposalId: row.proposal_id,
     contractId: row.contract_id,
     invoiceId: row.invoice_id,
+    leadId: row.lead_id ?? null,
     readAt: row.read_at,
     createdAt: row.created_at,
   };
@@ -211,6 +213,8 @@ export function notificationHref(item: AppNotification, role: "admin" | "staff" 
         return item.invoiceId ? `/admin/invoices/${item.invoiceId}` : "/admin/invoices";
       }
       return item.invoiceId ? `/client/invoices/${item.invoiceId}` : "/client/invoices";
+    case "lead_submitted":
+      return item.leadId ? `/admin/leads/${item.leadId}` : "/admin/leads";
     default:
       return agency ? "/admin/messages" : "/client/messages";
   }

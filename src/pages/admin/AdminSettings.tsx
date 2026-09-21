@@ -7,6 +7,7 @@ import { ConfirmSignOutModal } from "@/components/admin/ConfirmSignOutModal";
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
 import { adminDangerBtn, adminDangerSolidBtn, adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
+import { NotificationPreferences } from "@/components/admin/settings/NotificationPreferences";
 import { BrandMark } from "@/components/BrandMark";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
@@ -913,28 +914,9 @@ export function AdminSettings() {
           {section === "notifications" ? (
             <Card
               title="Notifications"
-              description="These are the in-app notifications already delivered for document, payment, file, and message activity. Individual event toggles are not available yet."
+              description="Choose which in-app notifications you receive. Every notification is on by default, and your choices are saved as soon as you change them."
             >
-              <ul className="space-y-2 text-sm text-[var(--admin-muted)]">
-                {[
-                  "Proposal accepted",
-                  "Contract accepted",
-                  "Invoice paid",
-                  "Payment received",
-                  "File feedback",
-                  "Approval activity",
-                  "New messages",
-                  "Lead submissions",
-                ].map((label) => (
-                  <li
-                    key={label}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-[var(--admin-line)] px-3 py-2"
-                  >
-                    <span className="text-[var(--admin-ink)]">{label}</span>
-                    <StatusPill label="Coming later" tone="neutral" />
-                  </li>
-                ))}
-              </ul>
+              <NotificationPreferences />
             </Card>
           ) : null}
 
