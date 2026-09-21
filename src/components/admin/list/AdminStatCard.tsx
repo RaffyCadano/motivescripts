@@ -106,7 +106,10 @@ export function AdminStatCard({
         >
           {value}
         </p>
-        {trend ? <Sparkline values={trend} className="mb-0.5 shrink-0" /> : null}
+        {trend ? (
+          // Text values (money) need the room on a phone; the delta badge above still shows the direction.
+          <Sparkline values={trend} className={cn("mb-0.5 shrink-0", typeof value === "string" && "max-sm:hidden")} />
+        ) : null}
       </div>
     </>
   );

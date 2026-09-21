@@ -35,6 +35,24 @@ function scaleMaxFor(max: number): number {
   return Math.max(4, Math.ceil(max / 4) * 4);
 }
 
+/**
+ * Scale max for values that are not small whole numbers (money, large counts): four gridline steps of a
+ * "nice" size (1, 2, 2.5, 5 x a power of ten), so ticks read $500 / $1,000 / $1,500 rather than $925 / $1,850.
+ */
+function niceScaleMax(max: number): number {
+  if (max <= 0) return 4;
+  const rough = max / 4;
+  const magnitude = 10 ** Math.floor(Math.log10(rough));
+  const step = [1, 2, 2.5, 5, 10].map((factor) => factor * magnitude).find((candidate) => candidate >= rough) ?? rough;
+  return step * 4;
+}
+
+/** Left padding wide enough for the longest tick label, never narrower than the chart's base padding. */
+function padLeftFor(base: number, labels: string[], unitsPerPixel: number): number {
+  const longest = Math.max(0, ...labels.map((label) => label.length));
+  return Math.max(base, longest * AXIS_TICK_PX * 0.6 * unitsPerPixel + 8);
+}
+
 function Tooltip({ leftPercent, topPercent, children }: { leftPercent: number; topPercent: number; children: ReactNode }) {
   return (
     <div
@@ -51,30 +69,53 @@ const LINE_W = 480;
 const LINE_H = 190;
 const LINE_PAD = { left: 26, right: 18, top: 14, bottom: 24 };
 
-/** Daily hours logged as a line over the last N days. Hover (or touch) any day for the exact value. */
-export function HoursLineChart({ data }: { data: DailyHours[] }) {
+export type LinePoint = { date: string; label: string; value: number };
+
+/**
+ * A value per day as a line. Hover (or touch) any day for the exact value. `formatTick` labels the y axis and
+ * `formatValue` the tooltip; `niceScale` picks round gridline steps for money or large counts.
+ */
+export function ValueLineChart({
+  data,
+  ariaLabel,
+  caption,
+  valueHeader,
+  formatTick = (value) => String(value),
+  formatValue = (value) => String(value),
+  niceScale = false,
+}: {
+  data: LinePoint[];
+  ariaLabel: string;
+  caption: string;
+  valueHeader: string;
+  formatTick?: (value: number) => string;
+  formatValue?: (value: number) => string;
+  niceScale?: boolean;
+}) {
   const { ref, unitsPerPixel } = useChartUnits(LINE_W);
   const [hover, setHover] = useState<number | null>(null);
 
-  const innerW = LINE_W - LINE_PAD.left - LINE_PAD.right;
+  const maxValue = Math.max(0, ...data.map((day) => day.value));
+  const scaleMax = niceScale ? niceScaleMax(maxValue) : scaleMaxFor(maxValue);
+  const ticks = Array.from({ length: TICKS + 1 }, (_, i) => (scaleMax * i) / TICKS);
+  const padLeft = padLeftFor(LINE_PAD.left, ticks.map(formatTick), unitsPerPixel);
+  const innerW = LINE_W - padLeft - LINE_PAD.right;
   const innerH = LINE_H - LINE_PAD.top - LINE_PAD.bottom;
   const baselineY = LINE_PAD.top + innerH;
-  const scaleMax = scaleMaxFor(Math.max(0, ...data.map((day) => day.hours)));
   const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
 
   const points = data.map((day, index) => ({
-    x: LINE_PAD.left + index * stepX,
-    y: LINE_PAD.top + innerH * (1 - day.hours / scaleMax),
+    x: padLeft + index * stepX,
+    y: LINE_PAD.top + innerH * (1 - day.value / scaleMax),
   }));
   const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
   const areaPath = `${linePath} L${points[points.length - 1].x.toFixed(1)},${baselineY} L${points[0].x.toFixed(1)},${baselineY} Z`;
-  const ticks = Array.from({ length: TICKS + 1 }, (_, i) => (scaleMax * i) / TICKS);
 
   function onMove(event: PointerEvent<SVGSVGElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
     if (rect.width === 0 || stepX === 0) return;
     const xUnits = ((event.clientX - rect.left) / rect.width) * LINE_W;
-    const index = Math.round((xUnits - LINE_PAD.left) / stepX);
+    const index = Math.round((xUnits - padLeft) / stepX);
     setHover(Math.min(data.length - 1, Math.max(0, index)));
   }
 
@@ -90,7 +131,7 @@ export function HoursLineChart({ data }: { data: DailyHours[] }) {
         viewBox={`0 0 ${LINE_W} ${LINE_H}`}
         width="100%"
         role="img"
-        aria-label={`Hours logged per day over the last ${data.length} days`}
+        aria-label={ariaLabel}
         className="touch-pan-y"
         onPointerMove={onMove}
         onPointerDown={onMove}
@@ -100,16 +141,16 @@ export function HoursLineChart({ data }: { data: DailyHours[] }) {
           const y = LINE_PAD.top + innerH * (1 - tick / scaleMax);
           return (
             <g key={tick}>
-              <line x1={LINE_PAD.left} x2={LINE_W - LINE_PAD.right} y1={y} y2={y} stroke="var(--admin-line)" strokeWidth={1} />
+              <line x1={padLeft} x2={LINE_W - LINE_PAD.right} y1={y} y2={y} stroke="var(--admin-line)" strokeWidth={1} />
               <text
-                x={LINE_PAD.left - 5}
+                x={padLeft - 5}
                 y={y}
                 textAnchor="end"
                 dominantBaseline="middle"
                 fontSize={AXIS_TICK_PX * unitsPerPixel}
                 fill="var(--admin-muted)"
               >
-                {tick}h
+                {formatTick(tick)}
               </text>
             </g>
           );
@@ -153,28 +194,42 @@ export function HoursLineChart({ data }: { data: DailyHours[] }) {
       {hovered && hoveredPoint ? (
         <Tooltip leftPercent={(hoveredPoint.x / LINE_W) * 100} topPercent={(hoveredPoint.y / LINE_H) * 100 - 3}>
           <span className="text-[var(--admin-muted)]">{hovered.label}</span>{" "}
-          <span className="font-semibold">{hovered.hours}h</span>
+          <span className="font-semibold">{formatValue(hovered.value)}</span>
         </Tooltip>
       ) : null}
 
       <table className="sr-only">
-        <caption>Hours logged per day</caption>
+        <caption>{caption}</caption>
         <thead>
           <tr>
             <th>Day</th>
-            <th>Hours</th>
+            <th>{valueHeader}</th>
           </tr>
         </thead>
         <tbody>
           {data.map((day) => (
             <tr key={day.date}>
               <td>{day.label}</td>
-              <td>{day.hours}</td>
+              <td>{formatValue(day.value)}</td>
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** Daily hours logged as a line over the last N days. Hover (or touch) any day for the exact value. */
+export function HoursLineChart({ data }: { data: DailyHours[] }) {
+  return (
+    <ValueLineChart
+      data={data.map((day) => ({ date: day.date, label: day.label, value: day.hours }))}
+      ariaLabel={`Hours logged per day over the last ${data.length} days`}
+      caption="Hours logged per day"
+      valueHeader="Hours"
+      formatTick={(value) => `${value}h`}
+      formatValue={(value) => `${value}h`}
+    />
   );
 }
 
@@ -198,17 +253,36 @@ export type CategoryBar = { key: string; label: string; count: number; color: st
  * Counts per category as vertical bars. Every bar carries its own count and text label, so identity is never
  * color alone. Hover (or touch) a bar for the exact count. `unit` is the singular noun used in the tooltip.
  */
-export function CategoryBarChart({ data, ariaLabel, unit }: { data: CategoryBar[]; ariaLabel: string; unit: string }) {
+export function CategoryBarChart({
+  data,
+  ariaLabel,
+  unit,
+  formatValue,
+  formatTick,
+}: {
+  data: CategoryBar[];
+  ariaLabel: string;
+  unit: string;
+  /** Formats a bar's value (tooltip and label above the bar), e.g. money. Defaults to the plain count. */
+  formatValue?: (value: number) => string;
+  /** Formats the y-axis ticks. Defaults to formatValue, then the plain number. Passing either picks round gridline steps. */
+  formatTick?: (value: number) => string;
+}) {
   const { ref, unitsPerPixel } = useChartUnits(BAR_W);
   const [hover, setHover] = useState<number | null>(null);
 
-  const innerW = BAR_W - BAR_PAD.left - BAR_PAD.right;
+  const niceScale = Boolean(formatValue || formatTick);
+  const tickFormat = formatTick ?? formatValue ?? ((value: number) => String(value));
+  const scaleMax = niceScale
+    ? niceScaleMax(Math.max(0, ...data.map((item) => item.count)))
+    : scaleMaxFor(Math.max(0, ...data.map((item) => item.count)));
+  const ticks = Array.from({ length: TICKS + 1 }, (_, i) => (scaleMax * i) / TICKS);
+  const padLeft = padLeftFor(BAR_PAD.left, ticks.map(tickFormat), unitsPerPixel);
+  const innerW = BAR_W - padLeft - BAR_PAD.right;
   const innerH = BAR_H - BAR_PAD.top - BAR_PAD.bottom;
   const baselineY = BAR_PAD.top + innerH;
   const slot = innerW / data.length;
   const barWidth = Math.min(30, slot * 0.5);
-  const scaleMax = scaleMaxFor(Math.max(0, ...data.map((item) => item.count)));
-  const ticks = Array.from({ length: TICKS + 1 }, (_, i) => (scaleMax * i) / TICKS);
 
   const hovered = hover !== null ? data[hover] : null;
   const hoveredTop = hovered ? baselineY - innerH * (hovered.count / scaleMax) : 0;
@@ -227,25 +301,25 @@ export function CategoryBarChart({ data, ariaLabel, unit }: { data: CategoryBar[
           const y = BAR_PAD.top + innerH * (1 - tick / scaleMax);
           return (
             <g key={tick}>
-              <line x1={BAR_PAD.left} x2={BAR_W - BAR_PAD.right} y1={y} y2={y} stroke="var(--admin-line)" strokeWidth={1} />
+              <line x1={padLeft} x2={BAR_W - BAR_PAD.right} y1={y} y2={y} stroke="var(--admin-line)" strokeWidth={1} />
               <text
-                x={BAR_PAD.left - 5}
+                x={padLeft - 5}
                 y={y}
                 textAnchor="end"
                 dominantBaseline="middle"
                 fontSize={AXIS_TICK_PX * unitsPerPixel}
                 fill="var(--admin-muted)"
               >
-                {tick}
+                {tickFormat(tick)}
               </text>
             </g>
           );
         })}
-        <line x1={BAR_PAD.left} x2={BAR_W - BAR_PAD.right} y1={baselineY} y2={baselineY} stroke="var(--admin-muted)" strokeWidth={1} />
+        <line x1={padLeft} x2={BAR_W - BAR_PAD.right} y1={baselineY} y2={baselineY} stroke="var(--admin-muted)" strokeWidth={1} />
 
         {data.map((item, index) => {
           const barHeight = innerH * (item.count / scaleMax);
-          const x = BAR_PAD.left + index * slot + (slot - barWidth) / 2;
+          const x = padLeft + index * slot + (slot - barWidth) / 2;
           const y = baselineY - barHeight;
           const words = item.label.split(" ");
           const labelSize = CATEGORY_LABEL_PX * unitsPerPixel;
@@ -260,7 +334,7 @@ export function CategoryBarChart({ data, ariaLabel, unit }: { data: CategoryBar[
                 fontWeight={600}
                 fill="var(--admin-ink)"
               >
-                {item.count}
+                {formatValue ? formatValue(item.count) : item.count}
               </text>
               <text x={x + barWidth / 2} y={baselineY + labelSize + 3} textAnchor="middle" fontSize={labelSize} fill="var(--admin-muted)">
                 {words.map((word, line) => (
@@ -270,7 +344,7 @@ export function CategoryBarChart({ data, ariaLabel, unit }: { data: CategoryBar[
                 ))}
               </text>
               <rect
-                x={BAR_PAD.left + index * slot}
+                x={padLeft + index * slot}
                 y={BAR_PAD.top}
                 width={slot}
                 height={innerH + BAR_PAD.bottom}
@@ -284,10 +358,10 @@ export function CategoryBarChart({ data, ariaLabel, unit }: { data: CategoryBar[
       </svg>
 
       {hovered && hover !== null ? (
-        <Tooltip leftPercent={((BAR_PAD.left + hover * slot + slot / 2) / BAR_W) * 100} topPercent={(hoveredTop / BAR_H) * 100 - 8}>
+        <Tooltip leftPercent={((padLeft + hover * slot + slot / 2) / BAR_W) * 100} topPercent={(hoveredTop / BAR_H) * 100 - 8}>
           <span className="text-[var(--admin-muted)]">{hovered.label}</span>{" "}
           <span className="font-semibold">
-            {hovered.count} {hovered.count === 1 ? unit : `${unit}s`}
+            {formatValue ? formatValue(hovered.count) : `${hovered.count} ${hovered.count === 1 ? unit : `${unit}s`}`}
           </span>
         </Tooltip>
       ) : null}

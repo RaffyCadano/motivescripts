@@ -11,6 +11,7 @@ import {
   type InvoiceSnapshotItem,
   type LineItemDraft,
 } from "@/data/invoices";
+import type { PaymentRecord } from "@/data/accountingOverview";
 import { downloadAuthenticatedPdf } from "@/data/pdfDownload";
 import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -154,6 +155,31 @@ export async function fetchInvoicePaymentMethods(
     methods.set(row.invoice_id, current);
   }
   return methods;
+}
+
+/**
+ * Recorded payments across every invoice this staff member may see (RLS limits it to invoices they can
+ * view), newest first. Used by the Accounting dashboard for cash collected. Reversed payments come back
+ * flagged via reversedAt so callers can exclude them.
+ */
+export async function fetchRecentPayments(limit = 500): Promise<PaymentRecord[]> {
+  const client = db();
+  const { data, error } = await client
+    .from("payments")
+    .select("id, invoice_id, amount_cents, payment_date, payment_method, reversed_at")
+    .order("payment_date", { ascending: false })
+    .limit(limit);
+  throwIf(error, "load payments", "Unable to load payments.");
+  return ((data ?? []) as Pick<PaymentRow, "id" | "invoice_id" | "amount_cents" | "payment_date" | "payment_method" | "reversed_at">[]).map(
+    (row) => ({
+      id: row.id,
+      invoiceId: row.invoice_id,
+      amountCents: row.amount_cents,
+      paymentDate: row.payment_date,
+      method: row.payment_method,
+      reversedAt: row.reversed_at,
+    }),
+  );
 }
 
 export async function fetchInvoiceFirstLines(invoiceIds: string[]): Promise<Map<string, string>> {

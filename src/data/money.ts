@@ -36,3 +36,10 @@ export function centsInputValue(cents: number): string {
   const remainder = abs % 100;
   return `${dollars}.${String(remainder).padStart(2, "0")}`;
 }
+
+/** Whole-dollar display for headline figures, e.g. 1234567 cents -> "$12,346". Use formatUsdFromCents where cents matter. */
+export function formatUsdWhole(cents: number): string {
+  const negative = cents < 0;
+  const dollars = Math.round(Math.abs(cents) / 100);
+  return `${negative ? "-" : ""}$${dollars.toLocaleString("en-US")}`;
+}
