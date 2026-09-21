@@ -1,15 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
 import { ProjectScopeSummary } from "@/components/admin/projects/ProjectScopeSummary";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
-import {
-  projectStatuses,
-  projectTypes,
-  type AgencyProjectStatus,
-  type AgencyProjectType,
-} from "@/data/agencyProjects";
+import { projectTypes, type AgencyProjectType } from "@/data/agencyProjects";
 import { projectDescriptionFromBrief, suggestedProjectName, type ClientScopeBrief } from "@/data/scopeBriefs";
 import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
@@ -17,8 +12,9 @@ import { AgencyDbError } from "@/lib/dbErrors";
 const inputClass =
   "mt-1.5 h-10 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm font-normal outline-none focus:border-[rgb(0_80_240_/_0.45)]";
 
-const defaultProjectDescription =
-  "Design and develop a professional website for this business, including the agreed pages, a mobile-friendly layout, and a clear way for visitors to get in touch.";
+/** Shown only as a placeholder: never pre-filled, because nothing is "agreed" until the scope is in. */
+const descriptionPlaceholder =
+  "Describe what will be built, for example: Design and develop a professional website with a mobile-friendly layout and a clear way for visitors to get in touch.";
 
 export function AdminProjectNew() {
   const { clients, addProject, notify } = useLeads();
@@ -26,21 +22,29 @@ export function AdminProjectNew() {
   const [searchParams] = useSearchParams();
   const presetClient = searchParams.get("client") ?? "";
   const lockedClient = clients.some((client) => client.id === presetClient);
+  // A link that names a client we can't find gets a notice, never a silent fallback to some other client.
+  const presetMissing = Boolean(presetClient) && !lockedClient;
   const [name, setName] = useState("");
-  const [clientId, setClientId] = useState(lockedClient ? presetClient : (clients[0]?.id ?? ""));
+  // Empty until a client is chosen (or the link names one). Never default to the first client in the list.
+  const [clientId, setClientId] = useState(lockedClient ? presetClient : "");
   const [type, setType] = useState<AgencyProjectType>("Website");
-  const [status, setStatus] = useState<AgencyProjectStatus>("Planning");
-  const [description, setDescription] = useState(defaultProjectDescription);
-  const [fromBrief, setFromBrief] = useState(false);
+  const [description, setDescription] = useState("");
   const [brief, setBrief] = useState<ClientScopeBrief | null>(null);
   const [briefLoading, setBriefLoading] = useState(Boolean(clientId));
   const [startDate, setStartDate] = useState("");
   const [targetLaunchDate, setTargetLaunchDate] = useState("");
   const [busy, setBusy] = useState(false);
-  const nameTouched = useRef(false);
-  const descriptionTouched = useRef(false);
+  // What we last auto-suggested, so a suggestion is only replaced while the person has not edited it.
+  const lastSuggestedName = useRef("");
+  const lastSuggestedDescription = useRef("");
+  const clientsRef = useRef(clients);
+  clientsRef.current = clients;
   const selectedClient = clients.find((client) => client.id === clientId);
+  const datesInvalid = Boolean(startDate && targetLaunchDate && targetLaunchDate < startDate);
+  const briefDescription = useMemo(() => (brief ? projectDescriptionFromBrief(brief) : ""), [brief]);
+  const fromBrief = briefDescription !== "" && description === briefDescription;
 
+  // Runs when the chosen client changes, not on every background refresh of the client list.
   useEffect(() => {
     if (!clientId) {
       setBrief(null);
@@ -48,32 +52,33 @@ export function AdminProjectNew() {
       return;
     }
     let active = true;
+
+    // The name suggestion does not depend on the network, so apply it right away.
+    const client = clientsRef.current.find((item) => item.id === clientId);
+    const nextName = client ? suggestedProjectName(client.businessName) : "";
+    // Capture the previous suggestion first: React runs the updater below later, after the ref has moved on.
+    const previousName = lastSuggestedName.current;
+    setName((current) => (current === "" || current === previousName ? nextName : current));
+    lastSuggestedName.current = nextName;
+
+    const applyDescription = (row: ClientScopeBrief | null) => {
+      const next = row ? projectDescriptionFromBrief(row) : "";
+      const previous = lastSuggestedDescription.current;
+      setDescription((current) => (current === "" || current === previous ? next : current));
+      lastSuggestedDescription.current = next;
+    };
+
     setBriefLoading(true);
     void fetchClientScopeBrief(clientId)
       .then((row) => {
         if (!active) return;
         setBrief(row);
-        const client = clients.find((item) => item.id === clientId);
-        if (!nameTouched.current && client) {
-          setName(suggestedProjectName(client.businessName));
-        }
-        if (!descriptionTouched.current) {
-          if (row) {
-            setDescription(projectDescriptionFromBrief(row));
-            setFromBrief(true);
-          } else {
-            setDescription(defaultProjectDescription);
-            setFromBrief(false);
-          }
-        }
+        applyDescription(row);
       })
       .catch(() => {
         if (!active) return;
         setBrief(null);
-        if (!descriptionTouched.current) {
-          setDescription(defaultProjectDescription);
-          setFromBrief(false);
-        }
+        applyDescription(null);
       })
       .finally(() => {
         if (active) setBriefLoading(false);
@@ -81,11 +86,15 @@ export function AdminProjectNew() {
     return () => {
       active = false;
     };
-  }, [clientId, clients]);
+  }, [clientId]);
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!clientId || busy) return;
+    if (datesInvalid) {
+      notify("The target launch date can't be before the start date.");
+      return;
+    }
     setBusy(true);
     try {
       const id = await addProject({
@@ -93,7 +102,9 @@ export function AdminProjectNew() {
         clientId,
         type,
         description,
-        status,
+        // Always Planning: production statuses are reached through the workflow (proposal, contract,
+        // payment, design approval), and "In Development" would unlock development without design approval.
+        status: "Planning",
         startDate,
         targetLaunchDate,
       });
@@ -147,10 +158,7 @@ export function AdminProjectNew() {
               <input
                 required
                 value={name}
-                onChange={(event) => {
-                  nameTouched.current = true;
-                  setName(event.target.value);
-                }}
+                onChange={(event) => setName(event.target.value)}
                 className={inputClass}
               />
             </label>
@@ -160,19 +168,23 @@ export function AdminProjectNew() {
                 required
                 disabled={lockedClient}
                 value={clientId}
-                onChange={(event) => {
-                  nameTouched.current = false;
-                  descriptionTouched.current = false;
-                  setClientId(event.target.value);
-                }}
+                onChange={(event) => setClientId(event.target.value)}
                 className={inputClass}
               >
+                <option value="" disabled>
+                  Select a client
+                </option>
                 {clients.map((client) => (
                   <option key={client.id} value={client.id}>
                     {client.businessName}
                   </option>
                 ))}
               </select>
+              {presetMissing ? (
+                <span className="mt-1.5 block text-[12px] font-normal text-amber-800">
+                  The client in that link could not be found. Choose a client below.
+                </span>
+              ) : null}
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm font-semibold">
@@ -190,24 +202,15 @@ export function AdminProjectNew() {
                   ))}
                 </select>
               </label>
-              <label className="block text-sm font-semibold">
+              <div className="block text-sm font-semibold">
                 Status
-                <select
-                  required
-                  value={status}
-                  onChange={(event) => setStatus(event.target.value as AgencyProjectStatus)}
-                  className={inputClass}
-                >
-                  {projectStatuses.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
+                <p className="mt-1.5 flex h-10 items-center rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] px-3 text-sm font-normal text-[var(--admin-ink)]">
+                  Planning
+                </p>
                 <span className="mt-1.5 block text-[12px] font-normal text-[var(--admin-muted)]">
-                  New projects start in Planning. Production starts later, after proposal, contract, and payment.
+                  New projects always start in Planning. Production starts later, after proposal, contract, and payment.
                 </span>
-              </label>
+              </div>
             </div>
             <label className="block text-sm font-semibold">
               Description
@@ -215,11 +218,8 @@ export function AdminProjectNew() {
                 required
                 rows={6}
                 value={description}
-                onChange={(event) => {
-                  descriptionTouched.current = true;
-                  setFromBrief(false);
-                  setDescription(event.target.value);
-                }}
+                placeholder={descriptionPlaceholder}
+                onChange={(event) => setDescription(event.target.value)}
                 className="mt-1.5 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 py-2 text-sm font-normal outline-none focus:border-[rgb(0_80_240_/_0.45)]"
               />
               {fromBrief ? (
@@ -231,7 +231,13 @@ export function AdminProjectNew() {
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-sm font-semibold">
                 Start date
-                <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className={inputClass} />
+                <input
+                  type="date"
+                  value={startDate}
+                  max={targetLaunchDate || undefined}
+                  onChange={(event) => setStartDate(event.target.value)}
+                  className={inputClass}
+                />
                 <span className="mt-1.5 block text-[12px] font-normal text-[var(--admin-muted)]">
                   Optional — set when you expect to begin work.
                 </span>
@@ -241,16 +247,24 @@ export function AdminProjectNew() {
                 <input
                   type="date"
                   value={targetLaunchDate}
+                  min={startDate || undefined}
                   onChange={(event) => setTargetLaunchDate(event.target.value)}
+                  aria-invalid={datesInvalid || undefined}
                   className={inputClass}
                 />
-                <span className="mt-1.5 block text-[12px] font-normal text-[var(--admin-muted)]">
-                  Optional — set an estimated launch date for planning.
-                </span>
+                {datesInvalid ? (
+                  <span role="alert" className="mt-1.5 block text-[12px] font-normal text-[#b42318]">
+                    The target launch date can&apos;t be before the start date.
+                  </span>
+                ) : (
+                  <span className="mt-1.5 block text-[12px] font-normal text-[var(--admin-muted)]">
+                    Optional — set an estimated launch date for planning.
+                  </span>
+                )}
               </label>
             </div>
             <div className="space-y-2 pt-1">
-              <button type="submit" disabled={busy} className={adminPrimaryBtn}>
+              <button type="submit" disabled={busy || datesInvalid} className={adminPrimaryBtn}>
                 {busy ? "Creating…" : "Create Project"}
               </button>
               <p className="text-[12px] font-normal leading-5 text-[var(--admin-muted)]">

@@ -56,6 +56,15 @@ export function ProjectScopeSummary({
         brief.hasExistingWebsite !== null),
   );
 
+  if (!client) {
+    return (
+      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 sm:p-6">
+        <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Scope Summary</p>
+        <p className="mt-1 text-sm text-[var(--admin-muted)]">Choose a client below to see the Website Scope they submitted.</p>
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">

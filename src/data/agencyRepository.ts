@@ -455,6 +455,9 @@ export async function updateClientFields(
 const defaultMilestones = defaultWebsiteMilestones();
 
 export async function insertProject(draft: AgencyProjectDraft): Promise<string> {
+  if (draft.startDate && draft.targetLaunchDate && draft.targetLaunchDate < draft.startDate) {
+    throw new AgencyDbError("The target launch date can't be before the start date.");
+  }
   const client = db();
   const { data, error } = await client
     .from("projects")
