@@ -5,7 +5,16 @@ import { CTA } from "@/components/CTA";
 import { FaqItem } from "@/components/FaqItem";
 import { PageHero } from "@/components/PageHero";
 import { TierPrice } from "@/components/TierPrice";
-import { commonAddOns, pricingTiers, websiteStartingPrice } from "@/data/pricing";
+import {
+  careStartingPrice,
+  commonAddOns,
+  hostingStartingPrice,
+  ongoingServices,
+  ongoingServicesTerms,
+  pricingTiers,
+  seoRetainerStartingPrice,
+  websiteStartingPrice,
+} from "@/data/pricing";
 import { site } from "@/data/site";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { cn } from "@/lib/cn";
@@ -45,7 +54,7 @@ const pricingFaqs = [
   {
     question: "Are hosting and domain costs included?",
     answer:
-      "Not automatically. Hosting setup, domain registration, and business email are quoted as separate line items when your project needs them, so you can see exactly what each one costs in your proposal.",
+      `Not automatically. Hosting setup, domain registration, and business email are quoted as separate line items when your project needs them, so you can see exactly what each one costs in your proposal. Ongoing monthly hosting is a separate optional service, starting at ${hostingStartingPrice}/month.`,
   },
   {
     question: "Do I need to know exactly what I need before contacting you?",
@@ -62,8 +71,7 @@ const pricingFaqs = [
   },
   {
     question: "Are ongoing services included?",
-    answer:
-      "Not automatically. Website Care (updates, maintenance, and technical support) is a separate ongoing service you can add if you want it.",
+    answer: `Not automatically. These optional monthly services are separate from your website project: Website Care (updates, maintenance, and technical support) starts at ${careStartingPrice}/month, hosting at ${hostingStartingPrice}/month, and an SEO retainer at ${seoRetainerStartingPrice}/month. ${ongoingServicesTerms}`,
   },
 ];
 
@@ -148,6 +156,43 @@ export function PricingPage() {
                   </li>
                 ))}
               </ul>
+            </section>
+          </AnimateIn>
+        </div>
+      </div>
+
+      <div className="border-t border-[var(--color-line)]">
+        <div className="container-wide py-16 md:py-24">
+          <AnimateIn>
+            <section aria-labelledby="ongoing-heading">
+              <h2 id="ongoing-heading" className="text-2xl md:text-3xl">
+                Ongoing services.
+              </h2>
+              <p className="mt-4 max-w-2xl text-muted">
+                Optional monthly services for after your website launches. They&apos;re separate from your project and
+                are never added automatically.
+              </p>
+              <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {ongoingServices.map((service, index) => (
+                  <li
+                    key={service.id}
+                    className={cn(
+                      "flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7",
+                      index === ongoingServices.length - 1 && "sm:col-span-2 lg:col-span-1",
+                    )}
+                  >
+                    <h3 className="text-xl font-bold">{service.name}</h3>
+                    <p className="mt-3 flex-1 text-sm text-muted">{service.description}</p>
+                    <TierPrice
+                      className="mt-6"
+                      lead="Starting at"
+                      price={`${service.price}/mo`}
+                      note="Billed monthly. Your exact amount is confirmed in your proposal."
+                    />
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-6 max-w-2xl text-sm text-faint">{ongoingServicesTerms}</p>
             </section>
           </AnimateIn>
         </div>

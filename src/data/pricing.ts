@@ -10,6 +10,42 @@
  */
 export const websiteStartingPrice = "$2,500";
 
+/**
+ * Starting prices for the optional monthly services, shown on the Pricing page. These are the public
+ * "starting at" figures only: each client's actual plan amount is set when their plan is created in Admin
+ * (Recurring plans) and is confirmed in their proposal. If you change one here, change it in
+ * supabase/functions/_shared/aiKnowledge.ts too (scripts/test-ai-endpoint.mjs checks they match).
+ */
+export const careStartingPrice = "$99";
+export const hostingStartingPrice = "$25";
+export const seoRetainerStartingPrice = "$299";
+
+export const ongoingServices = [
+  {
+    id: "care",
+    name: "Website Care",
+    description:
+      "Updates, technical support, and small content or feature changes after launch, for businesses that want an ongoing relationship rather than a one-time build.",
+    price: careStartingPrice,
+  },
+  {
+    id: "hosting",
+    name: "Hosting",
+    description: "Ongoing hosting for your website, billed monthly. Initial hosting setup is quoted separately in your proposal.",
+    price: hostingStartingPrice,
+  },
+  {
+    id: "seo",
+    name: "SEO Retainer",
+    description: "Ongoing search engine optimization work after launch.",
+    price: seoRetainerStartingPrice,
+  },
+] as const;
+
+/** Shown under the ongoing services and repeated in the FAQ, so the terms are stated wherever the prices are. */
+export const ongoingServicesTerms =
+  "Billed monthly and renews automatically until canceled. These are starting prices; your exact monthly amount is confirmed in your proposal before anything is billed.";
+
 export const pricingTiers = [
   {
     id: "website",

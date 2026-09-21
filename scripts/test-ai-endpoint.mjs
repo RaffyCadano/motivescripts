@@ -15,6 +15,9 @@ import {
 import {
   AI_KNOWLEDGE_VERSION,
   START_PROJECT_TOKEN,
+  CARE_STARTING_PRICE,
+  HOSTING_STARTING_PRICE,
+  SEO_RETAINER_STARTING_PRICE,
   WEBSITE_STARTING_PRICE,
   buildSystemPrompt,
 } from "../supabase/functions/_shared/aiKnowledge.ts";
@@ -270,6 +273,17 @@ test("knowledge stays in sync with the public site", () => {
   const pricing = readFileSync("src/data/pricing.ts", "utf8");
   assert.match(pricing, new RegExp(`websiteStartingPrice = "${WEBSITE_STARTING_PRICE.replace("$", "\\$")}"`));
 
+  for (const [name, value] of [
+    ["careStartingPrice", CARE_STARTING_PRICE],
+    ["hostingStartingPrice", HOSTING_STARTING_PRICE],
+    ["seoRetainerStartingPrice", SEO_RETAINER_STARTING_PRICE],
+  ]) {
+    assert.match(pricing, new RegExp(`${name} = "${value.replace("$", "\\$")}"`), `${name} out of sync with the knowledge`);
+  }
+  for (const value of [CARE_STARTING_PRICE, HOSTING_STARTING_PRICE, SEO_RETAINER_STARTING_PRICE]) {
+    assert.ok(prompt.includes(`${value}/month`), `monthly starting price ${value} missing from knowledge`);
+  }
+
   const services = readFileSync("src/data/services.ts", "utf8");
   for (const [, title] of services.matchAll(/title:\s*"([^"]+)"/g)) {
     assert.ok(prompt.includes(title), `service missing from knowledge: ${title}`);
@@ -313,7 +327,13 @@ test("the knowledge contains no internal data, schema names, secrets, or catalog
     /\$\s?(15|25|100|150|250)\b(?!,)/, // internal add-on defaults must not appear as prices
     /admin\/|\/team\/|\/client\//i,
   ];
+  // The published monthly starting prices are deliberate public prices (one of them, $25, matches an internal
+  // add-on default), so allow exactly those, written as "<price>/month". Any other appearance still fails.
+  let scanned = prompt;
+  for (const value of [CARE_STARTING_PRICE, HOSTING_STARTING_PRICE, SEO_RETAINER_STARTING_PRICE]) {
+    scanned = scanned.split(`${value}/month`).join("");
+  }
   for (const pattern of forbidden) {
-    assert.ok(!pattern.test(prompt), `forbidden content in prompt: ${pattern}`);
+    assert.ok(!pattern.test(scanned), `forbidden content in prompt: ${pattern}`);
   }
 });
