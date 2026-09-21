@@ -10,14 +10,18 @@ import { AgencyDbError } from "@/lib/dbErrors";
 import type { NotificationEvent } from "@/types/database";
 import { cn } from "@/lib/cn";
 
-/** Personal in-app notification switches. Each change saves immediately; the default for every event is on. */
-export function NotificationPreferences() {
+/**
+ * Personal in-app notification switches. Each change saves immediately; the default for every event is on.
+ * Pass `events` to show only the ones that can reach this person (defaults to all of them).
+ */
+export function NotificationPreferences({ events }: { events?: NotificationEvent[] } = {}) {
   const { profile } = useAuth();
   const userId = profile?.id ?? "";
   const [prefs, setPrefs] = useState<NotificationPreferenceMap>(defaultNotificationPreferences);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<NotificationEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const shown = events ? notificationEvents.filter((event) => events.includes(event.key)) : notificationEvents;
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +65,7 @@ export function NotificationPreferences() {
         </p>
       ) : null}
       <ul className="space-y-2">
-        {notificationEvents.map((event) => {
+        {shown.map((event) => {
           const on = prefs[event.key];
           const labelId = `notif-${event.key}-label`;
           const hintId = `notif-${event.key}-hint`;

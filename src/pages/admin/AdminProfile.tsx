@@ -1,9 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
+import { hasPermission, type StaffPermissionCode } from "@/auth/permissions";
 import { displayRoleLabel } from "@/auth/roles";
 import { initialsFromName, userDisplay } from "@/auth/userDisplay";
+import { NotificationPreferences } from "@/components/admin/settings/NotificationPreferences";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
+import { PayoutInfoSection } from "@/components/settings/PayoutInfoSection";
+import { officeNotificationEvents } from "@/data/notificationPreferences";
 import { updateOwnProfile } from "@/data/settingsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 
@@ -42,6 +46,10 @@ export function AdminProfile() {
   }
 
   const roleLabel = profile?.jobTitle.trim() || self?.templateLabel || displayRoleLabel(profile?.role);
+  const notificationEvents = officeNotificationEvents({
+    isAdmin: profile?.role === "admin",
+    can: (code) => hasPermission(profile, code as StaffPermissionCode),
+  });
   const clients = self?.clientAssignments ?? [];
   const projects = self?.projectAssignments ?? [];
 
@@ -98,6 +106,26 @@ export function AdminProfile() {
           {error ? <p className="text-sm text-[#b42318]">{error}</p> : null}
         </form>
       </section>
+
+      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6">
+        <h2 className="font-heading text-sm font-semibold">Notifications</h2>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--admin-muted)]">
+          Choose which in-app notifications you receive. Every notification is on by default, and your choices are
+          saved as soon as you change them.
+        </p>
+        <div className="mt-4">
+          {notificationEvents.length === 0 ? (
+            <p className="text-sm text-[var(--admin-muted)]">
+              There are no optional notifications for your access. Task, deadline, and payroll notifications are always
+              delivered.
+            </p>
+          ) : (
+            <NotificationPreferences events={notificationEvents} />
+          )}
+        </div>
+      </section>
+
+      {profile?.role === "staff" ? <PayoutInfoSection userId={profile.id} /> : null}
 
       <section className="grid gap-6 lg:grid-cols-2">
         <AssignmentList

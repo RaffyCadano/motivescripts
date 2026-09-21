@@ -33,6 +33,38 @@ export const notificationEvents: { key: NotificationEvent; label: string; descri
   },
 ];
 
+/**
+ * The events that can reach a production-team member (developer, designer, content writer, QA). They never
+ * get proposal, contract, invoice, payment, or lead notifications, so those switches would do nothing.
+ * File feedback and approval activity need file access; project messages only reach the roles allowed to
+ * message assigned clients.
+ */
+export function teamNotificationEvents(access: { canFiles: boolean; canMessages: boolean }): NotificationEvent[] {
+  const keys: NotificationEvent[] = [];
+  if (access.canMessages) keys.push("new_message");
+  if (access.canFiles) keys.push("file_feedback", "approval_activity");
+  return notificationEvents.filter((event) => keys.includes(event.key)).map((event) => event.key);
+}
+
+/**
+ * The events that can reach someone in the admin workspace (Admin, Project Manager, Sales, Accounting),
+ * decided by what they are allowed to see: an event only appears if they hold the permission behind it.
+ * New-lead notifications go to admins only, so that switch is admin-only too.
+ */
+export function officeNotificationEvents(access: {
+  isAdmin: boolean;
+  can: (code: string) => boolean;
+}): NotificationEvent[] {
+  if (access.isAdmin) return notificationEvents.map((event) => event.key);
+  const keys: NotificationEvent[] = [];
+  if (access.can("proposals.view")) keys.push("proposal_accepted");
+  if (access.can("contracts.view")) keys.push("contract_accepted");
+  if (access.can("invoices.view")) keys.push("invoice_paid", "payment_received");
+  if (access.can("files.view")) keys.push("file_feedback", "approval_activity");
+  if (access.can("messages.view")) keys.push("new_message");
+  return notificationEvents.filter((event) => keys.includes(event.key)).map((event) => event.key);
+}
+
 export type NotificationPreferenceMap = Record<NotificationEvent, boolean>;
 
 /** Every event defaults to on, so a person with no saved rows keeps receiving everything. */
