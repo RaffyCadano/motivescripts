@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Ban, Download, Mail, PencilLine, RotateCcw, Send, Trash2 } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
-import { hasPermission } from "@/auth/permissions";
+import { hasPermission, isActiveAdmin } from "@/auth/permissions";
 import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
 import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
@@ -46,6 +46,7 @@ import {
   generateInvoiceItemsFromTimeEntries,
   invoiceLineDrafts,
   recordInvoicePayment,
+  refundStripePayment,
   reopenInvoiceDraft,
   resendInvoiceEmail,
   restoreInvoice,
@@ -64,6 +65,8 @@ export function AdminInvoiceDetails() {
   const { clients, projects, notify, reload, portalAccounts } = useLeads();
   const { profile } = useAuth();
   const canManage = hasPermission(profile, "invoices.manage");
+  // Refunding also reverses the ledger, which is admin-only, so the Refund button is admin-only too.
+  const canRefund = isActiveAdmin(profile);
   const [detail, setDetail] = useState<InvoiceDetail | null>(null);
   const [accepted, setAccepted] = useState<{ id: string; number: string; clientId: string; projectId: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +83,9 @@ export function AdminInvoiceDetails() {
   const [generateTimeOpen, setGenerateTimeOpen] = useState(false);
   const [generateThroughDate, setGenerateThroughDate] = useState(isoCalendarDate());
   const [reverseId, setReverseId] = useState<string | null>(null);
+  const [refundId, setRefundId] = useState<string | null>(null);
+  const [refundKey, setRefundKey] = useState("");
+  const [refundAck, setRefundAck] = useState(false);
   const [items, setItems] = useState<LineItemDraft[]>([emptyLineItem()]);
   const [form, setForm] = useState<InvoiceDraftFormValue>({
     clientId: "",
@@ -642,15 +648,30 @@ export function AdminInvoiceDetails() {
                     <td className="py-3 pr-4">{payment.notes || "—"}</td>
                     <td className="py-3 pr-4">{payment.recorded_by_label || "—"}</td>
                     <td className="py-3">
-                      {!payment.reversed_at && canManage ? (
-                        <button
-                          type="button"
-                          className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
-                          onClick={() => setReverseId(payment.id)}
-                        >
-                          Reverse
-                        </button>
-                      ) : null}
+                      <div className="flex flex-col items-start gap-1.5">
+                        {!payment.reversed_at && canRefund && payment.provider === "stripe" && payment.stripe_payment_intent_id ? (
+                          <button
+                            type="button"
+                            className="font-heading text-[12px] font-semibold text-[#b42318] hover:underline"
+                            onClick={() => {
+                              setRefundKey(crypto.randomUUID());
+                              setRefundAck(false);
+                              setRefundId(payment.id);
+                            }}
+                          >
+                            Refund via Stripe
+                          </button>
+                        ) : null}
+                        {!payment.reversed_at && canManage ? (
+                          <button
+                            type="button"
+                            className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+                            onClick={() => setReverseId(payment.id)}
+                          >
+                            Reverse
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -883,6 +904,57 @@ export function AdminInvoiceDetails() {
           </button>
         </div>
       </AdminDialog>
+      <ConfirmDocumentModal
+        open={Boolean(refundId)}
+        busy={busy}
+        danger
+        title="Refund this payment through Stripe?"
+        description={(() => {
+          const target = current.payments.find((item) => item.id === refundId);
+          return `This returns ${target ? money(target.amount_cents) : "the payment"} to the client’s card through Stripe, then marks the payment reversed on this invoice. Stripe usually keeps its processing fee. This can’t be undone.`;
+        })()}
+        actionLabel={(() => {
+          const target = current.payments.find((item) => item.id === refundId);
+          return target ? `Refund ${money(target.amount_cents)}` : "Refund";
+        })()}
+        cancelLabel="Cancel"
+        extra={
+          <label className="flex items-start gap-2.5 text-[13px] text-[var(--admin-ink)]">
+            <input
+              type="checkbox"
+              checked={refundAck}
+              disabled={busy}
+              onChange={(event) => setRefundAck(event.target.checked)}
+              className="mt-0.5 size-4 shrink-0"
+            />
+            <span>I understand this returns real money to the client’s card.</span>
+          </label>
+        }
+        confirmDisabled={!refundAck}
+        onClose={() => setRefundId(null)}
+        onConfirm={async () => {
+          if (!refundId || !refundAck) return;
+          const target = current.payments.find((item) => item.id === refundId);
+          setBusy(true);
+          try {
+            const result = await refundStripePayment(refundId, refundKey);
+            notify(
+              result.alreadyRefunded
+                ? "This payment was already refunded in Stripe. It is now reversed here too."
+                : `Refunded ${target ? money(target.amount_cents) : "the payment"} through Stripe and reversed the payment.`,
+            );
+            setRefundId(null);
+            await load();
+            await reload();
+          } catch (error) {
+            notify(error instanceof AgencyDbError ? error.message : "Unable to refund this payment.");
+            setRefundId(null);
+            await load();
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
       <ConfirmDocumentModal
         open={Boolean(reverseId)}
         busy={busy}

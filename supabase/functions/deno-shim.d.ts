@@ -103,3 +103,11 @@ declare module "npm:@anthropic-ai/sdk@0.127.0" {
     };
   }
 }
+
+// Editor-only shape of the parts of the Stripe SDK used by the payment functions; the real package
+// is fetched by the Deno runtime at deploy/run time.
+declare module "npm:stripe@17.7.0" {
+  // deno-lint-ignore no-explicit-any
+  const Stripe: any;
+  export default Stripe;
+}

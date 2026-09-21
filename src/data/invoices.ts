@@ -453,6 +453,22 @@ export function invoiceErrorMessage(code: string): string {
       return "The invoice was saved, but the email could not be sent.";
     case "no_recipient":
       return "This client has no email address. Add one on the client record, then resend.";
+    case "not_found":
+      return "This payment could not be found.";
+    case "not_refundable":
+      return "This payment can’t be refunded through Stripe.";
+    case "already_reversed":
+      return "This payment has already been reversed.";
+    case "no_payment_intent":
+      return "This payment has no Stripe charge attached, so it can’t be refunded here. Refund it in the Stripe Dashboard, then use Reverse.";
+    case "stripe_permission":
+      return "Your Stripe key isn’t allowed to issue refunds. Give it Refunds: Write access, or refund in the Stripe Dashboard and then use Reverse.";
+    case "stripe_balance":
+      return "Stripe couldn’t issue the refund because of your Stripe balance. Nothing was changed. Try again later or refund in the Stripe Dashboard.";
+    case "stripe_error":
+      return "Stripe couldn’t issue this refund. Nothing was changed. Try again, or refund in the Stripe Dashboard.";
+    case "refunded_not_reversed":
+      return "The refund was issued in Stripe, but the payment could not be reversed here. Click Reverse on that payment to finish. Do not refund it again.";
     case "invalid_recipient":
       return "One of the extra email addresses isn’t valid. Check them and try again.";
     case "email_unavailable":

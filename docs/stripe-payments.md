@@ -200,3 +200,15 @@ Do not put live keys in Vite. Do not flip this in application code.
 Phase 21: `record_stripe_payment` requires a matching `stripe_checkout_sessions` row. Browser-invoked Checkout CORS is restricted to `PUBLIC_SITE_URL`.
 
 Launch checklist: [production-launch-checklist.md](./production-launch-checklist.md). Smoke tests 51–56: [production-smoke-test.md](./production-smoke-test.md).
+
+## Refunds ("Refund via Stripe")
+
+Admins (not other staff) can refund a Stripe payment from **Admin → Invoice → Payment history → Refund via Stripe**. The `refund-stripe-payment` Edge Function refunds the **recorded** amount through Stripe, then reverses the payment in the ledger with the existing `reverse_invoice_payment` RPC (called as the signed-in admin). The plain **Reverse** button is unchanged and still only edits your records.
+
+- Full refunds only. The refund is for the amount recorded on that ledger payment, minus anything already refunded on the same PaymentIntent, so it can never over-refund, and a refund made earlier in the Stripe Dashboard is detected (only the ledger is then reversed).
+- Retry-safe: each confirmation dialog sends one idempotency key, and existing refunds are checked first.
+- If Stripe refunds but the reversal fails, the UI says so ("Click Reverse to finish"); never refund again.
+- Subscription cycle payments without a PaymentIntent are not refundable here; refund them in the Stripe Dashboard, then use Reverse.
+- **Restricted keys need `Refunds: Write`.** If `STRIPE_SECRET_KEY` is a restricted key (`rk_live_…`), add Refunds write access, otherwise refunds fail with a permission message.
+- Refunds made directly in the Stripe Dashboard are not synced automatically; use Reverse afterwards.
+- Tests: `node --test scripts/test-stripe-refund.mjs`. Deploy: `supabase functions deploy refund-stripe-payment`.

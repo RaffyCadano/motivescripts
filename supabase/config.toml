@@ -42,6 +42,10 @@ verify_jwt = false
 [functions.motivescripts-ai]
 verify_jwt = false
 
+# Admin-only Stripe refund. Authenticates the user and requires is_admin() inside the function.
+[functions.refund-stripe-payment]
+verify_jwt = false
+
 [auth.email.template.magic_link]
 subject = "Sign in to MotiveScripts"
 content_path = "./supabase/templates/magic_link.html"

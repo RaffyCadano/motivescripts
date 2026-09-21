@@ -322,6 +322,38 @@ export async function sendInvoice(invoiceId: string, extraRecipients: string[] =
   }
 }
 
+export type StripeRefundResult = { refundId: string; alreadyRefunded: boolean; refundedCents: number };
+
+/**
+ * Admin-only. Refunds a recorded Stripe payment through Stripe, then reverses it in the ledger (both done by
+ * the refund-stripe-payment function). `idempotencyKey` must be one uuid per confirmation dialog so a network
+ * retry of the same click can never refund twice.
+ */
+export async function refundStripePayment(paymentId: string, idempotencyKey: string): Promise<StripeRefundResult> {
+  const client = db();
+  const { data, error } = await client.functions.invoke("refund-stripe-payment", {
+    body: { paymentId, idempotencyKey },
+  });
+  if (error) {
+    const code = await functionErrorCode(error);
+    if (code) throw new AgencyDbError(invoiceErrorMessage(code), error);
+    throw new AgencyDbError(invoiceErrorMessage("stripe_error"), error);
+  }
+  const payload = data as {
+    ok?: boolean;
+    error?: string;
+    refundId?: string;
+    alreadyRefunded?: boolean;
+    refundedCents?: number;
+  } | null;
+  if (!payload?.ok) throw new AgencyDbError(invoiceErrorMessage(payload?.error ?? "stripe_error"));
+  return {
+    refundId: payload.refundId ?? "",
+    alreadyRefunded: Boolean(payload.alreadyRefunded),
+    refundedCents: Number(payload.refundedCents ?? 0),
+  };
+}
+
 export async function resendInvoiceEmail(invoiceId: string, extraRecipients: string[] = []): Promise<void> {
   await invokeInvoiceEmail(invoiceId, extraRecipients);
 }
