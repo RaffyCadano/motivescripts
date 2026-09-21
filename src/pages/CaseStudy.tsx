@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "@/components/Button";
 import { FullSitePreview } from "@/components/FullSitePreview";
+import { LiveSiteEmbed } from "@/components/LiveSiteFrame";
 import {
   AmberForkFullPage,
   AnchorPointFullPage,
@@ -106,9 +107,15 @@ function SitePreviewLightbox({ project, onClose }: { project: Project; onClose: 
                 {chromeUrl}
               </p>
             </div>
-            <div className="max-h-[90vh] overflow-y-auto overscroll-contain">
-              <img src={project.screenshot} alt={`Screenshot of the live ${project.name} website`} className="w-full" />
-            </div>
+            {project.liveUrl ? (
+              <div className="h-[90vh]">
+                <LiveSiteEmbed url={project.liveUrl} title={project.name} />
+              </div>
+            ) : (
+              <div className="max-h-[90vh] overflow-y-auto overscroll-contain">
+                <img src={project.screenshot} alt={`Screenshot of the live ${project.name} website`} className="w-full" />
+              </div>
+            )}
           </div>
         ) : fullPage ? (
           <div className="overflow-hidden rounded-t-[var(--radius-lg)] bg-white shadow-[var(--shadow-card)]">
@@ -184,7 +191,7 @@ export function CaseStudyPage() {
 
       <div className="container-wide py-12 md:py-16">
         <div className="group relative">
-          <SitePreview project={project} />
+          <SitePreview project={project} live />
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
@@ -217,7 +224,8 @@ export function CaseStudyPage() {
             </ol>
             <p className="mt-8 max-w-2xl text-sm text-muted">{project.outcome}</p>
           </section>
-          <div className="flex flex-col gap-3 sm:flex-row">
+          {/* On desktop this sits in a one-third-width grid column, so the buttons stack instead of squeezing side by side. */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:flex-col lg:flex-nowrap">
             {project.liveUrl ? (
               <a
                 href={project.liveUrl}
@@ -229,10 +237,10 @@ export function CaseStudyPage() {
                 <span aria-hidden="true">↗</span>
               </a>
             ) : null}
-            <Button to="/start-a-project" size="lg">
+            <Button to="/start-a-project" size="lg" className="whitespace-nowrap">
               Start a Project
             </Button>
-            <Button to="/work" variant="secondary" size="lg">
+            <Button to="/work" variant="secondary" size="lg" className="whitespace-nowrap">
               All work
             </Button>
           </div>

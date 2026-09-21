@@ -1,4 +1,5 @@
 import { BrowserFrame } from "@/components/BrowserFrame";
+import { LiveSiteThumbnail } from "@/components/LiveSiteFrame";
 import { MiniPage } from "@/components/MiniPage";
 import type { Project } from "@/data/projects";
 import { cn } from "@/lib/cn";
@@ -33,11 +34,20 @@ import professionalServicesHero from "@/assets/previews/professional-services-he
 
 type SitePreviewProps = {
   project: Project;
+  /** Show the real live site in an iframe (only for projects with a liveUrl) instead of the static screenshot. */
+  live?: boolean;
 };
 
-export function SitePreview({ project }: SitePreviewProps) {
+export function SitePreview({ project, live = false }: SitePreviewProps) {
   if (project.screenshot) {
     const url = project.liveUrl ? project.liveUrl.replace(/^https?:\/\//, "").replace(/\/$/, "") : project.name;
+    if (live && project.liveUrl) {
+      return (
+        <BrowserFrame url={url}>
+          <LiveSiteThumbnail url={project.liveUrl} title={project.name} poster={project.screenshot} />
+        </BrowserFrame>
+      );
+    }
     return (
       <BrowserFrame url={url}>
         <img
