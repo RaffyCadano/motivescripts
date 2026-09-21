@@ -288,9 +288,11 @@ async function functionErrorCode(error: unknown): Promise<string | null> {
   }
 }
 
-async function invokeInvoiceEmail(id: string): Promise<void> {
+async function invokeInvoiceEmail(id: string, extraRecipients: string[] = []): Promise<void> {
   const client = db();
-  const { data, error } = await client.functions.invoke("document-email", { body: { kind: "invoice", id } });
+  const { data, error } = await client.functions.invoke("document-email", {
+    body: extraRecipients.length > 0 ? { kind: "invoice", id, extraRecipients } : { kind: "invoice", id },
+  });
   if (error) {
     const code = await functionErrorCode(error);
     if (code) throw new AgencyDbError(invoiceErrorMessage(code), error);
@@ -306,12 +308,13 @@ async function invokeInvoiceEmail(id: string): Promise<void> {
   }
 }
 
-export async function sendInvoice(invoiceId: string): Promise<{ emailed: boolean }> {
+/** `extraRecipients` (max 3, already validated in the UI) get a copy of the email; the client's own contacts still receive it. */
+export async function sendInvoice(invoiceId: string, extraRecipients: string[] = []): Promise<{ emailed: boolean }> {
   const client = db();
   const { error } = await client.rpc("send_invoice", { p_invoice_id: invoiceId });
   throwIf(error, "send invoice", "Unable to send this invoice.");
   try {
-    await invokeInvoiceEmail(invoiceId);
+    await invokeInvoiceEmail(invoiceId, extraRecipients);
     return { emailed: true };
   } catch (caught) {
     logDbError("invoice email", caught);
@@ -319,8 +322,8 @@ export async function sendInvoice(invoiceId: string): Promise<{ emailed: boolean
   }
 }
 
-export async function resendInvoiceEmail(invoiceId: string): Promise<void> {
-  await invokeInvoiceEmail(invoiceId);
+export async function resendInvoiceEmail(invoiceId: string, extraRecipients: string[] = []): Promise<void> {
+  await invokeInvoiceEmail(invoiceId, extraRecipients);
 }
 
 export async function downloadInvoicePdf(invoiceId: string): Promise<void> {

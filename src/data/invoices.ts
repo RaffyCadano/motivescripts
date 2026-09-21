@@ -290,9 +290,10 @@ export function invoiceSendConfirmCopy(input: {
   };
 }
 
-export function invoiceSentMessage(emailed: boolean): string {
+export function invoiceSentMessage(emailed: boolean, copiedTo: string[] = []): string {
+  const copies = copiedTo.length > 0 ? ` A copy was sent to ${copiedTo.join(", ")}.` : "";
   return emailed
-    ? "Invoice sent to the client. They’ll see it in their portal and receive an email."
+    ? `Invoice sent to the client. They’ll see it in their portal and receive an email.${copies}`
     : "Invoice is now in the client portal, but the email could not be delivered. Open the invoice and use Resend email.";
 }
 
@@ -452,6 +453,8 @@ export function invoiceErrorMessage(code: string): string {
       return "The invoice was saved, but the email could not be sent.";
     case "no_recipient":
       return "This client has no email address. Add one on the client record, then resend.";
+    case "invalid_recipient":
+      return "One of the extra email addresses isn’t valid. Check them and try again.";
     case "email_unavailable":
       return "Invoice email isn’t available yet. Deploy the document-email function.";
     case "missing_site_url":

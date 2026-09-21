@@ -41,7 +41,7 @@ declare module "npm:@supabase/supabase-js@2" {
   }
 
   export interface SupabaseAuthClient {
-    getUser(): Promise<{ data: { user: { id: string } | null }; error: AuthError | null }>;
+    getUser(): Promise<{ data: { user: { id: string; email?: string | null } | null }; error: AuthError | null }>;
     admin: GoTrueAdminApi;
   }
 

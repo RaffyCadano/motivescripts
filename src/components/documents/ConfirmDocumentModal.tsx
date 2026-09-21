@@ -11,6 +11,10 @@ type ConfirmDocumentModalProps = {
   busy?: boolean;
   danger?: boolean;
   tone?: "admin" | "client";
+  /** Optional extra content (admin dialogs only), shown between the description and the buttons. */
+  extra?: ReactNode;
+  /** Keeps the confirm button disabled, e.g. while a field inside `extra` is invalid. */
+  confirmDisabled?: boolean;
   onClose: () => void;
   onConfirm: () => void;
 };
@@ -24,6 +28,8 @@ export function ConfirmDocumentModal({
   busy,
   danger = false,
   tone = "admin",
+  extra,
+  confirmDisabled = false,
   onClose,
   onConfirm,
 }: ConfirmDocumentModalProps) {
@@ -64,6 +70,7 @@ export function ConfirmDocumentModal({
 
   return (
     <AdminDialog open={open} busy={busy} title={title} description={description} onClose={onClose}>
+      {extra ? <div className="mb-5">{extra}</div> : null}
       <form
         className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"
         onSubmit={(event) => {
@@ -82,7 +89,11 @@ export function ConfirmDocumentModal({
         >
           {cancelLabel}
         </button>
-        <button type="submit" disabled={busy} className={`${danger ? adminDangerSolidBtn : adminPrimaryBtn} justify-center`}>
+        <button
+          type="submit"
+          disabled={busy || confirmDisabled}
+          className={`${danger ? adminDangerSolidBtn : adminPrimaryBtn} justify-center`}
+        >
           {busy ? "Working…" : actionLabel}
         </button>
       </form>

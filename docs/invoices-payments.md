@@ -208,3 +208,12 @@ Use two real Auth users. The SQL editor bypasses RLS.
 Clients still cannot INSERT/UPDATE payments or invoices. Manual + Stripe rows share `payments`. Reversals keep history. `/admin/payments` in the app redirects to invoices.
 
 Launch: [production-launch-checklist.md](./production-launch-checklist.md). Stripe live switch: [stripe-payments.md](./stripe-payments.md).
+
+## Extra copy recipients ("Also send a copy to")
+
+When sending or resending an invoice, staff with `invoices.manage` can add up to 3 extra email addresses. The client's own contacts (client email plus portal accounts) always still receive the invoice; extras are added as **CC**, so everyone on the email can see them. Extras also receive the attached PDF, but not portal access (the "View invoice" link still requires the client's login).
+
+- Server: `document-email` (`kind: "invoice"`) accepts `extraRecipients: string[]`, validated strictly by `supabase/functions/_shared/emailRecipients.ts` (max 3, one plain address each; anything else returns `invalid_recipient`). Other email kinds ignore the field.
+- Audit trail: when copies are sent, a staff-only activity line is added to the client ("Invoice INV-… emailed to the client with a copy to …, sent by …").
+- Deploy order: **deploy `document-email` before the website**, otherwise an older function would silently ignore the extras.
+- Tests: `node --test scripts/test-email-recipients.mjs`.

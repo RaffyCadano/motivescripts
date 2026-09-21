@@ -6,7 +6,9 @@ import { hasPermission } from "@/auth/permissions";
 import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
+import { ExtraRecipientsField } from "@/components/documents/ExtraRecipientsField";
 import { documentMailRecipientCopy, documentMailRecipients } from "@/data/documents";
+import { extraRecipientsError, parseExtraRecipients } from "@/data/emailRecipients";
 import { InvoiceBillingTypeCard } from "@/components/invoices/InvoiceBillingTypeCard";
 import { InvoiceDocumentView } from "@/components/invoices/InvoiceDocumentView";
 import { InvoiceDraftForm, type InvoiceDraftFormValue } from "@/components/invoices/InvoiceDraftForm";
@@ -82,6 +84,7 @@ export function AdminInvoiceNew() {
   const billingTouched = useRef(false);
   const [busy, setBusy] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
+  const [extraCopy, setExtraCopy] = useState("");
   const saving = useRef(false);
   const [form, setForm] = useState<InvoiceDraftFormValue>({
     clientId: presetClient,
@@ -259,6 +262,8 @@ export function AdminInvoiceNew() {
     client?.email,
     portalAccounts.filter((account) => account.clientId === form.clientId).map((account) => account.email),
   );
+  const extraParsed = parseExtraRecipients(extraCopy, mailRecipients);
+  const extraProblem = extraRecipientsError(extraParsed);
   const clientContracts = useMemo(
     () =>
       accepted.filter((row) => {
@@ -363,8 +368,8 @@ export function AdminInvoiceNew() {
         items,
       });
       if (send) {
-        const result = await sendInvoice(invoiceId);
-        notify(invoiceSentMessage(result.emailed));
+        const result = await sendInvoice(invoiceId, extraParsed.emails);
+        notify(invoiceSentMessage(result.emailed, result.emailed ? extraParsed.emails : []));
       } else {
         notify("Invoice saved as a draft.");
       }
@@ -560,6 +565,8 @@ export function AdminInvoiceNew() {
         }
         actionLabel="Send Invoice"
         cancelLabel="Cancel"
+        extra={<ExtraRecipientsField value={extraCopy} onChange={setExtraCopy} parsed={extraParsed} disabled={busy} />}
+        confirmDisabled={Boolean(extraProblem)}
         onClose={() => {
           if (!busy) setSendOpen(false);
         }}

@@ -6,11 +6,14 @@ import { loadProposalPdfModel } from "../_shared/loadProposalPdf.ts";
 import { generateContractPdf, contractPdfFilename } from "../_shared/contractPdf.ts";
 import { loadContractPdfModel } from "../_shared/loadContractPdf.ts";
 import { corsHeadersForRequest } from "../_shared/cors.ts";
+import { validateExtraRecipients } from "../_shared/emailRecipients.ts";
 
 type RequestBody = {
   kind?: string;
   id?: string;
   paymentId?: string;
+  /** Invoice emails only: up to 3 extra addresses that receive a copy (CC). Ignored for every other kind. */
+  extraRecipients?: unknown;
 };
 
 function siteUrl(): string {
@@ -132,6 +135,7 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   let userClient: ReturnType<typeof createClient> | null = null;
+  let actorEmail = "";
 
   // Same as "payment": no interactive user triggers these either -- invoice_overdue
   // is called by the daily overdue-reminder cron job, and plan_past_due /
@@ -154,6 +158,7 @@ Deno.serve(async (req) => {
       error: userError,
     } = await userClient.auth.getUser();
     if (userError || !user) return fail("not_allowed", 401);
+    actorEmail = (user.email ?? "").trim().toLowerCase();
   }
 
   async function assertManage(clientId: string, perm: string): Promise<Response | null> {
@@ -243,6 +248,8 @@ Deno.serve(async (req) => {
       if (!invoice || invoice.status === "draft") return fail("not_found");
       const deniedInvoice = await assertManage(invoice.client_id, "invoices.manage");
       if (deniedInvoice) return deniedInvoice;
+      const extra = validateExtraRecipients(body.extraRecipients);
+      if (!extra.ok) return fail("invalid_recipient");
       const { data: clientRow } = await admin
         .from("clients")
         .select("business_name, email")
@@ -291,8 +298,33 @@ Deno.serve(async (req) => {
       } catch {
         console.error("document-email invoice pdf failed");
       }
-      await sendResend(apiKey, emails, "Your MotiveScripts invoice is ready", html, attachments);
-      console.log("document-email sent", { kind: "invoice", id: invoice.id, attached: Boolean(attachments?.length) });
+      // Copies go out as CC, so everyone on the email can see who else received it. Anyone who
+      // already receives the invoice as the client is not repeated.
+      const copyTo = extra.emails.filter((email) => !emails.includes(email));
+      await sendResend(
+        apiKey,
+        emails,
+        "Your MotiveScripts invoice is ready",
+        html,
+        attachments,
+        copyTo.length > 0 ? copyTo : undefined,
+      );
+      console.log("document-email sent", {
+        kind: "invoice",
+        id: invoice.id,
+        attached: Boolean(attachments?.length),
+        copies: copyTo.length,
+      });
+      if (copyTo.length > 0) {
+        // Audit trail (staff-only client activity). A failure here never undoes a sent email.
+        const { error: activityError } = await admin.rpc("append_client_staff_activity", {
+          p_client_id: invoice.client_id,
+          p_description: `Invoice ${invoice.invoice_number} emailed to the client with a copy to ${copyTo.join(", ")}${
+            actorEmail ? ` (sent by ${actorEmail})` : ""
+          }.`,
+        });
+        if (activityError) console.error("document-email copy activity failed");
+      }
       return json({ ok: true });
     }
 
@@ -523,6 +555,7 @@ async function sendResend(
   subject: string,
   html: string,
   attachments?: { filename: string; content: string }[],
+  cc?: string[],
 ) {
   const payload: Record<string, unknown> = {
     from: resendFrom(),
@@ -531,6 +564,7 @@ async function sendResend(
     html,
   };
   if (attachments?.length) payload.attachments = attachments;
+  if (cc?.length) payload.cc = cc;
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {

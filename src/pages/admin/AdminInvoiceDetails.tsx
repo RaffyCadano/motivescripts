@@ -13,7 +13,9 @@ import { InvoiceStatusBadge } from "@/components/invoices/InvoiceStatusBadge";
 import { InvoiceWorkflowSteps } from "@/components/invoices/InvoiceWorkflowSteps";
 import { RecordPaymentModal } from "@/components/invoices/RecordPaymentModal";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { ExtraRecipientsField } from "@/components/documents/ExtraRecipientsField";
 import { documentMailRecipientCopy, documentMailRecipients } from "@/data/documents";
+import { extraRecipientsError, parseExtraRecipients } from "@/data/emailRecipients";
 import { fetchContractSummaries } from "@/data/documentsRepository";
 import {
   canCancelInvoice,
@@ -69,6 +71,7 @@ export function AdminInvoiceDetails() {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [sendOpen, setSendOpen] = useState(false);
   const [resendOpen, setResendOpen] = useState(false);
+  const [extraCopy, setExtraCopy] = useState("");
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -143,6 +146,8 @@ export function AdminInvoiceDetails() {
       .filter((account) => account.clientId === detail?.invoice.client_id)
       .map((account) => account.email),
   );
+  const extraParsed = parseExtraRecipients(extraCopy, mailRecipients);
+  const extraProblem = extraRecipientsError(extraParsed);
   const project = projects.find((item) => item.id === (form.projectId || detail?.invoice.project_id));
   const clientContracts = useMemo(
     () =>
@@ -282,9 +287,10 @@ export function AdminInvoiceDetails() {
         adminNotes: form.adminNotes,
         items,
       });
-      const result = await sendInvoice(current.invoice.id);
-      notify(invoiceSentMessage(result.emailed));
+      const result = await sendInvoice(current.invoice.id, extraParsed.emails);
+      notify(invoiceSentMessage(result.emailed, result.emailed ? extraParsed.emails : []));
       setSendOpen(false);
+      setExtraCopy("");
       await load();
       await reload();
     } catch (error) {
@@ -677,6 +683,8 @@ export function AdminInvoiceDetails() {
         description={`${documentMailRecipientCopy(mailRecipients, { companyName: client?.businessName, action: "send" })} This emails the client and makes the invoice available in their portal.`}
         actionLabel="Send Invoice"
         cancelLabel="Cancel"
+        extra={<ExtraRecipientsField value={extraCopy} onChange={setExtraCopy} parsed={extraParsed} disabled={busy} />}
+        confirmDisabled={Boolean(extraProblem)}
         onClose={() => setSendOpen(false)}
         onConfirm={() => void sendDraft()}
       />
@@ -686,13 +694,20 @@ export function AdminInvoiceDetails() {
         title="Resend this invoice email?"
         description={`${documentMailRecipientCopy(mailRecipients, { companyName: client?.businessName, action: "resend" })} They’ll receive another copy of this invoice.`}
         actionLabel="Resend email"
+        extra={<ExtraRecipientsField value={extraCopy} onChange={setExtraCopy} parsed={extraParsed} disabled={busy} />}
+        confirmDisabled={Boolean(extraProblem)}
         onClose={() => setResendOpen(false)}
         onConfirm={async () => {
           setBusy(true);
           try {
-            await resendInvoiceEmail(current.invoice.id);
-            notify("Invoice email sent.");
+            await resendInvoiceEmail(current.invoice.id, extraParsed.emails);
+            notify(
+              extraParsed.emails.length > 0
+                ? `Invoice email sent. A copy was sent to ${extraParsed.emails.join(", ")}.`
+                : "Invoice email sent.",
+            );
             setResendOpen(false);
+            setExtraCopy("");
           } catch (error) {
             notify(error instanceof AgencyDbError ? error.message : "The email could not be sent.");
           } finally {
