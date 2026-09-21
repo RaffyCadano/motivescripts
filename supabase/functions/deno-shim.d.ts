@@ -89,3 +89,17 @@ declare module "npm:pdf-lib@1.17.1" {
     save(): Promise<Uint8Array>;
   }
 }
+
+// Minimal editor-only shape of the parts of @anthropic-ai/sdk used by motivescripts-ai; the real
+// package is fetched by the Deno runtime at deploy/run time.
+declare module "npm:@anthropic-ai/sdk@0.127.0" {
+  export default class Anthropic {
+    constructor(options?: { apiKey?: string; timeout?: number; maxRetries?: number });
+    messages: {
+      create(
+        params: Record<string, unknown>,
+        options?: { signal?: AbortSignal },
+      ): Promise<{ stop_reason: string | null; content: Array<{ type: string; text?: string }> }>;
+    };
+  }
+}

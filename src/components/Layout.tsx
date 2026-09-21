@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { AiAssistant } from "@/components/ai/AiAssistant";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 
@@ -49,6 +50,7 @@ export function Layout() {
       <Navbar />
       <Outlet />
       <Footer />
+      <AiAssistant />
     </>
   );
 }

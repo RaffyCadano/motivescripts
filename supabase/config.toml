@@ -37,6 +37,11 @@ verify_jwt = false
 [functions.public-lead]
 verify_jwt = false
 
+# Public website assistant. Public by design (no login); protected by origin-locked CORS,
+# validation, rate limits, and no database/tool access. Needs the ANTHROPIC_API_KEY secret.
+[functions.motivescripts-ai]
+verify_jwt = false
+
 [auth.email.template.magic_link]
 subject = "Sign in to MotiveScripts"
 content_path = "./supabase/templates/magic_link.html"
