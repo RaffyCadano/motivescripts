@@ -192,8 +192,13 @@ const statusColor: Record<TaskStatusCount["status"], string> = {
   Completed: "#10b981",
 };
 
-/** Task count per status as vertical bars. Hover (or touch) a bar for the exact count. */
-export function TaskStatusBarChart({ data }: { data: TaskStatusCount[] }) {
+export type CategoryBar = { key: string; label: string; count: number; color: string };
+
+/**
+ * Counts per category as vertical bars. Every bar carries its own count and text label, so identity is never
+ * color alone. Hover (or touch) a bar for the exact count. `unit` is the singular noun used in the tooltip.
+ */
+export function CategoryBarChart({ data, ariaLabel, unit }: { data: CategoryBar[]; ariaLabel: string; unit: string }) {
   const { ref, unitsPerPixel } = useChartUnits(BAR_W);
   const [hover, setHover] = useState<number | null>(null);
 
@@ -215,7 +220,7 @@ export function TaskStatusBarChart({ data }: { data: TaskStatusCount[] }) {
         viewBox={`0 0 ${BAR_W} ${BAR_H}`}
         width="100%"
         role="img"
-        aria-label="Your tasks by status"
+        aria-label={ariaLabel}
         onPointerLeave={() => setHover(null)}
       >
         {ticks.map((tick) => {
@@ -242,11 +247,11 @@ export function TaskStatusBarChart({ data }: { data: TaskStatusCount[] }) {
           const barHeight = innerH * (item.count / scaleMax);
           const x = BAR_PAD.left + index * slot + (slot - barWidth) / 2;
           const y = baselineY - barHeight;
-          const words = item.status.split(" ");
+          const words = item.label.split(" ");
           const labelSize = CATEGORY_LABEL_PX * unitsPerPixel;
           return (
-            <g key={item.status} opacity={hover === null || hover === index ? 1 : 0.55}>
-              <rect x={x} y={y} width={barWidth} height={Math.max(barHeight, 0)} rx={4} fill={statusColor[item.status]} />
+            <g key={item.key} opacity={hover === null || hover === index ? 1 : 0.55}>
+              <rect x={x} y={y} width={barWidth} height={Math.max(barHeight, 0)} rx={4} fill={item.color} />
               <text
                 x={x + barWidth / 2}
                 y={y - 4}
@@ -280,13 +285,24 @@ export function TaskStatusBarChart({ data }: { data: TaskStatusCount[] }) {
 
       {hovered && hover !== null ? (
         <Tooltip leftPercent={((BAR_PAD.left + hover * slot + slot / 2) / BAR_W) * 100} topPercent={(hoveredTop / BAR_H) * 100 - 8}>
-          <span className="text-[var(--admin-muted)]">{hovered.status}</span>{" "}
+          <span className="text-[var(--admin-muted)]">{hovered.label}</span>{" "}
           <span className="font-semibold">
-            {hovered.count} task{hovered.count === 1 ? "" : "s"}
+            {hovered.count} {hovered.count === 1 ? unit : `${unit}s`}
           </span>
         </Tooltip>
       ) : null}
     </div>
+  );
+}
+
+/** Task count per status as vertical bars. */
+export function TaskStatusBarChart({ data }: { data: TaskStatusCount[] }) {
+  return (
+    <CategoryBarChart
+      ariaLabel="Your tasks by status"
+      unit="task"
+      data={data.map((item) => ({ key: item.status, label: item.status, count: item.count, color: statusColor[item.status] }))}
+    />
   );
 }
 

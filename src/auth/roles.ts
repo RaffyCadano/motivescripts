@@ -95,6 +95,12 @@ export function isDeveloper(
   return profile?.role === "staff" && profile.templateKey === "developer";
 }
 
+export function isDesigner(
+  profile: { role?: string | null; templateKey?: string | null } | null | undefined,
+): boolean {
+  return profile?.role === "staff" && profile.templateKey === "designer";
+}
+
 /** PM, Sales, Accounting, and other non-production staff belong on /admin. */
 export function isOfficeStaff(
   profile: { role?: string | null; templateKey?: string | null } | null | undefined,
