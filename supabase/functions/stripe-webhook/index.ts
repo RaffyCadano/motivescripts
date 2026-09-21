@@ -1,10 +1,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.7.0";
+import { isUuid } from "../_shared/servicePlanCatalog.ts";
 import {
   isUnreadableSubscriptionInvoice,
   paidDateFromInvoice,
   planStatusForSubscriptionStatus,
+  scheduledCancelAt,
   subscriptionIdFromInvoice,
+  type SubscriptionLike,
   type InvoiceLike,
 } from "../_shared/stripeSubscription.ts";
 
@@ -231,14 +234,27 @@ Deno.serve(async (req) => {
         console.error("stripe-webhook subscription session missing ids");
         return json({ ok: false, error: "invalid_session" }, 400);
       }
-      const { error } = await admin.rpc("activate_service_plan", {
+      // The session metadata carries the plan id, so the plan is found even if the stored session id does
+      // not match. The plan id is only ever used to look up a still-pending plan.
+      const metadataPlanId = session.metadata?.service_plan_id;
+      const { data: activated, error } = await admin.rpc("activate_service_plan", {
         p_stripe_checkout_session_id: session.id,
         p_stripe_subscription_id: subId,
         p_stripe_customer_id: customerId,
+        p_service_plan_id: isUuid(metadataPlanId) ? metadataPlanId : null,
       });
       if (error) {
         console.error("stripe-webhook activate_service_plan failed", error.message);
         return json({ ok: false, error: "server_error" }, 500);
+      }
+      if (activated !== true) {
+        // A subscription exists in Stripe but no pending plan was activated for it (already active, canceled, or
+        // unknown). Worth a look in the logs: it can mean a client checked out twice.
+        console.warn("stripe-webhook subscription checkout activated no plan", {
+          session: session.id,
+          subscription: subId,
+          plan: metadataPlanId ?? null,
+        });
       }
       await markProcessed();
       return json({ ok: true });
@@ -405,6 +421,16 @@ Deno.serve(async (req) => {
         console.error("stripe-webhook subscription.updated status sync failed", error.message);
         return json({ ok: false, error: "server_error" }, 500);
       }
+    }
+    // Mirror a scheduled cancellation (or its removal), whoever set it: the client in the portal, or an admin in
+    // the Stripe dashboard.
+    const { error: cancelAtError } = await admin.rpc("set_service_plan_cancel_at", {
+      p_stripe_subscription_id: subscription.id,
+      p_cancel_at: scheduledCancelAt(subscription as unknown as SubscriptionLike),
+    });
+    if (cancelAtError) {
+      console.error("stripe-webhook subscription.updated cancel_at sync failed", cancelAtError.message);
+      return json({ ok: false, error: "server_error" }, 500);
     }
     await markProcessed();
     return json({ ok: true });

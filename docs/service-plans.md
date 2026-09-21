@@ -14,12 +14,57 @@ Admin creates a service_plans row (pending)
   → customer.subscription.deleted (client-initiated or via "Cancel plan") → canceled
 ```
 
+## Clients choosing a plan themselves (after launch)
+
+Once a client's website has launched, the client portal (Settings, with a nudge on the Overview) lets the client choose Website Care, Hosting, or an SEO Retainer and pay through Stripe Checkout without an admin. Admin-created plans still work exactly as before.
+
+```
+Client portal: Choose plan → manage-service-plan (action client_checkout, planType + projectId)
+  → create_client_service_plan: project must belong to the client AND be launched → pending plan (source client_portal)
+  → same Stripe subscription Checkout Session as the admin flow → client confirms and pays on Stripe
+  → same webhook activation and billing cycles as any other plan
+```
+
+Rules enforced on the server (the portal is only the front door):
+
+- **Launched** means `project_development.deployment_status = 'Production'`, the same fact the launch gate and the "your project is live" notice use (`project_launched()`).
+- **The client never sets the price.** The amount and label come from `supabase/functions/_shared/servicePlanCatalog.ts`, whose amounts must equal the published prices in `src/data/pricing.ts` (`scripts/test-service-plan-catalog.mjs` checks this). Change a price in both places.
+- Only `care`, `hosting`, `seo_retainer` can be self-served; `custom` stays admin-only.
+- One open plan of a kind per project: a second click reuses the pending plan, an active or admin-made plan of the same kind is refused (`ALREADY_SUBSCRIBED`), and a partial unique index closes the double-click race.
+- A client can only continue their own pending plan; creating checkouts for arbitrary plans and canceling stay admin-only.
+- Clients can change a plan only by contacting us (there is no self-serve plan change or card update yet).
+
+## Clients canceling a plan themselves
+
+In the client portal (Settings, Active plans), a client can cancel their own plan and change their mind before it takes effect. Everything runs through `manage-service-plan` and only for the client's own plans.
+
+| Plan is | "Cancel plan" does | Why |
+| --- | --- | --- |
+| Active | Schedules the end for the close of the period already paid for (Stripe `cancel_at_period_end`). The plan stays Active until then and the client is not charged again | They have paid for the period; canceling should not take it away |
+| Past due | Cancels immediately | Nothing has been paid for the current period, and it stops Stripe's retries |
+| Already scheduled to end | Nothing to cancel; the portal shows "Ends <date>" with a "Keep my plan" button | Actions are idempotent |
+
+- **`service_plans.cancel_at`** records the scheduled end so the portal and Admin can show "Ends <date>". It only mirrors Stripe: the function writes it after the Stripe call, and `customer.subscription.updated` keeps it in step (including a cancellation scheduled or undone from the Stripe dashboard). Enable the `customer.subscription.updated` event on the webhook endpoint in Stripe.
+- **Status is still only changed by the webhook.** An active plan becomes `canceled` when Stripe sends `customer.subscription.deleted` at the end of the period; that also sends the client the existing "plan canceled" email.
+- Admins are notified when a client schedules a cancellation ("Client canceled a plan").
+
+## Admins canceling a plan
+
+On the client's **Plans** tab (Admin → Clients → the client → Plans), an admin can cancel any running plan. The panel offers the same choices the client gets, plus one:
+
+- **End at period end (recommended)** — `cancel` with `when: "period_end"`. The client keeps the service until the period they already paid for runs out and is not charged again. Only for an Active plan; a scheduled end can be undone.
+- **Cancel now** — `cancel` with `when: "now"` (the default, and the old behavior). Billing stops immediately, the client is emailed, and it cannot be undone. This is the only option for a Past due plan.
+- **Undo cancellation** — `resume_cancel`, while a scheduled end exists and the plan is still Active.
+
+Canceling and undoing are admin-only on the server; a client account calling these actions gets a 403. A plan with a scheduled end shows "Canceling. Ends <date>." in Admin.
+- "Keep my plan" (`client_resume`) is only allowed while a scheduled end exists and the plan is still active.
+
 ## Architecture
 
 | Piece | Role |
 | --- | --- |
 | `service_plans` | One row per recurring plan. Not a Stripe mirror — `status` is only ever changed by the webhook or `create_service_plan`, never guessed client-side |
-| `manage-service-plan` | Admin-only Edge Function. `create_checkout` creates a subscription-mode Checkout Session; `cancel` calls Stripe and lets the webhook update local state |
+| `manage-service-plan` | Edge Function. Admin: `create_checkout` creates a subscription-mode Checkout Session, `cancel` calls Stripe and lets the webhook update local state. Client: `client_checkout` starts a self-serve plan after launch (see above) |
 | `stripe-webhook` | Same function as one-time payments, extended with subscription branches. Signature-verified, `stripe_processed_events` deduped |
 | `record_recurring_invoice_payment` | `SECURITY DEFINER`, **service_role only**. Creates one invoice + payment per billing cycle, following `create_invoice`'s real sequence (`app.document_rpc`, items, then an explicit `recalc_invoice_totals` call since payment inserts don't auto-trigger it) |
 | `activate_service_plan` / `set_service_plan_status_by_subscription` | Webhook-only state transitions. Never called from the browser |

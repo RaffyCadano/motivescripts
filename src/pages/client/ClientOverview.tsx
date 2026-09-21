@@ -8,9 +8,11 @@ import { ClientProjectCard } from "@/components/client/ClientProjectCard";
 import { ClientWebsiteSection } from "@/components/client/ClientWebsiteSection";
 import { ClientStatusBadge } from "@/components/client/ClientStatusBadge";
 import { ClientTimeline } from "@/components/client/ClientTimeline";
+import { useClientPlanOffer } from "@/components/client/useClientPlanOffer";
 import { useClientPortalAction } from "@/components/client/useClientPortalAction";
 import { usePortalIdentity, usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { formatProjectDate } from "@/data/agencyProjects";
+import { hasNoOpenPlans } from "@/data/clientPlanOffer";
 import { greetingForHour } from "@/data/clientPortal";
 import { timelineStagesFromProject } from "@/data/clientProjectProgress";
 import { fetchClientPortalWelcome } from "@/data/settingsRepository";
@@ -23,6 +25,7 @@ export function ClientOverview() {
   const { project } = usePortalSession();
   const { action, waiting, onboarding, loading } = useClientPortalAction();
   const { unreadMessageCount, conversations } = useMessaging();
+  const planOffer = useClientPlanOffer();
 
   useEffect(() => {
     let active = true;
@@ -103,6 +106,23 @@ export function ClientOverview() {
               </li>
             ))}
           </ul>
+        </section>
+      ) : null}
+
+      {planOffer.launched && !planOffer.loading && hasNoOpenPlans(planOffer.plans) ? (
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--client-radius)] border border-[rgb(0_80_240_/_0.25)] bg-[rgb(0_80_240_/_0.04)] p-5">
+          <div className="min-w-0">
+            <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--client-ink)]">Your website is live</h2>
+            <p className="mt-1 text-sm text-[var(--client-muted)]">
+              Keep it running smoothly with an optional monthly plan: Website Care, Hosting, or SEO.
+            </p>
+          </div>
+          <Link
+            to="/client/settings#plans"
+            className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)]"
+          >
+            Choose a plan
+          </Link>
         </section>
       ) : null}
 

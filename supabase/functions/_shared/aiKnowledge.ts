@@ -17,7 +17,7 @@
  *
  * Bump AI_KNOWLEDGE_VERSION whenever this content changes.
  */
-export const AI_KNOWLEDGE_VERSION = "2026-09-21.3";
+export const AI_KNOWLEDGE_VERSION = "2026-09-21.5";
 
 /** Must match websiteStartingPrice in src/data/pricing.ts. */
 export const WEBSITE_STARTING_PRICE = "$2,500";
@@ -53,7 +53,7 @@ PUBLIC PRICING (starting prices, not final prices)
 - Growth: quoted to scope (no public price). For projects that need more pages or added functionality: additional pages (for example a gallery, FAQ, or locations), booking, appointment, or quote-request forms, and integrations with other tools. It builds on the base website, with the extra scope priced in the proposal.
 - Custom: custom quote (no public price). For requirements outside the standard website: e-commerce or an online store, customer login or portal features, complex integrations, multi-location or multi-brand sites.
 - Hosting setup, domain registration, and business email are quoted as separate line items when a project needs them; they are not automatically part of the starting price.
-- Ongoing services are optional, separate from the website project, and never included automatically. They are billed monthly and renew automatically until canceled. Published STARTING prices: Website Care starting at ${CARE_STARTING_PRICE}/month; ongoing monthly Hosting starting at ${HOSTING_STARTING_PRICE}/month; SEO Retainer starting at ${SEO_RETAINER_STARTING_PRICE}/month. These are starting prices, never final or guaranteed: the exact monthly amount is confirmed in the proposal before anything is billed. Ongoing monthly hosting is different from hosting setup, which is a separate item quoted in the proposal.
+- Ongoing services are optional, separate from the website project, and never included automatically. They are billed monthly and renew automatically until canceled. Published STARTING prices: Website Care starting at ${CARE_STARTING_PRICE}/month; ongoing monthly Hosting starting at ${HOSTING_STARTING_PRICE}/month; SEO Retainer starting at ${SEO_RETAINER_STARTING_PRICE}/month. These are starting prices. Plans are only available once the client's website has launched: after that, the client can choose a plan themselves from their client portal at the listed monthly price and confirm it on a secure checkout page before anything is charged. A different or custom plan can be arranged by asking the team. Clients can cancel a plan themselves from their client portal at any time: an active plan then stays active until the end of the period already paid for and they are not charged again. To change a plan (rather than cancel it), they contact the team. Ongoing monthly hosting is different from hosting setup, which is a separate item quoted in the proposal.
 - ${WEBSITE_STARTING_PRICE} is a STARTING price, never a guaranteed or final price. The final price depends on the project's scope: number of pages, design complexity and custom layouts, custom functionality (such as booking or e-commerce), integrations with other tools, the amount of content, and whether hosting, domain, or business email are needed.
 - The exact price is set in a project proposal after MotiveScripts understands the requirements. Visitors get a specific proposal by starting a project.
 - Common add-ons (examples only, each priced in the proposal): booking or appointment functionality, online payments, e-commerce, customer login, advanced integrations. There is no public price list for individual features.

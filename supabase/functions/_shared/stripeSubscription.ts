@@ -76,6 +76,32 @@ export function paidDateFromInvoice(invoice: InvoiceLike, now: Date = new Date()
   return now.toISOString().slice(0, 10);
 }
 
+/** The parts of a Stripe subscription that say when it is scheduled to end (either API version's shape). */
+export type SubscriptionLike = {
+  cancel_at?: number | null;
+  cancel_at_period_end?: boolean | null;
+  current_period_end?: number | null;
+  items?: { data?: Array<{ current_period_end?: number | null }> | null } | null;
+};
+
+function unixToIso(value: unknown): string | null {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? new Date(value * 1000).toISOString() : null;
+}
+
+/**
+ * When a subscription is scheduled to end, as an ISO timestamp, or null when nothing is scheduled. Stripe sets
+ * cancel_at when a cancellation is scheduled (including cancel_at_period_end); older and newer API versions keep
+ * the period end in different places, so fall back to whichever is present.
+ */
+export function scheduledCancelAt(subscription: SubscriptionLike): string | null {
+  const explicit = unixToIso(subscription.cancel_at);
+  if (explicit) return explicit;
+  if (subscription.cancel_at_period_end) {
+    return unixToIso(subscription.current_period_end) ?? unixToIso(subscription.items?.data?.[0]?.current_period_end);
+  }
+  return null;
+}
+
 export type ServicePlanStatus = "pending" | "active" | "past_due" | "canceled";
 
 /**

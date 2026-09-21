@@ -9,6 +9,7 @@ import {
 } from "@/data/servicePlans";
 import {
   cancelServicePlan,
+  undoServicePlanCancellation,
   checkDomainAvailability,
   createServicePlan,
   createServicePlanCheckoutUrl,
@@ -18,6 +19,8 @@ import {
 import { formatUsdFromCents, parseDollarsToCents } from "@/data/money";
 import { AgencyDbError } from "@/lib/dbErrors";
 import type { AgencyClient } from "@/data/agencyClients";
+import { scheduledEnd } from "@/data/clientPlanOffer";
+import { adminCancelOptions } from "@/data/servicePlans";
 
 const PLAN_TYPES: ServicePlanType[] = ["care", "seo_retainer", "hosting", "custom"];
 
@@ -135,7 +138,28 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
     }
   }
 
-  async function onCancel(planId: string) {
+  async function onUndoCancel(planId: string) {
+    setBusyId(planId);
+    setRowError((current) => {
+      const next = new Map(current);
+      next.delete(planId);
+      return next;
+    });
+    try {
+      await undoServicePlanCancellation(planId);
+      // Stripe confirms with an event a moment later; check now and again shortly.
+      await reload();
+      window.setTimeout(() => void reload(), 3000);
+    } catch (caught) {
+      setRowError((current) =>
+        new Map(current).set(planId, caught instanceof AgencyDbError ? caught.message : "Unable to undo the cancellation."),
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function onCancel(planId: string, when: "now" | "period_end") {
     setConfirmCancelId(null);
     setBusyId(planId);
     setRowError((current) => {
@@ -144,8 +168,9 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
       return next;
     });
     try {
-      await cancelServicePlan(planId);
+      await cancelServicePlan(planId, when);
       await reload();
+      if (when === "now") window.setTimeout(() => void reload(), 3000);
     } catch (caught) {
       setRowError((current) =>
         new Map(current).set(planId, caught instanceof AgencyDbError ? caught.message : "Unable to cancel this plan."),
@@ -304,6 +329,11 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
                     <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
                       {SERVICE_PLAN_TYPE_LABELS[plan.planType]} · {formatUsdFromCents(plan.amountCents)}/mo
                     </p>
+                    {scheduledEnd(plan) ? (
+                      <p className="mt-0.5 text-[12px] font-semibold text-[#b45309]">
+                        Canceling. Ends {new Date(scheduledEnd(plan) as string).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.
+                      </p>
+                    ) : null}
                   </div>
                   <span
                     className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusBadgeClass[plan.status]}`}
@@ -322,7 +352,17 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
                       Get checkout link
                     </button>
                   ) : null}
-                  {plan.status === "active" || plan.status === "past_due" ? (
+                  {adminCancelOptions(plan).undo ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="h-9 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-50"
+                      onClick={() => void onUndoCancel(plan.id)}
+                    >
+                      Undo cancellation
+                    </button>
+                  ) : null}
+                  {adminCancelOptions(plan).now ? (
                     <button
                       type="button"
                       disabled={busy}
@@ -340,18 +380,38 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
                     className="mt-3 rounded-lg border border-[rgb(217_119_6_/_0.4)] bg-[rgb(217_119_6_/_0.06)] p-3"
                   >
                     <p className="text-[13px] font-semibold text-[var(--admin-ink)]">Cancel &ldquo;{plan.label}&rdquo;?</p>
-                    <p className="mt-1 text-[12px] leading-relaxed text-[var(--admin-muted)]">
-                      Billing stops immediately in Stripe, the client is emailed, and this can&apos;t be undone. To start
-                      billing again you&apos;d create a new plan and send a new checkout link.
-                    </p>
+                    <ul className="mt-1.5 space-y-1 text-[12px] leading-relaxed text-[var(--admin-muted)]">
+                      {adminCancelOptions(plan).atPeriodEnd ? (
+                        <li>
+                          <span className="font-semibold text-[var(--admin-ink)]">End at period end (recommended):</span>{" "}
+                          the client keeps the service until the end of the period they&apos;ve already paid for and isn&apos;t
+                          charged again. You can undo it until then.
+                        </li>
+                      ) : null}
+                      <li>
+                        <span className="font-semibold text-[var(--admin-ink)]">Cancel now:</span> billing stops immediately
+                        in Stripe, the client is emailed, and this can&apos;t be undone. To start billing again you&apos;d
+                        create a new plan and send a new checkout link.
+                      </li>
+                    </ul>
                     <div className="mt-3 flex flex-wrap gap-2">
+                      {adminCancelOptions(plan).atPeriodEnd ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          className="h-9 rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
+                          onClick={() => void onCancel(plan.id, "period_end")}
+                        >
+                          End at period end
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         disabled={busy}
                         className="h-9 rounded-lg bg-[#b45309] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
-                        onClick={() => void onCancel(plan.id)}
+                        onClick={() => void onCancel(plan.id, "now")}
                       >
-                        Yes, cancel plan
+                        Cancel now
                       </button>
                       <button
                         type="button"

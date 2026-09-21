@@ -23,6 +23,7 @@ export const seoRetainerStartingPrice = "$299";
 export const ongoingServices = [
   {
     id: "care",
+    planType: "care",
     name: "Website Care",
     description:
       "Updates, technical support, and small content or feature changes after launch, for businesses that want an ongoing relationship rather than a one-time build.",
@@ -30,12 +31,14 @@ export const ongoingServices = [
   },
   {
     id: "hosting",
+    planType: "hosting",
     name: "Hosting",
     description: "Ongoing hosting for your website, billed monthly. Initial hosting setup is quoted separately in your proposal.",
     price: hostingStartingPrice,
   },
   {
     id: "seo",
+    planType: "seo_retainer",
     name: "SEO Retainer",
     description: "Ongoing search engine optimization work after launch.",
     price: seoRetainerStartingPrice,
@@ -44,7 +47,7 @@ export const ongoingServices = [
 
 /** Shown under the ongoing services and repeated in the FAQ, so the terms are stated wherever the prices are. */
 export const ongoingServicesTerms =
-  "Billed monthly and renews automatically until canceled. These are starting prices; your exact monthly amount is confirmed in your proposal before anything is billed.";
+  "Billed monthly and renews automatically until you cancel. After your website launches you can choose a plan yourself from your client portal at the listed price, and you confirm it on Stripe's secure checkout before anything is charged. You can cancel any time from your client portal: the plan then runs to the end of the period you've already paid for and you aren't charged again. Need something different? Ask us about a custom plan.";
 
 export const pricingTiers = [
   {

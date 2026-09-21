@@ -53,6 +53,7 @@ function mapServicePlan(row: ServicePlanRow): ServicePlan {
     sslExpiresAt: row.ssl_expires_at,
     createdAt: row.created_at,
     canceledAt: row.canceled_at,
+    cancelAt: row.cancel_at ?? null,
   };
 }
 
@@ -86,10 +87,23 @@ export async function createServicePlan(input: {
 }
 
 export async function createServicePlanCheckoutUrl(planId: string): Promise<string> {
+  return checkoutUrlFrom({ action: "create_checkout", planId });
+}
+
+/**
+ * A client starting checkout for a plan themselves, from the portal. Either a new self-serve plan
+ * (planType + the project it is for) or continuing one that is still waiting on checkout (planId). The
+ * server decides the price and whether the website has launched; nothing about either comes from here.
+ */
+export async function startClientPlanCheckout(
+  input: { planType: string; projectId: string } | { planId: string },
+): Promise<string> {
+  return checkoutUrlFrom({ action: "client_checkout", ...input });
+}
+
+async function checkoutUrlFrom(body: Record<string, string>): Promise<string> {
   const client = db();
-  const { data, error } = await client.functions.invoke("manage-service-plan", {
-    body: { action: "create_checkout", planId },
-  });
+  const { data, error } = await client.functions.invoke("manage-service-plan", { body });
   if (error) {
     const code = await functionErrorCode(error);
     if (code) throw new AgencyDbError(servicePlanErrorMessage(code), error);
@@ -141,18 +155,56 @@ export async function checkDomainAvailability(domain: string): Promise<DomainAva
   return payload.status;
 }
 
-export async function cancelServicePlan(planId: string): Promise<void> {
+async function invokeManage(body: Record<string, string>, fallbackCode: string): Promise<Record<string, unknown>> {
   const client = db();
-  const { data, error } = await client.functions.invoke("manage-service-plan", {
-    body: { action: "cancel", planId },
-  });
+  const { data, error } = await client.functions.invoke("manage-service-plan", { body });
   if (error) {
     const code = await functionErrorCode(error);
     if (code) throw new AgencyDbError(servicePlanErrorMessage(code), error);
-    throw new AgencyDbError(servicePlanErrorMessage("not_cancelable"), error);
+    const message = (error.message ?? "").toLowerCase();
+    if (message.includes("failed to fetch") || message.includes("network")) {
+      throw new AgencyDbError(servicePlanErrorMessage("network"), error);
+    }
+    throw new AgencyDbError(servicePlanErrorMessage(fallbackCode), error);
   }
-  const payload = data as { ok?: boolean; error?: string } | null;
-  if (!payload?.ok) {
-    throw new AgencyDbError(servicePlanErrorMessage(payload?.error ?? "not_cancelable"));
-  }
+  const payload = (data ?? {}) as { ok?: boolean; error?: string };
+  if (!payload.ok) throw new AgencyDbError(servicePlanErrorMessage(payload.error ?? fallbackCode));
+  return payload as Record<string, unknown>;
+}
+
+export type ClientCancelResult = {
+  /** period_end: the plan runs until the end of the period already paid for. now: it ended immediately. */
+  mode: "period_end" | "now";
+  endsAt: string | null;
+};
+
+/** A client canceling their own plan from the portal. The server decides when it takes effect. */
+export async function cancelMyServicePlan(planId: string): Promise<ClientCancelResult> {
+  const payload = await invokeManage({ action: "client_cancel", planId }, "not_cancelable");
+  return {
+    mode: payload.mode === "now" ? "now" : "period_end",
+    endsAt: typeof payload.endsAt === "string" ? payload.endsAt : null,
+  };
+}
+
+/** Undoing a scheduled cancellation before it takes effect. */
+export async function resumeMyServicePlan(planId: string): Promise<void> {
+  await invokeManage({ action: "client_resume", planId }, "not_resumable");
+}
+
+/**
+ * Admin: cancel a client's plan. "period_end" ends it at the close of the period already paid for (the client
+ * keeps the service until then); "now" stops billing immediately and cannot be undone.
+ */
+export async function cancelServicePlan(planId: string, when: "now" | "period_end" = "now"): Promise<ClientCancelResult> {
+  const payload = await invokeManage({ action: "cancel", planId, when }, "not_cancelable");
+  return {
+    mode: payload.mode === "period_end" ? "period_end" : "now",
+    endsAt: typeof payload.endsAt === "string" ? payload.endsAt : null,
+  };
+}
+
+/** Admin: undo a scheduled cancellation before it takes effect. */
+export async function undoServicePlanCancellation(planId: string): Promise<void> {
+  await invokeManage({ action: "resume_cancel", planId }, "not_resumable");
 }

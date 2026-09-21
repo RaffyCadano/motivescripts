@@ -14,9 +14,33 @@ export type ServicePlan = {
   sslExpiresAt: string | null;
   createdAt: string;
   canceledAt: string | null;
+  /** When a scheduled cancellation takes effect (the plan is still active until then), or null. */
+  cancelAt: string | null;
 };
 
 export type DomainAvailability = "available" | "taken" | "unknown";
+
+export type AdminCancelOptions = {
+  /** End at the close of the period already paid for (only for a plan that is active and not already ending). */
+  atPeriodEnd: boolean;
+  /** Stop billing right now (any running plan). */
+  now: boolean;
+  /** Undo a cancellation that is scheduled but has not happened yet. */
+  undo: boolean;
+};
+
+/**
+ * The cancel choices an admin has for one plan. A past-due plan can only be canceled now (nothing is paid for the
+ * current period). The server enforces the same rules.
+ */
+export function adminCancelOptions(plan: Pick<ServicePlan, "status" | "cancelAt">): AdminCancelOptions {
+  const running = plan.status === "active" || plan.status === "past_due";
+  return {
+    atPeriodEnd: plan.status === "active" && !plan.cancelAt,
+    now: running,
+    undo: plan.status === "active" && Boolean(plan.cancelAt),
+  };
+}
 
 export const SERVICE_PLAN_TYPE_LABELS: Record<ServicePlanType, string> = {
   care: "Website Care",
@@ -46,8 +70,14 @@ export function servicePlanErrorMessage(code: string): string {
       return "This plan is not ready for checkout.";
     case "not_cancelable":
       return "This plan can't be canceled right now.";
+    case "not_resumable":
+      return "This plan isn't scheduled to end, so there's nothing to undo.";
     case "not_allowed":
       return "You don’t have permission to do that.";
+    case "not_launched":
+      return "Plans become available once your website has launched.";
+    case "already_subscribed":
+      return "You already have this plan.";
     case "missing_site_url":
       return "The site is not configured for checkout yet.";
     case "invalid_domain":

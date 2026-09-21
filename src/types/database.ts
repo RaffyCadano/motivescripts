@@ -752,6 +752,8 @@ export type ServicePlanRow = {
   created_by: string | null;
   created_at: string;
   canceled_at: string | null;
+  /** When Stripe will end the subscription, if a cancellation is scheduled. */
+  cancel_at: string | null;
 };
 
 export type InvoiceAdminNoteRow = {

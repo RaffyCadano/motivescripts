@@ -187,7 +187,7 @@ export function PricingPage() {
                       className="mt-6"
                       lead="Starting at"
                       price={`${service.price}/mo`}
-                      note="Billed monthly. Your exact amount is confirmed in your proposal."
+                      note="Billed monthly. Choose it yourself from your client portal once your website has launched."
                     />
                   </li>
                 ))}
