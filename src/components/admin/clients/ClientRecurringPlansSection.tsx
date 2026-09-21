@@ -46,6 +46,8 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Cancelling stops a live Stripe subscription immediately and cannot be undone, so it takes a second click.
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Map<string, string>>(new Map());
   const [checkoutUrl, setCheckoutUrl] = useState<Map<string, string>>(new Map());
   const [domainDrafts, setDomainDrafts] = useState<Map<string, string>>(new Map());
@@ -134,6 +136,7 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
   }
 
   async function onCancel(planId: string) {
+    setConfirmCancelId(null);
     setBusyId(planId);
     setRowError((current) => {
       const next = new Map(current);
@@ -324,12 +327,42 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
                       type="button"
                       disabled={busy}
                       className="h-9 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[#b45309] hover:bg-[var(--admin-bg)] disabled:opacity-50"
-                      onClick={() => void onCancel(plan.id)}
+                      onClick={() => setConfirmCancelId(plan.id)}
                     >
                       Cancel plan
                     </button>
                   ) : null}
                 </div>
+                {confirmCancelId === plan.id ? (
+                  <div
+                    role="alertdialog"
+                    aria-label={`Confirm canceling ${plan.label}`}
+                    className="mt-3 rounded-lg border border-[rgb(217_119_6_/_0.4)] bg-[rgb(217_119_6_/_0.06)] p-3"
+                  >
+                    <p className="text-[13px] font-semibold text-[var(--admin-ink)]">Cancel &ldquo;{plan.label}&rdquo;?</p>
+                    <p className="mt-1 text-[12px] leading-relaxed text-[var(--admin-muted)]">
+                      Billing stops immediately in Stripe, the client is emailed, and this can&apos;t be undone. To start
+                      billing again you&apos;d create a new plan and send a new checkout link.
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="h-9 rounded-lg bg-[#b45309] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
+                        onClick={() => void onCancel(plan.id)}
+                      >
+                        Yes, cancel plan
+                      </button>
+                      <button
+                        type="button"
+                        className="h-9 rounded-lg border border-[var(--admin-line)] bg-white px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                        onClick={() => setConfirmCancelId(null)}
+                      >
+                        Keep plan
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
                 {url ? (
                   <p className="mt-2 break-all text-[12px] text-[var(--admin-blue)]">{url}</p>
                 ) : null}

@@ -1,5 +1,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.7.0";
+import {
+  isUnreadableSubscriptionInvoice,
+  paidDateFromInvoice,
+  planStatusForSubscriptionStatus,
+  subscriptionIdFromInvoice,
+  type InvoiceLike,
+} from "../_shared/stripeSubscription.ts";
 
 function json(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -38,6 +45,11 @@ function subscriptionId(value: unknown): string | null {
     if (typeof id === "string" && id.startsWith("sub_")) return id;
   }
   return null;
+}
+
+/** Stripe's Invoice type only models one API version's shape; the webhook may receive either (see stripeSubscription.ts). */
+function asInvoiceLike(invoice: Stripe.Invoice): InvoiceLike {
+  return invoice as unknown as InvoiceLike;
 }
 
 function toDateString(unixSeconds: number | null | undefined): string {
@@ -250,8 +262,19 @@ Deno.serve(async (req) => {
 
   if (event.type === "invoice.paid") {
     const invoice = event.data.object as Stripe.Invoice;
-    const subId = subscriptionId(invoice.subscription);
+    const subId = subscriptionIdFromInvoice(asInvoiceLike(invoice));
     if (!subId) {
+      if (isUnreadableSubscriptionInvoice(asInvoiceLike(invoice))) {
+        // A subscription invoice whose subscription id we cannot read (an API-version shape we do not
+        // understand). Ignoring it would silently drop a real payment, so fail loudly: Stripe retries and the
+        // failure shows in the dashboard. Do not mark it processed.
+        console.error("stripe-webhook subscription invoice without a readable subscription id", {
+          event: event.id,
+          invoice: invoice.id,
+          billing_reason: invoice.billing_reason,
+        });
+        return json({ ok: false, error: "unreadable_subscription_invoice" }, 422);
+      }
       await markProcessed();
       return json({ ok: true, ignored: true });
     }
@@ -286,6 +309,7 @@ Deno.serve(async (req) => {
       p_amount_cents: amountPaid,
       p_period_start: periodStart,
       p_period_end: periodEnd,
+      p_paid_date: paidDateFromInvoice(asInvoiceLike(invoice)),
     });
     if (error) {
       console.error("stripe-webhook record_recurring_invoice_payment failed", error.message);
@@ -302,17 +326,30 @@ Deno.serve(async (req) => {
 
   if (event.type === "invoice.payment_failed") {
     const invoice = event.data.object as Stripe.Invoice;
-    const subId = subscriptionId(invoice.subscription);
+    const subId = subscriptionIdFromInvoice(asInvoiceLike(invoice));
     if (!subId) {
+      if (isUnreadableSubscriptionInvoice(asInvoiceLike(invoice))) {
+        console.error("stripe-webhook subscription invoice without a readable subscription id", {
+          event: event.id,
+          invoice: invoice.id,
+          billing_reason: invoice.billing_reason,
+        });
+        return json({ ok: false, error: "unreadable_subscription_invoice" }, 422);
+      }
       await markProcessed();
       return json({ ok: true, ignored: true });
     }
     const { data: plan } = await admin
       .from("service_plans")
-      .select("id, client_id, project_id, label")
+      .select("id, client_id, project_id, label, status")
       .eq("stripe_subscription_id", subId)
       .maybeSingle();
     if (!plan) {
+      await markProcessed();
+      return json({ ok: true, ignored: true });
+    }
+    if (plan.status === "canceled") {
+      // A late failure for a plan that was already canceled: nothing to warn anyone about.
       await markProcessed();
       return json({ ok: true, ignored: true });
     }
@@ -352,15 +389,37 @@ Deno.serve(async (req) => {
     return json({ ok: true });
   }
 
+  // Keeps a plan's status in step with Stripe when the subscription moves between active and past due (for
+  // example, a failed payment that Stripe's automatic retry later recovers). Cancellation is handled by
+  // customer.subscription.deleted, which also notifies, so it is not applied here. The database function
+  // guards the transitions, so a stale event cannot undo a cancellation.
+  if (event.type === "customer.subscription.updated") {
+    const subscription = event.data.object as Stripe.Subscription;
+    const next = planStatusForSubscriptionStatus(subscription.status);
+    if (next === "active" || next === "past_due") {
+      const { error } = await admin.rpc("set_service_plan_status_by_subscription", {
+        p_stripe_subscription_id: subscription.id,
+        p_status: next,
+      });
+      if (error) {
+        console.error("stripe-webhook subscription.updated status sync failed", error.message);
+        return json({ ok: false, error: "server_error" }, 500);
+      }
+    }
+    await markProcessed();
+    return json({ ok: true });
+  }
+
   if (event.type === "customer.subscription.deleted") {
     const subscription = event.data.object as Stripe.Subscription;
     const subId = subscription.id;
     const { data: plan } = await admin
       .from("service_plans")
-      .select("id, client_id, project_id, label")
+      .select("id, client_id, project_id, label, status")
       .eq("stripe_subscription_id", subId)
       .maybeSingle();
-    if (!plan) {
+    if (!plan || plan.status === "canceled") {
+      // Unknown subscription, or a replayed delete for a plan we already canceled: no second notice.
       await markProcessed();
       return json({ ok: true, ignored: true });
     }
