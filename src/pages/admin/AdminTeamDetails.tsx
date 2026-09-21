@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission, isActiveAdmin } from "@/auth/permissions";
+import { StaffPayrollCard } from "@/components/admin/team/StaffPayrollCard";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { formatTeamDate, type StaffTemplateKey } from "@/data/team";
 import { fetchMemberActivity, updateStaffMember } from "@/data/teamRepository";
@@ -234,6 +235,8 @@ export function AdminTeamDetails() {
             )}
             {message ? <p className="mt-3 text-sm text-[var(--admin-muted)]">{message}</p> : null}
           </section>
+
+          {canManage ? <StaffPayrollCard staffId={member.id} /> : null}
 
           <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
             <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Assigned clients</h2>
