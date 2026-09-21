@@ -50,7 +50,7 @@ export function AdminSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigat
           <BrandMark className="h-7 w-auto" decorative />
           <span className={cn("min-w-0", collapsed && "lg:hidden")}>
             <span className="block font-heading text-sm font-extrabold tracking-tight">MotiveScripts</span>
-            <span className="block text-[11px] font-medium text-[var(--admin-muted)]">{sidebarSubtitle(profile)}</span>
+            <span className="block text-xs font-medium text-[var(--admin-muted)]">{sidebarSubtitle(profile)}</span>
           </span>
         </Link>
       </div>
@@ -60,7 +60,7 @@ export function AdminSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigat
           <div key={group.label} className="mb-5 last:mb-0">
             <p
               className={cn(
-                "px-2.5 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]",
+                "px-2.5 pb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]",
                 collapsed && "lg:flex lg:justify-center lg:px-0",
               )}
             >

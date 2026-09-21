@@ -242,7 +242,7 @@ function LaunchCell({ row, deliverables }: { row: DeveloperDeploymentRow; delive
 
   if (launched) {
     return (
-      <span className="inline-flex items-center rounded-full bg-[rgb(16_185_129_/_0.1)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[#0f7a56]">
+      <span className="inline-flex items-center rounded-full bg-[rgb(16_185_129_/_0.1)] px-2 py-0.5 font-heading text-xs font-semibold text-[#0f7a56]">
         Launched
       </span>
     );
@@ -261,7 +261,7 @@ function LaunchCell({ row, deliverables }: { row: DeveloperDeploymentRow; delive
 function CardField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <dt className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--admin-muted)]">{label}</dt>
+      <dt className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--admin-muted)]">{label}</dt>
       <dd className="mt-1 text-sm">{children}</dd>
     </div>
   );

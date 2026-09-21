@@ -1,4 +1,4 @@
-import mark from "@/assets/brand/icon.png";
+import mark from "@/assets/brand/icon.webp";
 import { cn } from "@/lib/cn";
 
 type BrandMarkProps = {

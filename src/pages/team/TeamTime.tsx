@@ -182,7 +182,7 @@ export function TeamTime() {
           <article className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-4 py-4">
             <p className="text-[12px] text-[var(--admin-muted)]">Estimated amount owed</p>
             <p className="mt-1 font-heading text-2xl font-semibold tracking-tight">{formatUsdFromCents(estimatedOwedCents)}</p>
-            <p className="mt-1 text-[11px] text-[var(--admin-muted)]">Unpaid hours × your hourly rate. Not an official statement.</p>
+            <p className="mt-1 text-xs text-[var(--admin-muted)]">Unpaid hours × your hourly rate. Not an official statement.</p>
           </article>
         ) : null}
       </section>
@@ -197,7 +197,7 @@ export function TeamTime() {
           <div className="mt-4 flex items-end gap-2 sm:gap-4">
             {weekChart.map((day) => (
               <div key={day.date} className="flex flex-1 flex-col items-center gap-1.5">
-                <span className="text-[11px] font-medium text-[var(--admin-ink)]">{day.hours > 0 ? `${day.hours}h` : ""}</span>
+                <span className="text-xs font-medium text-[var(--admin-ink)]">{day.hours > 0 ? `${day.hours}h` : ""}</span>
                 <div className="flex h-24 w-full items-end justify-center">
                   <div
                     className={

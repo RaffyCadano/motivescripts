@@ -81,13 +81,13 @@ export function ProjectTasksPanel({
           {grouped.map((group) => (
             <div key={group.milestone?.id ?? "ungrouped"}>
               <div className="flex items-start justify-between gap-3">
-                <h3 className="font-heading text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+                <h3 className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
                   {group.milestone ? displayMilestoneName(group.milestone.name) : "Ungrouped"}
                 </h3>
                 {group.milestone && onAddForMilestone ? (
                   <button
                     type="button"
-                    className="font-heading text-[11px] font-semibold text-[var(--admin-blue)] hover:underline"
+                    className="font-heading text-xs font-semibold text-[var(--admin-blue)] hover:underline"
                     onClick={() => onAddForMilestone(group.milestone!)}
                   >
                     Add Task
@@ -184,7 +184,7 @@ function TaskRow({
         {showDiscovery ? (
           <button
             type="button"
-            className="inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[11px] font-semibold text-[var(--admin-blue)] hover:bg-[var(--admin-bg)]"
+            className="inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-xs font-semibold text-[var(--admin-blue)] hover:bg-[var(--admin-bg)]"
             onClick={onOpenDiscovery}
           >
             Open Discovery
@@ -192,7 +192,7 @@ function TaskRow({
         ) : null}
         <button
           type="button"
-          className="inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[11px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+          className="inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-xs font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
           onClick={() => onEdit(task)}
         >
           Edit

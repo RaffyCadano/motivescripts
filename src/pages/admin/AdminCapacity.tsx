@@ -24,7 +24,7 @@ function WorkloadCell({ hours, taskCount }: { hours: number; taskCount: number }
   return (
     <div className={cn("rounded-lg px-2 py-1", loadTone(hours))}>
       <p className="text-sm">{hours}h</p>
-      <p className="text-[11px] opacity-80">
+      <p className="text-xs opacity-80">
         {taskCount} task{taskCount === 1 ? "" : "s"}
       </p>
     </div>
@@ -156,7 +156,7 @@ export function AdminCapacity() {
             <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
               <table className="w-full min-w-[720px] border-collapse text-left">
                 <thead>
-                  <tr className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                  <tr className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
                     <th className="px-3 py-2.5">Staff</th>
                     <th className="px-3 py-2.5">Overdue</th>
                     {weekStarts.map((weekStart) => (

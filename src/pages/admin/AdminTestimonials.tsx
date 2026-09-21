@@ -96,7 +96,7 @@ export function AdminTestimonials() {
                       <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{row.clientName}</p>
                       {row.roleTitle ? <p className="text-[12px] text-[var(--admin-muted)]">{row.roleTitle}</p> : null}
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold ${
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 font-heading text-xs font-semibold ${
                           row.published
                             ? "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]"
                             : "bg-[var(--admin-bg)] text-[var(--admin-muted)]"

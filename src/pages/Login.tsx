@@ -2,7 +2,9 @@ import { useMemo, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
+import { seoPage } from "@/data/seoPages";
 import { site } from "@/data/site";
+import { usePageMeta } from "@/lib/usePageMeta";
 import { useAuth } from "@/auth/AuthProvider";
 import { publicAuthLinkError, publicSignInError } from "@/auth/authErrors";
 import { cn } from "@/lib/cn";
@@ -16,6 +18,8 @@ const welcomeNotes = [
 type LoginStatus = "idle" | "sending" | "sent" | "rate_limit" | "error";
 
 export function LoginPage() {
+  const meta = seoPage("/login");
+  usePageMeta(meta.title, meta.description, meta.path);
   const { configured, user, signInWithEmail, signOut } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -161,7 +165,7 @@ export function LoginPage() {
                   size="lg"
                   disabled={!configured || status === "sending" || status === "sent"}
                 >
-                  {status === "sending" ? "Sending link…" : status === "sent" ? "Link sent" : "Login"}
+                  {status === "sending" ? "Sending link…" : status === "sent" ? "Link sent" : "Email me a sign-in link"}
                 </Button>
 
                 {status === "sent" ? (

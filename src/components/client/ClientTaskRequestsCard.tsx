@@ -13,7 +13,7 @@ export function ClientTaskRequestsCard({ projectId, pendingCount, loading }: Cli
 
   return (
     <section className="rounded-[var(--client-radius)] border border-[rgb(0_80_240_/_0.22)] bg-[var(--client-card)] p-5 md:p-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Action Required</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Action Required</p>
       <h2 className="mt-2 font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">
         {pendingCount === 1 ? "1 request from your team" : `${pendingCount} requests from your team`}
       </h2>

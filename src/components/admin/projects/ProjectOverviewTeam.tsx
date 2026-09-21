@@ -223,7 +223,7 @@ function TeamRow({
   return (
     <div className="flex items-start justify-between gap-3">
       <div className="min-w-0">
-        <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">{label}</dt>
+        <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">{label}</dt>
         <dd className="mt-0.5 text-[var(--admin-ink)]">{display}</dd>
       </div>
       <div className="flex shrink-0 items-center gap-2">

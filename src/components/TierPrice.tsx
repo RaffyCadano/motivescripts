@@ -19,7 +19,7 @@ export function TierPrice({ lead, price, note, className }: TierPriceProps) {
   const isAmount = price.startsWith("$");
   return (
     <div className={className}>
-      <p className="text-[0.6875rem] font-semibold uppercase leading-none tracking-[0.14em] text-faint">{lead}</p>
+      <p className="text-xs font-semibold uppercase leading-none tracking-[0.14em] text-faint">{lead}</p>
       <p
         className={cn(
           "mt-3 flex h-11 items-center font-heading font-bold leading-none tracking-tight text-ink",

@@ -10,7 +10,7 @@ const styles: Record<AgencyTaskPriority, string> = {
 
 export function TaskPriorityBadge({ priority }: { priority: AgencyTaskPriority }) {
   return (
-    <span className={cn("inline-flex items-center gap-1.5 font-heading text-[11px] font-semibold", styles[priority])}>
+    <span className={cn("inline-flex items-center gap-1.5 font-heading text-xs font-semibold", styles[priority])}>
       <span
         className={cn(
           "size-1.5 rounded-full",

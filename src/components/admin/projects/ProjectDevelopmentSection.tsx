@@ -21,7 +21,7 @@ function DevelopmentStatus({ status }: { status: DeploymentStatus }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight",
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-heading text-xs font-semibold tracking-tight",
         statusTone[status],
       )}
     >
@@ -42,7 +42,7 @@ export function DomainHostingStatusBadge({ status }: { status: DomainHostingStat
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight",
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-heading text-xs font-semibold tracking-tight",
         domainHostingStatusTone[status],
       )}
     >

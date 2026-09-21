@@ -89,7 +89,7 @@ export function TeamProjects() {
               <div className="hidden overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] md:block">
                 <table className="w-full min-w-[760px] border-collapse text-left">
                   <thead>
-                    <tr className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                    <tr className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
                       <th className="px-4 py-3">Project</th>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Progress</th>

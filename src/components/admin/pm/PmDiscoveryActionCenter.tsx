@@ -37,10 +37,10 @@ function DiscoveryColumn({ status, items }: { status: DiscoveryStatus; items: Di
   return (
     <div className="rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] p-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="font-heading text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+        <p className="font-heading text-xs font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
           {discoveryStatusLabel(status)}
         </p>
-        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--admin-card)] px-1.5 text-[11px] font-semibold text-[var(--admin-ink)]">
+        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--admin-card)] px-1.5 text-xs font-semibold text-[var(--admin-ink)]">
           {items.length}
         </span>
       </div>
@@ -53,11 +53,11 @@ function DiscoveryColumn({ status, items }: { status: DiscoveryStatus; items: Di
               <Link to={item.href} className="font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:text-[var(--admin-blue)]">
                 {item.projectName}
               </Link>
-              <p className="mt-0.5 text-[11px] text-[var(--admin-muted)]">
+              <p className="mt-0.5 text-xs text-[var(--admin-muted)]">
                 {item.clientName}
                 {item.waitingSince ? ` · ${formatProjectTimestamp(item.waitingSince)}` : ""}
               </p>
-              <Link to={item.href} className="mt-1 inline-flex font-heading text-[11px] font-semibold text-[var(--admin-blue)] hover:underline">
+              <Link to={item.href} className="mt-1 inline-flex font-heading text-xs font-semibold text-[var(--admin-blue)] hover:underline">
                 {item.actionLabel} →
               </Link>
             </li>

@@ -281,7 +281,7 @@ export function ClientDiscovery() {
                 type="button"
                 onClick={() => setStep(index)}
                 className={cn(
-                  "rounded-full px-3 py-1 font-heading text-[11px] font-semibold",
+                  "rounded-full px-3 py-1 font-heading text-xs font-semibold",
                   step === index
                     ? "bg-[var(--client-blue)] text-white"
                     : "bg-[var(--client-hover)] text-[var(--client-muted)]",
@@ -365,7 +365,7 @@ export function ClientDiscovery() {
             <div className="space-y-4">
               <h2 className="font-heading text-sm font-semibold text-[var(--client-ink)]">Sitemap & pages</h2>
               <div className="rounded-lg border border-[var(--client-line)] bg-white p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Requested pages</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Requested pages</p>
                 <ul className="mt-2 space-y-1 text-sm text-[var(--client-ink)]">
                   {scopePages.map((page) => (
                     <li key={page}>✓ {page}</li>
@@ -456,7 +456,7 @@ export function ClientDiscovery() {
             <div className="space-y-4">
               <h2 className="font-heading text-sm font-semibold text-[var(--client-ink)]">Website features</h2>
               <div className="rounded-lg border border-[var(--client-line)] bg-white p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Included in scope</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Included in scope</p>
                 <ul className="mt-2 space-y-1 text-sm">
                   {scopeFeatures.length ? scopeFeatures.map((f) => <li key={f}>✓ {f}</li>) : <li className="text-[var(--client-muted)]">No features listed in scope.</li>}
                 </ul>

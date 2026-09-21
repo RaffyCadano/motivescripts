@@ -14,7 +14,7 @@ export function ClientScopePrompt({ brief, hasProject }: ClientScopePromptProps)
   if (status === "submitted") {
     return (
       <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Website Scope</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Website Scope</p>
         <h2 className="mt-2 font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">
           Scope submitted ✓
         </h2>
@@ -34,7 +34,7 @@ export function ClientScopePrompt({ brief, hasProject }: ClientScopePromptProps)
   if (status === "in_progress") {
     return (
       <section className="rounded-[var(--client-radius)] border border-[rgb(0_80_240_/_0.22)] bg-[var(--client-card)] p-5 md:p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Website Scope</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Website Scope</p>
         <h2 className="mt-2 font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">In progress</h2>
         <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">Your scope is saved as a draft.</p>
         <Link
@@ -49,7 +49,7 @@ export function ClientScopePrompt({ brief, hasProject }: ClientScopePromptProps)
 
   return (
     <section className="rounded-[var(--client-radius)] border border-[rgb(0_80_240_/_0.22)] bg-[var(--client-card)] p-5 md:p-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Website Scope</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Website Scope</p>
       <h2 className="mt-2 font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">Not started</h2>
       <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">
         Tell us what you want your website to include.

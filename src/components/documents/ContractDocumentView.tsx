@@ -126,7 +126,7 @@ function SignatureParty({
   const signed = Boolean(recordedAt || recordedEmail || recordedName);
   return (
     <div>
-      <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${muted}`}>{label}</p>
+      <p className={`text-xs font-semibold uppercase tracking-[0.14em] ${muted}`}>{label}</p>
       <div className={`mt-8 flex min-h-[44px] items-end border-b ${line}`}>
         {signed ? <p className={`pb-2 font-heading text-sm font-semibold ${ink}`}>{signedLabel}</p> : null}
       </div>
@@ -256,7 +256,7 @@ export function ContractDocumentView({
           <h2 className={`font-heading text-sm font-semibold tracking-tight ${ink}`}>Compensation</h2>
           {investment != null ? (
             <div className="mt-3">
-              <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${muted}`}>Total Project Investment</p>
+              <p className={`text-xs font-semibold uppercase tracking-[0.14em] ${muted}`}>Total Project Investment</p>
               <p className={`mt-1 font-heading text-2xl font-semibold ${ink}`}>{formatUsdFromCents(investment)}</p>
               {schedule ? (
                 <ul className={`mt-3 space-y-1 text-sm ${muted}`}>

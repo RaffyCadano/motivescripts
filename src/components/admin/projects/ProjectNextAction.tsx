@@ -48,7 +48,7 @@ export function ProjectNextAction({
   return (
     <>
       <section className="rounded-[var(--admin-radius)] border border-[rgb(0_80_240_/_0.22)] bg-[rgb(0_80_240_/_0.04)] p-5">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">Next action</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">Next action</p>
         <h2 className="mt-1 font-heading text-lg font-semibold tracking-tight text-[var(--admin-ink)]">{action.title}</h2>
         <p className="mt-1 max-w-2xl text-sm text-[var(--admin-muted)]">{action.body}</p>
         {showPrimary || showSecondary ? (

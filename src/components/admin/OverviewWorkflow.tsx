@@ -53,7 +53,7 @@ export function OverviewWorkflow({ counts }: { counts: OverviewPipelineCounts })
           >
             <div className="absolute inset-[20%] flex flex-col items-center justify-center rounded-full bg-[var(--admin-card)]">
               <span className="font-heading text-lg font-semibold leading-none text-[var(--admin-ink)]">{total}</span>
-              <span className="mt-0.5 text-[10px] text-[var(--admin-muted)]">total</span>
+              <span className="mt-0.5 text-xs text-[var(--admin-muted)]">total</span>
             </div>
           </div>
 

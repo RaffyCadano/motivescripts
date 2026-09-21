@@ -301,6 +301,7 @@ export function InvoiceDraftForm({
 
       <EditorCard title="Client-facing notes" helper="Shown to the client on the invoice.">
         <textarea
+          aria-label="Client-facing notes"
           rows={4}
           disabled={disabled}
           value={value.notes}
@@ -312,6 +313,7 @@ export function InvoiceDraftForm({
       {showAdminNotes ? (
         <EditorCard title="Internal notes" helper="Agency-only. Never shown to the client.">
           <textarea
+            aria-label="Internal notes"
             rows={3}
             disabled={disabled}
             value={value.adminNotes}

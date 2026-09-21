@@ -169,7 +169,7 @@ export function StaffPayrollCard({ staffId }: { staffId: string }) {
                         </td>
                         <td className="py-2 text-right tabular-nums">
                           {row.rateCents !== null ? `${formatUsdFromCents(row.rateCents)}/hr` : "—"}
-                          {row.hasOverride ? <span className="ml-1 text-[11px] text-[var(--admin-muted)]">project rate</span> : null}
+                          {row.hasOverride ? <span className="ml-1 text-xs text-[var(--admin-muted)]">project rate</span> : null}
                         </td>
                       </tr>
                     ))}
@@ -195,7 +195,7 @@ export function StaffPayrollCard({ staffId }: { staffId: string }) {
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-sm font-semibold tabular-nums">{plainHours(item.hours)}</p>
-                      <p className={cn("text-[11px]", item.payrollPaidAt ? "text-[#0f7a56]" : "text-[#b45309]")}>
+                      <p className={cn("text-xs", item.payrollPaidAt ? "text-[#0f7a56]" : "text-[#b45309]")}>
                         {item.payrollPaidAt ? "Paid" : "Unpaid"}
                       </p>
                     </div>

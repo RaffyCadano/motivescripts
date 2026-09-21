@@ -336,7 +336,7 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
                     ) : null}
                   </div>
                   <span
-                    className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusBadgeClass[plan.status]}`}
+                    className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${statusBadgeClass[plan.status]}`}
                   >
                     {SERVICE_PLAN_STATUS_LABELS[plan.status]}
                   </span>
@@ -488,7 +488,7 @@ function DomainField({
   const sslOverdue = Boolean(plan.sslExpiresAt && plan.sslExpiresAt <= today);
   return (
     <div className="mt-3 border-t border-[var(--admin-line)] pt-3">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Domain</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Domain</p>
       <div className="mt-1.5 flex flex-wrap items-center gap-2">
         <input
           value={draft}
@@ -516,7 +516,7 @@ function DomainField({
           </button>
         ) : null}
       </div>
-      <p className="mt-1 text-[11px] text-[var(--admin-muted)]">
+      <p className="mt-1 text-xs text-[var(--admin-muted)]">
         Reference only — nothing is registered here. Check with your registrar before relying on this.
       </p>
       {status ? <p className={`mt-1 text-[12px] font-semibold ${availabilityClass[status]}`}>{availabilityLabel[status]}</p> : null}
@@ -532,7 +532,7 @@ function DomainField({
             onChange={(event) => onDomainExpiresChange(event.target.value)}
             className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
           />
-          {domainOverdue ? <span className="mt-1 block text-[11px] font-semibold text-[#b42318]">Overdue</span> : null}
+          {domainOverdue ? <span className="mt-1 block text-xs font-semibold text-[#b42318]">Overdue</span> : null}
         </label>
         <label className="block text-[12px] font-semibold text-[var(--admin-muted)]">
           SSL certificate renews
@@ -543,10 +543,10 @@ function DomainField({
             onChange={(event) => onSslExpiresChange(event.target.value)}
             className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
           />
-          {sslOverdue ? <span className="mt-1 block text-[11px] font-semibold text-[#b42318]">Overdue</span> : null}
+          {sslOverdue ? <span className="mt-1 block text-xs font-semibold text-[#b42318]">Overdue</span> : null}
         </label>
       </div>
-      <p className="mt-1.5 text-[11px] text-[var(--admin-muted)]">
+      <p className="mt-1.5 text-xs text-[var(--admin-muted)]">
         Optional. Set these to get a reminder 30 days before renewal, and a repeating one if it lapses. Leave blank if this
         host auto-renews and you don't need a reminder.
       </p>

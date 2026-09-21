@@ -104,7 +104,7 @@ export function OverviewInvoices({ totals, period, onPeriodChange }: OverviewInv
             <select
               value={period}
               onChange={(event) => onPeriodChange(event.target.value as InvoicePeriod)}
-              className="h-7 rounded-md border border-[var(--admin-line)] bg-white px-1.5 text-[11px] text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+              className="h-7 rounded-md border border-[var(--admin-line)] bg-white px-1.5 text-xs text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
             >
               {invoicePeriods.map((item) => (
                 <option key={item} value={item}>

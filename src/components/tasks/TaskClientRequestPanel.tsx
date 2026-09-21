@@ -76,7 +76,7 @@ export function TaskClientRequestPanel({ taskId, projectId, clientId }: TaskClie
     <section className="rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Client Request</h3>
-        <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--admin-muted)]">
+        <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--admin-muted)]">
           {taskClientRequestStatusLabel(status)}
         </span>
       </div>

@@ -56,7 +56,7 @@ export function ClientNavItem({ item, collapsed = false, onNavigate }: ClientNav
             <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
               <span className="truncate">{item.label}</span>
               {badge > 0 ? (
-                <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--client-blue)] px-1.5 text-[10px] font-semibold text-white">
+                <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--client-blue)] px-1.5 text-xs font-semibold text-white">
                   {badge > 99 ? "99+" : badge}
                 </span>
               ) : null}

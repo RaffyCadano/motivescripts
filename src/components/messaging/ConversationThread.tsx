@@ -207,11 +207,11 @@ export function ConversationThread({
                           mine ? cn(styles.navy, "text-white") : cn(styles.bg, styles.ink),
                         )}
                       >
-                        <p className={cn("text-[11px] font-medium", mine ? "text-white/70" : styles.muted)}>
+                        <p className={cn("text-xs font-medium", mine ? "text-white/70" : styles.muted)}>
                           {displaySenderLabel(message, currentUserId, tone)}
                         </p>
                         <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">{message.body}</p>
-                        <p className={cn("mt-1.5 text-[11px]", mine ? "text-white/55" : styles.muted)}>
+                        <p className={cn("mt-1.5 text-xs", mine ? "text-white/55" : styles.muted)}>
                           {formatMessageTime(message.createdAt)}
                           {mine && message.readAt ? " · Read" : ""}
                         </p>

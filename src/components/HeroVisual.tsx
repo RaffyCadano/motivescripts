@@ -1,7 +1,7 @@
 import { BrandMark } from "@/components/BrandMark";
 import { BrowserFrame } from "@/components/BrowserFrame";
 import { MiniPage } from "@/components/MiniPage";
-import houseHero from "@/assets/previews/landscape-stone.jpg";
+import houseHero from "@/assets/previews/landscape-stone.webp";
 
 export function HeroVisual() {
   return (

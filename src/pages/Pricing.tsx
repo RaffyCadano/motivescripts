@@ -17,6 +17,7 @@ import {
 } from "@/data/pricing";
 import { site } from "@/data/site";
 import { usePageMeta } from "@/lib/usePageMeta";
+import { seoPage } from "@/data/seoPages";
 import { cn } from "@/lib/cn";
 
 const priceFactors = [
@@ -76,11 +77,9 @@ const pricingFaqs = [
 ];
 
 export function PricingPage() {
-  usePageMeta(
-    "Website Pricing — MotiveScripts",
-    `Websites start at ${websiteStartingPrice}. Every project is scoped individually, and your final quote reflects your goals, content, and functionality.`,
-    "/pricing",
-  );
+  const meta = seoPage("/pricing");
+  usePageMeta(meta.title, meta.description, meta.path);
+
   return (
     <main id="main">
       <PageHero
@@ -106,7 +105,7 @@ export function PricingPage() {
                 )}
               >
                 {tier.badge ? (
-                  <span className="absolute -top-3 left-7 rounded-full bg-[linear-gradient(135deg,#0050F0,#00A0FF)] px-3 py-1 font-heading text-[11px] font-bold uppercase tracking-[0.1em] text-white">
+                  <span className="absolute -top-3 left-7 rounded-full bg-[linear-gradient(135deg,#0050F0,#00A0FF)] px-3 py-1 font-heading text-xs font-bold uppercase tracking-[0.1em] text-white">
                     {tier.badge}
                   </span>
                 ) : null}

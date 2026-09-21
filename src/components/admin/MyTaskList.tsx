@@ -30,7 +30,7 @@ export function MyTaskTable({ tasks, onOpen, projectHref = adminProjectTasksHref
   return (
     <div className="hidden overflow-hidden rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] md:block">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+        <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
           <tr>
             <th className="px-4 py-3 font-heading">Task</th>
             <th className="px-4 py-3 font-heading">Project</th>

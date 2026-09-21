@@ -11,7 +11,7 @@ export function ClientProjectsTable({ projects }: { projects: AgencyProject[] })
       <div className="mt-4 hidden overflow-x-auto md:block">
         <table className="w-full min-w-[44rem] text-left text-[13px]">
           <thead>
-            <tr className="border-b border-[var(--admin-line)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+            <tr className="border-b border-[var(--admin-line)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
               <th className="py-3 pr-4 font-semibold">Project</th>
               <th className="px-4 py-3 font-semibold">Type</th>
               <th className="px-4 py-3 font-semibold">Status</th>

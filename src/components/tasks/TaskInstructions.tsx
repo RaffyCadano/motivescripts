@@ -24,7 +24,7 @@ export function TaskInstructions({ title, description, className }: TaskInstruct
       {sections.map((section, index) => (
         <section key={`${section.heading ?? "intro"}-${index}`}>
           {section.heading ? (
-            <h3 className="font-heading text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+            <h3 className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
               {section.heading}
             </h3>
           ) : null}

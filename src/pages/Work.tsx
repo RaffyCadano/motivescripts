@@ -4,13 +4,12 @@ import { AnimateIn } from "@/components/AnimateIn";
 import { CTA } from "@/components/CTA";
 import { projects } from "@/data/projects";
 import { usePageMeta } from "@/lib/usePageMeta";
+import { seoPage } from "@/data/seoPages";
 
 export function WorkPage() {
-  usePageMeta(
-    "Work — MotiveScripts",
-    "Selected client work and website concepts, showing how MotiveScripts structures websites for local service companies.",
-    "/work",
-  );
+  const meta = seoPage("/work");
+  usePageMeta(meta.title, meta.description, meta.path);
+
 
   const [featured, ...rest] = projects;
 

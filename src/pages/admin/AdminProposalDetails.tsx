@@ -548,7 +548,7 @@ export function AdminProposalDetails() {
 
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
         <div className="space-y-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
             A. What are we proposing?
           </p>
           <ClientRequestedScope
@@ -585,7 +585,7 @@ export function AdminProposalDetails() {
             />
           </EditorCard>
 
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
             B. What is included?
           </p>
           <EditorCard
@@ -620,7 +620,7 @@ export function AdminProposalDetails() {
             />
           </EditorCard>
 
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
             C. What costs extra?
           </p>
           <EditorCard
@@ -637,7 +637,7 @@ export function AdminProposalDetails() {
             />
           </EditorCard>
 
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
             D. What will the client pay and agree to?
           </p>
           <EditorCard

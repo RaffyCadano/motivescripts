@@ -59,7 +59,7 @@ export function InvoiceDocumentView({
         </div>
         <div className="sm:text-right">
           <p className={`text-[12px] font-semibold uppercase tracking-[0.12em] ${muted}`}>Invoice</p>
-          <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight">{doc.number}</h1>
+          <h2 className="mt-1 font-heading text-2xl font-semibold tracking-tight">{doc.number}</h2>
           {paid ? (
             <p className="mt-2 font-heading text-sm font-semibold tracking-tight text-[#0f7a56]">PAID ✓</p>
           ) : doc.status ? (
@@ -103,10 +103,10 @@ export function InvoiceDocumentView({
           <table className="w-full min-w-0 text-left text-sm">
             <thead>
               <tr className={`border-b ${line}`}>
-                <th className={`py-2 pr-4 font-heading text-[11px] font-semibold uppercase tracking-[0.12em] ${muted}`}>
+                <th className={`py-2 pr-4 font-heading text-xs font-semibold uppercase tracking-[0.12em] ${muted}`}>
                   Description
                 </th>
-                <th className={`py-2 pl-4 text-right font-heading text-[11px] font-semibold uppercase tracking-[0.12em] ${muted}`}>
+                <th className={`py-2 pl-4 text-right font-heading text-xs font-semibold uppercase tracking-[0.12em] ${muted}`}>
                   Amount
                 </th>
               </tr>

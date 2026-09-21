@@ -46,7 +46,7 @@ export function ClientDocumentAttention() {
 
   return (
     <section className="rounded-[var(--client-radius)] border border-[rgb(0_80_240_/_0.22)] bg-[var(--client-card)] p-5 md:p-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">{banner.eyebrow}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">{banner.eyebrow}</p>
       <h2 className="mt-1 font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">{banner.title}</h2>
       <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">{banner.body}</p>
       <Link

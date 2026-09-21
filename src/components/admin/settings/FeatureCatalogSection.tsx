@@ -219,7 +219,7 @@ export function FeatureCatalogSection() {
                   <td className="px-3 py-2.5">
                     <span
                       className={cn(
-                        "inline-flex items-center rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold",
+                        "inline-flex items-center rounded-full px-2 py-0.5 font-heading text-xs font-semibold",
                         item.isActive ? "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]" : "bg-[var(--admin-bg)] text-[var(--admin-muted)]",
                       )}
                     >

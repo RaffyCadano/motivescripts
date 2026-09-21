@@ -123,7 +123,7 @@ export function VersionPreviewModal({
               renderPinMarker={(pin, index) => (
                 <span
                   className={cn(
-                    "flex size-6 items-center justify-center rounded-full text-[11px] font-semibold text-white shadow",
+                    "flex size-6 items-center justify-center rounded-full text-xs font-semibold text-white shadow",
                     pin.status === "Resolved" ? "bg-[var(--admin-muted)]" : "bg-[var(--admin-blue)]",
                   )}
                   title={pin.body}

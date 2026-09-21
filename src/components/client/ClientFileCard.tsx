@@ -64,7 +64,7 @@ export function ClientFileCard({ file, onView }: ClientFileCardProps) {
       </div>
 
       <div className="px-5 py-4">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">
           Versions
         </h3>
         <ul className="mt-3 divide-y divide-[var(--client-line)] rounded-xl border border-[var(--client-line)]">

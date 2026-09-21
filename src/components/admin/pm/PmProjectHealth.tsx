@@ -35,7 +35,7 @@ function HealthBadge({ status }: { status: PmProjectHealthStatus }) {
   return (
     <span
       className={cn(
-        "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
+        "rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.08em]",
         status === "blocked" && "bg-[#fef3c7] text-[#92400e]",
         status === "attention" && "bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]",
         status === "healthy" && "bg-[#ecfdf5] text-[#047857]",

@@ -53,7 +53,7 @@ function QaResultBadge({ result }: { result: "pass" | "fail" | null }) {
         ? "bg-[rgb(220_38_38_/_0.08)] text-[#b42318]"
         : "bg-[var(--admin-bg)] text-[var(--admin-muted)]";
   return (
-    <span className={cn("inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight", tone)}>
+    <span className={cn("inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-heading text-xs font-semibold tracking-tight", tone)}>
       {result === "pass" ? "Last QA passed" : result === "fail" ? "Last QA failed" : "Not tested"}
     </span>
   );

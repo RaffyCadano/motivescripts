@@ -609,7 +609,7 @@ export function AdminInvoiceDetails() {
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[56rem] text-left text-[13px]">
               <thead>
-                <tr className="border-b border-[var(--admin-line)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+                <tr className="border-b border-[var(--admin-line)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
                   <th className="py-2 pr-4">Date</th>
                   <th className="py-2 pr-4">Amount</th>
                   <th className="py-2 pr-4">Method</th>
@@ -628,7 +628,7 @@ export function AdminInvoiceDetails() {
                     <td className="py-3 pr-4">
                       {money(payment.amount_cents)}
                       {payment.reversed_at ? (
-                        <span className="ml-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                        <span className="ml-2 text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
                           Reversed
                         </span>
                       ) : null}

@@ -60,7 +60,7 @@ export function ClientTimeline({ stages, title = "Project timeline" }: ClientTim
                   {stage.label}
                 </p>
                 {current ? (
-                  <p className="mt-0.5 text-[11px] font-medium text-[var(--client-blue)]">Current</p>
+                  <p className="mt-0.5 text-xs font-medium text-[var(--client-blue)]">Current</p>
                 ) : null}
               </div>
             </li>

@@ -123,16 +123,16 @@ export function ProjectTimePanel({ project }: { project: AgencyProject }) {
 
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         <div className="rounded-lg border border-[var(--admin-line)] bg-white px-4 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Total logged</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Total logged</p>
           <p className="mt-1 font-heading text-lg font-semibold text-[var(--admin-ink)]">{totalHours}h</p>
         </div>
         <div className="rounded-lg border border-[var(--admin-line)] bg-white px-4 py-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Unbilled</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Unbilled</p>
           <p className="mt-1 font-heading text-lg font-semibold text-[var(--admin-ink)]">{unbilledHours}h</p>
         </div>
         {project.budgetedHours ? (
           <div className="rounded-lg border border-[var(--admin-line)] bg-white px-4 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
               Budget ({project.budgetedHours}h)
             </p>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--admin-bg)]">

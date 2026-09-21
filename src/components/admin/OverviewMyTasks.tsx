@@ -36,7 +36,7 @@ function Stat({ value, label, warn }: { value: number; label: string; warn?: boo
   return (
     <div>
       <p className={cn("font-heading text-2xl font-semibold tracking-tight", warn && "text-[#b45309]")}>{value}</p>
-      <p className="mt-1 text-[11px] text-[var(--admin-muted)]">{label}</p>
+      <p className="mt-1 text-xs text-[var(--admin-muted)]">{label}</p>
     </div>
   );
 }

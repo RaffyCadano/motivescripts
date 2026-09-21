@@ -10,6 +10,7 @@ import { TestimonialsSection } from "@/sections/TestimonialsSection";
 import { TrustSection } from "@/sections/TrustSection";
 import { WhySection } from "@/sections/WhySection";
 import { usePageMeta } from "@/lib/usePageMeta";
+import { seoPage } from "@/data/seoPages";
 
 // Lazy: pulls in SitePreview.tsx (~2000 lines, ~30 per-project mockup
 // images) just to render a few project cards -- see App.tsx's CaseStudy/Work
@@ -18,11 +19,9 @@ import { usePageMeta } from "@/lib/usePageMeta";
 const WorkSection = lazy(() => import("@/sections/WorkSection").then((m) => ({ default: m.WorkSection })));
 
 export function HomePage() {
-  usePageMeta(
-    "MotiveScripts — Websites that turn visitors into customers",
-    "MotiveScripts designs and builds fast, modern websites for small businesses that want more calls, bookings, and customers.",
-    "/",
-  );
+  const meta = seoPage("/");
+  usePageMeta(meta.title, meta.description, meta.path);
+
   return (
     <main id="main">
       <HeroSection />

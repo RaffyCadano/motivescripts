@@ -5,6 +5,7 @@ import { PageHero } from "@/components/PageHero";
 import { pipeline } from "@/data/site";
 import { services } from "@/data/services";
 import { usePageMeta } from "@/lib/usePageMeta";
+import { seoPage } from "@/data/seoPages";
 
 const included = [
   "Responsive, mobile-first design",
@@ -18,11 +19,9 @@ const included = [
 ];
 
 export function ServicesPage() {
-  usePageMeta(
-    "Services — MotiveScripts",
-    "Design, development, and support for small-business websites — from the first conversation through launch, with optional care afterward.",
-    "/services",
-  );
+  const meta = seoPage("/services");
+  usePageMeta(meta.title, meta.description, meta.path);
+
   return (
     <main id="main">
       <PageHero

@@ -88,7 +88,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
           <PanelLeft size={18} strokeWidth={1.75} aria-hidden="true" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-medium text-[var(--admin-muted)]">Admin</p>
+          <p className="truncate text-xs font-medium text-[var(--admin-muted)]">Admin</p>
           <p className="truncate font-heading text-base font-semibold tracking-tight text-[var(--admin-ink)]">
             {page.label}
           </p>
@@ -151,7 +151,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
               <span className="block font-heading text-[13px] font-semibold leading-tight text-[var(--admin-ink)]">
                 {display.name}
               </span>
-              <span className="block text-[11px] leading-tight text-[var(--admin-muted)]">{display.role}</span>
+              <span className="block text-xs leading-tight text-[var(--admin-muted)]">{display.role}</span>
             </span>
             <ChevronDown
               size={14}

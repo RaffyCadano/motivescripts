@@ -110,7 +110,7 @@ export function ProjectTeamRoster({
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[22rem] text-left text-[13px]">
             <thead>
-              <tr className="border-b border-[var(--admin-line)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+              <tr className="border-b border-[var(--admin-line)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
                 <th className="py-2 pr-4 font-semibold">Team member</th>
                 <th className="py-2 pr-4 font-semibold">Role</th>
                 {canManage ? <th className="py-2 font-semibold">Actions</th> : null}

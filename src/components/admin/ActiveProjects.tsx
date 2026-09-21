@@ -25,7 +25,7 @@ export function ActiveProjects() {
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[520px] text-left text-sm">
-            <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--admin-muted)]">
+            <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-xs font-semibold uppercase tracking-[0.1em] text-[var(--admin-muted)]">
               <tr>
                 <th className="px-5 py-2.5 font-heading">Project</th>
                 <th className="px-3 py-2.5 font-heading">Milestone</th>

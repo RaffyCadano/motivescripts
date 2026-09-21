@@ -28,7 +28,7 @@ export function ClientDiscoveryCard({ projectId, projectName, intake, loading }:
   if (intake.status === "complete") {
     return (
       <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Project Discovery</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Project Discovery</p>
         <h2 className="mt-2 font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">{projectName}</h2>
         <p className="mt-2 text-sm text-[var(--client-muted)]">Status: Complete ✓</p>
         <p className="mt-1 text-sm leading-relaxed text-[var(--client-muted)]">
@@ -47,7 +47,7 @@ export function ClientDiscoveryCard({ projectId, projectName, intake, loading }:
   if (intake.status === "more_information_needed") {
     return (
       <section className="rounded-[var(--client-radius)] border border-[rgb(0_80_240_/_0.22)] bg-[var(--client-card)] p-5 md:p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Project Discovery</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Project Discovery</p>
         <h2 className="mt-2 font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">{projectName}</h2>
         <p className="mt-2 text-sm font-medium text-[var(--client-ink)]">Status: {status}</p>
         <p className="mt-1 text-sm leading-relaxed text-[var(--client-muted)]">
@@ -71,7 +71,7 @@ export function ClientDiscoveryCard({ projectId, projectName, intake, loading }:
   if (intake.status === "submitted" || intake.status === "under_review") {
     return (
       <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Project Discovery</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Project Discovery</p>
         <h2 className="mt-2 font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">{projectName}</h2>
         {intake.submittedAt ? (
           <p className="mt-2 text-sm text-[var(--client-muted)]">Submitted {formatClientDate(intake.submittedAt)}</p>
@@ -92,7 +92,7 @@ export function ClientDiscoveryCard({ projectId, projectName, intake, loading }:
 
   return (
     <section className="rounded-[var(--client-radius)] border border-[rgb(0_80_240_/_0.22)] bg-[var(--client-card)] p-5 md:p-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Project Discovery</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Project Discovery</p>
       <h2 className="mt-2 font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">{projectName}</h2>
       <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">
         Help our team collect everything needed to begin production.

@@ -23,7 +23,7 @@ export function ProjectApprovalsPanel({
         {approved.length} approved · {waiting.length} awaiting review
       </p>
 
-      <h3 className="mt-5 font-heading text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+      <h3 className="mt-5 font-heading text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
         Awaiting review
       </h3>
       {waiting.length === 0 ? (
@@ -52,7 +52,7 @@ export function ProjectApprovalsPanel({
         </ul>
       )}
 
-      <h3 className="mt-6 font-heading text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+      <h3 className="mt-6 font-heading text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
         Approved
       </h3>
       {approvals.length === 0 ? (

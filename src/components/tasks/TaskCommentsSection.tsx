@@ -64,7 +64,7 @@ export function TaskCommentsSection({
             <li key={comment.id} className="rounded-lg border border-[var(--admin-line)] bg-white px-3 py-2">
               <div className="flex items-baseline justify-between gap-2">
                 <p className="text-[12px] font-semibold text-[var(--admin-ink)]">{comment.authorLabel}</p>
-                <p className="text-[11px] text-[var(--admin-muted)]">{formatProjectDay(comment.createdAt)}</p>
+                <p className="text-xs text-[var(--admin-muted)]">{formatProjectDay(comment.createdAt)}</p>
               </div>
               <p className="mt-1 whitespace-pre-wrap text-sm text-[var(--admin-ink)]">{comment.body}</p>
             </li>

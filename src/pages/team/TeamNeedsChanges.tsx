@@ -92,7 +92,7 @@ export function TeamNeedsChanges() {
           ) : (
             <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
               <table className="w-full min-w-[720px] text-left text-sm">
-                <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+                <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
                   <tr>
                     <th className="px-4 py-3 font-heading">Deliverable</th>
                     <th className="px-4 py-3 font-heading">What needs to change</th>

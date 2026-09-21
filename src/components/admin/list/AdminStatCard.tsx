@@ -54,7 +54,7 @@ function DeltaBadge({ trend, higherIsBetter }: { trend: number[]; higherIsBetter
 
   return (
     <span
-      className={cn("inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold", tone)}
+      className={cn("inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold", tone)}
       title="vs. 12 days ago"
     >
       <Icon size={10} strokeWidth={2.5} aria-hidden="true" />

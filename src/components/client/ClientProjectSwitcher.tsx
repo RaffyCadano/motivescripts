@@ -29,7 +29,7 @@ export function ClientProjectSwitcher({ projects, activeId }: ClientProjectSwitc
           >
             {project.name}
             {project.archived ? (
-              <span className={cn("text-[11px] font-medium", active ? "text-white/70" : "text-[var(--client-muted)]")}>
+              <span className={cn("text-xs font-medium", active ? "text-white/70" : "text-[var(--client-muted)]")}>
                 Archived
               </span>
             ) : null}

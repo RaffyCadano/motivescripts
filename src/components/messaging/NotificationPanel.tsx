@@ -102,7 +102,7 @@ export function NotificationPanel({
                     {item.body ? (
                       <span className={cn("mt-0.5 block text-[12px] leading-relaxed", styles.muted)}>{item.body}</span>
                     ) : null}
-                    <span className={cn("mt-1 block text-[11px]", styles.muted)}>
+                    <span className={cn("mt-1 block text-xs", styles.muted)}>
                       {formatConversationTime(item.createdAt)}
                     </span>
                   </span>

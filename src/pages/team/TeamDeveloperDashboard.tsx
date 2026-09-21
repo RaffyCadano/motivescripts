@@ -358,7 +358,7 @@ export function TeamDeveloperDashboard() {
                           available={Boolean(project.development.productionUrl.trim())}
                         />
                         {projectBlockedCount > 0 ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(180_83_9_/_0.1)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[#b45309]">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(180_83_9_/_0.1)] px-2 py-0.5 font-heading text-xs font-semibold text-[#b45309]">
                             {projectBlockedCount} blocked
                           </span>
                         ) : null}
@@ -456,7 +456,7 @@ export function TeamDeveloperDashboard() {
                     </div>
                     <span
                       className={cn(
-                        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 font-heading text-[11px] font-semibold tracking-tight",
+                        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 font-heading text-xs font-semibold tracking-tight",
                         healthTone[state],
                       )}
                     >

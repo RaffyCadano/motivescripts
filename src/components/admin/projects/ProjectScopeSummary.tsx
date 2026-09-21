@@ -7,7 +7,7 @@ import { scopeStatus } from "@/data/scopeBriefs";
 function Block({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-muted)]">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--admin-muted)]">{label}</p>
       <div className="mt-1.5 text-sm leading-6 text-[var(--admin-ink)]">{children}</div>
     </div>
   );

@@ -372,13 +372,13 @@ export function AdminSettings() {
                 <div key={group.label}>
                   <p
                     className={cn(
-                      "px-2.5 text-[10px] font-semibold uppercase tracking-[0.16em]",
+                      "px-2.5 text-xs font-semibold uppercase tracking-[0.16em]",
                       dangerGroup ? "text-[#b42318]" : "text-[var(--admin-muted)]",
                     )}
                   >
                     {group.label}
                   </p>
-                  <p className="px-2.5 pb-2 text-[11px] leading-snug text-[var(--admin-muted)]">{group.hint}</p>
+                  <p className="px-2.5 pb-2 text-xs leading-snug text-[var(--admin-muted)]">{group.hint}</p>
                   <div className="flex flex-col gap-0.5">
                     {group.items.map((item) => {
                       const active = section === item.id;
@@ -1191,7 +1191,7 @@ export function AdminSettings() {
                     </button>
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#b42318]">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#b42318]">
                       Permanent deletion
                     </p>
                     <p className="mt-1 text-sm text-[var(--admin-muted)]">
@@ -1453,7 +1453,7 @@ function Card({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           {personal ? (
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-blue)]">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--admin-blue)]">
               Your account
             </p>
           ) : null}
@@ -1670,7 +1670,7 @@ function StatusPill({ label, tone }: { label: string; tone: "ok" | "warn" | "neu
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight",
+        "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-heading text-xs font-semibold tracking-tight",
         tone === "ok" && "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]",
         tone === "warn" && "bg-[rgb(245_158_11_/_0.12)] text-[#b45309]",
         tone === "neutral" && "bg-[rgb(7_17_31_/_0.06)] text-[#667085]",

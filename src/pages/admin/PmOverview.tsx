@@ -234,7 +234,7 @@ export function PmOverview() {
             const content = (
               <>
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-muted)]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--admin-muted)]">
                     {item.label}
                   </p>
                   <Icon

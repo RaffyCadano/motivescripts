@@ -110,7 +110,7 @@ export function ClientReview() {
       ) : null}
 
       <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Current version</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Current version</p>
         {current ? (
           <>
             <h2 className="mt-2 font-heading text-xl font-semibold text-[var(--client-ink)]">
@@ -253,7 +253,7 @@ export function ClientReview() {
                 <p className={cn("min-w-0 text-sm", isCurrent ? "text-[var(--client-ink)]" : "text-[var(--client-muted)]")}>
                   {versionHistoryReviewLabel(version, file, feedback, approvals)}
                   {isCurrent ? (
-                    <span className="ml-2 font-heading text-[11px] font-semibold text-[var(--client-blue)]">Current</span>
+                    <span className="ml-2 font-heading text-xs font-semibold text-[var(--client-blue)]">Current</span>
                   ) : null}
                 </p>
                 <p className="shrink-0 text-[12px] text-[var(--client-muted)]">

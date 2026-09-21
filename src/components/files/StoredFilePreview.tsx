@@ -112,7 +112,7 @@ export function StoredFilePreview({ version, className, pins, onImageClick, rend
             {renderPinMarker ? (
               renderPinMarker(pin, index)
             ) : (
-              <span className="flex size-6 items-center justify-center rounded-full bg-[var(--admin-blue)] text-[11px] font-semibold text-white shadow">
+              <span className="flex size-6 items-center justify-center rounded-full bg-[var(--admin-blue)] text-xs font-semibold text-white shadow">
                 {index + 1}
               </span>
             )}

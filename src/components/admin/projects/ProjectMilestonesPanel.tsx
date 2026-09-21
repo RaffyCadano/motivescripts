@@ -160,4 +160,4 @@ export function ProjectMilestonesPanel({
 }
 
 const ghost =
-  "inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[11px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-40";
+  "inline-flex h-8 items-center rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-xs font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-40";

@@ -226,7 +226,7 @@ export function ClientPreProjectOverview({
 function SummaryCard({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-      <h2 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">{title}</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">{title}</h2>
       <div className="mt-3">{children}</div>
     </section>
   );

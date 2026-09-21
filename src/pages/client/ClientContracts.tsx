@@ -47,7 +47,7 @@ export function ClientContracts() {
           <div className="hidden overflow-x-auto rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] md:block">
             <table className="w-full min-w-[44rem] text-left text-[13px]">
               <thead>
-                <tr className="border-b border-[var(--client-line)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--client-muted)]">
+                <tr className="border-b border-[var(--client-line)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--client-muted)]">
                   <th className="px-5 py-3">Contract #</th>
                   <th className="px-5 py-3">Title</th>
                   <th className="px-5 py-3">Project</th>

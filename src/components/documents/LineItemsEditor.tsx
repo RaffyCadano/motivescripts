@@ -31,7 +31,7 @@ export function LineItemsEditor({
         >
           <div>
             <label className="block">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Item</span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Item</span>
               <input
                 value={item.name}
                 disabled={disabled}
@@ -41,7 +41,7 @@ export function LineItemsEditor({
               />
             </label>
             <label className="mt-2 block">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+              <span className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
                 Description
               </span>
               <textarea
@@ -55,7 +55,7 @@ export function LineItemsEditor({
             </label>
           </div>
           <label className="block">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Quantity</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Quantity</span>
             <input
               type="number"
               min={allowFractionalQuantity ? 0.01 : 1}
@@ -74,7 +74,7 @@ export function LineItemsEditor({
             />
           </label>
           <label className="block">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Unit price</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Unit price</span>
             <input
               inputMode="decimal"
               disabled={disabled}
@@ -89,7 +89,7 @@ export function LineItemsEditor({
           </label>
           <div className="flex items-end justify-between gap-2 sm:flex-col sm:items-stretch">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Total</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">Total</p>
               <p className="mt-1 font-heading text-sm font-semibold text-[var(--admin-ink)]">
                 {formatUsdFromCents(lineItemTotalCents(item))}
               </p>

@@ -85,7 +85,7 @@ export function AdminLeadDetails() {
               <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">{lead.name}</h1>
               <LeadStatusBadge status={lead.status} />
               {converted ? (
-                <span className="inline-flex items-center rounded-full bg-[rgb(16_185_129_/_0.1)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[#0f7a56]">
+                <span className="inline-flex items-center rounded-full bg-[rgb(16_185_129_/_0.1)] px-2 py-0.5 font-heading text-xs font-semibold text-[#0f7a56]">
                   Converted
                 </span>
               ) : null}

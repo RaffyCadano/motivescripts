@@ -10,7 +10,7 @@ export function ProjectCommercialProgress({ items, loading }: { items: AdminFunn
 
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-4 py-3">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">Commercial progress</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">Commercial progress</p>
       <ol className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1 text-[13px]">
         {items.map((item, index) => {
           const current = item.id === currentId && !item.done;

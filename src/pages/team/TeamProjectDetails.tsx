@@ -254,7 +254,7 @@ export function TeamProjectDetails() {
 
       {project.status === "Planning" && project.tasks.length > 0 ? (
         <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-4 py-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
             Production ready
           </p>
           <p className="mt-1 text-sm text-[var(--admin-muted)]">
@@ -281,7 +281,7 @@ export function TeamProjectDetails() {
             if (items.length === 0) return null;
             return (
               <div key={group} className="flex gap-1 lg:flex-col lg:gap-0.5">
-                <p className="hidden px-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)] lg:block">
+                <p className="hidden px-2 pb-1 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)] lg:block">
                   {group}
                 </p>
                 {items.map((item) => {
@@ -635,7 +635,7 @@ function TeamProjectTasks({
         <div className="mt-5 space-y-6">
           {grouped.map((group) => (
             <div key={group.milestone?.id ?? "ungrouped"}>
-              <h3 className="font-heading text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+              <h3 className="font-heading text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
                 {group.milestone?.name ?? "Ungrouped"}
               </h3>
               {group.tasks.length === 0 ? (
@@ -663,7 +663,7 @@ function TeamProjectTasks({
                         </div>
                         <button
                           type="button"
-                          className="inline-flex h-8 shrink-0 items-center self-start rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-[11px] font-semibold hover:bg-[var(--admin-bg)]"
+                          className="inline-flex h-8 shrink-0 items-center self-start rounded-lg border border-[var(--admin-line)] px-2.5 font-heading text-xs font-semibold hover:bg-[var(--admin-bg)]"
                           onClick={() => onOpenTask(task)}
                         >
                           {mine ? "Update" : "View"}

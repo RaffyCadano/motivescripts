@@ -17,7 +17,7 @@
   --ms-white: #ffffff;
   --ms-muted: #5c6678;
   --ms-muted-strong: #3d4656;
-  --ms-faint: #7a8496;
+  --ms-faint: #5f6b7f; /* 5.4:1 on white, 5.0:1 on the light card backgrounds (was #7a8496 at 3.8:1) */
   --ms-line: rgb(0 16 48 / 0.1);
   --ms-line-strong: rgb(0 16 48 / 0.16);
   --ms-focus: #0050f0;

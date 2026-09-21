@@ -71,7 +71,7 @@ function CheckpointBadge({ state }: { state: CheckpointState }) {
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight",
+        "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-heading text-xs font-semibold tracking-tight",
         checkpointTone[state],
       )}
     >
@@ -459,12 +459,12 @@ export function TeamDesignerDashboard() {
                       {filesInReview > 0 || filesNeedChanges > 0 ? (
                         <div className="flex flex-wrap items-center gap-1.5">
                           {filesInReview > 0 ? (
-                            <span className="inline-flex items-center rounded-full bg-[rgb(245_158_11_/_0.12)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[#92610a]">
+                            <span className="inline-flex items-center rounded-full bg-[rgb(245_158_11_/_0.12)] px-2 py-0.5 font-heading text-xs font-semibold text-[#92610a]">
                               {filesInReview} in review
                             </span>
                           ) : null}
                           {filesNeedChanges > 0 ? (
-                            <span className="inline-flex items-center rounded-full bg-[rgb(220_38_38_/_0.08)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[#b42318]">
+                            <span className="inline-flex items-center rounded-full bg-[rgb(220_38_38_/_0.08)] px-2 py-0.5 font-heading text-xs font-semibold text-[#b42318]">
                               {filesNeedChanges} need changes
                             </span>
                           ) : null}

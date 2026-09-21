@@ -72,7 +72,7 @@ export function ProjectFeedbackPanel({
       ) : (
         <div className="mt-5 overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)]">
           <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+            <thead className="border-b border-[var(--admin-line)] bg-[var(--admin-bg)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
               <tr>
                 <th className="px-4 py-3 font-heading">Deliverable</th>
                 <th className="px-4 py-3 font-heading">Feedback</th>

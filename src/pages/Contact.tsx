@@ -4,11 +4,12 @@ import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { PageHero } from "@/components/PageHero";
 import { leadIndustries, referralSources } from "@/data/leads";
-import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { announceLeadsChanged } from "@/lib/leadsEvents";
 import { inquiryMailtoHref, submitPublicLead, type PublicLeadDraft } from "@/data/publicLead";
 import { site } from "@/data/site";
 import { cn } from "@/lib/cn";
 import { usePageMeta } from "@/lib/usePageMeta";
+import { seoPage } from "@/data/seoPages";
 
 const nextSteps = [
   "Tell us about your project",
@@ -33,12 +34,9 @@ function draftFromForm(form: HTMLFormElement): PublicLeadDraft {
 }
 
 export function ContactPage() {
-  usePageMeta(
-    "Start a Project — MotiveScripts",
-    "Tell us about the website you want to build. Share a few details about your business and project and we'll follow up with next steps.",
-    "/start-a-project",
-  );
-  const { reload } = useLeads();
+  const meta = seoPage("/start-a-project");
+  usePageMeta(meta.title, meta.description, meta.path);
+
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +56,7 @@ export function ContactPage() {
     if (result.ok) {
       setMailtoHref(null);
       setSubmitted(true);
-      void reload();
+      announceLeadsChanged();
       return;
     }
     setMailtoHref(fallback);

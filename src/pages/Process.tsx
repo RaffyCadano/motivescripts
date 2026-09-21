@@ -4,6 +4,7 @@ import { AnimateIn } from "@/components/AnimateIn";
 import { PageHero } from "@/components/PageHero";
 import { processSteps } from "@/data/process";
 import { usePageMeta } from "@/lib/usePageMeta";
+import { seoPage } from "@/data/seoPages";
 
 const expectations = [
   "Clear communication throughout the project",
@@ -14,11 +15,9 @@ const expectations = [
 ];
 
 export function ProcessPage() {
-  usePageMeta(
-    "Process — MotiveScripts",
-    "A clear, six-step process from discovery to launch, with review built in before your site goes live.",
-    "/process",
-  );
+  const meta = seoPage("/process");
+  usePageMeta(meta.title, meta.description, meta.path);
+
   return (
     <main id="main">
       <PageHero

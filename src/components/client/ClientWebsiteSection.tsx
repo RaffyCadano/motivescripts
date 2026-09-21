@@ -61,7 +61,7 @@ export function ClientWebsiteSection({ projectName, development }: ClientWebsite
 
   return (
     <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Your Website</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Your Website</p>
       <h2 className="mt-2 font-heading text-xl font-semibold tracking-tight text-[var(--client-ink)]">{projectName}</h2>
       <div className="mt-4">
         <p className="text-[12px] text-[var(--client-muted)]">Status</p>

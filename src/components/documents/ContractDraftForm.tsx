@@ -135,7 +135,7 @@ export function ContractDraftForm({
           <p className="text-sm font-semibold">Compensation</p>
           {investment != null ? (
             <div className="mt-3 rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">
                 Total Project Investment
               </p>
               <p className="mt-1 font-heading text-2xl font-semibold text-[var(--admin-ink)]">

@@ -12,7 +12,7 @@ export function LeadNextAction({ lead, canConvert, onConvert }: LeadNextActionPr
   if (lead.convertedClientId) {
     return (
       <section className="rounded-[var(--admin-radius)] border border-[rgb(0_80_240_/_0.22)] bg-[rgb(0_80_240_/_0.04)] p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">Next action</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">Next action</p>
         <h2 className="mt-1 font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Open this client</h2>
         <p className="mt-1 text-sm leading-relaxed text-[var(--admin-muted)]">
           This lead has been converted. Continue the commercial workflow from the client record.
@@ -26,7 +26,7 @@ export function LeadNextAction({ lead, canConvert, onConvert }: LeadNextActionPr
 
   return (
     <section className="rounded-[var(--admin-radius)] border border-[rgb(0_80_240_/_0.22)] bg-[rgb(0_80_240_/_0.04)] p-5">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">Next action</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-muted)]">Next action</p>
       <h2 className="mt-1 font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
         Convert this lead to a client
       </h2>

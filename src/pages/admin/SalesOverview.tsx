@@ -314,7 +314,7 @@ export function SalesOverview() {
                     </div>
                     <span
                       className={cn(
-                        "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight",
+                        "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-heading text-xs font-semibold tracking-tight",
                         action === "needs_signature"
                           ? "bg-[rgb(245_158_11_/_0.12)] text-[#92610a]"
                           : "bg-[var(--admin-bg)] text-[var(--admin-muted)]",

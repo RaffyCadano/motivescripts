@@ -56,7 +56,7 @@ function padLeftFor(base: number, labels: string[], unitsPerPixel: number): numb
 function Tooltip({ leftPercent, topPercent, children }: { leftPercent: number; topPercent: number; children: ReactNode }) {
   return (
     <div
-      className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md border border-[var(--admin-line)] bg-[var(--admin-card)] px-2 py-1 text-[11px] text-[var(--admin-ink)] shadow-[0_2px_10px_rgb(7_17_31_/_0.12)]"
+      className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-md border border-[var(--admin-line)] bg-[var(--admin-card)] px-2 py-1 text-xs text-[var(--admin-ink)] shadow-[0_2px_10px_rgb(7_17_31_/_0.12)]"
       style={{ left: `${Math.min(92, Math.max(8, leftPercent))}%`, top: `${topPercent}%` }}
       role="status"
     >

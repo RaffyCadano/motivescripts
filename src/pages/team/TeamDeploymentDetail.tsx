@@ -164,7 +164,7 @@ export function TeamDeploymentDetail() {
         <div className="flex flex-wrap items-start justify-between gap-2">
           <h2 className={cardTitleClass}>Launch readiness</h2>
           {launched ? (
-            <span className="inline-flex items-center rounded-full bg-[rgb(16_185_129_/_0.1)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[#0f7a56]">
+            <span className="inline-flex items-center rounded-full bg-[rgb(16_185_129_/_0.1)] px-2 py-0.5 font-heading text-xs font-semibold text-[#0f7a56]">
               {project.status === "Completed" ? "Completed" : "Launched"}
             </span>
           ) : (

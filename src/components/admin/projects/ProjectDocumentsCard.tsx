@@ -102,7 +102,7 @@ export function ProjectDocumentsCard({
 
       {!proposal ? (
         <div className="mt-4 rounded-xl border border-[rgb(0_80_240_/_0.22)] bg-[rgb(0_80_240_/_0.04)] px-4 py-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--admin-blue)]">Next action</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--admin-blue)]">Next action</p>
           <p className="mt-2 font-heading text-lg font-semibold tracking-tight text-[var(--admin-ink)]">Create Proposal</p>
           <p className="mt-1 text-sm leading-6 text-[var(--admin-muted)]">
             Project created → next step: Create Proposal. No proposal is linked to this project yet.

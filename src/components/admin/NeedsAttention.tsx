@@ -32,7 +32,7 @@ export function NeedsAttention({ items }: NeedsAttentionProps) {
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-4">
       <div>
         <h2 className="font-heading text-sm font-semibold tracking-tight">Needs Your Attention</h2>
-        <p className="mt-1 text-[11px] text-[var(--admin-muted)]">Actionable items from live records. Nothing here is created automatically.</p>
+        <p className="mt-1 text-xs text-[var(--admin-muted)]">Actionable items from live records. Nothing here is created automatically.</p>
       </div>
       <ul className="mt-3 divide-y divide-[var(--admin-line)]">
         {visible.map((item) => {
@@ -53,7 +53,7 @@ export function NeedsAttention({ items }: NeedsAttentionProps) {
                   <p className="mt-0.5 text-[12.5px] leading-snug text-[var(--admin-muted)]">{item.body}</p>
                 </div>
               </div>
-              <Link to={item.href} className={`${adminSoftBtn} h-8 shrink-0 justify-center px-2.5 text-[11px]`}>
+              <Link to={item.href} className={`${adminSoftBtn} h-8 shrink-0 justify-center px-2.5 text-xs`}>
                 {item.actionLabel}
               </Link>
             </li>
@@ -64,7 +64,7 @@ export function NeedsAttention({ items }: NeedsAttentionProps) {
         <button
           type="button"
           onClick={() => setExpanded((current) => !current)}
-          className="mt-3 w-full rounded-lg border border-[var(--admin-line)] py-2 text-center font-heading text-[11px] font-semibold text-[var(--admin-blue)] hover:bg-[var(--admin-bg)]"
+          className="mt-3 w-full rounded-lg border border-[var(--admin-line)] py-2 text-center font-heading text-xs font-semibold text-[var(--admin-blue)] hover:bg-[var(--admin-bg)]"
         >
           {expanded ? "Show less" : `View all (${items.length})`}
         </button>

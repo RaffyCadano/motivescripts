@@ -103,7 +103,7 @@ function SitePreviewLightbox({ project, onClose }: { project: Project; onClose: 
                 <span className="size-2 rounded-full bg-[#c5ccd6]" />
                 <span className="size-2 rounded-full bg-[#c5ccd6]" />
               </div>
-              <p className="min-w-0 flex-1 truncate rounded-full bg-[rgb(0_16_48_/_0.04)] px-3 py-1 text-center font-heading text-[10px] tracking-wide text-faint">
+              <p className="min-w-0 flex-1 truncate rounded-full bg-[rgb(0_16_48_/_0.04)] px-3 py-1 text-center font-heading text-xs tracking-wide text-faint">
                 {chromeUrl}
               </p>
             </div>
@@ -125,7 +125,7 @@ function SitePreviewLightbox({ project, onClose }: { project: Project; onClose: 
                 <span className="size-2 rounded-full bg-[#c5ccd6]" />
                 <span className="size-2 rounded-full bg-[#c5ccd6]" />
               </div>
-              <p className="min-w-0 flex-1 truncate rounded-full bg-[rgb(0_16_48_/_0.04)] px-3 py-1 text-center font-heading text-[10px] tracking-wide text-faint">
+              <p className="min-w-0 flex-1 truncate rounded-full bg-[rgb(0_16_48_/_0.04)] px-3 py-1 text-center font-heading text-xs tracking-wide text-faint">
                 {chromeUrl}
               </p>
             </div>

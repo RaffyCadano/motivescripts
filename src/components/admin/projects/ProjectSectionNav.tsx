@@ -39,7 +39,7 @@ export function ProjectSectionNav({ tab, taskCount = 0, onSelect }: ProjectSecti
       >
         {projectSectionNavGroups.map((group) => (
           <div key={group.label} className="mb-4 last:mb-0">
-            <p className="px-2.5 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">
+            <p className="px-2.5 pb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">
               {group.label}
             </p>
             <div className="flex flex-col gap-0.5">
@@ -69,7 +69,7 @@ export function ProjectSectionNav({ tab, taskCount = 0, onSelect }: ProjectSecti
                     <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
                       <span className="truncate">{item.label}</span>
                       {badge > 0 ? (
-                        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--admin-blue)] px-1.5 text-[10px] font-semibold text-white">
+                        <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-[var(--admin-blue)] px-1.5 text-xs font-semibold text-white">
                           {badge > 99 ? "99+" : badge}
                         </span>
                       ) : null}

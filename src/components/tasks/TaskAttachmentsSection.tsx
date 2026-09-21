@@ -94,7 +94,7 @@ export function TaskAttachmentsSection({
           onChange={(event) => void onFileChosen(event.target.files?.[0])}
         />
       </div>
-      <p className="mt-1 text-[11px] text-[var(--admin-muted)]">
+      <p className="mt-1 text-xs text-[var(--admin-muted)]">
         Working files for this task only (screenshots, reference docs) — up to {MAX_FILE_SIZE_LABEL}. Not client-visible; for
         client-reviewable deliverables use the project's Files tab instead.
       </p>
@@ -113,11 +113,11 @@ export function TaskAttachmentsSection({
               >
                 {file.fileName}
               </button>
-              <span className="shrink-0 text-[11px] text-[var(--admin-muted)]">{formatBytes(file.fileSize)}</span>
+              <span className="shrink-0 text-xs text-[var(--admin-muted)]">{formatBytes(file.fileSize)}</span>
               <button
                 type="button"
                 disabled={busy}
-                className="shrink-0 text-[11px] font-semibold text-[var(--admin-muted)] hover:text-[#b45309] disabled:opacity-50"
+                className="shrink-0 text-xs font-semibold text-[var(--admin-muted)] hover:text-[#b45309] disabled:opacity-50"
                 onClick={() => void onRemove(file)}
               >
                 Remove

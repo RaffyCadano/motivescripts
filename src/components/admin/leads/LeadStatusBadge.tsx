@@ -29,7 +29,7 @@ export function LeadStatusBadge({ status }: LeadStatusBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight",
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-heading text-xs font-semibold tracking-tight",
         styles[status],
       )}
     >
@@ -41,7 +41,7 @@ export function LeadStatusBadge({ status }: LeadStatusBadgeProps) {
 
 export function LeadConvertedBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(16_185_129_/_0.1)] px-2 py-0.5 font-heading text-[11px] font-semibold tracking-tight text-[#0f7a56]">
+    <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(16_185_129_/_0.1)] px-2 py-0.5 font-heading text-xs font-semibold tracking-tight text-[#0f7a56]">
       <UserCheck size={11} strokeWidth={2.2} aria-hidden="true" />
       Converted
     </span>

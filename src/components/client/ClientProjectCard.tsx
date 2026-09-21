@@ -32,7 +32,7 @@ export function ClientProjectCard({ compact = false, project: projectProp, nextL
     >
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">
             Your project
           </p>
           <h2 className={cn("mt-2 font-heading font-semibold tracking-tight", compact ? "text-xl" : "text-2xl md:text-[1.75rem]")}>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { LEADS_CHANGED_EVENT } from "@/lib/leadsEvents";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { firstNameFrom, initialsFromName } from "@/auth/userDisplay";
@@ -657,6 +658,15 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
       },
     };
   }, [loadError, loadStatus, profile?.email, profile?.fullName, snapshot, toast]);
+
+  // A lead was submitted from the public form in this browser (for example an admin testing it): refresh.
+  const reloadRef = useRef(value.reload);
+  reloadRef.current = value.reload;
+  useEffect(() => {
+    const onChanged = () => void reloadRef.current();
+    window.addEventListener(LEADS_CHANGED_EVENT, onChanged);
+    return () => window.removeEventListener(LEADS_CHANGED_EVENT, onChanged);
+  }, []);
 
   return <LeadsContext.Provider value={value}>{children}</LeadsContext.Provider>;
 }

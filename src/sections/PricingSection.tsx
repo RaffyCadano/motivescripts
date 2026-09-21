@@ -39,7 +39,7 @@ export function PricingSection() {
                 )}
               >
                 {tier.badge ? (
-                  <span className="absolute -top-3 left-6 rounded-full bg-[linear-gradient(135deg,#0050F0,#00A0FF)] px-3 py-1 font-heading text-[11px] font-bold uppercase tracking-[0.1em] text-white">
+                  <span className="absolute -top-3 left-6 rounded-full bg-[linear-gradient(135deg,#0050F0,#00A0FF)] px-3 py-1 font-heading text-xs font-bold uppercase tracking-[0.1em] text-white">
                     {tier.badge}
                   </span>
                 ) : null}

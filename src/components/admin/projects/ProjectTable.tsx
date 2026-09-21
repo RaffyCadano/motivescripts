@@ -26,7 +26,7 @@ export function ProjectTable({ projects, clientsById }: ProjectTableProps) {
       <div className="hidden overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] md:block">
         <table className="w-full min-w-[68rem] text-left text-[13px]">
           <thead>
-            <tr className="border-b border-[var(--admin-line)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+            <tr className="border-b border-[var(--admin-line)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
               <th className="px-5 py-3 font-semibold">Project</th>
               <th className="px-5 py-3 font-semibold">Client</th>
               <th className="px-5 py-3 font-semibold">Type</th>
@@ -142,10 +142,10 @@ function LaunchCell({ project }: { project: AgencyProject }) {
     <span className="inline-flex flex-col gap-0.5">
       <span className={urgency === "none" ? "text-[var(--admin-muted)]" : "text-[var(--admin-ink)]"}>{label}</span>
       {urgency === "overdue" ? (
-        <span className={cn("font-heading text-[11px] font-semibold text-[#b42318]")}>Overdue</span>
+        <span className={cn("font-heading text-xs font-semibold text-[#b42318]")}>Overdue</span>
       ) : null}
       {urgency === "soon" ? (
-        <span className="font-heading text-[11px] font-semibold text-[var(--admin-blue)]">Launching soon</span>
+        <span className="font-heading text-xs font-semibold text-[var(--admin-blue)]">Launching soon</span>
       ) : null}
     </span>
   );

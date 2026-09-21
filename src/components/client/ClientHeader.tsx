@@ -85,7 +85,7 @@ export function ClientHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenM
           <PanelLeft size={18} strokeWidth={1.75} aria-hidden="true" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-[11px] font-medium text-[var(--client-muted)]">Client Portal</p>
+          <p className="truncate text-xs font-medium text-[var(--client-muted)]">Client Portal</p>
           <p className="truncate font-heading text-base font-semibold tracking-tight text-[var(--client-ink)]">
             {page.label}
           </p>
@@ -146,7 +146,7 @@ export function ClientHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenM
               <span className="block font-heading text-[13px] font-semibold leading-tight text-[var(--client-ink)]">
                 {identity.name}
               </span>
-              <span className="block text-[11px] leading-tight text-[var(--client-muted)]">
+              <span className="block text-xs leading-tight text-[var(--client-muted)]">
                 {identity.businessName}
               </span>
             </span>

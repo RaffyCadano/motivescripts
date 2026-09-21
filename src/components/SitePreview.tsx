@@ -3,34 +3,34 @@ import { LiveSiteThumbnail } from "@/components/LiveSiteFrame";
 import { MiniPage } from "@/components/MiniPage";
 import type { Project } from "@/data/projects";
 import { cn } from "@/lib/cn";
-import treesHero from "@/assets/previews/trees-hero.jpg";
-import treesChainsaw from "@/assets/previews/trees-chainsaw.jpg";
-import treesStumpGrinder from "@/assets/previews/trees-stump-grinder.jpg";
-import landscapeHero from "@/assets/previews/landscape-hero.jpg";
-import landscapeStone from "@/assets/previews/landscape-stone.jpg";
-import landscapeCare from "@/assets/previews/landscape-care.jpg";
-import cleaningHero from "@/assets/previews/cleaning-hero.jpg";
-import cleaningMopping from "@/assets/previews/cleaning-mopping.jpg";
-import cleaningOfficeDesk from "@/assets/previews/cleaning-office-desk.jpg";
-import autoHero from "@/assets/previews/auto-hero.jpg";
-import autoTire from "@/assets/previews/auto-tire.jpg";
-import autoBrakes from "@/assets/previews/auto-brakes.jpg";
-import electricHero from "@/assets/previews/electric-hero.jpg";
-import electricPanel from "@/assets/previews/electric-panel.jpg";
-import electricEvCharger from "@/assets/previews/electric-ev-charger.jpg";
-import homeServicesHero from "@/assets/previews/home-services-hero.jpg";
-import homeServicesWindow from "@/assets/previews/home-services-window.jpg";
-import homeServicesPaint from "@/assets/previews/home-services-paint.jpg";
-import contractorHero from "@/assets/previews/contractor-hero.jpg";
-import contractorKitchen from "@/assets/previews/contractor-kitchen.jpg";
-import contractorFraming from "@/assets/previews/contractor-framing.jpg";
-import restaurantHero from "@/assets/previews/restaurant-hero.jpg";
-import restaurantPlatedDish from "@/assets/previews/restaurant-plated-dish.jpg";
-import restaurantInterior from "@/assets/previews/restaurant-interior.jpg";
-import salonHero from "@/assets/previews/salon-hero.jpg";
-import salonColor from "@/assets/previews/salon-color.jpg";
-import salonChairs from "@/assets/previews/salon-chairs.jpg";
-import professionalServicesHero from "@/assets/previews/professional-services-hero.jpg";
+import treesHero from "@/assets/previews/trees-hero.webp";
+import treesChainsaw from "@/assets/previews/trees-chainsaw.webp";
+import treesStumpGrinder from "@/assets/previews/trees-stump-grinder.webp";
+import landscapeHero from "@/assets/previews/landscape-hero.webp";
+import landscapeStone from "@/assets/previews/landscape-stone.webp";
+import landscapeCare from "@/assets/previews/landscape-care.webp";
+import cleaningHero from "@/assets/previews/cleaning-hero.webp";
+import cleaningMopping from "@/assets/previews/cleaning-mopping.webp";
+import cleaningOfficeDesk from "@/assets/previews/cleaning-office-desk.webp";
+import autoHero from "@/assets/previews/auto-hero.webp";
+import autoTire from "@/assets/previews/auto-tire.webp";
+import autoBrakes from "@/assets/previews/auto-brakes.webp";
+import electricHero from "@/assets/previews/electric-hero.webp";
+import electricPanel from "@/assets/previews/electric-panel.webp";
+import electricEvCharger from "@/assets/previews/electric-ev-charger.webp";
+import homeServicesHero from "@/assets/previews/home-services-hero.webp";
+import homeServicesWindow from "@/assets/previews/home-services-window.webp";
+import homeServicesPaint from "@/assets/previews/home-services-paint.webp";
+import contractorHero from "@/assets/previews/contractor-hero.webp";
+import contractorKitchen from "@/assets/previews/contractor-kitchen.webp";
+import contractorFraming from "@/assets/previews/contractor-framing.webp";
+import restaurantHero from "@/assets/previews/restaurant-hero.webp";
+import restaurantPlatedDish from "@/assets/previews/restaurant-plated-dish.webp";
+import restaurantInterior from "@/assets/previews/restaurant-interior.webp";
+import salonHero from "@/assets/previews/salon-hero.webp";
+import salonColor from "@/assets/previews/salon-color.webp";
+import salonChairs from "@/assets/previews/salon-chairs.webp";
+import professionalServicesHero from "@/assets/previews/professional-services-hero.webp";
 
 type SitePreviewProps = {
   project: Project;
@@ -53,6 +53,8 @@ export function SitePreview({ project, live = false }: SitePreviewProps) {
         <img
           src={project.screenshot}
           alt={`Screenshot of the live ${project.name} website`}
+          loading="lazy"
+          decoding="async"
           className="absolute inset-0 size-full object-cover object-top"
         />
       </BrowserFrame>
@@ -1990,6 +1992,8 @@ function Photo({
       src={src}
       alt=""
       draggable={false}
+      loading="lazy"
+      decoding="async"
       className={cn("max-w-none object-cover", className)}
       style={{ objectPosition: position }}
     />

@@ -46,7 +46,7 @@ export function ClientSidebar({ collapsed, mobileOpen, inertWhenClosed, onNaviga
           <BrandMark className="h-7 w-auto" decorative />
           <span className={cn("min-w-0", collapsed && "lg:hidden")}>
             <span className="block font-heading text-sm font-extrabold tracking-tight">MotiveScripts</span>
-            <span className="block text-[11px] font-medium text-[var(--client-muted)]">{portalLabel}</span>
+            <span className="block text-xs font-medium text-[var(--client-muted)]">{portalLabel}</span>
           </span>
         </Link>
       </div>

@@ -36,7 +36,7 @@ export function ClientActionCard({ action, loading = false }: ClientActionCardPr
       ) : action ? (
         <>
           {action.eyebrow ? (
-            <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">
+            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">
               {action.eyebrow}
             </p>
           ) : null}

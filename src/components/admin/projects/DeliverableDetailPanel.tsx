@@ -194,7 +194,7 @@ export function DeliverableDetailPanel({
                     <span className="flex min-w-0 flex-wrap items-center gap-1.5 text-sm text-[var(--admin-muted)]">
                       <span className="truncate">{reviewLabel}</span>
                       {label === "Current" ? (
-                        <span className="inline-flex shrink-0 items-center rounded-full bg-[rgb(0_80_240_/_0.08)] px-2 py-0.5 font-heading text-[10px] font-semibold uppercase tracking-[0.06em] text-[var(--admin-blue)]">
+                        <span className="inline-flex shrink-0 items-center rounded-full bg-[rgb(0_80_240_/_0.08)] px-2 py-0.5 font-heading text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-blue)]">
                           Current
                         </span>
                       ) : null}
@@ -264,7 +264,7 @@ export function DeliverableDetailPanel({
         <div className="flex items-center gap-2">
           <h3 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Feedback</h3>
           {openFeedback.length > 0 ? (
-            <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgb(180_83_9_/_0.1)] px-1.5 font-heading text-[11px] font-semibold text-[#b45309]">
+            <span className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[rgb(180_83_9_/_0.1)] px-1.5 font-heading text-xs font-semibold text-[#b45309]">
               {openFeedback.length} open
             </span>
           ) : null}
@@ -285,8 +285,8 @@ export function DeliverableDetailPanel({
                     <span
                       className={
                         open
-                          ? "font-heading text-[11px] font-semibold uppercase tracking-[0.06em] text-[#b45309]"
-                          : "font-heading text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--admin-muted)]"
+                          ? "font-heading text-xs font-semibold uppercase tracking-[0.06em] text-[#b45309]"
+                          : "font-heading text-xs font-semibold uppercase tracking-[0.06em] text-[var(--admin-muted)]"
                       }
                     >
                       {item.status}

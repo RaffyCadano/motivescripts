@@ -134,7 +134,7 @@ export function ProposalDocumentView({
             ))}
           </ul>
           <div className={`mt-5 border-t ${line} pt-4`}>
-            <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${muted}`}>Total Investment</p>
+            <p className={`text-xs font-semibold uppercase tracking-[0.14em] ${muted}`}>Total Investment</p>
             <p className={`mt-1 font-heading text-2xl font-semibold ${ink}`}>{formatUsdFromCents(doc.investmentCents)}</p>
           </div>
         </section>

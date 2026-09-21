@@ -81,12 +81,15 @@ export function TeamTasks() {
 
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
+              type="search"
+              aria-label="Search tasks"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search tasks…"
               className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
             />
             <select
+              aria-label="Filter by status"
               value={filter}
               onChange={(event) => setFilter(event.target.value as TeamTaskFilter)}
               className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
@@ -98,6 +101,7 @@ export function TeamTasks() {
               ))}
             </select>
             <select
+              aria-label="Filter by project"
               value={projectId}
               onChange={(event) => setProjectId(event.target.value)}
               className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
@@ -110,6 +114,7 @@ export function TeamTasks() {
               ))}
             </select>
             <select
+              aria-label="Filter by priority"
               value={priority}
               onChange={(event) => setPriority(event.target.value as AgencyTaskPriority | "All")}
               className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"

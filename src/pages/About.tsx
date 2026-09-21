@@ -5,6 +5,7 @@ import { CTA } from "@/components/CTA";
 import { PageHero } from "@/components/PageHero";
 import { clientTypes, pipeline, whyPoints } from "@/data/site";
 import { usePageMeta } from "@/lib/usePageMeta";
+import { seoPage } from "@/data/seoPages";
 
 const websiteJobs = [
   {
@@ -22,11 +23,9 @@ const websiteJobs = [
 ];
 
 export function AboutPage() {
-  usePageMeta(
-    "About — MotiveScripts",
-    "MotiveScripts designs and develops websites for local and service businesses, from strategy through launch and ongoing care.",
-    "/about",
-  );
+  const meta = seoPage("/about");
+  usePageMeta(meta.title, meta.description, meta.path);
+
   return (
     <main id="main">
       <PageHero

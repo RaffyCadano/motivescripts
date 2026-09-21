@@ -23,7 +23,7 @@ export function RecentLeads() {
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[40rem] text-left text-[13px]">
               <thead>
-                <tr className="border-b border-[var(--admin-line)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+                <tr className="border-b border-[var(--admin-line)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
                   <th className="px-5 py-3 font-semibold">Business</th>
                   <th className="px-5 py-3 font-semibold">Contact</th>
                   <th className="px-5 py-3 font-semibold">Industry</th>

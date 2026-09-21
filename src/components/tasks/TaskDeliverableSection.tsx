@@ -41,7 +41,7 @@ export function TaskDeliverableSection({
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-bg)] p-4 sm:p-5">
       <h3 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Linked deliverable</h3>
-      <p className="mt-1 text-[11px] text-[var(--admin-muted)]">
+      <p className="mt-1 text-xs text-[var(--admin-muted)]">
         Which deliverable does this task produce? Lets everyone see whether completed work actually has an approved
         deliverable behind it, not just a checked-off task.
       </p>
@@ -59,7 +59,7 @@ export function TaskDeliverableSection({
         ))}
       </select>
       {deliverables.length === 0 ? (
-        <p className="mt-1 text-[11px] text-[var(--admin-muted)]">No deliverables on this project yet.</p>
+        <p className="mt-1 text-xs text-[var(--admin-muted)]">No deliverables on this project yet.</p>
       ) : null}
       {mismatch ? (
         <p className="mt-2 text-[12px] font-semibold text-[#b45309]">

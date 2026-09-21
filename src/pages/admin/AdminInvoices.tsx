@@ -375,7 +375,7 @@ function InvoiceList({
       <div className="hidden overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] md:block">
         <table className="w-full min-w-[80rem] text-left text-[13px]">
           <thead>
-            <tr className="border-b border-[var(--admin-line)] text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
+            <tr className="border-b border-[var(--admin-line)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">
               <th className="px-5 py-3 font-semibold">Invoice</th>
               <th className="px-5 py-3 font-semibold">Client</th>
               <th className="px-5 py-3 font-semibold">Project</th>

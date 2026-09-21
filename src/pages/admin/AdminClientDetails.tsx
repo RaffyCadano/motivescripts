@@ -191,7 +191,7 @@ export function AdminClientDetails() {
           aria-label="Client sections"
           className="hidden rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-3 lg:sticky lg:top-0 lg:block lg:self-start"
         >
-          <p className="px-2.5 pb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">
+          <p className="px-2.5 pb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">
             Sections
           </p>
           <div className="flex flex-col gap-0.5">

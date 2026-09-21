@@ -320,8 +320,8 @@ export function AdminPayroll() {
             <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
               <table className="w-full min-w-[760px] border-collapse text-left">
                 <thead>
-                  <tr className="text-[11px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
-                    <th className="px-3 py-2.5">Staff</th>
+                  <tr className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                    <th className="sticky left-0 z-10 bg-[var(--admin-card)] px-3 py-2.5">Staff</th>
                     <th className="px-3 py-2.5">Hourly rate</th>
                     <th className="px-3 py-2.5">Payout contact (Zelle / PayPal)</th>
                     <th className="px-3 py-2.5">Unpaid hours</th>
@@ -358,7 +358,7 @@ export function AdminPayroll() {
                 return (
                   <Fragment key={member.id}>
                   <tr className="border-t border-[var(--admin-line)]">
-                    <td className="px-3 py-2.5">
+                    <td className="sticky left-0 z-10 bg-[var(--admin-card)] px-3 py-2.5">
                       <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{member.fullName}</p>
                       <p className="text-[12px] text-[var(--admin-muted)]">{member.jobTitle.trim() || member.templateLabel}</p>
                     </td>
@@ -366,6 +366,7 @@ export function AdminPayroll() {
                       <div className="flex items-center gap-2">
                         <input
                           inputMode="decimal"
+                          aria-label={`Hourly rate for ${member.fullName}`}
                           value={draft}
                           disabled={busy}
                           onChange={(event) =>
@@ -387,6 +388,7 @@ export function AdminPayroll() {
                       <div className="flex flex-col gap-1.5">
                         <input
                           placeholder="Zelle phone/email"
+                          aria-label={`Zelle contact for ${member.fullName}`}
                           disabled={busy}
                           value={zelleDrafts.has(member.id) ? zelleDrafts.get(member.id)! : rate?.zelleContact ?? ""}
                           onChange={(event) =>
@@ -396,6 +398,7 @@ export function AdminPayroll() {
                         />
                         <input
                           placeholder="PayPal email"
+                          aria-label={`PayPal email for ${member.fullName}`}
                           disabled={busy}
                           value={paypalDrafts.has(member.id) ? paypalDrafts.get(member.id)! : rate?.paypalEmail ?? ""}
                           onChange={(event) =>
@@ -438,7 +441,7 @@ export function AdminPayroll() {
                         <div className="overflow-x-auto rounded-lg border border-[var(--admin-line)] bg-white">
                           <table className="w-full min-w-[640px] border-collapse text-left">
                             <thead>
-                              <tr className="text-[10px] font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
+                              <tr className="text-xs font-semibold uppercase tracking-wide text-[var(--admin-muted)]">
                                 <th className="px-3 py-2">Project</th>
                                 <th className="px-3 py-2">Unpaid hours</th>
                                 <th className="px-3 py-2">Rate</th>
@@ -473,6 +476,7 @@ export function AdminPayroll() {
                                         <div className="flex items-center gap-1.5">
                                           <input
                                             inputMode="decimal"
+                                            aria-label={`Project hourly rate for ${member.fullName} on ${projectsById.get(item.projectId) ?? "project"}`}
                                             placeholder={centsInputValue(rate?.payRateCents ?? 0)}
                                             value={rateDraft}
                                             disabled={rowBusy}
@@ -484,7 +488,7 @@ export function AdminPayroll() {
                                           <button
                                             type="button"
                                             disabled={rowBusy}
-                                            className="h-8 rounded-lg border border-[var(--admin-line)] px-2 font-heading text-[11px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-50"
+                                            className="h-8 rounded-lg border border-[var(--admin-line)] px-2 font-heading text-xs font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-50"
                                             onClick={() => void onSaveProjectRate(member.id, item.projectId)}
                                           >
                                             Set
@@ -493,13 +497,13 @@ export function AdminPayroll() {
                                             <button
                                               type="button"
                                               disabled={rowBusy}
-                                              className="h-8 rounded-lg px-2 font-heading text-[11px] font-semibold text-[var(--admin-muted)] hover:text-[#b45309] disabled:opacity-50"
+                                              className="h-8 rounded-lg px-2 font-heading text-xs font-semibold text-[var(--admin-muted)] hover:text-[#b45309] disabled:opacity-50"
                                               onClick={() => void onRemoveProjectRate(member.id, item.projectId)}
                                             >
                                               Use default
                                             </button>
                                           ) : (
-                                            <span className="text-[11px] text-[var(--admin-muted)]">default</span>
+                                            <span className="text-xs text-[var(--admin-muted)]">default</span>
                                           )}
                                         </div>
                                       </td>
@@ -510,12 +514,12 @@ export function AdminPayroll() {
                                         <button
                                           type="button"
                                           disabled={rowBusy || item.hours <= 0}
-                                          className="h-8 rounded-lg bg-[var(--admin-navy)] px-2.5 font-heading text-[11px] font-semibold text-white disabled:opacity-40"
+                                          className="h-8 rounded-lg bg-[var(--admin-navy)] px-2.5 font-heading text-xs font-semibold text-white disabled:opacity-40"
                                           onClick={() => setProjectPayModal({ staffId: member.id, projectId: item.projectId })}
                                         >
                                           Pay this project
                                         </button>
-                                        {rowErr ? <p className="mt-1 text-[11px] text-[#b45309]">{rowErr}</p> : null}
+                                        {rowErr ? <p className="mt-1 text-xs text-[#b45309]">{rowErr}</p> : null}
                                       </td>
                                     </tr>
                                   );

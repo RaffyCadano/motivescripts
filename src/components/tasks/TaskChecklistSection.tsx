@@ -102,7 +102,7 @@ export function TaskChecklistSection({ taskId, projectId }: { taskId: string; pr
                   </span>
                   <button
                     type="button"
-                    className="text-[11px] font-semibold text-[var(--admin-muted)] hover:text-[#b45309]"
+                    className="text-xs font-semibold text-[var(--admin-muted)] hover:text-[#b45309]"
                     onClick={() => void onRemove(item.id)}
                   >
                     Remove

@@ -6,7 +6,7 @@
  * They are not CRM records and are never used as Admin/Client fallbacks
  * when Supabase is empty.
  */
-import garageHero from "@/assets/previews/unlisted-garage-hero.jpg";
+import garageHero from "@/assets/previews/unlisted-garage-hero.webp";
 
 export type Project = {
   slug: string;

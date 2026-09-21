@@ -123,12 +123,14 @@ export function AdminMyTasks() {
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1.2fr)_repeat(3,minmax(0,0.6fr))]">
         <input
           type="search"
+          aria-label="Search tasks"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search tasks..."
           className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
         />
         <select
+          aria-label="Filter by project"
           value={projectId}
           onChange={(event) => setProjectId(event.target.value)}
           className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
@@ -141,6 +143,7 @@ export function AdminMyTasks() {
           ))}
         </select>
         <select
+          aria-label="Filter by priority"
           value={priority}
           onChange={(event) => setPriority(event.target.value as AgencyTaskPriority | "All")}
           className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
@@ -153,6 +156,7 @@ export function AdminMyTasks() {
           ))}
         </select>
         <select
+          aria-label="Filter by phase"
           value={phase}
           onChange={(event) => setPhase(event.target.value)}
           className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"

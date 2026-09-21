@@ -35,7 +35,7 @@ export function PmAttentionQueue({ items }: { items: PmAttentionItem[] }) {
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className={cn(
-                      "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]",
+                      "rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.08em]",
                       kindTone[item.kind],
                     )}
                   >

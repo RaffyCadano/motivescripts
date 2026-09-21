@@ -361,7 +361,7 @@ export function AiAssistant() {
               <ArrowUp size={18} strokeWidth={2.4} aria-hidden="true" />
             </button>
           </div>
-          <p className="mt-2 px-1 text-[11px] leading-snug text-faint">
+          <p className="mt-2 px-1 text-xs leading-snug text-faint">
             {nearLimit ? (
               <span className="font-semibold text-muted-strong">
                 {input.length}/{AI_MAX_MESSAGE_CHARS} characters.{" "}

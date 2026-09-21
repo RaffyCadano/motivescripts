@@ -64,7 +64,7 @@ export function MessageComposer({ tone, value, sending, disabled, onChange, onSe
           {sending ? "Sending…" : "Send"}
         </button>
       </div>
-      <p className={cn("mt-1.5 text-[11px]", tooLong ? "text-red-600" : styles.muted)}>
+      <p className={cn("mt-1.5 text-xs", tooLong ? "text-red-600" : styles.muted)}>
         {tooLong
           ? `Messages can be at most ${MESSAGE_MAX_LENGTH} characters.`
           : "Shift+Enter for a new line"}

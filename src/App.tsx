@@ -3,96 +3,100 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthRedirectHandler } from "@/auth/AuthRedirectHandler";
 import { GuestOnly, RequireAdmin, RequireClient } from "@/auth/guards";
-import { AdminLayout } from "@/components/admin/AdminLayout";
-import { RequireAdminPermission } from "@/components/admin/RequireAdminPermission";
-import { TeamLayout } from "@/components/team/TeamLayout";
-import { RequireDeveloperRoute } from "@/components/team/RequireDeveloperRoute";
-import { LeadsOutlet } from "@/components/admin/leads/LeadsOutlet";
-import { LeadsProvider } from "@/components/admin/leads/LeadsProvider";
-import { ClientLayout } from "@/components/client/ClientLayout";
 import { Layout } from "@/components/Layout";
+import { RouteFallback } from "@/components/RouteFallback";
+import { RouteRobots } from "@/components/RouteRobots";
 import { routerBasename } from "@/lib/appUrl";
 import { AboutPage } from "@/pages/About";
-import { AdminActivity } from "@/pages/admin/AdminActivity";
-import { AdminCapacity } from "@/pages/admin/AdminCapacity";
-import { AdminPayroll } from "@/pages/admin/AdminPayroll";
-import { AdminClientDetails } from "@/pages/admin/AdminClientDetails";
-import { AdminClientNew } from "@/pages/admin/AdminClientNew";
-import { AdminClients } from "@/pages/admin/AdminClients";
-import { AdminContractDetails } from "@/pages/admin/AdminContractDetails";
-import { AdminContractNew } from "@/pages/admin/AdminContractNew";
-import { AdminContracts } from "@/pages/admin/AdminContracts";
-import { AdminFiles } from "@/pages/admin/AdminFiles";
-import { AdminLeadDetails } from "@/pages/admin/AdminLeadDetails";
-import { AdminLeadNew } from "@/pages/admin/AdminLeadNew";
-import { AdminLeads } from "@/pages/admin/AdminLeads";
-import { AdminMessages } from "@/pages/admin/AdminMessages";
-import { AdminMyTasks } from "@/pages/admin/AdminMyTasks";
-import { AdminHome } from "@/pages/admin/AdminHome";
-import { AdminProfile } from "@/pages/admin/AdminProfile";
-import { AdminPlaceholder } from "@/pages/admin/AdminPlaceholder";
-import { AdminSettings } from "@/pages/admin/AdminSettings";
-import { AdminProjectDetails } from "@/pages/admin/AdminProjectDetails";
-import { AdminProjectEdit } from "@/pages/admin/AdminProjectEdit";
-import { AdminProjectNew } from "@/pages/admin/AdminProjectNew";
-import { AdminProjects } from "@/pages/admin/AdminProjects";
-import { AdminProposalDetails } from "@/pages/admin/AdminProposalDetails";
-import { AdminProposalNew } from "@/pages/admin/AdminProposalNew";
-import { AdminProposals } from "@/pages/admin/AdminProposals";
-import { AdminInvoiceDetails } from "@/pages/admin/AdminInvoiceDetails";
-import { AdminInvoiceNew } from "@/pages/admin/AdminInvoiceNew";
-import { AdminInvoices } from "@/pages/admin/AdminInvoices";
-import { AdminReports } from "@/pages/admin/AdminReports";
-import { AdminTestimonials } from "@/pages/admin/AdminTestimonials";
-import { AdminTestimonialForm } from "@/pages/admin/AdminTestimonialForm";
-import { AdminTeam } from "@/pages/admin/AdminTeam";
-import { AdminTeamDetails } from "@/pages/admin/AdminTeamDetails";
-import { AdminTeamInviteDetails } from "@/pages/admin/AdminTeamInviteDetails";
-import { AdminTeamInviteNew } from "@/pages/admin/AdminTeamInviteNew";
 import { AuthCallbackPage } from "@/pages/AuthCallback";
-import { ClientApprovals } from "@/pages/client/ClientApprovals";
-import { ClientContractDetails } from "@/pages/client/ClientContractDetails";
-import { ClientContracts } from "@/pages/client/ClientContracts";
-import { ClientFeedback } from "@/pages/client/ClientFeedback";
-import { ClientFilesPage } from "@/pages/client/ClientFilesPage";
-import { ClientMessages } from "@/pages/client/ClientMessages";
-import { ClientOverview } from "@/pages/client/ClientOverview";
-import { ClientProject } from "@/pages/client/ClientProject";
-import { ClientDiscovery } from "@/pages/client/ClientDiscovery";
-import { ClientTaskRequests } from "@/pages/client/ClientTaskRequests";
-import { ClientSupportRequest } from "@/pages/client/ClientSupportRequest";
-import { ClientScope } from "@/pages/client/ClientScope";
-import { ClientProposalDetails } from "@/pages/client/ClientProposalDetails";
-import { ClientProposals } from "@/pages/client/ClientProposals";
-import { ClientInvoiceDetails } from "@/pages/client/ClientInvoiceDetails";
-import { ClientInvoices } from "@/pages/client/ClientInvoices";
-import { ClientPaymentCancelled } from "@/pages/client/ClientPaymentCancelled";
-import { ClientPaymentSuccess } from "@/pages/client/ClientPaymentSuccess";
-import { ClientReview } from "@/pages/client/ClientReview";
-import { ClientSettings } from "@/pages/client/ClientSettings";
 import { ContactPage } from "@/pages/Contact";
 import { HomePage } from "@/pages/Home";
-import { StaffInviteAcceptPage } from "@/pages/StaffInviteAccept";
-import { InviteAcceptPage } from "@/pages/InviteAccept";
 import { LoginPage } from "@/pages/Login";
 import { NotFoundPage } from "@/pages/NotFound";
 import { PricingPage } from "@/pages/Pricing";
 import { ProcessPage } from "@/pages/Process";
 import { ServicesPage } from "@/pages/Services";
-import { TeamBlocked } from "@/pages/team/TeamBlocked";
-import { TeamDashboardHome } from "@/pages/team/TeamDashboardHome";
-import { TeamDeploymentDetail } from "@/pages/team/TeamDeploymentDetail";
-import { TeamDeployments } from "@/pages/team/TeamDeployments";
-import { TeamFiles } from "@/pages/team/TeamFiles";
-import { TeamMessages } from "@/pages/team/TeamMessages";
-import { TeamNeedsChanges } from "@/pages/team/TeamNeedsChanges";
-import { TeamProfile } from "@/pages/team/TeamProfile";
-import { TeamProjects } from "@/pages/team/TeamProjects";
-import { TeamProjectDetails } from "@/pages/team/TeamProjectDetails";
-import { TeamQaReview } from "@/pages/team/TeamQaReview";
-import { TeamTasks } from "@/pages/team/TeamTasks";
-import { TeamTime } from "@/pages/team/TeamTime";
-import { MessagingProvider } from "@/providers/MessagingProvider";
+
+// The signed-in areas (admin, team, client), their layouts, and the heavy data providers load only when someone
+// opens them, so a visitor to the public site does not download any of that code.
+const StaffInviteAcceptPage = lazy(() => import("@/pages/StaffInviteAccept").then((m) => ({ default: m.StaffInviteAcceptPage })));
+const InviteAcceptPage = lazy(() => import("@/pages/InviteAccept").then((m) => ({ default: m.InviteAcceptPage })));
+const PortalProviders = lazy(() => import("@/components/PortalProviders").then((m) => ({ default: m.PortalProviders })));
+const AdminLayout = lazy(() => import("@/components/admin/AdminLayout").then((m) => ({ default: m.AdminLayout })));
+const RequireAdminPermission = lazy(() => import("@/components/admin/RequireAdminPermission").then((m) => ({ default: m.RequireAdminPermission })));
+const TeamLayout = lazy(() => import("@/components/team/TeamLayout").then((m) => ({ default: m.TeamLayout })));
+const RequireDeveloperRoute = lazy(() => import("@/components/team/RequireDeveloperRoute").then((m) => ({ default: m.RequireDeveloperRoute })));
+const LeadsOutlet = lazy(() => import("@/components/admin/leads/LeadsOutlet").then((m) => ({ default: m.LeadsOutlet })));
+const ClientLayout = lazy(() => import("@/components/client/ClientLayout").then((m) => ({ default: m.ClientLayout })));
+const AdminActivity = lazy(() => import("@/pages/admin/AdminActivity").then((m) => ({ default: m.AdminActivity })));
+const AdminCapacity = lazy(() => import("@/pages/admin/AdminCapacity").then((m) => ({ default: m.AdminCapacity })));
+const AdminPayroll = lazy(() => import("@/pages/admin/AdminPayroll").then((m) => ({ default: m.AdminPayroll })));
+const AdminClientDetails = lazy(() => import("@/pages/admin/AdminClientDetails").then((m) => ({ default: m.AdminClientDetails })));
+const AdminClientNew = lazy(() => import("@/pages/admin/AdminClientNew").then((m) => ({ default: m.AdminClientNew })));
+const AdminClients = lazy(() => import("@/pages/admin/AdminClients").then((m) => ({ default: m.AdminClients })));
+const AdminContractDetails = lazy(() => import("@/pages/admin/AdminContractDetails").then((m) => ({ default: m.AdminContractDetails })));
+const AdminContractNew = lazy(() => import("@/pages/admin/AdminContractNew").then((m) => ({ default: m.AdminContractNew })));
+const AdminContracts = lazy(() => import("@/pages/admin/AdminContracts").then((m) => ({ default: m.AdminContracts })));
+const AdminFiles = lazy(() => import("@/pages/admin/AdminFiles").then((m) => ({ default: m.AdminFiles })));
+const AdminLeadDetails = lazy(() => import("@/pages/admin/AdminLeadDetails").then((m) => ({ default: m.AdminLeadDetails })));
+const AdminLeadNew = lazy(() => import("@/pages/admin/AdminLeadNew").then((m) => ({ default: m.AdminLeadNew })));
+const AdminLeads = lazy(() => import("@/pages/admin/AdminLeads").then((m) => ({ default: m.AdminLeads })));
+const AdminMessages = lazy(() => import("@/pages/admin/AdminMessages").then((m) => ({ default: m.AdminMessages })));
+const AdminMyTasks = lazy(() => import("@/pages/admin/AdminMyTasks").then((m) => ({ default: m.AdminMyTasks })));
+const AdminHome = lazy(() => import("@/pages/admin/AdminHome").then((m) => ({ default: m.AdminHome })));
+const AdminProfile = lazy(() => import("@/pages/admin/AdminProfile").then((m) => ({ default: m.AdminProfile })));
+const AdminPlaceholder = lazy(() => import("@/pages/admin/AdminPlaceholder").then((m) => ({ default: m.AdminPlaceholder })));
+const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings").then((m) => ({ default: m.AdminSettings })));
+const AdminProjectDetails = lazy(() => import("@/pages/admin/AdminProjectDetails").then((m) => ({ default: m.AdminProjectDetails })));
+const AdminProjectEdit = lazy(() => import("@/pages/admin/AdminProjectEdit").then((m) => ({ default: m.AdminProjectEdit })));
+const AdminProjectNew = lazy(() => import("@/pages/admin/AdminProjectNew").then((m) => ({ default: m.AdminProjectNew })));
+const AdminProjects = lazy(() => import("@/pages/admin/AdminProjects").then((m) => ({ default: m.AdminProjects })));
+const AdminProposalDetails = lazy(() => import("@/pages/admin/AdminProposalDetails").then((m) => ({ default: m.AdminProposalDetails })));
+const AdminProposalNew = lazy(() => import("@/pages/admin/AdminProposalNew").then((m) => ({ default: m.AdminProposalNew })));
+const AdminProposals = lazy(() => import("@/pages/admin/AdminProposals").then((m) => ({ default: m.AdminProposals })));
+const AdminInvoiceDetails = lazy(() => import("@/pages/admin/AdminInvoiceDetails").then((m) => ({ default: m.AdminInvoiceDetails })));
+const AdminInvoiceNew = lazy(() => import("@/pages/admin/AdminInvoiceNew").then((m) => ({ default: m.AdminInvoiceNew })));
+const AdminInvoices = lazy(() => import("@/pages/admin/AdminInvoices").then((m) => ({ default: m.AdminInvoices })));
+const AdminReports = lazy(() => import("@/pages/admin/AdminReports").then((m) => ({ default: m.AdminReports })));
+const AdminTestimonials = lazy(() => import("@/pages/admin/AdminTestimonials").then((m) => ({ default: m.AdminTestimonials })));
+const AdminTestimonialForm = lazy(() => import("@/pages/admin/AdminTestimonialForm").then((m) => ({ default: m.AdminTestimonialForm })));
+const AdminTeam = lazy(() => import("@/pages/admin/AdminTeam").then((m) => ({ default: m.AdminTeam })));
+const AdminTeamDetails = lazy(() => import("@/pages/admin/AdminTeamDetails").then((m) => ({ default: m.AdminTeamDetails })));
+const AdminTeamInviteDetails = lazy(() => import("@/pages/admin/AdminTeamInviteDetails").then((m) => ({ default: m.AdminTeamInviteDetails })));
+const AdminTeamInviteNew = lazy(() => import("@/pages/admin/AdminTeamInviteNew").then((m) => ({ default: m.AdminTeamInviteNew })));
+const ClientApprovals = lazy(() => import("@/pages/client/ClientApprovals").then((m) => ({ default: m.ClientApprovals })));
+const ClientContractDetails = lazy(() => import("@/pages/client/ClientContractDetails").then((m) => ({ default: m.ClientContractDetails })));
+const ClientContracts = lazy(() => import("@/pages/client/ClientContracts").then((m) => ({ default: m.ClientContracts })));
+const ClientFeedback = lazy(() => import("@/pages/client/ClientFeedback").then((m) => ({ default: m.ClientFeedback })));
+const ClientFilesPage = lazy(() => import("@/pages/client/ClientFilesPage").then((m) => ({ default: m.ClientFilesPage })));
+const ClientMessages = lazy(() => import("@/pages/client/ClientMessages").then((m) => ({ default: m.ClientMessages })));
+const ClientOverview = lazy(() => import("@/pages/client/ClientOverview").then((m) => ({ default: m.ClientOverview })));
+const ClientProject = lazy(() => import("@/pages/client/ClientProject").then((m) => ({ default: m.ClientProject })));
+const ClientDiscovery = lazy(() => import("@/pages/client/ClientDiscovery").then((m) => ({ default: m.ClientDiscovery })));
+const ClientTaskRequests = lazy(() => import("@/pages/client/ClientTaskRequests").then((m) => ({ default: m.ClientTaskRequests })));
+const ClientSupportRequest = lazy(() => import("@/pages/client/ClientSupportRequest").then((m) => ({ default: m.ClientSupportRequest })));
+const ClientScope = lazy(() => import("@/pages/client/ClientScope").then((m) => ({ default: m.ClientScope })));
+const ClientProposalDetails = lazy(() => import("@/pages/client/ClientProposalDetails").then((m) => ({ default: m.ClientProposalDetails })));
+const ClientProposals = lazy(() => import("@/pages/client/ClientProposals").then((m) => ({ default: m.ClientProposals })));
+const ClientInvoiceDetails = lazy(() => import("@/pages/client/ClientInvoiceDetails").then((m) => ({ default: m.ClientInvoiceDetails })));
+const ClientInvoices = lazy(() => import("@/pages/client/ClientInvoices").then((m) => ({ default: m.ClientInvoices })));
+const ClientPaymentCancelled = lazy(() => import("@/pages/client/ClientPaymentCancelled").then((m) => ({ default: m.ClientPaymentCancelled })));
+const ClientPaymentSuccess = lazy(() => import("@/pages/client/ClientPaymentSuccess").then((m) => ({ default: m.ClientPaymentSuccess })));
+const ClientReview = lazy(() => import("@/pages/client/ClientReview").then((m) => ({ default: m.ClientReview })));
+const ClientSettings = lazy(() => import("@/pages/client/ClientSettings").then((m) => ({ default: m.ClientSettings })));
+const TeamBlocked = lazy(() => import("@/pages/team/TeamBlocked").then((m) => ({ default: m.TeamBlocked })));
+const TeamDashboardHome = lazy(() => import("@/pages/team/TeamDashboardHome").then((m) => ({ default: m.TeamDashboardHome })));
+const TeamDeploymentDetail = lazy(() => import("@/pages/team/TeamDeploymentDetail").then((m) => ({ default: m.TeamDeploymentDetail })));
+const TeamDeployments = lazy(() => import("@/pages/team/TeamDeployments").then((m) => ({ default: m.TeamDeployments })));
+const TeamFiles = lazy(() => import("@/pages/team/TeamFiles").then((m) => ({ default: m.TeamFiles })));
+const TeamMessages = lazy(() => import("@/pages/team/TeamMessages").then((m) => ({ default: m.TeamMessages })));
+const TeamNeedsChanges = lazy(() => import("@/pages/team/TeamNeedsChanges").then((m) => ({ default: m.TeamNeedsChanges })));
+const TeamProfile = lazy(() => import("@/pages/team/TeamProfile").then((m) => ({ default: m.TeamProfile })));
+const TeamProjects = lazy(() => import("@/pages/team/TeamProjects").then((m) => ({ default: m.TeamProjects })));
+const TeamProjectDetails = lazy(() => import("@/pages/team/TeamProjectDetails").then((m) => ({ default: m.TeamProjectDetails })));
+const TeamQaReview = lazy(() => import("@/pages/team/TeamQaReview").then((m) => ({ default: m.TeamQaReview })));
+const TeamTasks = lazy(() => import("@/pages/team/TeamTasks").then((m) => ({ default: m.TeamTasks })));
+const TeamTime = lazy(() => import("@/pages/team/TeamTime").then((m) => ({ default: m.TeamTime })));
 
 // Lazy: CaseStudy/Work pull in SitePreview.tsx, a ~2000-line module with
 // per-project mockup markup and ~30 images for all 10 case studies. Every
@@ -108,12 +112,12 @@ const adminUnavailablePaths = ["notifications"] as const;
 export default function App() {
   return (
     <BrowserRouter basename={routerBasename()}>
+      <RouteRobots />
       <AuthProvider>
-        <LeadsProvider>
-          <MessagingProvider>
-          <AuthRedirectHandler />
-          <Suspense fallback={null}>
+        <AuthRedirectHandler />
+        <Suspense fallback={<RouteFallback />}>
           <Routes>
+          <Route element={<PortalProviders />}>
           <Route
             path="admin"
             element={
@@ -226,6 +230,7 @@ export default function App() {
             <Route path="billing" element={<Navigate to="/client/invoices" replace />} />
             <Route path="settings" element={<ClientSettings />} />
           </Route>
+          </Route>
           <Route element={<Layout />}>
             <Route path="auth/callback" element={<AuthCallbackPage />} />
             <Route index element={<HomePage />} />
@@ -250,9 +255,7 @@ export default function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
-          </Suspense>
-          </MessagingProvider>
-        </LeadsProvider>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   );

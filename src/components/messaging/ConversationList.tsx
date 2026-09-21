@@ -40,7 +40,7 @@ export function ConversationList({
   return (
     <aside className={cn("flex min-h-0 flex-col border-b lg:border-b-0 lg:border-r", styles.line)}>
       <div className={cn("flex items-center justify-between gap-2 border-b px-4 py-3", styles.line)}>
-        <p className={cn("text-[11px] font-semibold uppercase tracking-[0.14em]", styles.muted)}>Inbox</p>
+        <p className={cn("text-xs font-semibold uppercase tracking-[0.14em]", styles.muted)}>Inbox</p>
         {canCompose ? (
           <button
             type="button"
@@ -106,7 +106,7 @@ export function ConversationList({
                         <span className={cn("truncate font-heading text-sm font-semibold", styles.ink)}>
                           {showClient ? item.clientName || "Client" : item.subject}
                         </span>
-                        <span className={cn("shrink-0 text-[11px]", styles.muted)}>
+                        <span className={cn("shrink-0 text-xs", styles.muted)}>
                           {formatConversationTime(item.lastMessageAt)}
                         </span>
                       </span>
@@ -120,12 +120,12 @@ export function ConversationList({
                         {item.lastMessagePreview || "No messages yet"}
                       </span>
                       {item.unreadCount > 0 ? (
-                        <span className={cn("mt-1 block text-[11px] font-medium", styles.ink)}>
+                        <span className={cn("mt-1 block text-xs font-medium", styles.ink)}>
                           {item.unreadCount} unread
                         </span>
                       ) : null}
                       {item.status === "closed" ? (
-                        <span className={cn("mt-1 block text-[11px]", styles.muted)}>Closed</span>
+                        <span className={cn("mt-1 block text-xs", styles.muted)}>Closed</span>
                       ) : null}
                     </span>
                   </Link>
