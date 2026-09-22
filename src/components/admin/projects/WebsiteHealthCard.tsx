@@ -28,6 +28,12 @@ const rangeOptions = [
   { label: "7 days", hours: 24 * 7 },
 ] as const;
 
+// The chart and uptime timeline above already show trend and status history -- this list is just
+// a quick glance at the very latest checks, not a full log, so it stays short. Fetching/retaining
+// WEBSITE_HEALTH_HISTORY_LIMIT (12) checks separately from this display cap keeps "Last Successful
+// Check" correct even if the site's been unhealthy for more than 5 checks in a row.
+const RECENT_CHECKS_VISIBLE = 5;
+
 const stateTone: Record<WebsiteHealthState, string> = {
   healthy: "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]",
   degraded: "bg-[rgb(245_158_11_/_0.12)] text-[#92610a]",
@@ -332,7 +338,7 @@ export function WebsiteHealthCard({
             <div className="mt-5 border-t border-[var(--admin-line)] pt-3">
               <p className="text-[12px] font-semibold text-[var(--admin-muted)]">Recent Checks</p>
               <ul className="mt-1 divide-y divide-[var(--admin-line)]">
-                {checks.map((check) => (
+                {checks.slice(0, RECENT_CHECKS_VISIBLE).map((check) => (
                   <HistoryRow key={check.id} check={check} />
                 ))}
               </ul>
