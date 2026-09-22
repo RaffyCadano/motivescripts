@@ -1,12 +1,15 @@
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { corsHeadersForRequest } from "../_shared/cors.ts";
 import { validateProductionUrl } from "../_shared/websiteUrl.ts";
 
-// Website Health Monitoring v1. Checks exactly one URL per call: the
-// production_url already stored on an authorized project row. The request
-// body never carries a URL -- only a projectId -- so this can't be used as an
-// arbitrary URL-fetch endpoint. See 20260928000000_website_health_monitoring.sql
-// for the table this writes to and the RLS around it.
+// Website Health Monitoring v1 (manual "Check Now") + v2 (this file):
+// scheduled/automated checks. Checks exactly one URL per call in v1's
+// single-project mode: the production_url already stored on an authorized
+// project row. The request body never carries a URL -- only a projectId --
+// so this can't be used as an arbitrary URL-fetch endpoint. See
+// 20260928000000_website_health_monitoring.sql for the table this writes to
+// and the RLS around it, and 20261012000000_scheduled_uptime_monitoring.sql
+// for the pg_cron job that calls this in batch (sweep) mode.
 //
 // Classification (documented once, here, since it's the single source of
 // truth the UI and history both read):
@@ -18,14 +21,25 @@ import { validateProductionUrl } from "../_shared/websiteUrl.ts";
 //   - timeout, DNS failure, connection refused, TLS failure, too-many-redirects
 //     -> down (no HTTP response was ever received)
 //
-// Automated/scheduled checks are not implemented here -- see the migration
-// comment and the final report for why (no pg_net/HTTP-capable scheduler is
-// configured in this project yet). This function plus the manual "Check Now"
-// action are v1's complete mechanism; scheduling can call this same function
-// later without changing the data model.
+// Two callers:
+//   - A real staff session (Authorization: Bearer <user JWT>) -- the existing
+//     manual "Check Now" button. Requires staff_may_project(projectId, 'projects.manage'),
+//     checks exactly the named project/environment, and records checked_by.
+//   - The service role key (Authorization: Bearer <service role key>, matched by exact
+//     string equality, same pattern as document-email's cron/webhook callers) with no
+//     projectId -- the scheduled sweep. Checks every launched project's production_url
+//     and leaves checked_by null (see that column's comment: "Null once/if scheduled
+//     automated checks are added later").
+// A state change into or out of "down" is alerted by a database trigger on
+// website_health_checks (website_health_checks_notify_state_change), not here -- that
+// way a manual Check Now and a scheduled sweep both alert the same way, from one place.
 
 const TIMEOUT_MS = 10_000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Cap on how many launched projects one scheduled sweep checks -- keeps a single Edge Function
+ * invocation well within its execution time limit. Any project past this on a given tick is
+ * picked up on the next one (every 15 minutes; see the cron schedule). */
+const SWEEP_LIMIT = 50;
 
 type RequestBody = { projectId?: string; environment?: string };
 type CheckStatus = "healthy" | "degraded" | "down";
@@ -95,32 +109,48 @@ Deno.serve(async (req) => {
   } catch {
     return fail("invalid_action");
   }
-  const projectId = (body.projectId ?? "").trim();
-  if (!UUID_RE.test(projectId)) return fail("invalid_project");
-  const environment: CheckEnvironment = body.environment === "staging" ? "staging" : "production";
 
   const authHeader = req.headers.get("Authorization") ?? "";
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const {
-    data: { user },
-    error: userError,
-  } = await userClient.auth.getUser();
-  if (userError || !user) return fail("not_allowed", 401);
-
-  // Reuses the same SQL permission function RLS itself is built on, run as
-  // the calling user -- not a re-implementation of the permission logic.
-  const { data: allowed, error: permError } = await userClient.rpc("staff_may_project", {
-    p_project_id: projectId,
-    p_perm: "projects.manage",
-  });
-  if (permError || !allowed) return fail("not_allowed", 403);
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  const isServiceRole = token.length > 0 && token === serviceKey;
 
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  const projectId = (body.projectId ?? "").trim();
+  const environment: CheckEnvironment = body.environment === "staging" ? "staging" : "production";
+
+  // The scheduled sweep: service role, no projectId -- check every launched project's
+  // production_url. See 20261012000000_scheduled_uptime_monitoring.sql for the cron job.
+  if (isServiceRole && !projectId) {
+    return await runScheduledSweep(admin, json);
+  }
+
+  if (!UUID_RE.test(projectId)) return fail("invalid_project");
+
+  let checkedBy: string | null = null;
+  if (!isServiceRole) {
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const {
+      data: { user },
+      error: userError,
+    } = await userClient.auth.getUser();
+    if (userError || !user) return fail("not_allowed", 401);
+
+    // Reuses the same SQL permission function RLS itself is built on, run as
+    // the calling user -- not a re-implementation of the permission logic.
+    const { data: allowed, error: permError } = await userClient.rpc("staff_may_project", {
+      p_project_id: projectId,
+      p_perm: "projects.manage",
+    });
+    if (permError || !allowed) return fail("not_allowed", 403);
+    checkedBy = user.id;
+  }
+
   const { data: project, error: projectError } = await admin
     .from("projects")
     .select("production_url, staging_url")
@@ -147,7 +177,7 @@ Deno.serve(async (req) => {
       http_status: result.httpStatus,
       response_time_ms: result.responseTimeMs,
       error_message: result.errorMessage,
-      checked_by: user.id,
+      checked_by: checkedBy,
     })
     .select("id, checked_at")
     .single();
@@ -169,3 +199,60 @@ Deno.serve(async (req) => {
     },
   });
 });
+
+/**
+ * Checks every launched project's production_url (deployment_status = 'Production', a non-null
+ * production_url), concurrently, up to SWEEP_LIMIT per invocation. Always production, never staging
+ * -- staging is dev-facing and doesn't need automated alerting. Each check is inserted with
+ * checked_by null; website_health_checks_notify_state_change handles alerting on a state change.
+ */
+async function runScheduledSweep(
+  admin: SupabaseClient,
+  json: (body: Record<string, unknown>, status?: number) => Response,
+): Promise<Response> {
+  const { data: launched, error: launchedError } = await admin
+    .from("project_development")
+    .select("project_id")
+    .eq("deployment_status", "Production")
+    .limit(SWEEP_LIMIT);
+  if (launchedError) {
+    console.error("check-website-health sweep: launched lookup failed", launchedError.message);
+    return json({ ok: false, error: "server_error" }, 500);
+  }
+  const projectIds = (launched ?? []).map((row) => row.project_id as string);
+  if (projectIds.length === 0) return json({ ok: true, checked: 0 });
+
+  const { data: projects, error: projectsError } = await admin
+    .from("projects")
+    .select("id, production_url")
+    .in("id", projectIds)
+    .not("production_url", "is", null);
+  if (projectsError) {
+    console.error("check-website-health sweep: projects lookup failed", projectsError.message);
+    return json({ ok: false, error: "server_error" }, 500);
+  }
+
+  const outcomes = await Promise.all(
+    (projects ?? []).map(async (project) => {
+      const url = validateProductionUrl(project.production_url as string | null);
+      if (!url) return false;
+      const result = await runCheck(url);
+      const { error: insertError } = await admin.from("website_health_checks").insert({
+        project_id: project.id,
+        environment: "production",
+        status: result.status,
+        http_status: result.httpStatus,
+        response_time_ms: result.responseTimeMs,
+        error_message: result.errorMessage,
+        checked_by: null,
+      });
+      if (insertError) {
+        console.error("check-website-health sweep: insert failed", project.id, insertError.message);
+        return false;
+      }
+      return true;
+    }),
+  );
+
+  return json({ ok: true, checked: outcomes.filter(Boolean).length, candidates: outcomes.length });
+}
