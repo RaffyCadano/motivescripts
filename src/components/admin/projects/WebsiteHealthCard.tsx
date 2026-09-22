@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { adminGhostBtn } from "@/components/admin/adminActionStyles";
-import { Sparkline } from "@/components/admin/list/Sparkline";
+import { ResponseTimeChart } from "@/components/admin/monitoring/ResponseTimeChart";
+import { UptimeTimeline } from "@/components/admin/monitoring/UptimeTimeline";
 import {
   currentHealthState,
   formatCheckIssue,
@@ -12,10 +13,15 @@ import {
   type WebsiteHealthEnvironment,
   type WebsiteHealthState,
 } from "@/data/websiteHealth";
-import { checkWebsiteHealthNow, fetchWebsiteHealthHistory } from "@/data/websiteHealthRepository";
+import { checkWebsiteHealthNow, fetchWebsiteHealthHistory, fetchWebsiteHealthTimeline } from "@/data/websiteHealthRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { displayHttpHost, safeHttpHref } from "@/lib/safeUrl";
 import { cn } from "@/lib/cn";
+
+const rangeOptions = [
+  { label: "24 hours", hours: 24 },
+  { label: "7 days", hours: 24 * 7 },
+] as const;
 
 const stateTone: Record<WebsiteHealthState, string> = {
   healthy: "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]",
@@ -110,6 +116,10 @@ export function WebsiteHealthCard({
   const [checking, setChecking] = useState(false);
   const [checkError, setCheckError] = useState<string | null>(null);
 
+  const [rangeHours, setRangeHours] = useState<number>(rangeOptions[0].hours);
+  const [timeline, setTimeline] = useState<WebsiteHealthCheck[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(true);
+
   useEffect(() => {
     let cancelled = false;
     if (!activeHref) {
@@ -134,12 +144,42 @@ export function WebsiteHealthCard({
     };
   }, [projectId, environment, activeHref]);
 
+  function reloadTimeline() {
+    if (!activeHref) {
+      setTimeline([]);
+      setTimelineLoading(false);
+      return () => {};
+    }
+    let cancelled = false;
+    setTimelineLoading(true);
+    fetchWebsiteHealthTimeline(projectId, environment, rangeHours)
+      .then((data) => {
+        if (!cancelled) setTimeline(data);
+      })
+      .catch(() => {
+        if (!cancelled) setTimeline([]);
+      })
+      .finally(() => {
+        if (!cancelled) setTimelineLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }
+
+  useEffect(() => {
+    const cancel = reloadTimeline();
+    return cancel;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, environment, activeHref, rangeHours]);
+
   async function handleCheckNow() {
     setChecking(true);
     setCheckError(null);
     try {
       const result = await checkWebsiteHealthNow(projectId, environment);
       setChecks((prev) => [result, ...prev].slice(0, 8));
+      reloadTimeline();
     } catch (error) {
       setCheckError(error instanceof AgencyDbError ? error.message : "Unable to check the website right now.");
     } finally {
@@ -154,12 +194,6 @@ export function WebsiteHealthCard({
   }, [loading, loadError, environment, state]);
   const latest = checks[0] ?? null;
   const lastSuccess = lastSuccessfulCheck(checks);
-  // Oldest first, for a left-to-right trend line -- only checks that actually completed (down
-  // checks have no response time at all, so they'd otherwise break the line).
-  const responseTimeTrend = checks
-    .filter((check): check is WebsiteHealthCheck & { responseTimeMs: number } => check.responseTimeMs !== null)
-    .map((check) => check.responseTimeMs)
-    .reverse();
 
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
@@ -220,15 +254,10 @@ export function WebsiteHealthCard({
             {state === "healthy" ? (
               <>
                 <Row label="HTTP Status" value={latest?.httpStatus ? String(latest.httpStatus) : "—"} />
-                <div>
-                  <dt className="text-[12px] text-[var(--admin-muted)]">Response Time</dt>
-                  <dd className="mt-1 flex items-center gap-2">
-                    <span className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
-                      {latest?.responseTimeMs !== null && latest?.responseTimeMs !== undefined ? `${latest.responseTimeMs} ms` : "—"}
-                    </span>
-                    {responseTimeTrend.length >= 2 ? <Sparkline values={responseTimeTrend} /> : null}
-                  </dd>
-                </div>
+                <Row
+                  label="Response Time"
+                  value={latest?.responseTimeMs !== null && latest?.responseTimeMs !== undefined ? `${latest.responseTimeMs} ms` : "—"}
+                />
               </>
             ) : state === "degraded" || state === "down" ? (
               <Row label="Issue" value={latest ? formatCheckIssue(latest) : "—"} />
@@ -242,6 +271,43 @@ export function WebsiteHealthCard({
               <Row label="Last Successful Check" value={formatHealthRelativeTime(lastSuccess.checkedAt)} />
             ) : null}
           </dl>
+
+          <div className="mt-5 border-t border-[var(--admin-line)] pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[12px] font-semibold text-[var(--admin-muted)]">Response time trend</p>
+              <div className="inline-flex rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] p-0.5">
+                {rangeOptions.map((option) => (
+                  <button
+                    key={option.hours}
+                    type="button"
+                    onClick={() => setRangeHours(option.hours)}
+                    className={cn(
+                      "rounded-md px-2.5 py-1 font-heading text-[11px] font-semibold transition-colors",
+                      rangeHours === option.hours ? "bg-white text-[var(--admin-ink)] shadow-sm" : "text-[var(--admin-muted)]",
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {timelineLoading ? (
+              <div className="mt-3 h-[180px] animate-pulse rounded-lg bg-[var(--admin-bg)]" />
+            ) : (
+              <div className="mt-3">
+                <ResponseTimeChart checks={timeline} />
+              </div>
+            )}
+
+            <p className="mt-5 text-[12px] font-semibold text-[var(--admin-muted)]">Uptime</p>
+            {timelineLoading ? (
+              <div className="mt-3 h-14 animate-pulse rounded-lg bg-[var(--admin-bg)]" />
+            ) : (
+              <div className="mt-3">
+                <UptimeTimeline checks={timeline} hoursBack={rangeHours} />
+              </div>
+            )}
+          </div>
 
           {checks.length > 0 ? (
             <div className="mt-5 border-t border-[var(--admin-line)] pt-3">
