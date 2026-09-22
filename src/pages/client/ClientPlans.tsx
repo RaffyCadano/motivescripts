@@ -45,13 +45,25 @@ export function ClientPlans() {
   const { project, projectId, launched, plans: allPlans, loading: plansLoading, error: plansError, reloadPlans } =
     useClientPlanOffer();
   const plans = useMemo(() => allPlans.filter((plan) => plan.status !== "canceled"), [allPlans]);
-  const hasActiveCarePlan = useMemo(
-    () => allPlans.some((plan) => plan.planType === "care" && (plan.status === "active" || plan.status === "past_due")),
-    [allPlans],
+  // Scoped to the project actually being viewed (project-specific plan preferred, falling back to
+  // an account-level one with no project_id) -- a client with more than one project must not have
+  // this page show a different project's Care plan hours/status just because it happens to sort
+  // first in allPlans, which spans every project the client has.
+  const currentProjectCarePlans = useMemo(
+    () =>
+      allPlans.filter(
+        (plan) =>
+          plan.planType === "care" &&
+          (plan.status === "active" || plan.status === "past_due") &&
+          (plan.projectId === projectId || plan.projectId === null),
+      ),
+    [allPlans, projectId],
   );
+  const hasActiveCarePlan = currentProjectCarePlans.length > 0;
   const activeCarePlan = useMemo(
-    () => allPlans.find((plan) => plan.planType === "care" && (plan.status === "active" || plan.status === "past_due")) ?? null,
-    [allPlans],
+    () =>
+      currentProjectCarePlans.find((plan) => plan.projectId === projectId) ?? currentProjectCarePlans[0] ?? null,
+    [currentProjectCarePlans, projectId],
   );
 
   const [deliveryStatus, setDeliveryStatus] = useState<ClientDeliveryStatus | null>(null);
