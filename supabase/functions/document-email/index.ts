@@ -122,7 +122,8 @@ Deno.serve(async (req) => {
       body.kind !== "payment" &&
       body.kind !== "invoice_overdue" &&
       body.kind !== "plan_past_due" &&
-      body.kind !== "plan_canceled") ||
+      body.kind !== "plan_canceled" &&
+      body.kind !== "new_message") ||
     !body.id
   ) {
     return fail("invalid_action");
@@ -138,14 +139,16 @@ Deno.serve(async (req) => {
   let actorEmail = "";
 
   // Same as "payment": no interactive user triggers these either -- invoice_overdue
-  // is called by the daily overdue-reminder cron job, and plan_past_due /
-  // plan_canceled are called by the stripe-webhook function reacting to a Stripe
-  // event. Both are authenticated with the service role key, never a browser session.
+  // is called by the daily overdue-reminder cron job, plan_past_due / plan_canceled
+  // are called by the stripe-webhook function reacting to a Stripe event, and
+  // new_message is called by the messages_notify_recipients trigger on every new
+  // message. All are authenticated with the service role key, never a browser session.
   if (
     body.kind === "payment" ||
     body.kind === "invoice_overdue" ||
     body.kind === "plan_past_due" ||
-    body.kind === "plan_canceled"
+    body.kind === "plan_canceled" ||
+    body.kind === "new_message"
   ) {
     if (!isServiceRole) return fail("not_allowed", 403);
   } else {
@@ -478,6 +481,82 @@ Deno.serve(async (req) => {
       });
       await sendResend(apiKey, emails, "Your MotiveScripts payment was received", html);
       console.log("document-email sent", { kind: "payment", id: invoice.id });
+      return json({ ok: true });
+    }
+
+    if (body.kind === "new_message") {
+      const { data: message } = await admin
+        .from("messages")
+        .select("id, conversation_id, sender_user_id, body, created_at")
+        .eq("id", body.id)
+        .maybeSingle();
+      if (!message) return fail("not_found");
+      const { data: conversation } = await admin
+        .from("conversations")
+        .select("id, client_id, project_id")
+        .eq("id", message.conversation_id)
+        .maybeSingle();
+      if (!conversation) return fail("not_found");
+      const { data: sender } = await admin
+        .from("profiles")
+        .select("role")
+        .eq("id", message.sender_user_id)
+        .maybeSingle();
+      const { data: clientRow } = await admin
+        .from("clients")
+        .select("business_name, email")
+        .eq("id", conversation.client_id)
+        .maybeSingle();
+      const preview = (message.body ?? "").slice(0, 200);
+      const company = clientRow?.business_name ?? "your team";
+
+      let emails: string[];
+      let heading: string;
+      let url: string;
+      if (sender?.role === "client") {
+        // A client wrote in -- notify the same admin/staff audience the in-app
+        // notification already goes to (messages.view for this client).
+        const { data: recipients } = await admin.rpc("agency_emails_for", {
+          p_perm: "messages.view",
+          p_client_id: conversation.client_id,
+        });
+        emails = ((recipients ?? []) as { email: string }[])
+          .map((row) => row.email)
+          .filter((value): value is string => Boolean(value));
+        heading = `New message from ${company}`;
+        url = `${origin}/admin/messages/${conversation.id}`;
+      } else {
+        // Staff/admin wrote in -- notify the client's portal users.
+        const { data: recipients } = await admin
+          .from("profiles")
+          .select("email")
+          .eq("client_id", conversation.client_id)
+          .eq("role", "client");
+        emails = [
+          ...new Set(
+            [...(recipients ?? []).map((row: { email: string | null }) => row.email), clientRow?.email]
+              .map((value) => (value ?? "").trim().toLowerCase())
+              .filter((value) => value.includes("@")),
+          ),
+        ];
+        heading = "New message from MotiveScripts";
+        url = `${origin}/client/messages/${conversation.id}`;
+      }
+      if (emails.length === 0) return fail("no_recipient");
+
+      const html = brandedEmail({
+        heading,
+        company,
+        number: "Conversation",
+        title: "New message",
+        summary: preview || "You have a new message.",
+        expiresLabel: "Reply from your portal at any time.",
+        url,
+        cta: "View message",
+        supportEmail,
+      });
+      await sendResend(apiKey, emails, heading, html);
+      console.log("document-email sent", { kind: "new_message", id: message.id });
       return json({ ok: true });
     }
 
