@@ -36,9 +36,9 @@ import { validateProductionUrl } from "../_shared/websiteUrl.ts";
 
 const TIMEOUT_MS = 10_000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-/** Cap on how many launched projects one scheduled sweep checks -- keeps a single Edge Function
+/** Cap on how many due projects one scheduled sweep checks -- keeps a single Edge Function
  * invocation well within its execution time limit. Any project past this on a given tick is
- * picked up on the next one (every 15 minutes; see the cron schedule). */
+ * picked up on the next one (every 5 minutes; see the cron schedule). */
 const SWEEP_LIMIT = 50;
 
 type RequestBody = { projectId?: string; environment?: string };
@@ -201,44 +201,36 @@ Deno.serve(async (req) => {
 });
 
 /**
- * Checks every launched project's production_url (deployment_status = 'Production', a non-null
- * production_url), concurrently, up to SWEEP_LIMIT per invocation. Always production, never staging
- * -- staging is dev-facing and doesn't need automated alerting. Each check is inserted with
- * checked_by null; website_health_checks_notify_state_change handles alerting on a state change.
+ * Checks every project due this tick, concurrently, up to SWEEP_LIMIT per invocation. Always
+ * production, never staging -- staging is dev-facing and doesn't need automated alerting. Each
+ * check is inserted with checked_by null; website_health_checks_notify_state_change handles
+ * alerting on a state change.
+ *
+ * "Due this tick" is decided by projects_due_for_website_check() (20261015000000_pro_tier_monitoring_and_review.sql),
+ * not here: an Advanced-monitoring (fast_monitoring tier) project is due every 5-minute tick, a
+ * project on any other tier only if its last check was 14+ minutes ago -- so the sweep itself can
+ * run on a fast, uniform cadence while each project still gets checked at the cadence its plan
+ * promises.
  */
 async function runScheduledSweep(
   admin: SupabaseClient,
   json: (body: Record<string, unknown>, status?: number) => Response,
 ): Promise<Response> {
-  const { data: launched, error: launchedError } = await admin
-    .from("project_development")
-    .select("project_id")
-    .eq("deployment_status", "Production")
-    .limit(SWEEP_LIMIT);
-  if (launchedError) {
-    console.error("check-website-health sweep: launched lookup failed", launchedError.message);
+  const { data: due, error: dueError } = await admin.rpc("projects_due_for_website_check");
+  if (dueError) {
+    console.error("check-website-health sweep: due-projects lookup failed", dueError.message);
     return json({ ok: false, error: "server_error" }, 500);
   }
-  const projectIds = (launched ?? []).map((row) => row.project_id as string);
-  if (projectIds.length === 0) return json({ ok: true, checked: 0 });
-
-  const { data: projects, error: projectsError } = await admin
-    .from("projects")
-    .select("id, production_url")
-    .in("id", projectIds)
-    .not("production_url", "is", null);
-  if (projectsError) {
-    console.error("check-website-health sweep: projects lookup failed", projectsError.message);
-    return json({ ok: false, error: "server_error" }, 500);
-  }
+  const candidates = ((due ?? []) as { project_id: string; production_url: string | null }[]).slice(0, SWEEP_LIMIT);
+  if (candidates.length === 0) return json({ ok: true, checked: 0, candidates: 0 });
 
   const outcomes = await Promise.all(
-    (projects ?? []).map(async (project) => {
-      const url = validateProductionUrl(project.production_url as string | null);
+    candidates.map(async (project) => {
+      const url = validateProductionUrl(project.production_url);
       if (!url) return false;
       const result = await runCheck(url);
       const { error: insertError } = await admin.from("website_health_checks").insert({
-        project_id: project.id,
+        project_id: project.project_id,
         environment: "production",
         status: result.status,
         http_status: result.httpStatus,
@@ -247,7 +239,7 @@ async function runScheduledSweep(
         checked_by: null,
       });
       if (insertError) {
-        console.error("check-website-health sweep: insert failed", project.id, insertError.message);
+        console.error("check-website-health sweep: insert failed", project.project_id, insertError.message);
         return false;
       }
       return true;

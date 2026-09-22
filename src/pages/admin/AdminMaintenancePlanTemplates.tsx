@@ -29,6 +29,8 @@ const EMPTY_DRAFT: MaintenancePlanTemplateInput = {
   includedServices: [],
   overageRateCents: null,
   defaultPriority: "Medium",
+  fastMonitoring: false,
+  reviewIncluded: false,
   isActive: true,
   sortOrder: 0,
 };
@@ -42,6 +44,8 @@ function draftFromTemplate(template: MaintenancePlanTemplate): MaintenancePlanTe
     includedServices: template.includedServices,
     overageRateCents: template.overageRateCents,
     defaultPriority: template.defaultPriority,
+    fastMonitoring: template.fastMonitoring,
+    reviewIncluded: template.reviewIncluded,
     isActive: template.isActive,
     sortOrder: template.sortOrder,
   };
@@ -251,6 +255,36 @@ export function AdminMaintenancePlanTemplates() {
             A new Care request from a client on this tier starts at this priority in the admin queue -- staff can
             still change it by hand afterward. This is what makes "Priority support" real.
           </p>
+          <div className="grid gap-2 rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] p-3 sm:grid-cols-2">
+            <label className="flex items-start gap-2 text-[12px] font-semibold text-[var(--admin-ink)]">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={draft.fastMonitoring}
+                onChange={(event) => setDraft((current) => ({ ...current, fastMonitoring: event.target.checked }))}
+              />
+              <span>
+                Advanced monitoring
+                <span className="mt-0.5 block text-[11px] font-normal text-[var(--admin-muted)]">
+                  Checked every 5 minutes instead of ~15, and alerts after 2 slow checks instead of 4.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-[12px] font-semibold text-[var(--admin-ink)]">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={draft.reviewIncluded}
+                onChange={(event) => setDraft((current) => ({ ...current, reviewIncluded: event.target.checked }))}
+              />
+              <span>
+                Monthly maintenance review
+                <span className="mt-0.5 block text-[11px] font-normal text-[var(--admin-muted)]">
+                  Auto-creates a recurring review task on the 1st of each month for a plan on this tier.
+                </span>
+              </span>
+            </label>
+          </div>
           <label className="block text-[12px] font-semibold text-[var(--admin-muted)]">
             Description
             <textarea
@@ -333,6 +367,8 @@ export function AdminMaintenancePlanTemplates() {
                       {tier.includedHours > 0 ? ` · ${tier.includedHours} hrs/mo included` : ""}
                       {tier.overageRateCents !== null ? ` · ${formatUsdFromCents(tier.overageRateCents)}/hr overage` : ""}
                       {` · ${tier.defaultPriority} priority`}
+                      {tier.fastMonitoring ? " · Advanced monitoring" : ""}
+                      {tier.reviewIncluded ? " · Monthly review" : ""}
                     </p>
                     {tier.description ? <p className="mt-2 text-sm text-[var(--admin-ink)]">{tier.description}</p> : null}
                     {tier.includedServices.length > 0 ? (

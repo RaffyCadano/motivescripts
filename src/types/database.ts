@@ -776,6 +776,8 @@ export type MaintenancePlanTemplateRow = {
   included_services: Json;
   overage_rate_cents: number | null;
   default_priority: "Low" | "Medium" | "High" | "Urgent";
+  fast_monitoring: boolean;
+  review_included: boolean;
   is_active: boolean;
   sort_order: number;
   created_at: string;
