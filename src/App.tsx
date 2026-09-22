@@ -34,6 +34,9 @@ const AdminCareRequests = lazy(() => import("@/pages/admin/AdminCareRequests").t
 const AdminMaintenancePlanTemplates = lazy(() =>
   import("@/pages/admin/AdminMaintenancePlanTemplates").then((m) => ({ default: m.AdminMaintenancePlanTemplates })),
 );
+const AdminRecurringRevenue = lazy(() =>
+  import("@/pages/admin/AdminRecurringRevenue").then((m) => ({ default: m.AdminRecurringRevenue })),
+);
 const AdminPayroll = lazy(() => import("@/pages/admin/AdminPayroll").then((m) => ({ default: m.AdminPayroll })));
 const AdminClientDetails = lazy(() => import("@/pages/admin/AdminClientDetails").then((m) => ({ default: m.AdminClientDetails })));
 const AdminClientNew = lazy(() => import("@/pages/admin/AdminClientNew").then((m) => ({ default: m.AdminClientNew })));
@@ -160,6 +163,7 @@ export default function App() {
                 <Route path="invoices/new" element={<AdminInvoiceNew />} />
                 <Route path="invoices/:id" element={<AdminInvoiceDetails />} />
                 <Route path="reports" element={<AdminReports />} />
+                <Route path="recurring-revenue" element={<AdminRecurringRevenue />} />
                 <Route path="maintenance-plans" element={<AdminMaintenancePlanTemplates />} />
                 <Route path="testimonials" element={<AdminTestimonials />} />
                 <Route path="testimonials/new" element={<AdminTestimonialForm />} />

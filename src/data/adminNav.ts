@@ -30,7 +30,8 @@ export type AdminIconName =
   | "reports"
   | "testimonials"
   | "careRequests"
-  | "maintenancePlans";
+  | "maintenancePlans"
+  | "recurringRevenue";
 
 export type AdminNavItem = {
   label: string;
@@ -81,6 +82,7 @@ export const adminNavGroups: AdminNavGroup[] = [
       { label: "Invoices", href: "/admin/invoices", icon: "invoices" },
       { label: "Payroll", href: "/admin/payroll", icon: "payroll" },
       { label: "Reports", href: "/admin/reports", icon: "reports" },
+      { label: "Recurring revenue", href: "/admin/recurring-revenue", icon: "recurringRevenue" },
       { label: "Website Care plans", href: "/admin/maintenance-plans", icon: "maintenancePlans" },
     ],
   },
@@ -195,6 +197,7 @@ const navPermission: Record<string, StaffPermissionCode | "admin" | null> = {
   "/admin/invoices": "invoices.view",
   "/admin/reports": "invoices.view",
   "/admin/maintenance-plans": "invoices.view",
+  "/admin/recurring-revenue": "invoices.view",
   "/admin/testimonials": "admin",
   "/admin/payments": "invoices.view",
   "/admin/messages": "messages.view",

@@ -15,6 +15,7 @@ import {
   HeartHandshake,
   Inbox,
   LayoutDashboard,
+  LineChart,
   MessageSquare,
   Paperclip,
   Quote,
@@ -60,4 +61,5 @@ export const adminIcons: Record<AdminIconName, LucideIcon> = {
   testimonials: Quote,
   careRequests: HeartHandshake,
   maintenancePlans: Wrench,
+  recurringRevenue: LineChart,
 };

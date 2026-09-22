@@ -1593,6 +1593,22 @@ export type Database = {
         Args: { p_project_id: string };
         Returns: { domain_name: string | null; domain_status: string; hosting_status: string; deployment_status: string }[];
       };
+      recurring_revenue_summary: {
+        Args: Record<string, never>;
+        Returns: {
+          mrr_cents: number;
+          active_count: number;
+          past_due_count: number;
+          paused_count: number;
+          clients_with_plan: number;
+          clients_without_plan: number;
+          canceled_this_month: number;
+          upcoming_renewals_30d: number;
+          included_hours_this_month: number;
+          billable_overages_this_month: number;
+          billable_overages_cents_this_month: number;
+        }[];
+      };
       service_plan_usage: {
         Args: { p_plan_id: string };
         Returns: {
