@@ -3,13 +3,17 @@
 //
 // The amount and label of a self-serve plan are ALWAYS taken from here, never from the request, so a client
 // cannot pick their own price. Keep the amounts equal to the published prices in src/data/pricing.ts
-// (careStartingPrice, hostingStartingPrice, seoRetainerStartingPrice); the test checks they match.
+// (hostingStartingPrice, seoRetainerStartingPrice); the test checks they match.
+//
+// "care" is deliberately NOT in this flat catalog: Website Care is tiered (Essential/Business/Pro, admin-
+// editable in maintenance_plan_templates), so a client picks a specific tier rather than one flat price.
+// See resolveCareTierForCheckout in index.ts, which looks the chosen tier up directly instead of using
+// this catalog.
 
-export const SELF_SERVE_PLAN_TYPES = ["care", "hosting", "seo_retainer"] as const;
+export const SELF_SERVE_PLAN_TYPES = ["hosting", "seo_retainer"] as const;
 export type SelfServePlanType = (typeof SELF_SERVE_PLAN_TYPES)[number];
 
 export const SELF_SERVE_PLANS: Record<SelfServePlanType, { label: string; amountCents: number }> = {
-  care: { label: "Website Care", amountCents: 9_900 },
   hosting: { label: "Hosting", amountCents: 2_500 },
   seo_retainer: { label: "SEO Retainer", amountCents: 29_900 },
 };

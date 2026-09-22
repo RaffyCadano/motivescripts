@@ -15,8 +15,13 @@ export const websiteStartingPrice = "$2,500";
  * "starting at" figures only: each client's actual plan amount is set when their plan is created in Admin
  * (Recurring plans) and is confirmed in their proposal. If you change one here, change it in
  * supabase/functions/_shared/aiKnowledge.ts too (scripts/test-ai-endpoint.mjs checks they match).
+ *
+ * careStartingPrice is a static fallback only, shown while the live tier list loads (or if it fails to
+ * load) -- Website Care itself is tiered (Essential/Business/Pro), fetched live from
+ * maintenance_plan_templates on the Pricing page and in the client portal. Keep this equal to the
+ * cheapest active tier's price so the fallback never overstates it.
  */
-export const careStartingPrice = "$99";
+export const careStartingPrice = "$49";
 export const hostingStartingPrice = "$25";
 export const seoRetainerStartingPrice = "$299";
 

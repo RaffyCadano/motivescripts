@@ -26,6 +26,8 @@ type RequestBody = {
   /** client_checkout only: which self-serve plan to start, and for which of the client's projects. */
   planType?: string;
   projectId?: string;
+  /** client_checkout, planType "care" only: which maintenance_plan_templates tier the client picked. */
+  templateId?: string;
   /** cancel (admin) only: "now" (default) stops billing immediately; "period_end" ends at the close of the paid period. */
   when?: string;
 };
@@ -176,17 +178,47 @@ async function clientCheckout(
   } else {
     const planType = (body.planType ?? "").trim();
     const projectId = (body.projectId ?? "").trim();
-    if (!isSelfServePlanType(planType)) return json({ ok: false, error: "invalid_plan_type" });
     if (!isUuid(projectId)) return json({ ok: false, error: "not_found" });
-    // The catalog decides the price and the name. Nothing about the amount comes from the request.
-    const entry = SELF_SERVE_PLANS[planType];
+
+    let label: string;
+    let amountCents: number;
+    let templateId: string | null = null;
+    let includedHoursMonthly = 0;
+
+    if (planType === "care") {
+      // Website Care is tiered (Essential/Business/Pro): the client names which template, but its
+      // price/label/hours are always read fresh from the table here, never trusted from the request
+      // beyond the id -- same "server decides the price" rule the flat catalog already follows.
+      const requestedTemplateId = (body.templateId ?? "").trim();
+      if (!isUuid(requestedTemplateId)) return json({ ok: false, error: "invalid_plan_type" });
+      const { data: tier } = await admin
+        .from("maintenance_plan_templates")
+        .select("id, name, monthly_price_cents, included_hours, is_active")
+        .eq("id", requestedTemplateId)
+        .maybeSingle();
+      if (!tier || !tier.is_active) return json({ ok: false, error: "invalid_plan_type" });
+      templateId = tier.id;
+      label = tier.name;
+      amountCents = tier.monthly_price_cents;
+      includedHoursMonthly = tier.included_hours ?? 0;
+    } else if (isSelfServePlanType(planType)) {
+      // The flat catalog decides the price and the name. Nothing about the amount comes from the request.
+      const entry = SELF_SERVE_PLANS[planType];
+      label = entry.label;
+      amountCents = entry.amountCents;
+    } else {
+      return json({ ok: false, error: "invalid_plan_type" });
+    }
+
     const { data, error } = await admin.rpc("create_client_service_plan", {
       p_client_id: who.clientId,
       p_project_id: projectId,
       p_plan_type: planType,
-      p_label: entry.label,
-      p_amount_cents: entry.amountCents,
+      p_label: label,
+      p_amount_cents: amountCents,
       p_created_by: who.userId,
+      p_template_id: templateId,
+      p_included_hours_monthly: includedHoursMonthly,
     });
     if (error) {
       const code = clientPlanErrorCode(error.message);

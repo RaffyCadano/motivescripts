@@ -111,11 +111,12 @@ export async function createServicePlanCheckoutUrl(planId: string): Promise<stri
 
 /**
  * A client starting checkout for a plan themselves, from the portal. Either a new self-serve plan
- * (planType + the project it is for) or continuing one that is still waiting on checkout (planId). The
- * server decides the price and whether the website has launched; nothing about either comes from here.
+ * (planType + the project it is for -- for "care", also templateId naming which tier) or continuing
+ * one that is still waiting on checkout (planId). The server decides the price and whether the
+ * website has launched; nothing about either comes from here.
  */
 export async function startClientPlanCheckout(
-  input: { planType: string; projectId: string } | { planId: string },
+  input: { planType: string; projectId: string; templateId?: string } | { planId: string },
 ): Promise<string> {
   return checkoutUrlFrom({ action: "client_checkout", ...input });
 }

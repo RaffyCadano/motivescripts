@@ -70,6 +70,24 @@ export async function listActiveMaintenancePlanTemplates(): Promise<MaintenanceP
   return templates.filter((t) => t.isActive);
 }
 
+/**
+ * Anon-safe: active Website Care tiers for the public pricing page and the client's self-serve
+ * "choose a plan" flow. Never throws -- mirrors fetchPublishedTestimonials, since a failed fetch
+ * here should just fall back to the page's static content, not break the page.
+ */
+export async function fetchPublishedMaintenancePlanTemplates(): Promise<MaintenancePlanTemplate[]> {
+  if (!isSupabaseConfigured()) return [];
+  const client = getSupabase();
+  if (!client) return [];
+  const { data, error } = await client
+    .from("maintenance_plan_templates")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+  if (error) return [];
+  return ((data ?? []) as MaintenancePlanTemplateRow[]).map(toTemplate);
+}
+
 export async function createMaintenancePlanTemplate(input: MaintenancePlanTemplateInput): Promise<string> {
   const client = db();
   const { data, error } = await client

@@ -1,15 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { planOfferState } from "@/data/clientPlanOffer";
+import type { MaintenancePlanTemplate } from "@/data/maintenancePlanTemplates";
+import { fetchPublishedMaintenancePlanTemplates } from "@/data/maintenancePlanTemplatesRepository";
+import { formatUsdWhole } from "@/data/money";
 import { ongoingServices } from "@/data/pricing";
 import type { ServicePlan } from "@/data/servicePlans";
 import { startClientPlanCheckout } from "@/data/servicePlansRepository";
 import { site } from "@/data/site";
 import { AgencyDbError } from "@/lib/dbErrors";
 
+const hostingAndSeoServices = ongoingServices.filter((service) => service.planType !== "care");
+const fallbackCareService = ongoingServices.find((service) => service.planType === "care")!;
+
 /**
  * "Choose a plan", shown in the client portal once the website has launched. Picking one sends the client to
  * Stripe's secure checkout, where they see the price and confirm; nothing is charged before that. The price
- * and the launch rule are decided by the server, so this is only the front door.
+ * and the launch rule are decided by the server, so this is only the front door. Website Care is tiered
+ * (Essential/Business/Pro), fetched live so a client always sees the current tiers -- falls back to a single
+ * generic Care option while the fetch is in flight or if it fails.
  */
 export function ClientPlanChooser({
   projectId,
@@ -20,21 +28,34 @@ export function ClientPlanChooser({
   projectName: string;
   plans: ServicePlan[];
 }) {
-  const [busyType, setBusyType] = useState<string | null>(null);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [careTiers, setCareTiers] = useState<MaintenancePlanTemplate[]>([]);
 
-  async function go(planType: string, input: { planType: string; projectId: string } | { planId: string }) {
-    if (busyType) return;
-    setBusyType(planType);
+  useEffect(() => {
+    let active = true;
+    void fetchPublishedMaintenancePlanTemplates().then((rows) => {
+      if (active) setCareTiers(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function go(key: string, input: { planType: string; projectId: string; templateId?: string } | { planId: string }) {
+    if (busyKey) return;
+    setBusyKey(key);
     setError(null);
     try {
       const url = await startClientPlanCheckout(input);
       window.location.assign(url);
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "We couldn’t start checkout. Please try again.");
-      setBusyType(null);
+      setBusyKey(null);
     }
   }
+
+  const careState = planOfferState("care", projectId, plans);
 
   return (
     <section
@@ -59,10 +80,69 @@ export function ClientPlanChooser({
         </p>
       ) : null}
 
+      {careTiers.length > 0 ? (
+        <div className="mt-5">
+          <h3 className="font-heading text-base font-semibold text-[var(--client-ink)]">Website Care</h3>
+          <p className="mt-1 text-[13px] text-[var(--client-muted)]">{fallbackCareService.description}</p>
+          <ul className="mt-3 grid gap-3 md:grid-cols-3">
+            {careTiers.map((tier) => {
+              const key = `care:${tier.id}`;
+              const busy = busyKey === key;
+              return (
+                <li key={tier.id} className="flex flex-col rounded-[var(--client-radius)] border border-[var(--client-line)] p-4">
+                  <h4 className="font-heading text-base font-semibold text-[var(--client-ink)]">{tier.name}</h4>
+                  {tier.description ? (
+                    <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[var(--client-muted)]">{tier.description}</p>
+                  ) : (
+                    <div className="flex-1" />
+                  )}
+                  {tier.includedServices.length > 0 ? (
+                    <ul className="mt-3 space-y-1">
+                      {tier.includedServices.map((item) => (
+                        <li key={item} className="text-[12px] text-[var(--client-muted)]">
+                          • {item}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <p className="mt-4 font-heading text-2xl font-semibold tracking-tight text-[var(--client-ink)]">
+                    {formatUsdWhole(tier.monthlyPriceCents)}
+                    <span className="text-sm font-medium text-[var(--client-muted)]">/month</span>
+                  </p>
+                  {careState.kind === "subscribed" ? (
+                    <p
+                      className={`mt-3 text-[13px] font-semibold ${careState.status === "past_due" ? "text-[#b45309]" : "text-[#0f7a56]"}`}
+                    >
+                      {careState.status === "past_due" ? "Active — payment needs attention" : "You have a Care plan"}
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={busyKey !== null}
+                      onClick={() =>
+                        void go(
+                          key,
+                          careState.kind === "pending"
+                            ? { planId: careState.planId }
+                            : { planType: "care", projectId, templateId: tier.id },
+                        )
+                      }
+                      className="mt-3 inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)] disabled:opacity-60"
+                    >
+                      {busy ? "Opening checkout…" : careState.kind === "pending" ? "Continue to checkout" : "Choose this tier"}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
+
       <ul className="mt-5 grid gap-3 md:grid-cols-3">
-        {ongoingServices.map((service) => {
+        {([...(careTiers.length > 0 ? [] : [fallbackCareService]), ...hostingAndSeoServices] as (typeof ongoingServices)[number][]).map((service) => {
           const state = planOfferState(service.planType, projectId, plans);
-          const busy = busyType === service.planType;
+          const busy = busyKey === service.planType;
           return (
             <li key={service.id} className="flex flex-col rounded-[var(--client-radius)] border border-[var(--client-line)] p-4">
               <h3 className="font-heading text-base font-semibold text-[var(--client-ink)]">{service.name}</h3>
@@ -80,7 +160,7 @@ export function ClientPlanChooser({
               ) : (
                 <button
                   type="button"
-                  disabled={busyType !== null}
+                  disabled={busyKey !== null}
                   onClick={() =>
                     void go(service.planType, state.kind === "pending" ? { planId: state.planId } : { planType: service.planType, projectId })
                   }

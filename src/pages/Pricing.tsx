@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
@@ -15,10 +16,16 @@ import {
   seoRetainerStartingPrice,
   websiteStartingPrice,
 } from "@/data/pricing";
+import type { MaintenancePlanTemplate } from "@/data/maintenancePlanTemplates";
+import { fetchPublishedMaintenancePlanTemplates } from "@/data/maintenancePlanTemplatesRepository";
+import { formatUsdWhole } from "@/data/money";
 import { site } from "@/data/site";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { seoPage } from "@/data/seoPages";
 import { cn } from "@/lib/cn";
+
+const hostingAndSeoServices = ongoingServices.filter((service) => service.planType !== "care");
+const fallbackCareService = ongoingServices.find((service) => service.planType === "care")!;
 
 const priceFactors = [
   "Number of pages",
@@ -79,6 +86,20 @@ const pricingFaqs = [
 export function PricingPage() {
   const meta = seoPage("/pricing");
   usePageMeta(meta.title, meta.description, meta.path);
+
+  // Website Care is tiered (Essential/Business/Pro), admin-editable, and fetched live so this page
+  // never drifts from what's actually offered. Falls back to the static single-price card (never
+  // showing a broken/empty section) until the fetch resolves, or if it fails.
+  const [careTiers, setCareTiers] = useState<MaintenancePlanTemplate[]>([]);
+  useEffect(() => {
+    let active = true;
+    void fetchPublishedMaintenancePlanTemplates().then((rows) => {
+      if (active) setCareTiers(rows);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <main id="main">
@@ -171,26 +192,72 @@ export function PricingPage() {
                 Optional monthly services for after your website launches. They&apos;re separate from your project and
                 are never added automatically.
               </p>
-              <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {ongoingServices.map((service, index) => (
-                  <li
-                    key={service.id}
-                    className={cn(
-                      "flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7",
-                      index === ongoingServices.length - 1 && "sm:col-span-2 lg:col-span-1",
-                    )}
-                  >
-                    <h3 className="text-xl font-bold">{service.name}</h3>
-                    <p className="mt-3 flex-1 text-sm text-muted">{service.description}</p>
-                    <TierPrice
-                      className="mt-6"
-                      lead="Starting at"
-                      price={`${service.price}/mo`}
-                      note="Billed monthly. Choose it yourself from your client portal once your website has launched."
-                    />
-                  </li>
-                ))}
-              </ul>
+              {careTiers.length > 0 ? (
+                <>
+                  <h3 className="mt-10 text-lg font-bold">Website Care</h3>
+                  <p className="mt-2 max-w-2xl text-sm text-muted">{fallbackCareService.description}</p>
+                  <ul className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {careTiers.map((tier) => (
+                      <li key={tier.id} className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7">
+                        <h4 className="text-xl font-bold">{tier.name}</h4>
+                        {tier.description ? <p className="mt-3 flex-1 text-sm text-muted">{tier.description}</p> : <div className="flex-1" />}
+                        {tier.includedServices.length > 0 ? (
+                          <ul className="mt-4 space-y-2 border-t border-[var(--color-line)] pt-4">
+                            {tier.includedServices.map((item) => (
+                              <li key={item} className="flex items-start gap-2 text-sm text-muted-strong">
+                                <span className="mt-2 size-1 shrink-0 rounded-full bg-cyan" aria-hidden="true" />
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : null}
+                        <TierPrice
+                          className="mt-6"
+                          lead="Starting at"
+                          price={`${formatUsdWhole(tier.monthlyPriceCents)}/mo`}
+                          note="Billed monthly. Choose it yourself from your client portal once your website has launched."
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                  <h3 className="mt-10 text-lg font-bold">More ongoing services</h3>
+                  <ul className="mt-5 grid gap-6 sm:grid-cols-2">
+                    {hostingAndSeoServices.map((service) => (
+                      <li key={service.id} className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7">
+                        <h4 className="text-xl font-bold">{service.name}</h4>
+                        <p className="mt-3 flex-1 text-sm text-muted">{service.description}</p>
+                        <TierPrice
+                          className="mt-6"
+                          lead="Starting at"
+                          price={`${service.price}/mo`}
+                          note="Billed monthly. Choose it yourself from your client portal once your website has launched."
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {[fallbackCareService, ...hostingAndSeoServices].map((service, index, all) => (
+                    <li
+                      key={service.id}
+                      className={cn(
+                        "flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7",
+                        index === all.length - 1 && "sm:col-span-2 lg:col-span-1",
+                      )}
+                    >
+                      <h3 className="text-xl font-bold">{service.name}</h3>
+                      <p className="mt-3 flex-1 text-sm text-muted">{service.description}</p>
+                      <TierPrice
+                        className="mt-6"
+                        lead="Starting at"
+                        price={`${service.price}/mo`}
+                        note="Billed monthly. Choose it yourself from your client portal once your website has launched."
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
               <p className="mt-6 max-w-2xl text-sm text-faint">{ongoingServicesTerms}</p>
             </section>
           </AnimateIn>

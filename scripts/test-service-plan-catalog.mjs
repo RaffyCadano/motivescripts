@@ -12,10 +12,12 @@ import {
   isUuid,
 } from "../supabase/functions/_shared/servicePlanCatalog.ts";
 
-test("only care, hosting and SEO retainer can be chosen by a client; custom stays admin-only", () => {
-  assert.deepEqual([...SELF_SERVE_PLAN_TYPES], ["care", "hosting", "seo_retainer"]);
+test("only hosting and SEO retainer are in the flat catalog; care is tiered, custom stays admin-only", () => {
+  assert.deepEqual([...SELF_SERVE_PLAN_TYPES], ["hosting", "seo_retainer"]);
   for (const type of SELF_SERVE_PLAN_TYPES) assert.equal(isSelfServePlanType(type), true);
-  for (const bad of ["custom", "", "CARE", "care ", null, undefined, 5, {}, "pending"]) {
+  // "care" is deliberately not a flat self-serve type anymore -- it's tiered (Essential/Business/Pro,
+  // maintenance_plan_templates), chosen with a templateId instead of a fixed catalog price.
+  for (const bad of ["custom", "care", "", "CARE", "care ", null, undefined, 5, {}, "pending"]) {
     assert.equal(isSelfServePlanType(bad), false, String(bad));
   }
 });
@@ -23,7 +25,6 @@ test("only care, hosting and SEO retainer can be chosen by a client; custom stay
 test("catalog amounts equal the prices published on the Pricing page", () => {
   const pricing = readFileSync("src/data/pricing.ts", "utf8");
   const published = {
-    care: pricing.match(/careStartingPrice = "\$(\d+)"/)?.[1],
     hosting: pricing.match(/hostingStartingPrice = "\$(\d+)"/)?.[1],
     seo_retainer: pricing.match(/seoRetainerStartingPrice = "\$(\d+)"/)?.[1],
   };

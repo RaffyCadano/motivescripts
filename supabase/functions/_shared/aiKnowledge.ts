@@ -17,13 +17,17 @@
  *
  * Bump AI_KNOWLEDGE_VERSION whenever this content changes.
  */
-export const AI_KNOWLEDGE_VERSION = "2026-09-21.5";
+export const AI_KNOWLEDGE_VERSION = "2026-09-22.1";
 
 /** Must match websiteStartingPrice in src/data/pricing.ts. */
 export const WEBSITE_STARTING_PRICE = "$2,500";
 
-/** Monthly starting prices. Must match careStartingPrice, hostingStartingPrice, and seoRetainerStartingPrice in src/data/pricing.ts. */
-export const CARE_STARTING_PRICE = "$99";
+/**
+ * Monthly starting prices. Must match careStartingPrice, hostingStartingPrice, and
+ * seoRetainerStartingPrice in src/data/pricing.ts. CARE_STARTING_PRICE is the cheapest Website Care
+ * tier (Essential) -- Care itself is tiered (Essential/Business/Pro, admin-editable), not one flat price.
+ */
+export const CARE_STARTING_PRICE = "$49";
 export const HOSTING_STARTING_PRICE = "$25";
 export const SEO_RETAINER_STARTING_PRICE = "$299";
 
