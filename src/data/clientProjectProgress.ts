@@ -74,6 +74,39 @@ export async function fetchClientDeliveryGates(projectId: string): Promise<Clien
   };
 }
 
+export type ClientDeliveryStatus = {
+  domainName: string | null;
+  domainStatus: string;
+  hostingStatus: string;
+  deploymentStatus: string;
+};
+
+/**
+ * Domain/hosting/deployment status labels for the client portal -- see
+ * client_project_delivery_status (20261009000000_client_care_plan_status.sql). Same reasoning as
+ * fetchClientDeliveryGates above: project_development has no client-facing RLS at all, so this is
+ * a security definer RPC exposing only status labels, never repository/provider/credential detail.
+ */
+export async function fetchClientDeliveryStatus(projectId: string): Promise<ClientDeliveryStatus | null> {
+  const client = getSupabase();
+  if (!client) throw new AgencyDbError("Supabase isn’t connected yet.");
+  const { data, error } = await client.rpc("client_project_delivery_status", { p_project_id: projectId });
+  if (error) throw new AgencyDbError("Unable to load your hosting status.", error);
+  const row = (Array.isArray(data) ? data[0] : data) as {
+    domain_name: string | null;
+    domain_status: string;
+    hosting_status: string;
+    deployment_status: string;
+  } | null;
+  if (!row) return null;
+  return {
+    domainName: row.domain_name,
+    domainStatus: row.domain_status,
+    hostingStatus: row.hosting_status,
+    deploymentStatus: row.deployment_status,
+  };
+}
+
 export function clientDeliveryStagesFromGates(gates: ClientDeliveryGates | null): ProjectStage[] {
   if (!gates) return [];
   const steps = [

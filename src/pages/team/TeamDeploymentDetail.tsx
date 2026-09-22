@@ -26,7 +26,7 @@ const cardTitleClass = "font-heading text-sm font-semibold tracking-tight text-[
 
 export function TeamDeploymentDetail() {
   const { id = "" } = useParams();
-  const { profile, myProjects, deliverables, reload } = useTeamWork();
+  const { profile, myProjects, deliverables, clientsById, reload } = useTeamWork();
   const [editing, setEditing] = useState(false);
   const [productionHealth, setProductionHealth] = useState<WebsiteHealthState | null>(null);
 
@@ -194,6 +194,22 @@ export function TeamDeploymentDetail() {
           </div>
         </div>
       </section>
+
+      {launched && canManage ? (
+        <section className={cardClass}>
+          <h2 className={cardTitleClass}>Ongoing website management</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--admin-muted)]">
+            {project.name} is live. Set {clientsById.get(project.clientId)?.businessName ?? "this client"} up with
+            hosting, monitoring, and support going forward -- assign a Website Care plan from their client profile.
+          </p>
+          <Link
+            to={`/admin/clients/${project.clientId}#plans`}
+            className={cn(adminSoftBtn, "mt-3 h-9 px-3.5 text-[12px]")}
+          >
+            Choose a Website Care plan →
+          </Link>
+        </section>
+      ) : null}
 
       <p className="text-[12px] text-[var(--admin-muted)]">
         Not available yet: deployment history, build and deploy logs, and automatic deploy, redeploy, or rollback. Those

@@ -238,6 +238,32 @@ export async function resumeServicePlan(planId: string): Promise<void> {
   await invokeManage({ action: "unpause", planId }, "not_unpausable");
 }
 
+export type ServicePlanUsage = {
+  includedHoursMonthly: number;
+  usedHours: number;
+  remainingHours: number;
+  periodStart: string;
+  periodEnd: string;
+};
+
+/** Included-hours usage for a Website Care plan this billing period. Client and staff alike (the RPC checks ownership itself). */
+export async function fetchServicePlanUsage(planId: string): Promise<ServicePlanUsage | null> {
+  const client = db();
+  const { data, error } = await client.rpc("service_plan_usage", { p_plan_id: planId });
+  if (error) fail("load plan usage", error);
+  const row = (data ?? [])[0] as
+    | { included_hours_monthly?: number; used_hours?: number; remaining_hours?: number; period_start?: string; period_end?: string }
+    | undefined;
+  if (!row?.period_start || !row.period_end) return null;
+  return {
+    includedHoursMonthly: Number(row.included_hours_monthly ?? 0),
+    usedHours: Number(row.used_hours ?? 0),
+    remainingHours: Number(row.remaining_hours ?? 0),
+    periodStart: row.period_start,
+    periodEnd: row.period_end,
+  };
+}
+
 /** Admin: fetch a plan's current (or most recent) Stripe billing period, for included-hours usage. */
 export async function fetchServicePlanCurrentPeriod(
   planId: string,

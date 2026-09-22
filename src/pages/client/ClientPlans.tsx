@@ -3,13 +3,28 @@ import { useSearchParams } from "react-router-dom";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { ClientCareRequests } from "@/components/client/ClientCareRequests";
 import { ClientPlanChooser } from "@/components/client/ClientPlanChooser";
+import { ClientWebsiteVersions } from "@/components/client/ClientWebsiteVersions";
 import { useClientPlanOffer } from "@/components/client/useClientPlanOffer";
 import { clientCancelMode, scheduledEnd } from "@/data/clientPlanOffer";
+import { fetchClientDeliveryStatus, type ClientDeliveryStatus } from "@/data/clientProjectProgress";
 import { formatUsdFromCents } from "@/data/money";
 import { SERVICE_PLAN_STATUS_LABELS, SERVICE_PLAN_TYPE_LABELS, type ServicePlan } from "@/data/servicePlans";
-import { cancelMyServicePlan, resumeMyServicePlan } from "@/data/servicePlansRepository";
+import { cancelMyServicePlan, fetchServicePlanUsage, resumeMyServicePlan, type ServicePlanUsage } from "@/data/servicePlansRepository";
 import { site } from "@/data/site";
 import { AgencyDbError } from "@/lib/dbErrors";
+
+const deliveryStatusToneClass: Record<string, string> = {
+  Configured: "text-emerald-800",
+  "In progress": "text-[var(--client-blue)]",
+  Issue: "text-[#b45309]",
+  "Not configured": "text-[var(--client-muted)]",
+};
+
+function formatShortDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 function formatPlanDate(iso: string | null): string {
   if (!iso) return "the end of your current billing period";
@@ -34,6 +49,49 @@ export function ClientPlans() {
     () => allPlans.some((plan) => plan.planType === "care" && (plan.status === "active" || plan.status === "past_due")),
     [allPlans],
   );
+  const activeCarePlan = useMemo(
+    () => allPlans.find((plan) => plan.planType === "care" && (plan.status === "active" || plan.status === "past_due")) ?? null,
+    [allPlans],
+  );
+
+  const [deliveryStatus, setDeliveryStatus] = useState<ClientDeliveryStatus | null>(null);
+  const [usage, setUsage] = useState<ServicePlanUsage | null>(null);
+
+  useEffect(() => {
+    if (!projectId || !launched) {
+      setDeliveryStatus(null);
+      return;
+    }
+    let active = true;
+    void fetchClientDeliveryStatus(projectId)
+      .then((status) => {
+        if (active) setDeliveryStatus(status);
+      })
+      .catch(() => {
+        if (active) setDeliveryStatus(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [projectId, launched]);
+
+  useEffect(() => {
+    if (!activeCarePlan) {
+      setUsage(null);
+      return;
+    }
+    let active = true;
+    void fetchServicePlanUsage(activeCarePlan.id)
+      .then((result) => {
+        if (active) setUsage(result);
+      })
+      .catch(() => {
+        if (active) setUsage(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [activeCarePlan]);
 
   // Canceling a plan is a two-step action, and what it does depends on the plan (see clientCancelMode).
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
@@ -205,6 +263,49 @@ export function ClientPlans() {
                       {endsOn ? `Ends ${formatPlanDate(endsOn)}` : SERVICE_PLAN_STATUS_LABELS[plan.status]}
                     </span>
                   </div>
+
+                  {plan.planType === "care" && (plan.status === "active" || plan.status === "past_due") ? (
+                    <div className="mt-3 grid gap-3 border-t border-[var(--client-line)] pt-3 sm:grid-cols-2">
+                      {usage && plan.id === activeCarePlan?.id ? (
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--client-muted)]">
+                            Included hours this period
+                          </p>
+                          <p className="mt-0.5 text-sm text-[var(--client-ink)]">
+                            {usage.usedHours} of {usage.includedHoursMonthly} used
+                            {usage.includedHoursMonthly > 0 ? ` · ${usage.remainingHours} remaining` : ""}
+                          </p>
+                          <p className="text-[11px] text-[var(--client-muted)]">
+                            {formatShortDate(usage.periodStart)} – {formatShortDate(usage.periodEnd)}
+                          </p>
+                        </div>
+                      ) : null}
+                      {plan.domain || deliveryStatus ? (
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--client-muted)]">
+                            Website status
+                          </p>
+                          {deliveryStatus ? (
+                            <p className="mt-0.5 text-sm text-[var(--client-ink)]">
+                              Hosting:{" "}
+                              <span className={deliveryStatusToneClass[deliveryStatus.hostingStatus] ?? "text-[var(--client-muted)]"}>
+                                {deliveryStatus.hostingStatus}
+                              </span>
+                              {" · "}
+                              Domain:{" "}
+                              <span className={deliveryStatusToneClass[deliveryStatus.domainStatus] ?? "text-[var(--client-muted)]"}>
+                                {deliveryStatus.domainStatus}
+                              </span>
+                            </p>
+                          ) : null}
+                          {plan.sslExpiresAt ? (
+                            <p className="text-[11px] text-[var(--client-muted)]">SSL renews {formatPlanDate(plan.sslExpiresAt)}</p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
                   {plan.status === "past_due" ? (
                     <p className="mt-2 text-[12px] leading-relaxed text-[#b45309]">
                       The last charge for this plan didn’t go through — check the card on file with your bank, or{" "}
@@ -293,6 +394,8 @@ export function ClientPlans() {
       {launched && client && projectId ? (
         <ClientCareRequests clientId={client.id} projectId={projectId} hasActiveCarePlan={hasActiveCarePlan} />
       ) : null}
+
+      {launched && projectId ? <ClientWebsiteVersions projectId={projectId} /> : null}
     </div>
   );
 }

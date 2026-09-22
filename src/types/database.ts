@@ -1589,6 +1589,20 @@ export type Database = {
         Args: { p_project_id: string; p_summary: string; p_is_major?: boolean; p_care_request_id?: string | null };
         Returns: string;
       };
+      client_project_delivery_status: {
+        Args: { p_project_id: string };
+        Returns: { domain_name: string | null; domain_status: string; hosting_status: string; deployment_status: string }[];
+      };
+      service_plan_usage: {
+        Args: { p_plan_id: string };
+        Returns: {
+          included_hours_monthly: number;
+          used_hours: number;
+          remaining_hours: number;
+          period_start: string;
+          period_end: string;
+        }[];
+      };
       current_staff_context: {
         Args: Record<string, never>;
         Returns: Json;
