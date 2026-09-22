@@ -7,6 +7,8 @@ import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { projectTypes, type AgencyProjectType } from "@/data/agencyProjects";
 import { projectDescriptionFromBrief, suggestedProjectName, type ClientScopeBrief } from "@/data/scopeBriefs";
 import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
+import { CARE_REQUEST_TYPE_LABELS } from "@/data/careRequests";
+import { fetchCareRequestById, resolveCareRequest } from "@/data/careRequestsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 const inputClass =
@@ -21,6 +23,9 @@ export function AdminProjectNew() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const presetClient = searchParams.get("client") ?? "";
+  /** Set when this project is being created for a billable Website Care request (a major redesign or
+   * new feature outside the plan's scope) -- prefills name/description and links back afterward. */
+  const presetCareRequest = searchParams.get("careRequest") ?? "";
   const lockedClient = clients.some((client) => client.id === presetClient);
   // A link that names a client we can't find gets a notice, never a silent fallback to some other client.
   const presetMissing = Boolean(presetClient) && !lockedClient;
@@ -88,6 +93,26 @@ export function AdminProjectNew() {
     };
   }, [clientId]);
 
+  // Prefill from the billable Website Care request this project is being created for, once (only
+  // while the fields are still empty -- never overwrites something the admin already typed).
+  useEffect(() => {
+    if (!presetCareRequest) return;
+    let active = true;
+    void fetchCareRequestById(presetCareRequest)
+      .then((request) => {
+        if (!active || !request) return;
+        setName((current) => current || `${CARE_REQUEST_TYPE_LABELS[request.requestType]} request`);
+        setDescription((current) => current || request.message);
+      })
+      .catch(() => {
+        /* best effort -- the admin can still fill this in by hand */
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presetCareRequest]);
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!clientId || busy) return;
@@ -112,6 +137,15 @@ export function AdminProjectNew() {
         notify("Unable to create this project.");
         setBusy(false);
         return;
+      }
+      if (presetCareRequest) {
+        // Best effort -- the project itself already saved successfully; a failure here just means the
+        // Website Care request won't show its "resulting project" link and can be linked manually later.
+        await resolveCareRequest({
+          requestId: presetCareRequest,
+          billingDecision: "billable",
+          resultingProjectId: id,
+        }).catch(() => {});
       }
       navigate(`/admin/projects/${id}`);
     } catch (error) {

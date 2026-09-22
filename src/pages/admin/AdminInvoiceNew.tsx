@@ -39,6 +39,8 @@ import {
   type LineItemDraft,
 } from "@/data/invoices";
 import { createInvoice, fetchInvoiceSummaries, saveInvoiceDraft, sendInvoice, type InvoiceSummary } from "@/data/invoicesRepository";
+import { CARE_REQUEST_TYPE_LABELS } from "@/data/careRequests";
+import { fetchCareRequestById, resolveCareRequest } from "@/data/careRequestsRepository";
 import { formatMoneyFromCents, formatUsdFromCents } from "@/data/money";
 import { invoiceNotesFromSettings } from "@/data/settings";
 import { fetchAgencyDocumentDefaults } from "@/data/settingsRepository";
@@ -72,6 +74,9 @@ export function AdminInvoiceNew() {
   const presetClient = searchParams.get("client") ?? "";
   const presetProject = searchParams.get("project") ?? "";
   const presetContract = searchParams.get("contract") ?? "";
+  /** Set when this invoice is being created for a billable Website Care request -- prefills a line item from
+   * the request and, once the invoice is saved, links back via care_requests.resulting_invoice_id. */
+  const presetCareRequest = searchParams.get("careRequest") ?? "";
   const [accepted, setAccepted] = useState<AcceptedContract[]>([]);
   const [items, setItems] = useState<LineItemDraft[]>([emptyLineItem()]);
   const [linkedProposalId, setLinkedProposalId] = useState<string | null>(null);
@@ -98,6 +103,32 @@ export function AdminInvoiceNew() {
     notes: "",
     adminNotes: "",
   });
+
+  // Prefill a single line item from the billable Website Care request this invoice is being created
+  // for -- independent of the contract/proposal seeding below (a care-request invoice never carries
+  // a contract param), so it can't race or conflict with that logic.
+  useEffect(() => {
+    if (!presetCareRequest) return;
+    let active = true;
+    void fetchCareRequestById(presetCareRequest)
+      .then((request) => {
+        if (!active || !request) return;
+        setItems([
+          {
+            ...emptyLineItem(),
+            name: CARE_REQUEST_TYPE_LABELS[request.requestType],
+            description: request.message,
+          },
+        ]);
+      })
+      .catch(() => {
+        /* best effort -- the admin can still fill the invoice in by hand */
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [presetCareRequest]);
 
   useEffect(() => {
     let active = true;
@@ -372,6 +403,15 @@ export function AdminInvoiceNew() {
         notify(invoiceSentMessage(result.emailed, result.emailed ? extraParsed.emails : []));
       } else {
         notify("Invoice saved as a draft.");
+      }
+      if (presetCareRequest) {
+        // Best effort -- the invoice itself already saved successfully; a failure here just means the
+        // Website Care request won't show its "resulting invoice" link and can be linked manually later.
+        await resolveCareRequest({
+          requestId: presetCareRequest,
+          billingDecision: "billable",
+          resultingInvoiceId: invoiceId,
+        }).catch(() => {});
       }
       setSendOpen(false);
       navigate(`/admin/invoices/${invoiceId}`);

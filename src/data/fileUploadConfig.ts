@@ -151,6 +151,23 @@ export function taskRequestStoragePath(input: {
   ].join("/");
 }
 
+export function careRequestStoragePath(input: {
+  projectId: string;
+  requestId: string;
+  fileId: string;
+  originalName: string;
+}): string {
+  const ext = fileExtension(input.originalName);
+  const safeExt = allowedUploadExtensions.includes(ext as (typeof allowedUploadExtensions)[number]) ? ext : "bin";
+  return [
+    "projects",
+    input.projectId,
+    "care-requests",
+    input.requestId,
+    `${input.fileId}.${safeExt}`,
+  ].join("/");
+}
+
 export function taskAttachmentStoragePath(input: {
   projectId: string;
   taskId: string;

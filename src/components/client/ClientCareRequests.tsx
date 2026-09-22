@@ -1,7 +1,23 @@
 import { useEffect, useState, type FormEvent } from "react";
-import type { CareRequest, CareRequestCategory } from "@/data/careRequests";
-import { CARE_REQUEST_CATEGORY_LABELS, CARE_REQUEST_STATUS_LABELS } from "@/data/careRequests";
-import { listCareRequests, submitCareRequest } from "@/data/careRequestsRepository";
+import {
+  CARE_REQUEST_CATEGORY_LABELS,
+  CARE_REQUEST_STATUS_LABELS,
+  CARE_REQUEST_TYPE_LABELS,
+  careRequestTypes,
+  suggestedCategoryForType,
+  type CareRequest,
+  type CareRequestCategory,
+  type CareRequestFile,
+  type CareRequestType,
+} from "@/data/careRequests";
+import {
+  fetchCareRequestFiles,
+  insertCareRequestFile,
+  listCareRequests,
+  submitCareRequest,
+} from "@/data/careRequestsRepository";
+import { uploadCareRequestFile, signedUrlForPath } from "@/data/fileStorage";
+import { fileExtension } from "@/data/fileUploadConfig";
 import { AgencyDbError } from "@/lib/dbErrors";
 
 const statusToneClass: Record<CareRequest["status"], string> = {
@@ -32,18 +48,25 @@ export function ClientCareRequests({
   hasActiveCarePlan: boolean;
 }) {
   const [requests, setRequests] = useState<CareRequest[]>([]);
+  const [filesByRequest, setFilesByRequest] = useState<Record<string, CareRequestFile[]>>({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [message, setMessage] = useState("");
-  const [category, setCategory] = useState<CareRequestCategory>("quick_update");
+  const [requestType, setRequestType] = useState<CareRequestType>("content_update");
+  const [category, setCategory] = useState<CareRequestCategory>(suggestedCategoryForType("content_update"));
+  const [categoryTouched, setCategoryTouched] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [uploadBusyId, setUploadBusyId] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<Map<string, string>>(new Map());
 
   async function reload() {
     setLoading(true);
     setLoadError(null);
     try {
-      setRequests(await listCareRequests({ projectId }));
+      const rows = await listCareRequests({ projectId });
+      setRequests(rows);
+      setFilesByRequest(await fetchCareRequestFiles(rows.map((row) => row.id)));
     } catch (caught) {
       setLoadError(caught instanceof AgencyDbError ? caught.message : "Unable to load your requests.");
     } finally {
@@ -56,15 +79,22 @@ export function ClientCareRequests({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
+  function onRequestTypeChange(next: CareRequestType) {
+    setRequestType(next);
+    if (!categoryTouched) setCategory(suggestedCategoryForType(next));
+  }
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (sending || !message.trim()) return;
     setSending(true);
     setSendError(null);
     try {
-      await submitCareRequest({ clientId, projectId, message, category });
+      await submitCareRequest({ clientId, projectId, message, category, requestType });
       setMessage("");
-      setCategory("quick_update");
+      setRequestType("content_update");
+      setCategory(suggestedCategoryForType("content_update"));
+      setCategoryTouched(false);
       await reload();
     } catch (caught) {
       setSendError(caught instanceof AgencyDbError ? caught.message : "Unable to submit this request.");
@@ -73,17 +103,63 @@ export function ClientCareRequests({
     }
   }
 
+  async function onUpload(requestId: string, fileList: FileList | null) {
+    if (!fileList?.length || uploadBusyId) return;
+    const file = fileList[0];
+    setUploadBusyId(requestId);
+    setUploadError((current) => {
+      const next = new Map(current);
+      next.delete(requestId);
+      return next;
+    });
+    try {
+      const fileId = crypto.randomUUID();
+      const storagePath = await uploadCareRequestFile({ projectId, requestId, fileId, file });
+      const row = await insertCareRequestFile({
+        requestId,
+        projectId,
+        clientId,
+        fileName: file.name,
+        fileType: fileExtension(file.name).toUpperCase() || "Other",
+        fileSize: file.size,
+        storagePath,
+      });
+      setFilesByRequest((current) => ({ ...current, [requestId]: [row, ...(current[requestId] ?? [])] }));
+    } catch (caught) {
+      setUploadError((current) =>
+        new Map(current).set(requestId, caught instanceof AgencyDbError ? caught.message : "Unable to upload this file."),
+      );
+    } finally {
+      setUploadBusyId(null);
+    }
+  }
+
   return (
     <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
-      <h2 className="font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">Website Care requests</h2>
+      <h2 className="font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">Request a website update</h2>
       <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">
         A small update, a content change, or something that needs fixing — tell us here and we'll take it from there.
       </p>
 
       {hasActiveCarePlan ? (
         <form className="mt-4 space-y-4" onSubmit={onSubmit}>
+          <label className="block">
+            <span className="font-heading text-sm font-semibold text-[var(--client-ink)]">What kind of request is this?</span>
+            <select
+              value={requestType}
+              onChange={(event) => onRequestTypeChange(event.target.value as CareRequestType)}
+              className="mt-2 h-10 w-full rounded-lg border border-[var(--client-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            >
+              {careRequestTypes.map((type) => (
+                <option key={type} value={type}>
+                  {CARE_REQUEST_TYPE_LABELS[type]}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <fieldset>
-            <legend className="font-heading text-sm font-semibold text-[var(--client-ink)]">What kind of request is this?</legend>
+            <legend className="font-heading text-sm font-semibold text-[var(--client-ink)]">Is this covered by your plan?</legend>
             <div className="mt-2 flex flex-col gap-2 sm:flex-row">
               <label className="flex flex-1 cursor-pointer items-start gap-2.5 rounded-lg border border-[var(--client-line)] p-3 has-[:checked]:border-[rgb(0_80_240_/_0.45)] has-[:checked]:bg-[rgb(0_80_240_/_0.04)]">
                 <input
@@ -91,7 +167,10 @@ export function ClientCareRequests({
                   name="care-request-category"
                   value="quick_update"
                   checked={category === "quick_update"}
-                  onChange={() => setCategory("quick_update")}
+                  onChange={() => {
+                    setCategory("quick_update");
+                    setCategoryTouched(true);
+                  }}
                   className="mt-0.5"
                 />
                 <span>
@@ -105,7 +184,10 @@ export function ClientCareRequests({
                   name="care-request-category"
                   value="new_addition"
                   checked={category === "new_addition"}
-                  onChange={() => setCategory("new_addition")}
+                  onChange={() => {
+                    setCategory("new_addition");
+                    setCategoryTouched(true);
+                  }}
                   className="mt-0.5"
                 />
                 <span>
@@ -114,6 +196,11 @@ export function ClientCareRequests({
                 </span>
               </label>
             </div>
+            {!categoryTouched ? (
+              <p className="mt-1.5 text-[12px] text-[var(--client-muted)]">
+                Picked automatically based on the request type above — change it if that's not right.
+              </p>
+            ) : null}
           </fieldset>
 
           {category === "new_addition" ? (
@@ -171,21 +258,62 @@ export function ClientCareRequests({
           <p className="mt-3 text-sm text-[var(--client-muted)]">You haven&apos;t sent a request yet.</p>
         ) : (
           <ul className="mt-3 space-y-3">
-            {requests.map((request) => (
-              <li key={request.id} className="rounded-lg border border-[var(--client-line)] p-3">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <p className="max-w-md text-sm text-[var(--client-ink)]">{request.message}</p>
-                  <span
-                    className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${statusToneClass[request.status]}`}
-                  >
-                    {CARE_REQUEST_STATUS_LABELS[request.status]}
-                  </span>
-                </div>
-                <p className="mt-1.5 text-[12px] text-[var(--client-muted)]">
-                  {CARE_REQUEST_CATEGORY_LABELS[request.category]} · Sent {formatRequestDate(request.createdAt)}
-                </p>
-              </li>
-            ))}
+            {requests.map((request) => {
+              const files = filesByRequest[request.id] ?? [];
+              const busy = uploadBusyId === request.id;
+              const error = uploadError.get(request.id);
+              return (
+                <li key={request.id} className="rounded-lg border border-[var(--client-line)] p-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="max-w-md text-sm text-[var(--client-ink)]">{request.message}</p>
+                    <span
+                      className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${statusToneClass[request.status]}`}
+                    >
+                      {CARE_REQUEST_STATUS_LABELS[request.status]}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-[12px] text-[var(--client-muted)]">
+                    {CARE_REQUEST_TYPE_LABELS[request.requestType]} · {CARE_REQUEST_CATEGORY_LABELS[request.category]} · Sent{" "}
+                    {formatRequestDate(request.createdAt)}
+                  </p>
+                  {request.billingDecision ? (
+                    <p
+                      className={`mt-1 text-[12px] font-semibold ${
+                        request.billingDecision === "billable" ? "text-[#92610a]" : "text-emerald-800"
+                      }`}
+                    >
+                      {request.billingDecision === "billable" ? "Needs a separate quote" : "Covered by your plan"}
+                    </p>
+                  ) : null}
+
+                  {files.length > 0 ? (
+                    <ul className="mt-2 space-y-1">
+                      {files.map((file) => (
+                        <li key={file.id}>
+                          <button
+                            type="button"
+                            className="text-[12px] text-[var(--client-blue)] hover:underline"
+                            onClick={() => void signedUrlForPath(file.storagePath).then((url) => window.open(url, "_blank"))}
+                          >
+                            {file.fileName}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <label className="mt-2 inline-flex h-8 cursor-pointer items-center justify-center rounded-lg border border-[var(--client-line)] bg-white px-2.5 text-[12px] font-semibold text-[var(--client-ink)] hover:bg-[var(--client-hover)]">
+                    {busy ? "Uploading…" : "Attach a file"}
+                    <input
+                      type="file"
+                      className="hidden"
+                      disabled={busy}
+                      onChange={(event) => void onUpload(request.id, event.target.files)}
+                    />
+                  </label>
+                  {error ? <p className="mt-1.5 text-[12px] text-[#b45309]">{error}</p> : null}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

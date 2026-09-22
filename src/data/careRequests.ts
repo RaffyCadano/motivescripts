@@ -1,10 +1,30 @@
 export type CareRequestPriority = "Low" | "Medium" | "High" | "Urgent";
 export type CareRequestStatus = "New" | "In Progress" | "Done";
 export type CareRequestCategory = "quick_update" | "new_addition";
+export type CareRequestType =
+  | "content_update"
+  | "bug_fix"
+  | "design_change"
+  | "new_page"
+  | "new_feature"
+  | "seo"
+  | "technical"
+  | "other";
+export type CareRequestBillingDecision = "included" | "billable";
 
 export const careRequestPriorities: CareRequestPriority[] = ["Low", "Medium", "High", "Urgent"];
 export const careRequestStatuses: CareRequestStatus[] = ["New", "In Progress", "Done"];
 export const careRequestCategories: CareRequestCategory[] = ["quick_update", "new_addition"];
+export const careRequestTypes: CareRequestType[] = [
+  "content_update",
+  "bug_fix",
+  "design_change",
+  "new_page",
+  "new_feature",
+  "seo",
+  "technical",
+  "other",
+];
 
 export type CareRequest = {
   id: string;
@@ -23,6 +43,12 @@ export type CareRequest = {
   createdAt: string;
   updatedAt: string;
   resolvedAt: string | null;
+  requestType: CareRequestType;
+  billingDecision: CareRequestBillingDecision | null;
+  servicePlanId: string | null;
+  resultingTaskId: string | null;
+  resultingInvoiceId: string | null;
+  resultingProjectId: string | null;
 };
 
 export const CARE_REQUEST_STATUS_LABELS: Record<CareRequestStatus, string> = {
@@ -35,6 +61,51 @@ export const CARE_REQUEST_CATEGORY_LABELS: Record<CareRequestCategory, string> =
   quick_update: "Quick update or fix",
   new_addition: "New addition",
 };
+
+export const CARE_REQUEST_TYPE_LABELS: Record<CareRequestType, string> = {
+  content_update: "Content Update",
+  bug_fix: "Bug Fix",
+  design_change: "Design Change",
+  new_page: "New Page",
+  new_feature: "New Feature",
+  seo: "SEO",
+  technical: "Technical",
+  other: "Other",
+};
+
+export const CARE_REQUEST_BILLING_DECISION_LABELS: Record<CareRequestBillingDecision, string> = {
+  included: "Included in plan",
+  billable: "Billable",
+};
+
+/**
+ * A first guess at whether a request type is usually covered by a Care plan or usually needs a
+ * quote -- shown to the client as a hint, and pre-selects (but never locks) the category radio.
+ * Staff make the real call later via billing_decision; this is not authoritative.
+ */
+export type CareRequestFile = {
+  id: string;
+  requestId: string;
+  projectId: string;
+  clientId: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  storagePath: string;
+  createdAt: string;
+  uploadedBy: string | null;
+};
+
+export function suggestedCategoryForType(type: CareRequestType): CareRequestCategory {
+  switch (type) {
+    case "new_page":
+    case "new_feature":
+    case "design_change":
+      return "new_addition";
+    default:
+      return "quick_update";
+  }
+}
 
 const PRIORITY_WEIGHT: Record<CareRequestPriority, number> = { Urgent: 0, High: 1, Medium: 2, Low: 3 };
 
@@ -57,6 +128,7 @@ export function filterCareRequests(
     priority: CareRequestPriority | "All";
     clientId: string | "All";
     category?: CareRequestCategory | "All";
+    billingDecision?: CareRequestBillingDecision | "All" | "Undecided";
   },
 ): CareRequest[] {
   return requests.filter((request) => {
@@ -64,6 +136,15 @@ export function filterCareRequests(
     if (options.priority !== "All" && request.priority !== options.priority) return false;
     if (options.clientId !== "All" && request.clientId !== options.clientId) return false;
     if (options.category && options.category !== "All" && request.category !== options.category) return false;
+    if (options.billingDecision === "Undecided" && request.billingDecision !== null) return false;
+    if (
+      options.billingDecision &&
+      options.billingDecision !== "All" &&
+      options.billingDecision !== "Undecided" &&
+      request.billingDecision !== options.billingDecision
+    ) {
+      return false;
+    }
     return true;
   });
 }

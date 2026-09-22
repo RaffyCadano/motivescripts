@@ -1,7 +1,15 @@
-import type { CareRequest, CareRequestCategory, CareRequestPriority, CareRequestStatus } from "@/data/careRequests";
+import type {
+  CareRequest,
+  CareRequestBillingDecision,
+  CareRequestCategory,
+  CareRequestFile,
+  CareRequestPriority,
+  CareRequestStatus,
+  CareRequestType,
+} from "@/data/careRequests";
 import { AgencyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
-import type { CareRequestRow, Database } from "@/types/database";
+import type { CareRequestFileRow, CareRequestRow, Database } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 function db(): SupabaseClient<Database> {
@@ -30,6 +38,27 @@ function mapCareRequest(row: CareRequestRow): CareRequest {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     resolvedAt: row.resolved_at,
+    requestType: row.request_type,
+    billingDecision: row.billing_decision,
+    servicePlanId: row.service_plan_id,
+    resultingTaskId: row.resulting_task_id,
+    resultingInvoiceId: row.resulting_invoice_id,
+    resultingProjectId: row.resulting_project_id,
+  };
+}
+
+function mapCareRequestFile(row: CareRequestFileRow): CareRequestFile {
+  return {
+    id: row.id,
+    requestId: row.request_id,
+    projectId: row.project_id,
+    clientId: row.client_id,
+    fileName: row.file_name,
+    fileType: row.file_type,
+    fileSize: row.file_size,
+    storagePath: row.storage_path,
+    createdAt: row.created_at,
+    uploadedBy: row.uploaded_by,
   };
 }
 
@@ -52,14 +81,20 @@ export async function submitCareRequest(input: {
   projectId: string;
   message: string;
   category: CareRequestCategory;
-}): Promise<void> {
+  requestType: CareRequestType;
+}): Promise<string> {
   const client = db();
-  const { error } = await client.from("care_requests").insert({
-    client_id: input.clientId,
-    project_id: input.projectId,
-    message: input.message.trim(),
-    category: input.category,
-  });
+  const { data, error } = await client
+    .from("care_requests")
+    .insert({
+      client_id: input.clientId,
+      project_id: input.projectId,
+      message: input.message.trim(),
+      category: input.category,
+      request_type: input.requestType,
+    })
+    .select("id")
+    .single();
   if (error) {
     const message = (error.message ?? "").toUpperCase();
     if (message.includes("NO_ACTIVE_PLAN")) {
@@ -70,6 +105,105 @@ export async function submitCareRequest(input: {
     }
     fail("submit care request", error, "Unable to submit this request.");
   }
+  return (data as { id: string } | null)?.id ?? "";
+}
+
+export async function fetchCareRequestById(id: string): Promise<CareRequest | null> {
+  const client = db();
+  const { data, error } = await client.from("care_requests").select("*").eq("id", id).maybeSingle();
+  if (error) fail("load care request", error, "Unable to load this request.");
+  return data ? mapCareRequest(data as CareRequestRow) : null;
+}
+
+/** Attachments for a set of requests, keyed by request id -- pass the ids you're displaying (client: their own; admin: the visible page). */
+export async function fetchCareRequestFiles(requestIds: string[]): Promise<Record<string, CareRequestFile[]>> {
+  const result: Record<string, CareRequestFile[]> = {};
+  if (requestIds.length === 0) return result;
+  const client = db();
+  const { data, error } = await client
+    .from("care_request_files")
+    .select("*")
+    .in("request_id", requestIds)
+    .order("created_at", { ascending: false });
+  if (error) fail("load care request files", error, "Unable to load attachments.");
+  for (const row of (data ?? []) as CareRequestFileRow[]) {
+    const file = mapCareRequestFile(row);
+    (result[file.requestId] ??= []).push(file);
+  }
+  return result;
+}
+
+export async function insertCareRequestFile(input: {
+  requestId: string;
+  projectId: string;
+  clientId: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  storagePath: string;
+}): Promise<CareRequestFile> {
+  const client = db();
+  const { data, error } = await client
+    .from("care_request_files")
+    .insert({
+      request_id: input.requestId,
+      project_id: input.projectId,
+      client_id: input.clientId,
+      file_name: input.fileName,
+      file_type: input.fileType,
+      file_size: input.fileSize,
+      storage_path: input.storagePath,
+    })
+    .select("*")
+    .single();
+  if (error) fail("upload care request file", error, "Unable to save this attachment.");
+  return mapCareRequestFile(data as CareRequestFileRow);
+}
+
+/**
+ * Staff: turn an included Website Care request into a project task (the existing task board, same
+ * table every other task lives in), then link the request to it and mark it included.
+ */
+export async function convertCareRequestToTask(request: CareRequest): Promise<string> {
+  const client = db();
+  const taskPriority: "Low" | "Medium" | "High" | "Urgent" = ["Low", "Medium", "High", "Urgent"].includes(
+    request.priority as string,
+  )
+    ? request.priority
+    : "Medium";
+  const { data, error } = await client
+    .from("tasks")
+    .insert({
+      project_id: request.projectId,
+      title: `Website Care: ${request.message.slice(0, 80)}`,
+      description: request.message,
+      priority: taskPriority,
+    })
+    .select("id")
+    .single();
+  if (error) fail("create task from care request", error, "Unable to create a task for this request.");
+  const taskId = (data as { id: string }).id;
+  await resolveCareRequest({ requestId: request.id, billingDecision: "included", resultingTaskId: taskId });
+  return taskId;
+}
+
+/** Staff: record the included/billable call and/or link a request to what it turned into (task, invoice, or project). */
+export async function resolveCareRequest(input: {
+  requestId: string;
+  billingDecision?: CareRequestBillingDecision | null;
+  resultingTaskId?: string | null;
+  resultingInvoiceId?: string | null;
+  resultingProjectId?: string | null;
+}): Promise<void> {
+  const client = db();
+  const { error } = await client.rpc("care_requests_resolve", {
+    p_request_id: input.requestId,
+    p_billing_decision: input.billingDecision ?? null,
+    p_resulting_task_id: input.resultingTaskId ?? null,
+    p_resulting_invoice_id: input.resultingInvoiceId ?? null,
+    p_resulting_project_id: input.resultingProjectId ?? null,
+  });
+  if (error) fail("resolve care request", error, "Unable to save this decision.");
 }
 
 export async function setCareRequestPriority(id: string, priority: CareRequestPriority): Promise<void> {
