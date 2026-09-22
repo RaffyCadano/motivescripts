@@ -27,6 +27,7 @@ import {
   UserRound,
   Users,
   Wallet,
+  Wrench,
 } from "lucide-react";
 import type { AdminIconName } from "@/data/adminNav";
 
@@ -58,4 +59,5 @@ export const adminIcons: Record<AdminIconName, LucideIcon> = {
   reports: TrendingUp,
   testimonials: Quote,
   careRequests: HeartHandshake,
+  maintenancePlans: Wrench,
 };

@@ -54,6 +54,9 @@ function mapServicePlan(row: ServicePlanRow): ServicePlan {
     createdAt: row.created_at,
     canceledAt: row.canceled_at,
     cancelAt: row.cancel_at ?? null,
+    includedHoursMonthly: Number(row.included_hours_monthly ?? 0),
+    planTemplateId: row.plan_template_id ?? null,
+    pausedAt: row.paused_at ?? null,
   };
 }
 
@@ -83,6 +86,22 @@ export async function createServicePlan(input: {
     p_amount_cents: input.amountCents,
   });
   if (error) fail("create service plan", error);
+  return data as string;
+}
+
+/** Admin: assign a Website Care plan template to a client, copying its current terms onto a new plan row. */
+export async function createServicePlanFromTemplate(input: {
+  clientId: string;
+  projectId: string | null;
+  templateId: string;
+}): Promise<string> {
+  const client = db();
+  const { data, error } = await client.rpc("create_service_plan_from_template", {
+    p_client_id: input.clientId,
+    p_project_id: input.projectId,
+    p_template_id: input.templateId,
+  });
+  if (error) fail("create service plan from template", error);
   return data as string;
 }
 
@@ -207,4 +226,26 @@ export async function cancelServicePlan(planId: string, when: "now" | "period_en
 /** Admin: undo a scheduled cancellation before it takes effect. */
 export async function undoServicePlanCancellation(planId: string): Promise<void> {
   await invokeManage({ action: "resume_cancel", planId }, "not_resumable");
+}
+
+/** Admin: pause an active plan. Suspends Stripe billing collection (nothing is charged while paused) without canceling the subscription. */
+export async function pauseServicePlan(planId: string): Promise<void> {
+  await invokeManage({ action: "pause", planId }, "not_pausable");
+}
+
+/** Admin: resume a paused plan at the same terms. */
+export async function resumeServicePlan(planId: string): Promise<void> {
+  await invokeManage({ action: "unpause", planId }, "not_unpausable");
+}
+
+/** Admin: fetch a plan's current (or most recent) Stripe billing period, for included-hours usage. */
+export async function fetchServicePlanCurrentPeriod(
+  planId: string,
+): Promise<{ periodStart: string; periodEnd: string } | null> {
+  const client = db();
+  const { data, error } = await client.rpc("service_plan_current_period", { p_plan_id: planId });
+  if (error) fail("load plan billing period", error);
+  const row = (data ?? [])[0] as { period_start?: string; period_end?: string } | undefined;
+  if (!row?.period_start || !row.period_end) return null;
+  return { periodStart: row.period_start, periodEnd: row.period_end };
 }

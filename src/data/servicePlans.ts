@@ -1,5 +1,5 @@
 export type ServicePlanType = "care" | "seo_retainer" | "hosting" | "custom";
-export type ServicePlanStatus = "pending" | "active" | "past_due" | "canceled";
+export type ServicePlanStatus = "pending" | "active" | "past_due" | "canceled" | "paused";
 
 export type ServicePlan = {
   id: string;
@@ -16,6 +16,11 @@ export type ServicePlan = {
   canceledAt: string | null;
   /** When a scheduled cancellation takes effect (the plan is still active until then), or null. */
   cancelAt: string | null;
+  /** Hours of included work per billing cycle (Website Care plans). */
+  includedHoursMonthly: number;
+  /** Which maintenance_plan_templates row this was assigned from, if any. */
+  planTemplateId: string | null;
+  pausedAt: string | null;
 };
 
 export type DomainAvailability = "available" | "taken" | "unknown";
@@ -36,13 +41,21 @@ export type AdminCancelOptions = {
  * current period). The server enforces the same rules.
  */
 export function adminCancelOptions(plan: Pick<ServicePlan, "status" | "cancelAt">): AdminCancelOptions {
-  const running = plan.status === "active" || plan.status === "past_due";
+  const running = plan.status === "active" || plan.status === "past_due" || plan.status === "paused";
   return {
     abandon: plan.status === "pending",
     atPeriodEnd: plan.status === "active" && !plan.cancelAt,
     now: running,
     undo: plan.status === "active" && Boolean(plan.cancelAt),
   };
+}
+
+/** Only an active plan can be paused; only a paused one can be resumed. */
+export function canPausePlan(plan: Pick<ServicePlan, "status">): boolean {
+  return plan.status === "active";
+}
+export function canResumePausedPlan(plan: Pick<ServicePlan, "status">): boolean {
+  return plan.status === "paused";
 }
 
 export const SERVICE_PLAN_TYPE_LABELS: Record<ServicePlanType, string> = {
@@ -57,6 +70,7 @@ export const SERVICE_PLAN_STATUS_LABELS: Record<ServicePlanStatus, string> = {
   active: "Active",
   past_due: "Past due",
   canceled: "Canceled",
+  paused: "Paused",
 };
 
 export function servicePlanErrorMessage(code: string): string {
@@ -73,6 +87,10 @@ export function servicePlanErrorMessage(code: string): string {
       return "This plan is not ready for checkout.";
     case "not_cancelable":
       return "This plan can't be canceled right now.";
+    case "not_pausable":
+      return "This plan can't be paused right now.";
+    case "not_unpausable":
+      return "This plan isn't paused, so there's nothing to resume.";
     case "not_resumable":
       return "This plan isn't scheduled to end, so there's nothing to undo.";
     case "not_allowed":

@@ -31,6 +31,9 @@ const ClientLayout = lazy(() => import("@/components/client/ClientLayout").then(
 const AdminActivity = lazy(() => import("@/pages/admin/AdminActivity").then((m) => ({ default: m.AdminActivity })));
 const AdminCapacity = lazy(() => import("@/pages/admin/AdminCapacity").then((m) => ({ default: m.AdminCapacity })));
 const AdminCareRequests = lazy(() => import("@/pages/admin/AdminCareRequests").then((m) => ({ default: m.AdminCareRequests })));
+const AdminMaintenancePlanTemplates = lazy(() =>
+  import("@/pages/admin/AdminMaintenancePlanTemplates").then((m) => ({ default: m.AdminMaintenancePlanTemplates })),
+);
 const AdminPayroll = lazy(() => import("@/pages/admin/AdminPayroll").then((m) => ({ default: m.AdminPayroll })));
 const AdminClientDetails = lazy(() => import("@/pages/admin/AdminClientDetails").then((m) => ({ default: m.AdminClientDetails })));
 const AdminClientNew = lazy(() => import("@/pages/admin/AdminClientNew").then((m) => ({ default: m.AdminClientNew })));
@@ -157,6 +160,7 @@ export default function App() {
                 <Route path="invoices/new" element={<AdminInvoiceNew />} />
                 <Route path="invoices/:id" element={<AdminInvoiceDetails />} />
                 <Route path="reports" element={<AdminReports />} />
+                <Route path="maintenance-plans" element={<AdminMaintenancePlanTemplates />} />
                 <Route path="testimonials" element={<AdminTestimonials />} />
                 <Route path="testimonials/new" element={<AdminTestimonialForm />} />
                 <Route path="testimonials/:id" element={<AdminTestimonialForm />} />

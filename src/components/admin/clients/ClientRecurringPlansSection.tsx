@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useClientProjects } from "@/components/admin/leads/LeadsProvider";
 import {
   SERVICE_PLAN_STATUS_LABELS,
   SERVICE_PLAN_TYPE_LABELS,
+  canPausePlan,
+  canResumePausedPlan,
   type DomainAvailability,
   type ServicePlan,
   type ServicePlanType,
@@ -13,9 +16,14 @@ import {
   checkDomainAvailability,
   createServicePlan,
   createServicePlanCheckoutUrl,
+  createServicePlanFromTemplate,
   listServicePlans,
+  pauseServicePlan,
+  resumeServicePlan,
   setServicePlanDomain,
 } from "@/data/servicePlansRepository";
+import type { MaintenancePlanTemplate } from "@/data/maintenancePlanTemplates";
+import { listActiveMaintenancePlanTemplates } from "@/data/maintenancePlanTemplatesRepository";
 import { formatUsdFromCents, parseDollarsToCents } from "@/data/money";
 import { AgencyDbError } from "@/lib/dbErrors";
 import type { AgencyClient } from "@/data/agencyClients";
@@ -29,6 +37,7 @@ const statusBadgeClass: Record<ServicePlan["status"], string> = {
   active: "border-emerald-700/40 bg-[rgb(16_185_129_/_0.1)] text-emerald-800",
   past_due: "border-amber-700/40 bg-[rgb(217_119_6_/_0.1)] text-amber-800",
   canceled: "border-[var(--admin-line)] text-[var(--admin-muted)]",
+  paused: "border-[rgb(0_80_240_/_0.35)] bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]",
 };
 
 const availabilityLabel: Record<DomainAvailability, string> = {
@@ -68,6 +77,10 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
   const [formError, setFormError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
+  const [templates, setTemplates] = useState<MaintenancePlanTemplate[]>([]);
+  // "" = build a custom plan (the original flow); otherwise a maintenance_plan_templates id.
+  const [templateId, setTemplateId] = useState("");
+
   async function reload() {
     setLoading(true);
     setLoadError(null);
@@ -86,8 +99,38 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [client.id]);
 
+  useEffect(() => {
+    listActiveMaintenancePlanTemplates()
+      .then(setTemplates)
+      .catch(() => setTemplates([]));
+  }, []);
+
+  const selectedTemplate = templates.find((t) => t.id === templateId) ?? null;
+
   async function onCreate() {
     setFormError(null);
+
+    if (planType === "care" && selectedTemplate) {
+      setCreating(true);
+      try {
+        await createServicePlanFromTemplate({
+          clientId: client.id,
+          projectId: projectId || null,
+          templateId: selectedTemplate.id,
+        });
+        setTemplateId("");
+        setProjectId("");
+        setPlanType("care");
+        setFormOpen(false);
+        await reload();
+      } catch (caught) {
+        setFormError(caught instanceof AgencyDbError ? caught.message : "Unable to assign this plan tier.");
+      } finally {
+        setCreating(false);
+      }
+      return;
+    }
+
     const cents = parseDollarsToCents(amountInput);
     if (!label.trim()) {
       setFormError("Enter a name for this plan.");
@@ -116,6 +159,29 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
       setFormError(caught instanceof AgencyDbError ? caught.message : "Unable to create this plan.");
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function onPauseToggle(planId: string, pause: boolean) {
+    setBusyId(planId);
+    setRowError((current) => {
+      const next = new Map(current);
+      next.delete(planId);
+      return next;
+    });
+    try {
+      if (pause) await pauseServicePlan(planId);
+      else await resumeServicePlan(planId);
+      await reload();
+    } catch (caught) {
+      setRowError((current) =>
+        new Map(current).set(
+          planId,
+          caught instanceof AgencyDbError ? caught.message : `Unable to ${pause ? "pause" : "resume"} this plan.`,
+        ),
+      );
+    } finally {
+      setBusyId(null);
     }
   }
 
@@ -252,7 +318,10 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
               Plan type
               <select
                 value={planType}
-                onChange={(event) => setPlanType(event.target.value as ServicePlanType)}
+                onChange={(event) => {
+                  setPlanType(event.target.value as ServicePlanType);
+                  setTemplateId("");
+                }}
                 className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
               >
                 {PLAN_TYPES.map((type) => (
@@ -277,26 +346,69 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
                 ))}
               </select>
             </label>
-            <label className="block text-[12px] font-semibold text-[var(--admin-muted)]">
-              Name
-              <input
-                value={label}
-                onChange={(event) => setLabel(event.target.value)}
-                placeholder="Website Care Plan"
-                className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-              />
-            </label>
-            <label className="block text-[12px] font-semibold text-[var(--admin-muted)]">
-              Monthly amount (USD)
-              <input
-                inputMode="decimal"
-                value={amountInput}
-                onChange={(event) => setAmountInput(event.target.value)}
-                placeholder="75.00"
-                className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-              />
-            </label>
           </div>
+
+          {planType === "care" ? (
+            <label className="block text-[12px] font-semibold text-[var(--admin-muted)]">
+              Website Care tier
+              <select
+                value={templateId}
+                onChange={(event) => setTemplateId(event.target.value)}
+                className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+              >
+                <option value="">Custom (build from scratch below)</option>
+                {templates.map((tier) => (
+                  <option key={tier.id} value={tier.id}>
+                    {tier.name} — {formatUsdFromCents(tier.monthlyPriceCents)}/mo
+                    {tier.includedHours > 0 ? `, ${tier.includedHours} hrs included` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          {selectedTemplate ? (
+            <div className="rounded-lg border border-[var(--admin-line)] bg-white p-3 text-[12px] text-[var(--admin-muted)]">
+              <p className="font-semibold text-[var(--admin-ink)]">
+                {selectedTemplate.name} — {formatUsdFromCents(selectedTemplate.monthlyPriceCents)}/mo
+              </p>
+              {selectedTemplate.description ? <p className="mt-1">{selectedTemplate.description}</p> : null}
+              {selectedTemplate.includedServices.length > 0 ? (
+                <ul className="mt-1.5 list-disc space-y-0.5 pl-4">
+                  {selectedTemplate.includedServices.map((service) => (
+                    <li key={service}>{service}</li>
+                  ))}
+                </ul>
+              ) : null}
+              <p className="mt-2">
+                <Link to="/admin/maintenance-plans" className="text-[var(--admin-blue)] hover:underline">
+                  Edit tiers
+                </Link>
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="block text-[12px] font-semibold text-[var(--admin-muted)]">
+                Name
+                <input
+                  value={label}
+                  onChange={(event) => setLabel(event.target.value)}
+                  placeholder="Website Care Plan"
+                  className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                />
+              </label>
+              <label className="block text-[12px] font-semibold text-[var(--admin-muted)]">
+                Monthly amount (USD)
+                <input
+                  inputMode="decimal"
+                  value={amountInput}
+                  onChange={(event) => setAmountInput(event.target.value)}
+                  placeholder="75.00"
+                  className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                />
+              </label>
+            </div>
+          )}
           {formError ? <p className="text-[12px] text-[#b45309]">{formError}</p> : null}
           <button
             type="button"
@@ -328,7 +440,13 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
                     <p className="text-sm font-medium text-[var(--admin-ink)]">{plan.label}</p>
                     <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
                       {SERVICE_PLAN_TYPE_LABELS[plan.planType]} · {formatUsdFromCents(plan.amountCents)}/mo
+                      {plan.includedHoursMonthly > 0 ? ` · ${plan.includedHoursMonthly} hrs/mo included` : ""}
                     </p>
+                    {plan.status === "paused" ? (
+                      <p className="mt-0.5 text-[12px] font-semibold text-[var(--admin-blue)]">
+                        Billing paused{plan.pausedAt ? ` since ${new Date(plan.pausedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}` : ""}.
+                      </p>
+                    ) : null}
                     {scheduledEnd(plan) ? (
                       <p className="mt-0.5 text-[12px] font-semibold text-[#b45309]">
                         Canceling. Ends {new Date(scheduledEnd(plan) as string).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}.
@@ -350,6 +468,26 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
                       onClick={() => void onSendCheckout(plan.id)}
                     >
                       Get checkout link
+                    </button>
+                  ) : null}
+                  {canPausePlan(plan) ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="h-9 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-50"
+                      onClick={() => void onPauseToggle(plan.id, true)}
+                    >
+                      Pause
+                    </button>
+                  ) : null}
+                  {canResumePausedPlan(plan) ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="h-9 rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
+                      onClick={() => void onPauseToggle(plan.id, false)}
+                    >
+                      Resume billing
                     </button>
                   ) : null}
                   {adminCancelOptions(plan).undo ? (

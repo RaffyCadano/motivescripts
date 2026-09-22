@@ -171,6 +171,9 @@ export type TimeEntryRow = {
   payroll_paid_at: string | null;
   created_at: string;
   created_by: string;
+  /** Website Care plan this entry counts against, if any. */
+  service_plan_id: string | null;
+  billing_type: "included" | "billable";
 };
 
 export type StaffPayRateRow = {
@@ -637,6 +640,9 @@ export type InvoiceRow = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  /** Recurring invoices only (service_plan_id set): the Stripe billing period this invoice covers. */
+  period_start: string | null;
+  period_end: string | null;
 };
 
 export type InvoiceItemRow = {
@@ -733,7 +739,7 @@ export type TaskTemplateChecklistItemRow = {
 };
 
 export type ServicePlanType = "care" | "seo_retainer" | "hosting" | "custom";
-export type ServicePlanStatus = "pending" | "active" | "past_due" | "canceled";
+export type ServicePlanStatus = "pending" | "active" | "past_due" | "canceled" | "paused";
 
 export type ServicePlanRow = {
   id: string;
@@ -754,11 +760,41 @@ export type ServicePlanRow = {
   canceled_at: string | null;
   /** When Stripe will end the subscription, if a cancellation is scheduled. */
   cancel_at: string | null;
+  /** Hours of included work per billing cycle. Copied from the assigned template at creation time. */
+  included_hours_monthly: number;
+  /** Which maintenance_plan_templates row this was assigned from, if any (provenance only). */
+  plan_template_id: string | null;
+  paused_at: string | null;
+};
+
+export type MaintenancePlanTemplateRow = {
+  id: string;
+  name: string;
+  description: string;
+  monthly_price_cents: number;
+  included_hours: number;
+  included_services: Json;
+  overage_rate_cents: number | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
 };
 
 export type CareRequestPriority = "Low" | "Medium" | "High" | "Urgent";
 export type CareRequestStatus = "New" | "In Progress" | "Done";
 export type CareRequestCategory = "quick_update" | "new_addition";
+export type CareRequestType =
+  | "content_update"
+  | "bug_fix"
+  | "design_change"
+  | "new_page"
+  | "new_feature"
+  | "seo"
+  | "technical"
+  | "other";
+export type CareRequestBillingDecision = "included" | "billable";
 
 export type CareRequestRow = {
   id: string;
@@ -773,6 +809,37 @@ export type CareRequestRow = {
   created_at: string;
   updated_at: string;
   resolved_at: string | null;
+  request_type: CareRequestType;
+  billing_decision: CareRequestBillingDecision | null;
+  service_plan_id: string | null;
+  resulting_task_id: string | null;
+  resulting_invoice_id: string | null;
+  resulting_project_id: string | null;
+};
+
+export type CareRequestFileRow = {
+  id: string;
+  request_id: string;
+  project_id: string;
+  client_id: string;
+  file_name: string;
+  file_type: string;
+  file_size: number;
+  storage_path: string;
+  created_at: string;
+  uploaded_by: string | null;
+};
+
+export type WebsiteVersionRow = {
+  id: string;
+  project_id: string;
+  version_major: number;
+  version_minor: number;
+  summary: string;
+  care_request_id: string | null;
+  is_major: boolean;
+  created_at: string;
+  created_by: string | null;
 };
 
 export type InvoiceAdminNoteRow = {
@@ -1030,9 +1097,21 @@ export type Database = {
         ServicePlanRow,
         Partial<ServicePlanRow> & { client_id: string; plan_type: ServicePlanType; label: string; amount_cents: number }
       >;
+      maintenance_plan_templates: Table<
+        MaintenancePlanTemplateRow,
+        Partial<MaintenancePlanTemplateRow> & { name: string; monthly_price_cents: number }
+      >;
       care_requests: Table<
         CareRequestRow,
         Partial<CareRequestRow> & { client_id: string; project_id: string; message: string }
+      >;
+      care_request_files: Table<
+        CareRequestFileRow,
+        Partial<CareRequestFileRow> & { request_id: string; project_id: string; client_id: string; file_name: string; storage_path: string }
+      >;
+      website_versions: Table<
+        WebsiteVersionRow,
+        Partial<WebsiteVersionRow> & { project_id: string; version_major: number }
       >;
       stripe_checkout_sessions: Table<
         {
@@ -1487,6 +1566,28 @@ export type Database = {
           p_ssl_expires_at?: string | null;
         };
         Returns: void;
+      };
+      create_service_plan_from_template: {
+        Args: { p_client_id: string; p_project_id: string | null; p_template_id: string };
+        Returns: string;
+      };
+      service_plan_current_period: {
+        Args: { p_plan_id: string };
+        Returns: { period_start: string; period_end: string }[];
+      };
+      care_requests_resolve: {
+        Args: {
+          p_request_id: string;
+          p_billing_decision: string | null;
+          p_resulting_task_id?: string | null;
+          p_resulting_invoice_id?: string | null;
+          p_resulting_project_id?: string | null;
+        };
+        Returns: void;
+      };
+      record_website_version: {
+        Args: { p_project_id: string; p_summary: string; p_is_major?: boolean; p_care_request_id?: string | null };
+        Returns: string;
       };
       current_staff_context: {
         Args: Record<string, never>;

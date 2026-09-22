@@ -9,7 +9,15 @@ import {
 } from "../_shared/servicePlanCatalog.ts";
 import { scheduledCancelAt, type SubscriptionLike } from "../_shared/stripeSubscription.ts";
 
-type Action = "create_checkout" | "cancel" | "resume_cancel" | "client_checkout" | "client_cancel" | "client_resume";
+type Action =
+  | "create_checkout"
+  | "cancel"
+  | "resume_cancel"
+  | "client_checkout"
+  | "client_cancel"
+  | "client_resume"
+  | "pause"
+  | "unpause";
 type ServiceClient = SupabaseClient;
 
 type RequestBody = {
@@ -66,7 +74,9 @@ Deno.serve(async (req) => {
     action !== "resume_cancel" &&
     action !== "client_checkout" &&
     action !== "client_cancel" &&
-    action !== "client_resume"
+    action !== "client_resume" &&
+    action !== "pause" &&
+    action !== "unpause"
   ) {
     return fail("invalid_action");
   }
@@ -136,6 +146,12 @@ Deno.serve(async (req) => {
     }
     if (action === "resume_cancel") {
       return await resumeScheduledCancel(admin, stripe, plan, json);
+    }
+    if (action === "pause") {
+      return await pausePlan(admin, stripe, plan, json);
+    }
+    if (action === "unpause") {
+      return await unpausePlan(admin, stripe, plan, json);
     }
     return await createCheckout(admin, stripe, req, plan, json);
   } catch (caught) {
@@ -326,6 +342,74 @@ async function clientResume(
   return json({ ok: true });
 }
 
+/**
+ * Pauses billing collection on an active plan via Stripe's pause_collection (behavior "void": no
+ * invoices are generated while paused, and nothing is owed for the paused period). The
+ * subscription itself keeps running -- unlike cancel, nothing needs to be re-created to resume.
+ * Unlike cancel/resume_cancel, there is no webhook path for this: Stripe's subscription `status`
+ * stays "active" while paused (pause_collection is a separate field), so customer.subscription.updated
+ * would not tell the difference. The local status is set directly, right after Stripe confirms it,
+ * exactly like every other admin action here that isn't itself webhook-driven.
+ */
+async function pausePlan(
+  admin: ServiceClient,
+  stripe: Stripe,
+  plan: { id: string; status: string; stripe_subscription_id: string | null },
+  json: JsonFn,
+) {
+  if (plan.status !== "active" || !plan.stripe_subscription_id) {
+    return json({ ok: false, error: "not_pausable" });
+  }
+  try {
+    await stripe.subscriptions.update(plan.stripe_subscription_id, {
+      pause_collection: { behavior: "void" },
+    });
+  } catch (caught) {
+    console.error("manage-service-plan pause failed", caught instanceof Error ? caught.message : "");
+    return json({ ok: false, error: "server_error" }, 500);
+  }
+  const { data: changed, error } = await admin.rpc("set_service_plan_paused", {
+    p_plan_id: plan.id,
+    p_paused: true,
+  });
+  if (error) {
+    console.error("manage-service-plan set paused failed", error.message);
+    return json({ ok: false, error: "server_error" }, 500);
+  }
+  if (!changed) return json({ ok: false, error: "not_pausable" });
+  return json({ ok: true });
+}
+
+/** Resumes a paused plan: clears Stripe's pause_collection and flips the local status back to active. */
+async function unpausePlan(
+  admin: ServiceClient,
+  stripe: Stripe,
+  plan: { id: string; status: string; stripe_subscription_id: string | null },
+  json: JsonFn,
+) {
+  if (plan.status !== "paused" || !plan.stripe_subscription_id) {
+    return json({ ok: false, error: "not_unpausable" });
+  }
+  try {
+    await stripe.subscriptions.update(plan.stripe_subscription_id, {
+      pause_collection: null,
+    });
+  } catch (caught) {
+    console.error("manage-service-plan unpause failed", caught instanceof Error ? caught.message : "");
+    return json({ ok: false, error: "server_error" }, 500);
+  }
+  const { data: changed, error } = await admin.rpc("set_service_plan_paused", {
+    p_plan_id: plan.id,
+    p_paused: false,
+  });
+  if (error) {
+    console.error("manage-service-plan set unpaused failed", error.message);
+    return json({ ok: false, error: "server_error" }, 500);
+  }
+  if (!changed) return json({ ok: false, error: "not_unpausable" });
+  return json({ ok: true });
+}
+
 async function createCheckout(
   admin: ServiceClient,
   stripe: Stripe,
@@ -468,7 +552,9 @@ async function cancelPlan(
   when: string,
 ) {
   if (plan.status === "pending") return await abandonPendingPlan(admin, stripe, plan, json);
-  if (plan.status !== "active" && plan.status !== "past_due") {
+  // A paused plan can still be canceled outright (its Stripe subscription still exists, just not
+  // collecting) -- only period_end cancellation requires "active" specifically, checked below.
+  if (plan.status !== "active" && plan.status !== "past_due" && plan.status !== "paused") {
     return json({ ok: false, error: "not_cancelable" });
   }
   if (!plan.stripe_subscription_id) {
