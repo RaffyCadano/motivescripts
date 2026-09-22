@@ -40,6 +40,7 @@ function toTemplate(row: MaintenancePlanTemplateRow): MaintenancePlanTemplate {
     defaultPriority: (row.default_priority as MaintenancePlanTemplateDefaultPriority) ?? "Medium",
     fastMonitoring: row.fast_monitoring,
     reviewIncluded: row.review_included,
+    seoIncluded: row.seo_included,
     isActive: row.is_active,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
@@ -58,6 +59,7 @@ function draftFields(input: MaintenancePlanTemplateInput) {
     default_priority: input.defaultPriority,
     fast_monitoring: input.fastMonitoring,
     review_included: input.reviewIncluded,
+    seo_included: input.seoIncluded,
     is_active: input.isActive,
     sort_order: input.sortOrder,
   };

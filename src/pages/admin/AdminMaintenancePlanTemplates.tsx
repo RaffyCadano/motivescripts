@@ -31,6 +31,7 @@ const EMPTY_DRAFT: MaintenancePlanTemplateInput = {
   defaultPriority: "Medium",
   fastMonitoring: false,
   reviewIncluded: false,
+  seoIncluded: false,
   isActive: true,
   sortOrder: 0,
 };
@@ -46,6 +47,7 @@ function draftFromTemplate(template: MaintenancePlanTemplate): MaintenancePlanTe
     defaultPriority: template.defaultPriority,
     fastMonitoring: template.fastMonitoring,
     reviewIncluded: template.reviewIncluded,
+    seoIncluded: template.seoIncluded,
     isActive: template.isActive,
     sortOrder: template.sortOrder,
   };
@@ -284,6 +286,21 @@ export function AdminMaintenancePlanTemplates() {
                 </span>
               </span>
             </label>
+            <label className="flex items-start gap-2 text-[12px] font-semibold text-[var(--admin-ink)]">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={draft.seoIncluded}
+                onChange={(event) => setDraft((current) => ({ ...current, seoIncluded: event.target.checked }))}
+              />
+              <span>
+                SEO maintenance
+                <span className="mt-0.5 block text-[11px] font-normal text-[var(--admin-muted)]">
+                  Auto-creates a recurring SEO review task on the 1st of each month, independent of the maintenance
+                  review above.
+                </span>
+              </span>
+            </label>
           </div>
           <label className="block text-[12px] font-semibold text-[var(--admin-muted)]">
             Description
@@ -369,6 +386,7 @@ export function AdminMaintenancePlanTemplates() {
                       {` · ${tier.defaultPriority} priority`}
                       {tier.fastMonitoring ? " · Advanced monitoring" : ""}
                       {tier.reviewIncluded ? " · Monthly review" : ""}
+                      {tier.seoIncluded ? " · SEO review" : ""}
                     </p>
                     {tier.description ? <p className="mt-2 text-sm text-[var(--admin-ink)]">{tier.description}</p> : null}
                     {tier.includedServices.length > 0 ? (

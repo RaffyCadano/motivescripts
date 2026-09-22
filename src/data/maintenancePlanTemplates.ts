@@ -23,6 +23,8 @@ export type MaintenancePlanTemplate = {
   fastMonitoring: boolean;
   /** "Monthly maintenance review": a recurring task is auto-created on the 1st of each month for a plan on this tier. */
   reviewIncluded: boolean;
+  /** "SEO maintenance": a recurring SEO review task is auto-created on the 1st of each month, independent of reviewIncluded. */
+  seoIncluded: boolean;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -39,6 +41,7 @@ export type MaintenancePlanTemplateInput = {
   defaultPriority: MaintenancePlanTemplateDefaultPriority;
   fastMonitoring: boolean;
   reviewIncluded: boolean;
+  seoIncluded: boolean;
   isActive: boolean;
   sortOrder: number;
 };

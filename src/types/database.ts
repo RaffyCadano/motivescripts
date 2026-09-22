@@ -778,6 +778,7 @@ export type MaintenancePlanTemplateRow = {
   default_priority: "Low" | "Medium" | "High" | "Urgent";
   fast_monitoring: boolean;
   review_included: boolean;
+  seo_included: boolean;
   is_active: boolean;
   sort_order: number;
   created_at: string;
