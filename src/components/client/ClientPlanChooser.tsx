@@ -3,21 +3,19 @@ import { planOfferState } from "@/data/clientPlanOffer";
 import type { MaintenancePlanTemplate } from "@/data/maintenancePlanTemplates";
 import { fetchPublishedMaintenancePlanTemplates } from "@/data/maintenancePlanTemplatesRepository";
 import { formatUsdWhole } from "@/data/money";
-import { ongoingServices } from "@/data/pricing";
+import { careService } from "@/data/pricing";
 import type { ServicePlan } from "@/data/servicePlans";
 import { startClientPlanCheckout } from "@/data/servicePlansRepository";
 import { site } from "@/data/site";
 import { AgencyDbError } from "@/lib/dbErrors";
-
-const hostingAndSeoServices = ongoingServices.filter((service) => service.planType !== "care");
-const fallbackCareService = ongoingServices.find((service) => service.planType === "care")!;
 
 /**
  * "Choose a plan", shown in the client portal once the website has launched. Picking one sends the client to
  * Stripe's secure checkout, where they see the price and confirm; nothing is charged before that. The price
  * and the launch rule are decided by the server, so this is only the front door. Website Care is tiered
  * (Essential/Business/Pro), fetched live so a client always sees the current tiers -- falls back to a single
- * generic Care option while the fetch is in flight or if it fails.
+ * generic Care option while the fetch is in flight or if it fails. Hosting and SEO are not sold separately;
+ * they're included starting at the Essential and Pro tiers respectively.
  */
 export function ClientPlanChooser({
   projectId,
@@ -64,9 +62,9 @@ export function ClientPlanChooser({
     >
       <h2 className="font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">Choose a plan</h2>
       <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">
-        {projectName} is live. These optional monthly plans keep it running smoothly. You&apos;ll review the price and
-        confirm on Stripe&apos;s secure checkout page, and nothing is charged until you do. Plans are billed monthly and
-        renew automatically until you cancel. You can cancel any time from Active plans above, and you won&apos;t be
+        {projectName} is live. This optional monthly plan keeps it running smoothly. You&apos;ll review the price and
+        confirm on Stripe&apos;s secure checkout page, and nothing is charged until you do. It&apos;s billed monthly and
+        renews automatically until you cancel. You can cancel any time from Active plans above, and you won&apos;t be
         charged again. To change a plan, contact{" "}
         <a className="font-medium underline underline-offset-2" href={`mailto:${site.email}`}>
           {site.email}
@@ -80,90 +78,86 @@ export function ClientPlanChooser({
         </p>
       ) : null}
 
-      <ul className="mt-5 grid gap-3 md:grid-cols-3">
-        {careTiers.map((tier) => {
-          const key = `care:${tier.id}`;
-          const busy = busyKey === key;
-          return (
-            <li key={tier.id} className="flex flex-col rounded-[var(--client-radius)] border border-[var(--client-line)] p-4">
-              <h3 className="font-heading text-base font-semibold text-[var(--client-ink)]">Website Care — {tier.name}</h3>
-              {tier.description ? (
-                <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[var(--client-muted)]">{tier.description}</p>
-              ) : (
-                <div className="flex-1" />
-              )}
-              {tier.includedServices.length > 0 ? (
-                <ul className="mt-3 space-y-1">
-                  {tier.includedServices.map((item) => (
-                    <li key={item} className="text-[12px] text-[var(--client-muted)]">
-                      • {item}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              <p className="mt-4 font-heading text-2xl font-semibold tracking-tight text-[var(--client-ink)]">
-                {formatUsdWhole(tier.monthlyPriceCents)}
-                <span className="text-sm font-medium text-[var(--client-muted)]">/month</span>
-              </p>
-              {careState.kind === "subscribed" ? (
-                <p
-                  className={`mt-3 text-[13px] font-semibold ${careState.status === "past_due" ? "text-[#b45309]" : "text-[#0f7a56]"}`}
-                >
-                  {careState.status === "past_due" ? "Active — payment needs attention" : "You have a Care plan"}
+      {careTiers.length > 0 ? (
+        <ul className="mt-5 grid gap-3 md:grid-cols-3">
+          {careTiers.map((tier) => {
+            const key = `care:${tier.id}`;
+            const busy = busyKey === key;
+            return (
+              <li key={tier.id} className="flex flex-col rounded-[var(--client-radius)] border border-[var(--client-line)] p-4">
+                <h3 className="font-heading text-base font-semibold text-[var(--client-ink)]">{tier.name}</h3>
+                {tier.description ? (
+                  <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[var(--client-muted)]">{tier.description}</p>
+                ) : (
+                  <div className="flex-1" />
+                )}
+                {tier.includedServices.length > 0 ? (
+                  <ul className="mt-3 space-y-1">
+                    {tier.includedServices.map((item) => (
+                      <li key={item} className="text-[12px] text-[var(--client-muted)]">
+                        • {item}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <p className="mt-4 font-heading text-2xl font-semibold tracking-tight text-[var(--client-ink)]">
+                  {formatUsdWhole(tier.monthlyPriceCents)}
+                  <span className="text-sm font-medium text-[var(--client-muted)]">/month</span>
                 </p>
-              ) : (
-                <button
-                  type="button"
-                  disabled={busyKey !== null}
-                  onClick={() =>
-                    void go(
-                      key,
-                      careState.kind === "pending"
-                        ? { planId: careState.planId }
-                        : { planType: "care", projectId, templateId: tier.id },
-                    )
-                  }
-                  className="mt-3 inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)] disabled:opacity-60"
-                >
-                  {busy ? "Opening checkout…" : careState.kind === "pending" ? "Continue to checkout" : "Choose this tier"}
-                </button>
-              )}
-            </li>
-          );
-        })}
-        {([...(careTiers.length > 0 ? [] : [fallbackCareService]), ...hostingAndSeoServices] as (typeof ongoingServices)[number][]).map((service) => {
-          const state = planOfferState(service.planType, projectId, plans);
-          const busy = busyKey === service.planType;
-          return (
-            <li key={service.id} className="flex flex-col rounded-[var(--client-radius)] border border-[var(--client-line)] p-4">
-              <h3 className="font-heading text-base font-semibold text-[var(--client-ink)]">{service.name}</h3>
-              <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[var(--client-muted)]">{service.description}</p>
-              <p className="mt-4 font-heading text-2xl font-semibold tracking-tight text-[var(--client-ink)]">
-                {service.price}
-                <span className="text-sm font-medium text-[var(--client-muted)]">/month</span>
+                {careState.kind === "subscribed" ? (
+                  <p
+                    className={`mt-3 text-[13px] font-semibold ${careState.status === "past_due" ? "text-[#b45309]" : "text-[#0f7a56]"}`}
+                  >
+                    {careState.status === "past_due" ? "Active — payment needs attention" : "You have a Care plan"}
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={busyKey !== null}
+                    onClick={() =>
+                      void go(
+                        key,
+                        careState.kind === "pending"
+                          ? { planId: careState.planId }
+                          : { planType: "care", projectId, templateId: tier.id },
+                      )
+                    }
+                    className="mt-3 inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)] disabled:opacity-60"
+                  >
+                    {busy ? "Opening checkout…" : careState.kind === "pending" ? "Continue to checkout" : "Choose this tier"}
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <div className="mt-5 max-w-sm">
+          <div className="flex flex-col rounded-[var(--client-radius)] border border-[var(--client-line)] p-4">
+            <h3 className="font-heading text-base font-semibold text-[var(--client-ink)]">{careService.name}</h3>
+            <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[var(--client-muted)]">{careService.description}</p>
+            <p className="mt-4 font-heading text-2xl font-semibold tracking-tight text-[var(--client-ink)]">
+              {careService.price}
+              <span className="text-sm font-medium text-[var(--client-muted)]">/month</span>
+            </p>
+            {careState.kind === "subscribed" ? (
+              <p
+                className={`mt-3 text-[13px] font-semibold ${careState.status === "past_due" ? "text-[#b45309]" : "text-[#0f7a56]"}`}
+              >
+                {careState.status === "past_due" ? "Active — payment needs attention" : "You have a Care plan"}
               </p>
-              {state.kind === "subscribed" ? (
-                <p
-                  className={`mt-3 text-[13px] font-semibold ${state.status === "past_due" ? "text-[#b45309]" : "text-[#0f7a56]"}`}
-                >
-                  {state.status === "past_due" ? "Active — payment needs attention" : "You have this plan"}
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  disabled={busyKey !== null}
-                  onClick={() =>
-                    void go(service.planType, state.kind === "pending" ? { planId: state.planId } : { planType: service.planType, projectId })
-                  }
-                  className="mt-3 inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)] disabled:opacity-60"
-                >
-                  {busy ? "Opening checkout…" : state.kind === "pending" ? "Continue to checkout" : "Choose plan"}
-                </button>
-              )}
-            </li>
-          );
-        })}
-      </ul>
+            ) : (
+              <button
+                type="button"
+                disabled={busyKey !== null}
+                className="mt-3 inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white opacity-60"
+              >
+                Loading tiers…
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

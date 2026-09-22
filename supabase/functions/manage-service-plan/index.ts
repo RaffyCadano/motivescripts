@@ -1,12 +1,7 @@
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import Stripe from "npm:stripe@17.7.0";
 import { corsHeadersForRequest, publicSiteBaseUrl } from "../_shared/cors.ts";
-import {
-  SELF_SERVE_PLANS,
-  clientPlanErrorCode,
-  isSelfServePlanType,
-  isUuid,
-} from "../_shared/servicePlanCatalog.ts";
+import { clientPlanErrorCode, isUuid } from "../_shared/servicePlanCatalog.ts";
 import { scheduledCancelAt, type SubscriptionLike } from "../_shared/stripeSubscription.ts";
 
 type Action =
@@ -180,35 +175,23 @@ async function clientCheckout(
     const projectId = (body.projectId ?? "").trim();
     if (!isUuid(projectId)) return json({ ok: false, error: "not_found" });
 
-    let label: string;
-    let amountCents: number;
-    let templateId: string | null = null;
-    let includedHoursMonthly = 0;
-
-    if (planType === "care") {
-      // Website Care is tiered (Essential/Business/Pro): the client names which template, but its
-      // price/label/hours are always read fresh from the table here, never trusted from the request
-      // beyond the id -- same "server decides the price" rule the flat catalog already follows.
-      const requestedTemplateId = (body.templateId ?? "").trim();
-      if (!isUuid(requestedTemplateId)) return json({ ok: false, error: "invalid_plan_type" });
-      const { data: tier } = await admin
-        .from("maintenance_plan_templates")
-        .select("id, name, monthly_price_cents, included_hours, is_active")
-        .eq("id", requestedTemplateId)
-        .maybeSingle();
-      if (!tier || !tier.is_active) return json({ ok: false, error: "invalid_plan_type" });
-      templateId = tier.id;
-      label = tier.name;
-      amountCents = tier.monthly_price_cents;
-      includedHoursMonthly = tier.included_hours ?? 0;
-    } else if (isSelfServePlanType(planType)) {
-      // The flat catalog decides the price and the name. Nothing about the amount comes from the request.
-      const entry = SELF_SERVE_PLANS[planType];
-      label = entry.label;
-      amountCents = entry.amountCents;
-    } else {
-      return json({ ok: false, error: "invalid_plan_type" });
-    }
+    // Website Care is the only plan a client can choose themselves, and it's tiered
+    // (Essential/Business/Pro): they name which template, but its price/label/hours are always read
+    // fresh from the table here, never trusted from the request beyond the id. Hosting and SEO are not
+    // sold as separate self-serve plans -- they're included starting at the Essential and Pro tiers.
+    if (planType !== "care") return json({ ok: false, error: "invalid_plan_type" });
+    const requestedTemplateId = (body.templateId ?? "").trim();
+    if (!isUuid(requestedTemplateId)) return json({ ok: false, error: "invalid_plan_type" });
+    const { data: tier } = await admin
+      .from("maintenance_plan_templates")
+      .select("id, name, monthly_price_cents, included_hours, is_active")
+      .eq("id", requestedTemplateId)
+      .maybeSingle();
+    if (!tier || !tier.is_active) return json({ ok: false, error: "invalid_plan_type" });
+    const templateId = tier.id;
+    const label = tier.name;
+    const amountCents = tier.monthly_price_cents;
+    const includedHoursMonthly = tier.included_hours ?? 0;
 
     const { data, error } = await admin.rpc("create_client_service_plan", {
       p_client_id: who.clientId,

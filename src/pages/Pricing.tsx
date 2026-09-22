@@ -7,13 +7,11 @@ import { FaqItem } from "@/components/FaqItem";
 import { PageHero } from "@/components/PageHero";
 import { TierPrice } from "@/components/TierPrice";
 import {
+  careService,
   careStartingPrice,
   commonAddOns,
-  hostingStartingPrice,
-  ongoingServices,
   ongoingServicesTerms,
   pricingTiers,
-  seoRetainerStartingPrice,
   websiteStartingPrice,
 } from "@/data/pricing";
 import type { MaintenancePlanTemplate } from "@/data/maintenancePlanTemplates";
@@ -23,9 +21,6 @@ import { site } from "@/data/site";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { seoPage } from "@/data/seoPages";
 import { cn } from "@/lib/cn";
-
-const hostingAndSeoServices = ongoingServices.filter((service) => service.planType !== "care");
-const fallbackCareService = ongoingServices.find((service) => service.planType === "care")!;
 
 const priceFactors = [
   "Number of pages",
@@ -62,7 +57,7 @@ const pricingFaqs = [
   {
     question: "Are hosting and domain costs included?",
     answer:
-      `Not automatically. Hosting setup, domain registration, and business email are quoted as separate line items when your project needs them, so you can see exactly what each one costs in your proposal. Ongoing monthly hosting is a separate optional service, starting at ${hostingStartingPrice}/month.`,
+      `Not automatically. Hosting setup, domain registration, and business email are quoted as separate line items when your project needs them, so you can see exactly what each one costs in your proposal. Ongoing hosting after launch is included starting with the Essential Website Care tier, at ${careStartingPrice}/month.`,
   },
   {
     question: "Do I need to know exactly what I need before contacting you?",
@@ -79,7 +74,7 @@ const pricingFaqs = [
   },
   {
     question: "Are ongoing services included?",
-    answer: `Not automatically. These optional monthly services are separate from your website project: Website Care (updates, maintenance, and technical support) starts at ${careStartingPrice}/month, hosting at ${hostingStartingPrice}/month, and an SEO retainer at ${seoRetainerStartingPrice}/month. ${ongoingServicesTerms}`,
+    answer: `Not automatically. Website Care is optional and separate from your website project, starting at ${careStartingPrice}/month. It includes hosting and technical maintenance from the Essential tier, and higher tiers add content updates, performance monitoring, and SEO maintenance. ${ongoingServicesTerms}`,
   },
 ];
 
@@ -196,7 +191,7 @@ export function PricingPage() {
                 <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {careTiers.map((tier) => (
                     <li key={tier.id} className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7">
-                      <h3 className="text-xl font-bold">Website Care — {tier.name}</h3>
+                      <h3 className="text-xl font-bold">{tier.name}</h3>
                       {tier.description ? <p className="mt-3 flex-1 text-sm text-muted">{tier.description}</p> : <div className="flex-1" />}
                       {tier.includedServices.length > 0 ? (
                         <ul className="mt-4 space-y-2 border-t border-[var(--color-line)] pt-4">
@@ -216,40 +211,20 @@ export function PricingPage() {
                       />
                     </li>
                   ))}
-                  {hostingAndSeoServices.map((service) => (
-                    <li key={service.id} className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7">
-                      <h3 className="text-xl font-bold">{service.name}</h3>
-                      <p className="mt-3 flex-1 text-sm text-muted">{service.description}</p>
-                      <TierPrice
-                        className="mt-6"
-                        lead="Starting at"
-                        price={`${service.price}/mo`}
-                        note="Billed monthly. Choose it yourself from your client portal once your website has launched."
-                      />
-                    </li>
-                  ))}
                 </ul>
               ) : (
-                <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {[fallbackCareService, ...hostingAndSeoServices].map((service, index, all) => (
-                    <li
-                      key={service.id}
-                      className={cn(
-                        "flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7",
-                        index === all.length - 1 && "sm:col-span-2 lg:col-span-1",
-                      )}
-                    >
-                      <h3 className="text-xl font-bold">{service.name}</h3>
-                      <p className="mt-3 flex-1 text-sm text-muted">{service.description}</p>
-                      <TierPrice
-                        className="mt-6"
-                        lead="Starting at"
-                        price={`${service.price}/mo`}
-                        note="Billed monthly. Choose it yourself from your client portal once your website has launched."
-                      />
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-8 max-w-sm">
+                  <div className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7">
+                    <h3 className="text-xl font-bold">{careService.name}</h3>
+                    <p className="mt-3 flex-1 text-sm text-muted">{careService.description}</p>
+                    <TierPrice
+                      className="mt-6"
+                      lead="Starting at"
+                      price={`${careService.price}/mo`}
+                      note="Billed monthly. Choose it yourself from your client portal once your website has launched."
+                    />
+                  </div>
+                </div>
               )}
               <p className="mt-6 max-w-2xl text-sm text-faint">{ongoingServicesTerms}</p>
             </section>

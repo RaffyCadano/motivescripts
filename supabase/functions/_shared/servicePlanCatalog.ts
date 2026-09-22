@@ -1,26 +1,10 @@
-// The self-serve plan catalog and error mapping for clients choosing a plan in the portal. Pure (no Deno or
-// Stripe imports) so it can be unit tested in plain Node (scripts/test-service-plan-catalog.mjs).
+// UUID validation and error mapping for clients choosing a Website Care plan in the portal. Pure (no
+// Deno or Stripe imports) so it can be unit tested in plain Node (scripts/test-service-plan-catalog.mjs).
 //
-// The amount and label of a self-serve plan are ALWAYS taken from here, never from the request, so a client
-// cannot pick their own price. Keep the amounts equal to the published prices in src/data/pricing.ts
-// (hostingStartingPrice, seoRetainerStartingPrice); the test checks they match.
-//
-// "care" is deliberately NOT in this flat catalog: Website Care is tiered (Essential/Business/Pro, admin-
-// editable in maintenance_plan_templates), so a client picks a specific tier rather than one flat price.
-// See resolveCareTierForCheckout in index.ts, which looks the chosen tier up directly instead of using
-// this catalog.
-
-export const SELF_SERVE_PLAN_TYPES = ["hosting", "seo_retainer"] as const;
-export type SelfServePlanType = (typeof SELF_SERVE_PLAN_TYPES)[number];
-
-export const SELF_SERVE_PLANS: Record<SelfServePlanType, { label: string; amountCents: number }> = {
-  hosting: { label: "Hosting", amountCents: 2_500 },
-  seo_retainer: { label: "SEO Retainer", amountCents: 29_900 },
-};
-
-export function isSelfServePlanType(value: unknown): value is SelfServePlanType {
-  return typeof value === "string" && (SELF_SERVE_PLAN_TYPES as readonly string[]).includes(value);
-}
+// There is no flat self-serve catalog anymore: Website Care is the only plan a client can choose
+// themselves, and it's tiered (Essential/Business/Pro, admin-editable in maintenance_plan_templates) --
+// see resolveCareTierForCheckout in index.ts, which looks the chosen tier up directly. Hosting and SEO
+// are not sold as separate ongoing plans; they're included starting at the Essential and Pro tiers.
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

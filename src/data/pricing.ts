@@ -11,46 +11,32 @@
 export const websiteStartingPrice = "$2,500";
 
 /**
- * Starting prices for the optional monthly services, shown on the Pricing page. These are the public
- * "starting at" figures only: each client's actual plan amount is set when their plan is created in Admin
- * (Recurring plans) and is confirmed in their proposal. If you change one here, change it in
- * supabase/functions/_shared/aiKnowledge.ts too (scripts/test-ai-endpoint.mjs checks they match).
+ * Starting price for Website Care, the one ongoing monthly service shown on the Pricing page. This is
+ * the public "starting at" figure only: each client's actual plan amount is set when their plan is
+ * created in Admin (Recurring plans) and is confirmed in their proposal. If you change it here, change
+ * it in supabase/functions/_shared/aiKnowledge.ts too (scripts/test-ai-endpoint.mjs checks they match).
  *
- * careStartingPrice is a static fallback only, shown while the live tier list loads (or if it fails to
- * load) -- Website Care itself is tiered (Essential/Business/Pro), fetched live from
- * maintenance_plan_templates on the Pricing page and in the client portal. Keep this equal to the
- * cheapest active tier's price so the fallback never overstates it.
+ * This is a static fallback only, shown while the live tier list loads (or if it fails to load) --
+ * Website Care itself is tiered (Essential/Business/Pro), fetched live from maintenance_plan_templates
+ * on the Pricing page and in the client portal. Keep this equal to the cheapest active tier's price so
+ * the fallback never overstates it.
+ *
+ * Hosting and SEO are not sold as separate ongoing plans -- ongoing hosting is included starting at the
+ * Essential tier, and SEO maintenance is included starting at the Pro tier (see the tiers' own
+ * included_services in Admin -> Website Care plans).
  */
 export const careStartingPrice = "$49";
-export const hostingStartingPrice = "$25";
-export const seoRetainerStartingPrice = "$299";
 
-export const ongoingServices = [
-  {
-    id: "care",
-    planType: "care",
-    name: "Website Care",
-    description:
-      "Updates, technical support, and small content or feature changes after launch, for businesses that want an ongoing relationship rather than a one-time build.",
-    price: careStartingPrice,
-  },
-  {
-    id: "hosting",
-    planType: "hosting",
-    name: "Hosting",
-    description: "Ongoing hosting for your website, billed monthly. Initial hosting setup is quoted separately in your proposal.",
-    price: hostingStartingPrice,
-  },
-  {
-    id: "seo",
-    planType: "seo_retainer",
-    name: "SEO Retainer",
-    description: "Ongoing search engine optimization work after launch.",
-    price: seoRetainerStartingPrice,
-  },
-] as const;
+export const careService = {
+  id: "care",
+  planType: "care",
+  name: "Website Care",
+  description:
+    "Hosting, updates, technical support, and small content or feature changes after launch, for businesses that want an ongoing relationship rather than a one-time build. Higher tiers add content updates, performance monitoring, and SEO maintenance.",
+  price: careStartingPrice,
+} as const;
 
-/** Shown under the ongoing services and repeated in the FAQ, so the terms are stated wherever the prices are. */
+/** Shown under Website Care and repeated in the FAQ, so the terms are stated wherever the price is. */
 export const ongoingServicesTerms =
   "Billed monthly and renews automatically until you cancel. After your website launches you can choose a plan yourself from your client portal at the listed price, and you confirm it on Stripe's secure checkout before anything is charged. You can cancel any time from your client portal: the plan then runs to the end of the period you've already paid for and you aren't charged again. Need something different? Ask us about a custom plan.";
 
