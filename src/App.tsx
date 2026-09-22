@@ -85,6 +85,7 @@ const ClientPaymentCancelled = lazy(() => import("@/pages/client/ClientPaymentCa
 const ClientPaymentSuccess = lazy(() => import("@/pages/client/ClientPaymentSuccess").then((m) => ({ default: m.ClientPaymentSuccess })));
 const ClientReview = lazy(() => import("@/pages/client/ClientReview").then((m) => ({ default: m.ClientReview })));
 const ClientSettings = lazy(() => import("@/pages/client/ClientSettings").then((m) => ({ default: m.ClientSettings })));
+const ClientPlans = lazy(() => import("@/pages/client/ClientPlans").then((m) => ({ default: m.ClientPlans })));
 const TeamBlocked = lazy(() => import("@/pages/team/TeamBlocked").then((m) => ({ default: m.TeamBlocked })));
 const TeamDashboardHome = lazy(() => import("@/pages/team/TeamDashboardHome").then((m) => ({ default: m.TeamDashboardHome })));
 const TeamDeploymentDetail = lazy(() => import("@/pages/team/TeamDeploymentDetail").then((m) => ({ default: m.TeamDeploymentDetail })));
@@ -231,6 +232,7 @@ export default function App() {
             <Route path="invoices/:id" element={<ClientInvoiceDetails />} />
             <Route path="billing" element={<Navigate to="/client/invoices" replace />} />
             <Route path="settings" element={<ClientSettings />} />
+            <Route path="plans" element={<ClientPlans />} />
           </Route>
           </Route>
           <Route element={<Layout />}>

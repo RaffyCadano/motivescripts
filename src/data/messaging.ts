@@ -155,7 +155,7 @@ export function notificationHref(item: AppNotification, role: "admin" | "staff" 
       // No client_id on the notification row to deep-link to a specific
       // client's Plans tab -- the list is still a correct destination,
       // unlike the old default fallback these silently hit before (Messages).
-      return agency ? "/admin/clients" : "/client/settings";
+      return agency ? "/admin/clients" : "/client/plans";
     case "project_assigned":
     case "milestone_updated":
     case "qa_failed":

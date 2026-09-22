@@ -5,12 +5,15 @@ import { TaskPriorityBadge } from "@/components/admin/projects/TaskPriorityBadge
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import {
+  CARE_REQUEST_CATEGORY_LABELS,
   CARE_REQUEST_STATUS_LABELS,
+  careRequestCategories,
   careRequestPriorities,
   careRequestStatuses,
   filterCareRequests,
   sortCareRequests,
   type CareRequest,
+  type CareRequestCategory,
   type CareRequestPriority,
   type CareRequestStatus,
 } from "@/data/careRequests";
@@ -32,6 +35,7 @@ export function AdminCareRequests() {
   const [status, setStatus] = useState<CareRequestStatus | "All">("New");
   const [priority, setPriority] = useState<CareRequestPriority | "All">("All");
   const [clientId, setClientId] = useState<string | "All">("All");
+  const [category, setCategory] = useState<CareRequestCategory | "All">("All");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Map<string, string>>(new Map());
 
@@ -59,10 +63,14 @@ export function AdminCareRequests() {
   }, [clients, requests]);
 
   const visible = useMemo(
-    () => sortCareRequests(filterCareRequests(requests, { status, priority, clientId })),
-    [requests, status, priority, clientId],
+    () => sortCareRequests(filterCareRequests(requests, { status, priority, clientId, category })),
+    [requests, status, priority, clientId, category],
   );
   const openCount = useMemo(() => requests.filter((request) => request.status !== "Done").length, [requests]);
+  const newAdditionOpenCount = useMemo(
+    () => requests.filter((request) => request.status !== "Done" && request.category === "new_addition").length,
+    [requests],
+  );
 
   async function onPriorityChange(id: string, next: CareRequestPriority) {
     setBusyId(id);
@@ -102,10 +110,10 @@ export function AdminCareRequests() {
     <div>
       <AdminPageHeader
         title="Care requests"
-        description={`Website Care asks from clients, oldest and most urgent first. ${openCount} open.`}
+        description={`Website Care asks from clients, oldest and most urgent first. ${openCount} open${newAdditionOpenCount > 0 ? `, ${newAdditionOpenCount} of those a new addition that may need a quote` : ""}.`}
       />
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+      <div className="mt-6 grid gap-3 sm:grid-cols-4">
         <label className="block">
           <span className="sr-only">Filter by status</span>
           <select
@@ -151,6 +159,21 @@ export function AdminCareRequests() {
             ))}
           </select>
         </label>
+        <label className="block">
+          <span className="sr-only">Filter by category</span>
+          <select
+            value={category}
+            onChange={(event) => setCategory(event.target.value as CareRequestCategory | "All")}
+            className={adminFilterControlState(category !== "All")}
+          >
+            <option value="All">All categories</option>
+            {careRequestCategories.map((item) => (
+              <option key={item} value={item}>
+                {CARE_REQUEST_CATEGORY_LABELS[item]}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {loading ? (
@@ -167,9 +190,21 @@ export function AdminCareRequests() {
             const busy = busyId === request.id;
             const error = rowError.get(request.id);
             return (
-              <li key={request.id} className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-4">
+              <li
+                key={request.id}
+                className={`rounded-[var(--admin-radius)] border bg-[var(--admin-card)] p-4 ${
+                  request.category === "new_addition"
+                    ? "border-[rgb(124_58_237_/_0.35)] border-l-4 border-l-[#7c3aed]"
+                    : "border-[var(--admin-line)]"
+                }`}
+              >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
+                    {request.category === "new_addition" ? (
+                      <span className="mb-1.5 inline-flex items-center rounded-full bg-[rgb(124_58_237_/_0.1)] px-2.5 py-1 text-xs font-semibold text-[#6d28d9]">
+                        New addition — may need a quote
+                      </span>
+                    ) : null}
                     <p className="text-sm font-semibold text-[var(--admin-ink)]">
                       {clientsById.get(request.clientId) ?? "Unknown client"}
                       <span className="mx-1.5 text-[var(--admin-muted)]">·</span>

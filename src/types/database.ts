@@ -758,6 +758,7 @@ export type ServicePlanRow = {
 
 export type CareRequestPriority = "Low" | "Medium" | "High" | "Urgent";
 export type CareRequestStatus = "New" | "In Progress" | "Done";
+export type CareRequestCategory = "quick_update" | "new_addition";
 
 export type CareRequestRow = {
   id: string;
@@ -767,6 +768,7 @@ export type CareRequestRow = {
   message: string;
   priority: CareRequestPriority;
   status: CareRequestStatus;
+  category: CareRequestCategory;
   has_active_care_plan: boolean;
   created_at: string;
   updated_at: string;

@@ -1,8 +1,10 @@
 export type CareRequestPriority = "Low" | "Medium" | "High" | "Urgent";
 export type CareRequestStatus = "New" | "In Progress" | "Done";
+export type CareRequestCategory = "quick_update" | "new_addition";
 
 export const careRequestPriorities: CareRequestPriority[] = ["Low", "Medium", "High", "Urgent"];
 export const careRequestStatuses: CareRequestStatus[] = ["New", "In Progress", "Done"];
+export const careRequestCategories: CareRequestCategory[] = ["quick_update", "new_addition"];
 
 export type CareRequest = {
   id: string;
@@ -12,8 +14,11 @@ export type CareRequest = {
   message: string;
   priority: CareRequestPriority;
   status: CareRequestStatus;
-  /** Whether the client had an active (or past-due) Website Care plan at the moment they asked. Not
-   * re-checked afterwards -- a later cancellation doesn't change what this row says. */
+  category: CareRequestCategory;
+  /** Whether the client had an active (or past-due) Website Care plan at the moment they asked.
+   * Submitting one requires an active plan now, so this is true for every new row -- kept for the
+   * requests that predate that rule, and because a row still shouldn't change if the plan is
+   * canceled afterwards. */
   hasActiveCarePlan: boolean;
   createdAt: string;
   updatedAt: string;
@@ -24,6 +29,11 @@ export const CARE_REQUEST_STATUS_LABELS: Record<CareRequestStatus, string> = {
   New: "New",
   "In Progress": "In Progress",
   Done: "Done",
+};
+
+export const CARE_REQUEST_CATEGORY_LABELS: Record<CareRequestCategory, string> = {
+  quick_update: "Quick update or fix",
+  new_addition: "New addition",
 };
 
 const PRIORITY_WEIGHT: Record<CareRequestPriority, number> = { Urgent: 0, High: 1, Medium: 2, Low: 3 };
@@ -42,12 +52,18 @@ export function sortCareRequests(requests: CareRequest[]): CareRequest[] {
 
 export function filterCareRequests(
   requests: CareRequest[],
-  options: { status: CareRequestStatus | "All"; priority: CareRequestPriority | "All"; clientId: string | "All" },
+  options: {
+    status: CareRequestStatus | "All";
+    priority: CareRequestPriority | "All";
+    clientId: string | "All";
+    category?: CareRequestCategory | "All";
+  },
 ): CareRequest[] {
   return requests.filter((request) => {
     if (options.status !== "All" && request.status !== options.status) return false;
     if (options.priority !== "All" && request.priority !== options.priority) return false;
     if (options.clientId !== "All" && request.clientId !== options.clientId) return false;
+    if (options.category && options.category !== "All" && request.category !== options.category) return false;
     return true;
   });
 }

@@ -12,6 +12,7 @@ import {
   Receipt,
   Settings,
   LifeBuoy,
+  Sparkles,
 } from "lucide-react";
 import type { ClientIconName } from "@/data/clientNav";
 
@@ -28,4 +29,5 @@ export const clientIcons: Record<ClientIconName, LucideIcon> = {
   contracts: FileSignature,
   invoices: Receipt,
   settings: Settings,
+  plans: Sparkles,
 };

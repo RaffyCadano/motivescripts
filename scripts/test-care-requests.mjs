@@ -14,6 +14,7 @@ function request(overrides = {}) {
     message: "message",
     priority: "Medium",
     status: "New",
+    category: "quick_update",
     hasActiveCarePlan: true,
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
@@ -67,5 +68,24 @@ test("filters combine: status, priority, and client all narrow independently", (
   assert.deepEqual(
     filterCareRequests(requests, { status: "All", priority: "All", clientId: "All" }).map((r) => r.id),
     ["a", "b", "c", "d"],
+  );
+});
+
+test("category filters requests too, and is optional (omitting it doesn't narrow anything)", () => {
+  const requests = [
+    request({ id: "quick", category: "quick_update" }),
+    request({ id: "big", category: "new_addition" }),
+  ];
+  assert.deepEqual(
+    filterCareRequests(requests, { status: "All", priority: "All", clientId: "All", category: "new_addition" }).map((r) => r.id),
+    ["big"],
+  );
+  assert.deepEqual(
+    filterCareRequests(requests, { status: "All", priority: "All", clientId: "All" }).map((r) => r.id),
+    ["quick", "big"],
+  );
+  assert.deepEqual(
+    filterCareRequests(requests, { status: "All", priority: "All", clientId: "All", category: "All" }).map((r) => r.id),
+    ["quick", "big"],
   );
 });

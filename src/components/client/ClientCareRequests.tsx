@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
-import type { CareRequest } from "@/data/careRequests";
-import { CARE_REQUEST_STATUS_LABELS } from "@/data/careRequests";
+import type { CareRequest, CareRequestCategory } from "@/data/careRequests";
+import { CARE_REQUEST_CATEGORY_LABELS, CARE_REQUEST_STATUS_LABELS } from "@/data/careRequests";
 import { listCareRequests, submitCareRequest } from "@/data/careRequestsRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 
@@ -18,14 +18,24 @@ function formatRequestDate(iso: string): string {
 
 /**
  * Where a client asks for the small updates and support their Website Care plan covers, shown next
- * to "Choose a plan" once the site has launched. Not gated on actually having an active plan --
- * the server just remembers whether they did at the time they asked, for staff to see.
+ * to "Choose a plan" once the site has launched. Submitting requires an active plan -- the server
+ * enforces this (care_requests_before_insert); `hasActiveCarePlan` just decides whether this shows
+ * the form or a nudge toward "Choose a plan" above.
  */
-export function ClientCareRequests({ clientId, projectId }: { clientId: string; projectId: string }) {
+export function ClientCareRequests({
+  clientId,
+  projectId,
+  hasActiveCarePlan,
+}: {
+  clientId: string;
+  projectId: string;
+  hasActiveCarePlan: boolean;
+}) {
   const [requests, setRequests] = useState<CareRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [category, setCategory] = useState<CareRequestCategory>("quick_update");
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
@@ -52,8 +62,9 @@ export function ClientCareRequests({ clientId, projectId }: { clientId: string; 
     setSending(true);
     setSendError(null);
     try {
-      await submitCareRequest({ clientId, projectId, message });
+      await submitCareRequest({ clientId, projectId, message, category });
       setMessage("");
+      setCategory("quick_update");
       await reload();
     } catch (caught) {
       setSendError(caught instanceof AgencyDbError ? caught.message : "Unable to submit this request.");
@@ -69,31 +80,86 @@ export function ClientCareRequests({ clientId, projectId }: { clientId: string; 
         A small update, a content change, or something that needs fixing — tell us here and we'll take it from there.
       </p>
 
-      <form className="mt-4 space-y-3" onSubmit={onSubmit}>
-        <label className="block">
-          <span className="sr-only">What would you like us to do?</span>
-          <textarea
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            required
-            rows={3}
-            placeholder="e.g. Update the hours on the Contact page to close at 6pm on weekdays"
-            className="w-full rounded-lg border border-[var(--client-line)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-          />
-        </label>
-        {sendError ? (
-          <p role="alert" className="text-sm text-[#b45309]">
-            {sendError}
+      {hasActiveCarePlan ? (
+        <form className="mt-4 space-y-4" onSubmit={onSubmit}>
+          <fieldset>
+            <legend className="font-heading text-sm font-semibold text-[var(--client-ink)]">What kind of request is this?</legend>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <label className="flex flex-1 cursor-pointer items-start gap-2.5 rounded-lg border border-[var(--client-line)] p-3 has-[:checked]:border-[rgb(0_80_240_/_0.45)] has-[:checked]:bg-[rgb(0_80_240_/_0.04)]">
+                <input
+                  type="radio"
+                  name="care-request-category"
+                  value="quick_update"
+                  checked={category === "quick_update"}
+                  onChange={() => setCategory("quick_update")}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-[var(--client-ink)]">A quick update or fix</span>
+                  <span className="block text-[12px] text-[var(--client-muted)]">Covered by your Website Care plan.</span>
+                </span>
+              </label>
+              <label className="flex flex-1 cursor-pointer items-start gap-2.5 rounded-lg border border-[var(--client-line)] p-3 has-[:checked]:border-[rgb(0_80_240_/_0.45)] has-[:checked]:bg-[rgb(0_80_240_/_0.04)]">
+                <input
+                  type="radio"
+                  name="care-request-category"
+                  value="new_addition"
+                  checked={category === "new_addition"}
+                  onChange={() => setCategory("new_addition")}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-[var(--client-ink)]">Something new I'd like added</span>
+                  <span className="block text-[12px] text-[var(--client-muted)]">A new page, feature, or section.</span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          {category === "new_addition" ? (
+            <p className="rounded-lg border border-[rgb(217_119_6_/_0.4)] bg-[rgb(217_119_6_/_0.06)] px-3 py-2.5 text-[13px] leading-relaxed text-[#92610a]">
+              New additions are usually outside what the Care plan covers and may need a separate quote. Tell us what you
+              have in mind and we'll follow up either way.
+            </p>
+          ) : null}
+
+          <label className="block">
+            <span className="sr-only">What would you like us to do?</span>
+            <textarea
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              required
+              rows={3}
+              placeholder="e.g. Update the hours on the Contact page to close at 6pm on weekdays"
+              className="w-full rounded-lg border border-[var(--client-line)] bg-white px-3 py-2.5 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+            />
+          </label>
+          {sendError ? (
+            <p role="alert" className="text-sm text-[#b45309]">
+              {sendError}
+            </p>
+          ) : null}
+          <button
+            type="submit"
+            disabled={sending || !message.trim()}
+            className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)] disabled:opacity-60"
+          >
+            {sending ? "Sending…" : "Send request"}
+          </button>
+        </form>
+      ) : (
+        <div className="mt-4 rounded-lg border border-[var(--client-line)] bg-[var(--client-bg)] p-4">
+          <p className="text-sm text-[var(--client-ink)]">
+            Website Care requests are part of the Website Care plan. Choose it below to start sending requests.
           </p>
-        ) : null}
-        <button
-          type="submit"
-          disabled={sending || !message.trim()}
-          className="inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)] disabled:opacity-60"
-        >
-          {sending ? "Sending…" : "Send request"}
-        </button>
-      </form>
+          <a
+            href="#plans"
+            className="mt-3 inline-flex h-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)]"
+          >
+            Choose a plan
+          </a>
+        </div>
+      )}
 
       <div className="mt-6 border-t border-[var(--client-line)] pt-5">
         <h3 className="font-heading text-sm font-semibold text-[var(--client-ink)]">Your requests</h3>
@@ -115,7 +181,9 @@ export function ClientCareRequests({ clientId, projectId }: { clientId: string; 
                     {CARE_REQUEST_STATUS_LABELS[request.status]}
                   </span>
                 </div>
-                <p className="mt-1.5 text-[12px] text-[var(--client-muted)]">Sent {formatRequestDate(request.createdAt)}</p>
+                <p className="mt-1.5 text-[12px] text-[var(--client-muted)]">
+                  {CARE_REQUEST_CATEGORY_LABELS[request.category]} · Sent {formatRequestDate(request.createdAt)}
+                </p>
               </li>
             ))}
           </ul>

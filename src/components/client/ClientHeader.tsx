@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, ChevronDown, Globe, LogOut, Menu, PanelLeft, Settings } from "lucide-react";
+import { Bell, ChevronDown, Globe, LogOut, Menu, PanelLeft, Settings, Sparkles } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { ClientConfirmDialog } from "@/components/client/ClientConfirmDialog";
 import { NotificationPanel } from "@/components/messaging/NotificationPanel";
@@ -167,6 +167,16 @@ export function ClientHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenM
               role="menu"
               className="absolute right-0 z-50 mt-1.5 w-52 overflow-hidden rounded-xl border border-[var(--client-line)] bg-[var(--client-card)] py-1 shadow-[0_12px_32px_rgb(7_17_31_/_0.08)]"
             >
+              <Link
+                role="menuitem"
+                to="/client/plans"
+                className="flex items-center gap-2 px-3 py-2 text-[13px] font-semibold text-[var(--client-blue)] hover:bg-[rgb(0_80_240_/_0.06)]"
+                onClick={() => setMenuOpen(false)}
+              >
+                <Sparkles size={15} strokeWidth={1.75} aria-hidden="true" />
+                Plans &amp; Website Care
+              </Link>
+              <div className="my-1 border-t border-[var(--client-line)]" role="separator" />
               <Link
                 role="menuitem"
                 to="/"

@@ -1,4 +1,4 @@
-import type { CareRequest, CareRequestPriority, CareRequestStatus } from "@/data/careRequests";
+import type { CareRequest, CareRequestCategory, CareRequestPriority, CareRequestStatus } from "@/data/careRequests";
 import { AgencyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { CareRequestRow, Database } from "@/types/database";
@@ -25,6 +25,7 @@ function mapCareRequest(row: CareRequestRow): CareRequest {
     message: row.message,
     priority: row.priority,
     status: row.status,
+    category: row.category,
     hasActiveCarePlan: row.has_active_care_plan,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -43,17 +44,27 @@ export async function listCareRequests(filter?: { clientId?: string; projectId?:
   return (data ?? []).map((row) => mapCareRequest(row as CareRequestRow));
 }
 
-/** Client portal: ask for something on a launched project. Priority and status start at the server's
- * defaults (Medium, New) -- a client doesn't set either. */
-export async function submitCareRequest(input: { clientId: string; projectId: string; message: string }): Promise<void> {
+/** Client portal: ask for something on a launched project with an active Care plan (the server
+ * rejects it otherwise -- see care_requests_before_insert). Priority and status start at the
+ * server's defaults (Medium, New) -- a client doesn't set either. */
+export async function submitCareRequest(input: {
+  clientId: string;
+  projectId: string;
+  message: string;
+  category: CareRequestCategory;
+}): Promise<void> {
   const client = db();
   const { error } = await client.from("care_requests").insert({
     client_id: input.clientId,
     project_id: input.projectId,
     message: input.message.trim(),
+    category: input.category,
   });
   if (error) {
     const message = (error.message ?? "").toUpperCase();
+    if (message.includes("NO_ACTIVE_PLAN")) {
+      fail("submit care request", error, "This needs an active Website Care plan. Choose a plan above, then try again.");
+    }
     if (message.includes("NOT_LAUNCHED")) {
       fail("submit care request", error, "This is available once your website has launched.");
     }

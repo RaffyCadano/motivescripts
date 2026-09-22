@@ -10,7 +10,8 @@ export type ClientIconName =
   | "proposals"
   | "contracts"
   | "invoices"
-  | "settings";
+  | "settings"
+  | "plans";
 
 export type ClientNavItem = {
   label: string;
@@ -42,8 +43,18 @@ export const clientSettingsNav: ClientNavItem[] = [
   { label: "Settings", href: "/client/settings", icon: "settings" },
 ];
 
+/**
+ * Not rendered in the sidebar -- reached from the profile dropdown in the header instead (like an
+ * "Upgrade" link lives in account menus elsewhere), since it's about the account's billing
+ * relationship rather than the project work the main nav is organized around. Still registered here
+ * so the header can resolve its page title.
+ */
+export const clientAccountNav: ClientNavItem[] = [
+  { label: "Plans & Website Care", href: "/client/plans", icon: "plans" },
+];
+
 export function getClientPageMeta(pathname: string): ClientNavItem {
-  const items = [...clientMainNav, ...clientSettingsNav];
+  const items = [...clientMainNav, ...clientSettingsNav, ...clientAccountNav];
   const exact = items.find((item) => item.href === pathname);
   if (exact) return exact;
   const nested = items

@@ -390,8 +390,8 @@ async function createCheckout(
         client_id: plan.client_id,
       },
     },
-    success_url: `${origin}/client/settings?plan=success`,
-    cancel_url: `${origin}/client/settings?plan=cancelled`,
+    success_url: `${origin}/client/plans?plan=success`,
+    cancel_url: `${origin}/client/plans?plan=cancelled`,
   });
   if (!session.url) {
     console.error("manage-service-plan missing checkout url");

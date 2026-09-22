@@ -412,7 +412,7 @@ Deno.serve(async (req) => {
         expiresLabel: isPastDue
           ? "We'll retry the charge automatically, but updating your card sooner avoids any gap in service."
           : "Contact us if this wasn't expected or you'd like to restart the plan.",
-        url: `${origin}/client/settings`,
+        url: `${origin}/client/plans`,
         cta: isPastDue ? "Update payment info" : "View your plans",
         supportEmail,
       });
