@@ -27,6 +27,8 @@ export type AdminCancelOptions = {
   now: boolean;
   /** Undo a cancellation that is scheduled but has not happened yet. */
   undo: boolean;
+  /** Clear a plan still waiting on checkout -- nothing was ever charged, so this isn't a real cancellation. */
+  abandon: boolean;
 };
 
 /**
@@ -36,6 +38,7 @@ export type AdminCancelOptions = {
 export function adminCancelOptions(plan: Pick<ServicePlan, "status" | "cancelAt">): AdminCancelOptions {
   const running = plan.status === "active" || plan.status === "past_due";
   return {
+    abandon: plan.status === "pending",
     atPeriodEnd: plan.status === "active" && !plan.cancelAt,
     now: running,
     undo: plan.status === "active" && Boolean(plan.cancelAt),

@@ -42,13 +42,13 @@ test("the launch nudge shows only when the client has no open plan at all", () =
   assert.equal(hasNoOpenPlans([{ status: "active" }]), false);
 });
 
-test("canceling: an active plan ends at period end, a past-due one ends now, and there is nothing to cancel otherwise", () => {
+test("canceling: an active plan ends at period end, a past-due one ends now, a pending one is just abandoned, and there is nothing to cancel otherwise", () => {
   assert.equal(clientCancelMode({ status: "active", cancelAt: null }), "period_end");
   assert.equal(clientCancelMode({ status: "past_due", cancelAt: null }), "now");
   assert.equal(clientCancelMode({ status: "past_due", cancelAt: "2026-10-21T00:00:00Z" }), "now");
-  // already scheduled, still waiting on checkout, or already canceled: no cancel button
+  assert.equal(clientCancelMode({ status: "pending", cancelAt: null }), "abandon");
+  // already scheduled, or already canceled: no cancel button
   assert.equal(clientCancelMode({ status: "active", cancelAt: "2026-10-21T00:00:00Z" }), null);
-  assert.equal(clientCancelMode({ status: "pending", cancelAt: null }), null);
   assert.equal(clientCancelMode({ status: "canceled", cancelAt: null }), null);
 });
 
@@ -60,10 +60,10 @@ test("a scheduled end date only counts while the plan is still running", () => {
   assert.equal(scheduledEnd({ status: "pending", cancelAt: "2026-10-21T00:00:00Z" }), null);
 });
 
-test("admin cancel choices: active plans can end at period end or now, past-due only now, scheduled ones can be undone", () => {
-  assert.deepEqual(adminCancelOptions({ status: "active", cancelAt: null }), { atPeriodEnd: true, now: true, undo: false });
-  assert.deepEqual(adminCancelOptions({ status: "active", cancelAt: "2026-10-21T00:00:00Z" }), { atPeriodEnd: false, now: true, undo: true });
-  assert.deepEqual(adminCancelOptions({ status: "past_due", cancelAt: null }), { atPeriodEnd: false, now: true, undo: false });
-  assert.deepEqual(adminCancelOptions({ status: "pending", cancelAt: null }), { atPeriodEnd: false, now: false, undo: false });
-  assert.deepEqual(adminCancelOptions({ status: "canceled", cancelAt: "2026-10-21T00:00:00Z" }), { atPeriodEnd: false, now: false, undo: false });
+test("admin cancel choices: active plans can end at period end or now, past-due only now, scheduled ones can be undone, pending ones can only be cleared", () => {
+  assert.deepEqual(adminCancelOptions({ status: "active", cancelAt: null }), { abandon: false, atPeriodEnd: true, now: true, undo: false });
+  assert.deepEqual(adminCancelOptions({ status: "active", cancelAt: "2026-10-21T00:00:00Z" }), { abandon: false, atPeriodEnd: false, now: true, undo: true });
+  assert.deepEqual(adminCancelOptions({ status: "past_due", cancelAt: null }), { abandon: false, atPeriodEnd: false, now: true, undo: false });
+  assert.deepEqual(adminCancelOptions({ status: "pending", cancelAt: null }), { abandon: true, atPeriodEnd: false, now: false, undo: false });
+  assert.deepEqual(adminCancelOptions({ status: "canceled", cancelAt: "2026-10-21T00:00:00Z" }), { abandon: false, atPeriodEnd: false, now: false, undo: false });
 });

@@ -201,6 +201,7 @@ type OwnPlan = {
   label: string;
   status: string;
   stripe_subscription_id: string | null;
+  stripe_checkout_session_id: string | null;
   cancel_at: string | null;
 };
 
@@ -208,11 +209,42 @@ async function loadOwnPlan(admin: ServiceClient, clientId: string, planId: strin
   if (!isUuid(planId)) return null;
   const { data } = await admin
     .from("service_plans")
-    .select("id, client_id, project_id, label, status, stripe_subscription_id, cancel_at")
+    .select("id, client_id, project_id, label, status, stripe_subscription_id, stripe_checkout_session_id, cancel_at")
     .eq("id", planId)
     .eq("client_id", clientId)
     .maybeSingle();
   return (data as OwnPlan | null) ?? null;
+}
+
+/**
+ * A plan still waiting on checkout has no Stripe subscription -- there's nothing for Stripe to cancel, and no
+ * webhook is ever coming to mark it canceled, unlike a real subscription. Best-effort expires the checkout
+ * session too, so an old browser tab can't complete it later and reactivate a plan the client (or admin) just
+ * cleared; the `.eq("status", "pending")` guard avoids a race with that same webhook if it fires concurrently.
+ */
+async function abandonPendingPlan(
+  admin: ServiceClient,
+  stripe: Stripe,
+  plan: { id: string; stripe_checkout_session_id: string | null },
+  json: JsonFn,
+) {
+  if (plan.stripe_checkout_session_id) {
+    try {
+      await stripe.checkout.sessions.expire(plan.stripe_checkout_session_id);
+    } catch (caught) {
+      console.error("manage-service-plan expire pending session failed", caught instanceof Error ? caught.message : "");
+    }
+  }
+  const { error } = await admin
+    .from("service_plans")
+    .update({ status: "canceled", canceled_at: new Date().toISOString() })
+    .eq("id", plan.id)
+    .eq("status", "pending");
+  if (error) {
+    console.error("manage-service-plan clear pending plan failed", error.message);
+    return json({ ok: false, error: "server_error" }, 500);
+  }
+  return json({ ok: true, mode: "now", endsAt: null });
 }
 
 /**
@@ -234,7 +266,9 @@ async function scheduleEndAtPeriodEnd(admin: ServiceClient, stripe: Stripe, subs
 /**
  * A client canceling their own plan. An active plan is scheduled to end when the period they already paid for
  * runs out (they are not charged again and keep the service until then); a plan that is already past due has
- * nothing paid to run out, so it ends immediately. The plan's status is still only ever changed by the webhook.
+ * nothing paid to run out, so it ends immediately. For those two, the plan's status is still only ever changed
+ * by the webhook; a pending plan (never billed) is the one case this function changes it directly (see
+ * abandonPendingPlan) -- there's no webhook coming for a subscription that was never created.
  */
 async function clientCancel(
   admin: ServiceClient,
@@ -245,6 +279,7 @@ async function clientCancel(
 ) {
   const plan = await loadOwnPlan(admin, who.clientId, planId);
   if (!plan) return json({ ok: false, error: "not_found" });
+  if (plan.status === "pending") return await abandonPendingPlan(admin, stripe, plan, json);
   if ((plan.status !== "active" && plan.status !== "past_due") || !plan.stripe_subscription_id) {
     return json({ ok: false, error: "not_cancelable" });
   }
@@ -391,7 +426,10 @@ async function createCheckout(
       },
     },
     success_url: `${origin}/client/plans?plan=success`,
-    cancel_url: `${origin}/client/plans?plan=cancelled`,
+    // Carries the plan id back so the portal can quietly clear it if it's still pending -- otherwise a
+    // client who backs out of Stripe sees "Checkout was canceled" right above a plan that still says
+    // Pending, which reads as a contradiction.
+    cancel_url: `${origin}/client/plans?plan=cancelled&planId=${plan.id}`,
   });
   if (!session.url) {
     console.error("manage-service-plan missing checkout url");
@@ -419,10 +457,17 @@ async function createCheckout(
 async function cancelPlan(
   admin: ServiceClient,
   stripe: Stripe,
-  plan: { id: string; status: string; stripe_subscription_id: string | null; cancel_at: string | null },
+  plan: {
+    id: string;
+    status: string;
+    stripe_subscription_id: string | null;
+    stripe_checkout_session_id: string | null;
+    cancel_at: string | null;
+  },
   json: JsonFn,
   when: string,
 ) {
+  if (plan.status === "pending") return await abandonPendingPlan(admin, stripe, plan, json);
   if (plan.status !== "active" && plan.status !== "past_due") {
     return json({ ok: false, error: "not_cancelable" });
   }

@@ -30,13 +30,17 @@ export type ClientCancelMode =
   /** Ends when the period already paid for runs out; the client is not charged again. */
   | "period_end"
   /** Already behind on payment, so there is nothing paid to run out: ends right away. */
-  | "now";
+  | "now"
+  /** Never made it through Stripe checkout, so nothing was ever charged -- just clears it, not a real
+   * cancellation. */
+  | "abandon";
 
 /**
- * What canceling would do for this plan, or null when the client can't cancel it (already canceled, still
- * pending checkout, or a cancellation is already scheduled). The server makes the same decision.
+ * What canceling would do for this plan, or null when the client can't cancel it (already canceled, or a
+ * cancellation is already scheduled). The server makes the same decision.
  */
 export function clientCancelMode(plan: Pick<ServicePlan, "status" | "cancelAt">): ClientCancelMode | null {
+  if (plan.status === "pending") return "abandon";
   if (plan.status === "past_due") return "now";
   if (plan.status === "active" && !plan.cancelAt) return "period_end";
   return null;

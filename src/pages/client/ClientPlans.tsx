@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { ClientCareRequests } from "@/components/client/ClientCareRequests";
@@ -49,6 +49,7 @@ export function ClientPlans() {
   }
 
   async function onCancelPlan(plan: ServicePlan) {
+    const mode = clientCancelMode(plan);
     setConfirmCancelId(null);
     setPlanBusyId(plan.id);
     setPlanActionError(null);
@@ -56,9 +57,11 @@ export function ClientPlans() {
     try {
       const result = await cancelMyServicePlan(plan.id);
       setPlanNotice(
-        result.mode === "now"
-          ? `${plan.label} is being canceled. You won’t be charged again.`
-          : `${plan.label} will end on ${formatPlanDate(result.endsAt)}. You won’t be charged again, and it stays active until then.`,
+        mode === "abandon"
+          ? `${plan.label} has been cleared. Choose it again anytime below.`
+          : result.mode === "now"
+            ? `${plan.label} is being canceled. You won’t be charged again.`
+            : `${plan.label} will end on ${formatPlanDate(result.endsAt)}. You won’t be charged again, and it stays active until then.`,
       );
       refreshPlansSoon();
     } catch (caught) {
@@ -95,6 +98,25 @@ export function ClientPlans() {
     }, 3000);
     return () => window.clearInterval(timer);
   }, [planReturn, reloadPlans]);
+
+  // Backed out of Stripe checkout instead of finishing it: the "Checkout was canceled" message above
+  // would otherwise sit right next to that same plan still showing Pending, which reads as a
+  // contradiction. Quietly clear it -- only if it's genuinely still pending (checked here again, not
+  // just trusted from the URL, in case it was actually completed in another tab in the meantime).
+  // Tried once per visit only: reloading afterwards re-runs this effect (allPlans is a new array), and
+  // without the ref a failed attempt -- for any reason -- would retry forever instead of just leaving
+  // the plan as something the client can still clear by hand.
+  const abandonAttempted = useRef(false);
+  useEffect(() => {
+    const abandonedPlanId = searchParams.get("planId");
+    if (planReturn !== "cancelled" || !abandonedPlanId || plansLoading || abandonAttempted.current) return;
+    const stillPending = allPlans.some((plan) => plan.id === abandonedPlanId && plan.status === "pending");
+    if (!stillPending) return;
+    abandonAttempted.current = true;
+    void cancelMyServicePlan(abandonedPlanId)
+      .catch(() => {})
+      .then(() => reloadPlans());
+  }, [planReturn, searchParams, plansLoading, allPlans, reloadPlans]);
 
   // Arriving from the Overview nudge (/client/plans#plans): scroll once the section has rendered.
   useEffect(() => {
@@ -216,21 +238,25 @@ export function ClientPlans() {
                       onClick={() => setConfirmCancelId(plan.id)}
                       className="mt-3 font-heading text-[12px] font-semibold text-[var(--client-muted)] underline underline-offset-2 hover:text-[var(--client-ink)] disabled:opacity-60"
                     >
-                      {busy ? "Working…" : "Cancel plan"}
+                      {busy ? "Working…" : cancelMode === "abandon" ? "Never mind" : "Cancel plan"}
                     </button>
                   ) : null}
 
                   {cancelMode && confirmCancelId === plan.id ? (
                     <div
                       role="alertdialog"
-                      aria-label={`Confirm canceling ${plan.label}`}
+                      aria-label={cancelMode === "abandon" ? `Confirm clearing ${plan.label}` : `Confirm canceling ${plan.label}`}
                       className="mt-3 rounded-lg border border-[rgb(217_119_6_/_0.4)] bg-[rgb(217_119_6_/_0.06)] p-3"
                     >
-                      <p className="text-[13px] font-semibold text-[var(--client-ink)]">Cancel “{plan.label}”?</p>
+                      <p className="text-[13px] font-semibold text-[var(--client-ink)]">
+                        {cancelMode === "abandon" ? `Clear “${plan.label}”?` : `Cancel “${plan.label}”?`}
+                      </p>
                       <p className="mt-1 text-[12px] leading-relaxed text-[var(--client-muted)]">
-                        {cancelMode === "period_end"
-                          ? "You won’t be charged again. The plan stays active until the end of the period you’ve already paid for, and you can change your mind before then."
-                          : "Your last payment for this plan didn’t go through, so canceling ends it right away. You won’t be charged again."}
+                        {cancelMode === "abandon"
+                          ? "You haven’t been charged for this — it never made it through checkout. We’ll stop showing it as pending; choose it again anytime if you change your mind."
+                          : cancelMode === "period_end"
+                            ? "You won’t be charged again. The plan stays active until the end of the period you’ve already paid for, and you can change your mind before then."
+                            : "Your last payment for this plan didn’t go through, so canceling ends it right away. You won’t be charged again."}
                       </p>
                       <div className="mt-3 flex flex-wrap gap-2">
                         <button
@@ -239,14 +265,14 @@ export function ClientPlans() {
                           onClick={() => void onCancelPlan(plan)}
                           className="inline-flex h-9 items-center rounded-[var(--radius-md)] bg-[#b45309] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-60"
                         >
-                          Yes, cancel plan
+                          {cancelMode === "abandon" ? "Yes, clear it" : "Yes, cancel plan"}
                         </button>
                         <button
                           type="button"
                           onClick={() => setConfirmCancelId(null)}
                           className="inline-flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--client-line)] bg-white px-3 font-heading text-[12px] font-semibold text-[var(--client-ink)]"
                         >
-                          Keep plan
+                          {cancelMode === "abandon" ? "Keep it pending" : "Keep plan"}
                         </button>
                       </div>
                     </div>

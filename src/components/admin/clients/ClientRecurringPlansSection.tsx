@@ -372,55 +372,94 @@ export function ClientRecurringPlansSection({ client }: { client: AgencyClient }
                       Cancel plan
                     </button>
                   ) : null}
+                  {adminCancelOptions(plan).abandon ? (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="h-9 rounded-lg border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-muted)] hover:bg-[var(--admin-bg)] disabled:opacity-50"
+                      onClick={() => setConfirmCancelId(plan.id)}
+                    >
+                      Clear
+                    </button>
+                  ) : null}
                 </div>
                 {confirmCancelId === plan.id ? (
                   <div
                     role="alertdialog"
-                    aria-label={`Confirm canceling ${plan.label}`}
+                    aria-label={adminCancelOptions(plan).abandon ? `Confirm clearing ${plan.label}` : `Confirm canceling ${plan.label}`}
                     className="mt-3 rounded-lg border border-[rgb(217_119_6_/_0.4)] bg-[rgb(217_119_6_/_0.06)] p-3"
                   >
-                    <p className="text-[13px] font-semibold text-[var(--admin-ink)]">Cancel &ldquo;{plan.label}&rdquo;?</p>
-                    <ul className="mt-1.5 space-y-1 text-[12px] leading-relaxed text-[var(--admin-muted)]">
-                      {adminCancelOptions(plan).atPeriodEnd ? (
-                        <li>
-                          <span className="font-semibold text-[var(--admin-ink)]">End at period end (recommended):</span>{" "}
-                          the client keeps the service until the end of the period they&apos;ve already paid for and isn&apos;t
-                          charged again. You can undo it until then.
-                        </li>
-                      ) : null}
-                      <li>
-                        <span className="font-semibold text-[var(--admin-ink)]">Cancel now:</span> billing stops immediately
-                        in Stripe, the client is emailed, and this can&apos;t be undone. To start billing again you&apos;d
-                        create a new plan and send a new checkout link.
-                      </li>
-                    </ul>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {adminCancelOptions(plan).atPeriodEnd ? (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          className="h-9 rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
-                          onClick={() => void onCancel(plan.id, "period_end")}
-                        >
-                          End at period end
-                        </button>
-                      ) : null}
-                      <button
-                        type="button"
-                        disabled={busy}
-                        className="h-9 rounded-lg bg-[#b45309] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
-                        onClick={() => void onCancel(plan.id, "now")}
-                      >
-                        Cancel now
-                      </button>
-                      <button
-                        type="button"
-                        className="h-9 rounded-lg border border-[var(--admin-line)] bg-white px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-                        onClick={() => setConfirmCancelId(null)}
-                      >
-                        Keep plan
-                      </button>
-                    </div>
+                    {adminCancelOptions(plan).abandon ? (
+                      <>
+                        <p className="text-[13px] font-semibold text-[var(--admin-ink)]">Clear &ldquo;{plan.label}&rdquo;?</p>
+                        <p className="mt-1.5 text-[12px] leading-relaxed text-[var(--admin-muted)]">
+                          This plan never made it through checkout, so the client hasn&apos;t been charged. Clearing it just
+                          removes it from their pending list -- they (or you) can start a new one anytime.
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            disabled={busy}
+                            className="h-9 rounded-lg bg-[#b45309] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
+                            onClick={() => void onCancel(plan.id, "now")}
+                          >
+                            Yes, clear it
+                          </button>
+                          <button
+                            type="button"
+                            className="h-9 rounded-lg border border-[var(--admin-line)] bg-white px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                            onClick={() => setConfirmCancelId(null)}
+                          >
+                            Keep it pending
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-[13px] font-semibold text-[var(--admin-ink)]">Cancel &ldquo;{plan.label}&rdquo;?</p>
+                        <ul className="mt-1.5 space-y-1 text-[12px] leading-relaxed text-[var(--admin-muted)]">
+                          {adminCancelOptions(plan).atPeriodEnd ? (
+                            <li>
+                              <span className="font-semibold text-[var(--admin-ink)]">End at period end (recommended):</span>{" "}
+                              the client keeps the service until the end of the period they&apos;ve already paid for and
+                              isn&apos;t charged again. You can undo it until then.
+                            </li>
+                          ) : null}
+                          <li>
+                            <span className="font-semibold text-[var(--admin-ink)]">Cancel now:</span> billing stops
+                            immediately in Stripe, the client is emailed, and this can&apos;t be undone. To start billing
+                            again you&apos;d create a new plan and send a new checkout link.
+                          </li>
+                        </ul>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {adminCancelOptions(plan).atPeriodEnd ? (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              className="h-9 rounded-lg bg-[var(--admin-navy)] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
+                              onClick={() => void onCancel(plan.id, "period_end")}
+                            >
+                              End at period end
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            disabled={busy}
+                            className="h-9 rounded-lg bg-[#b45309] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
+                            onClick={() => void onCancel(plan.id, "now")}
+                          >
+                            Cancel now
+                          </button>
+                          <button
+                            type="button"
+                            className="h-9 rounded-lg border border-[var(--admin-line)] bg-white px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
+                            onClick={() => setConfirmCancelId(null)}
+                          >
+                            Keep plan
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ) : null}
                 {url ? (
