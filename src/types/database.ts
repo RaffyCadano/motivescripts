@@ -756,6 +756,23 @@ export type ServicePlanRow = {
   cancel_at: string | null;
 };
 
+export type CareRequestPriority = "Low" | "Medium" | "High" | "Urgent";
+export type CareRequestStatus = "New" | "In Progress" | "Done";
+
+export type CareRequestRow = {
+  id: string;
+  client_id: string;
+  project_id: string;
+  submitted_by: string | null;
+  message: string;
+  priority: CareRequestPriority;
+  status: CareRequestStatus;
+  has_active_care_plan: boolean;
+  created_at: string;
+  updated_at: string;
+  resolved_at: string | null;
+};
+
 export type InvoiceAdminNoteRow = {
   invoice_id: string;
   notes: string;
@@ -1010,6 +1027,10 @@ export type Database = {
       service_plans: Table<
         ServicePlanRow,
         Partial<ServicePlanRow> & { client_id: string; plan_type: ServicePlanType; label: string; amount_cents: number }
+      >;
+      care_requests: Table<
+        CareRequestRow,
+        Partial<CareRequestRow> & { client_id: string; project_id: string; message: string }
       >;
       stripe_checkout_sessions: Table<
         {

@@ -28,7 +28,8 @@ export type AdminIconName =
   | "deployments"
   | "overdue"
   | "reports"
-  | "testimonials";
+  | "testimonials"
+  | "careRequests";
 
 export type AdminNavItem = {
   label: string;
@@ -61,6 +62,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     label: "Delivery",
     items: [
       { label: "Projects", href: "/admin/projects", icon: "projects" },
+      { label: "Care requests", href: "/admin/care-requests", icon: "careRequests" },
       { label: "Files", href: "/admin/files", icon: "files" },
     ],
   },
@@ -132,6 +134,7 @@ export const pmNavGroups: AdminNavGroup[] = [
     label: "Delivery",
     items: [
       { label: "Capacity", href: "/admin/capacity", icon: "capacity" },
+      { label: "Care requests", href: "/admin/care-requests", icon: "careRequests" },
       { label: "Files", href: "/admin/files", icon: "files" },
     ],
   },
@@ -152,6 +155,7 @@ function resolveAdminNavPath(pathname: string): string {
   if (pathname === "/admin/messages" || pathname.startsWith("/admin/messages/")) return "/admin/messages";
   if (pathname === "/admin/my-tasks") return "/admin/my-tasks";
   if (pathname === "/admin/projects" || pathname.startsWith("/admin/projects/")) return "/admin/projects";
+  if (pathname === "/admin/care-requests") return "/admin/care-requests";
   if (pathname === "/admin/proposals" || pathname.startsWith("/admin/proposals/")) return "/admin/proposals";
   if (pathname === "/admin/contracts" || pathname.startsWith("/admin/contracts/")) return "/admin/contracts";
   if (pathname === "/admin/invoices" || pathname.startsWith("/admin/invoices/")) return "/admin/invoices";
@@ -182,6 +186,7 @@ const navPermission: Record<string, StaffPermissionCode | "admin" | null> = {
   "/admin/clients": "clients.view",
   "/admin/my-tasks": "projects.view",
   "/admin/projects": "projects.view",
+  "/admin/care-requests": "projects.view",
   "/admin/files": "files.view",
   "/admin/proposals": "proposals.view",
   "/admin/contracts": "contracts.view",

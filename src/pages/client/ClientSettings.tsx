@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useLeads, usePortalIdentity } from "@/components/admin/leads/LeadsProvider";
+import { useLeads, usePortalIdentity, usePortalSession } from "@/components/admin/leads/LeadsProvider";
+import { ClientCareRequests } from "@/components/client/ClientCareRequests";
 import { ClientPlanChooser } from "@/components/client/ClientPlanChooser";
 import { useClientPlanOffer } from "@/components/client/useClientPlanOffer";
 import { clientCancelMode, scheduledEnd } from "@/data/clientPlanOffer";
@@ -40,6 +41,7 @@ function loadPrefs(): DevicePrefs {
 
 export function ClientSettings() {
   const identity = usePortalIdentity();
+  const { client } = usePortalSession();
   const { notify } = useLeads();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [projectUpdates, setProjectUpdates] = useState(true);
@@ -306,6 +308,8 @@ export function ClientSettings() {
       {launched && project && projectId ? (
         <ClientPlanChooser projectId={projectId} projectName={project.name} plans={allPlans} />
       ) : null}
+
+      {launched && client && projectId ? <ClientCareRequests clientId={client.id} projectId={projectId} /> : null}
 
       <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
         <h2 className="font-heading text-lg font-semibold tracking-tight text-[var(--client-ink)]">Notifications</h2>

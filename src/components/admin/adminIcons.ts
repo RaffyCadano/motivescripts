@@ -12,6 +12,7 @@ import {
   FlaskConical,
   FolderKanban,
   Gauge,
+  HeartHandshake,
   Inbox,
   LayoutDashboard,
   MessageSquare,
@@ -56,4 +57,5 @@ export const adminIcons: Record<AdminIconName, LucideIcon> = {
   overdue: AlertTriangle,
   reports: TrendingUp,
   testimonials: Quote,
+  careRequests: HeartHandshake,
 };

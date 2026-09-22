@@ -30,6 +30,7 @@ const LeadsOutlet = lazy(() => import("@/components/admin/leads/LeadsOutlet").th
 const ClientLayout = lazy(() => import("@/components/client/ClientLayout").then((m) => ({ default: m.ClientLayout })));
 const AdminActivity = lazy(() => import("@/pages/admin/AdminActivity").then((m) => ({ default: m.AdminActivity })));
 const AdminCapacity = lazy(() => import("@/pages/admin/AdminCapacity").then((m) => ({ default: m.AdminCapacity })));
+const AdminCareRequests = lazy(() => import("@/pages/admin/AdminCareRequests").then((m) => ({ default: m.AdminCareRequests })));
 const AdminPayroll = lazy(() => import("@/pages/admin/AdminPayroll").then((m) => ({ default: m.AdminPayroll })));
 const AdminClientDetails = lazy(() => import("@/pages/admin/AdminClientDetails").then((m) => ({ default: m.AdminClientDetails })));
 const AdminClientNew = lazy(() => import("@/pages/admin/AdminClientNew").then((m) => ({ default: m.AdminClientNew })));
@@ -141,6 +142,7 @@ export default function App() {
                 <Route path="projects/:id/edit" element={<AdminProjectEdit />} />
                 <Route path="projects/:id" element={<AdminProjectDetails />} />
                 <Route path="capacity" element={<AdminCapacity />} />
+                <Route path="care-requests" element={<AdminCareRequests />} />
                 <Route path="files" element={<AdminFiles />} />
                 <Route path="messages" element={<AdminMessages />} />
                 <Route path="messages/:conversationId" element={<AdminMessages />} />
