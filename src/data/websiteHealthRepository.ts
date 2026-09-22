@@ -33,7 +33,7 @@ function mapCheck(row: WebsiteHealthCheckRow): WebsiteHealthCheck {
   };
 }
 
-const HISTORY_LIMIT = 12;
+export const WEBSITE_HEALTH_HISTORY_LIMIT = 12;
 
 /** Most recent checks first for one environment. Empty array means no check has ever completed. */
 export async function fetchWebsiteHealthHistory(
@@ -47,7 +47,7 @@ export async function fetchWebsiteHealthHistory(
     .eq("project_id", projectId)
     .eq("environment", environment)
     .order("checked_at", { ascending: false })
-    .limit(HISTORY_LIMIT);
+    .limit(WEBSITE_HEALTH_HISTORY_LIMIT);
   if (error) fail("load website health", error, "Unable to load website health.");
   return (data ?? []).map(mapCheck);
 }

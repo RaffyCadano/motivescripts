@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { adminGhostBtn } from "@/components/admin/adminActionStyles";
 import { ResponseTimeChart } from "@/components/admin/monitoring/ResponseTimeChart";
 import { UptimeTimeline } from "@/components/admin/monitoring/UptimeTimeline";
@@ -13,7 +13,12 @@ import {
   type WebsiteHealthEnvironment,
   type WebsiteHealthState,
 } from "@/data/websiteHealth";
-import { checkWebsiteHealthNow, fetchWebsiteHealthHistory, fetchWebsiteHealthTimeline } from "@/data/websiteHealthRepository";
+import {
+  checkWebsiteHealthNow,
+  fetchWebsiteHealthHistory,
+  fetchWebsiteHealthTimeline,
+  WEBSITE_HEALTH_HISTORY_LIMIT,
+} from "@/data/websiteHealthRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { displayHttpHost, safeHttpHref } from "@/lib/safeUrl";
 import { cn } from "@/lib/cn";
@@ -116,9 +121,26 @@ export function WebsiteHealthCard({
   const [checking, setChecking] = useState(false);
   const [checkError, setCheckError] = useState<string | null>(null);
 
+  // Tracks the current environment for handleCheckNow's async resolution below -- the check
+  // request itself is fired for whatever environment was active at click-time (correct: that's
+  // the tab the user clicked "Check Now" on), but if the user switches the Production/Staging
+  // toggle before it resolves, the `checks` state has by then already reloaded for the NEW
+  // environment, and applying the OLD environment's result to it would mix the two together.
+  const environmentRef = useRef(environment);
+  useEffect(() => {
+    environmentRef.current = environment;
+  }, [environment]);
+
   const [rangeHours, setRangeHours] = useState<number>(rangeOptions[0].hours);
   const [timeline, setTimeline] = useState<WebsiteHealthCheck[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(true);
+  // Bumped after a successful Check Now instead of calling the timeline loader directly from that
+  // async handler -- calling it directly would close over whatever environment/rangeHours were
+  // active when Check Now was clicked, and could overwrite the timeline with stale-selection data
+  // if the user switched environment/range while the request was still in flight. Routing through
+  // this counter keeps the reactive effect (and its current closure + cancelled-flag guard) as the
+  // single source of truth for what gets fetched and applied.
+  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -144,11 +166,11 @@ export function WebsiteHealthCard({
     };
   }, [projectId, environment, activeHref]);
 
-  function reloadTimeline() {
+  useEffect(() => {
     if (!activeHref) {
       setTimeline([]);
       setTimelineLoading(false);
-      return () => {};
+      return;
     }
     let cancelled = false;
     setTimelineLoading(true);
@@ -165,21 +187,18 @@ export function WebsiteHealthCard({
     return () => {
       cancelled = true;
     };
-  }
-
-  useEffect(() => {
-    const cancel = reloadTimeline();
-    return cancel;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId, environment, activeHref, rangeHours]);
+  }, [projectId, environment, activeHref, rangeHours, refreshTick]);
 
   async function handleCheckNow() {
+    const checkedEnvironment = environment;
     setChecking(true);
     setCheckError(null);
     try {
-      const result = await checkWebsiteHealthNow(projectId, environment);
-      setChecks((prev) => [result, ...prev].slice(0, 8));
-      reloadTimeline();
+      const result = await checkWebsiteHealthNow(projectId, checkedEnvironment);
+      if (environmentRef.current === checkedEnvironment) {
+        setChecks((prev) => [result, ...prev].slice(0, WEBSITE_HEALTH_HISTORY_LIMIT));
+        setRefreshTick((tick) => tick + 1);
+      }
     } catch (error) {
       setCheckError(error instanceof AgencyDbError ? error.message : "Unable to check the website right now.");
     } finally {
