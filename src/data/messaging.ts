@@ -1,5 +1,6 @@
 import { formatLeadDate, formatLeadTimestamp } from "@/data/leads";
 import type {
+  ConversationAiStatus,
   ConversationRow,
   ConversationStatus,
   MessageRow,
@@ -29,12 +30,14 @@ export type ConversationSummary = {
   clientName: string;
   contactName: string;
   projectName: string | null;
+  aiStatus: ConversationAiStatus;
+  aiHandoffSummary: string | null;
 };
 
 export type ConversationMessage = {
   id: string;
   conversationId: string;
-  senderUserId: string;
+  senderUserId: string | null;
   senderRole: MessageSenderRole;
   senderLabel: string;
   body: string;
@@ -77,6 +80,8 @@ export function mapConversationRow(
     clientName: names.clientName ?? "",
     contactName: names.contactName ?? "",
     projectName: names.projectName ?? null,
+    aiStatus: row.ai_status,
+    aiHandoffSummary: row.ai_handoff_summary,
   };
 }
 
@@ -85,7 +90,7 @@ export function mapMessageRow(row: MessageRow): ConversationMessage {
     id: row.id,
     conversationId: row.conversation_id,
     senderUserId: row.sender_user_id,
-    senderRole: row.sender_role === "admin" ? "admin" : "client",
+    senderRole: row.sender_role === "admin" ? "admin" : row.sender_role === "ai" ? "ai" : "client",
     senderLabel: row.sender_label,
     body: row.body,
     createdAt: row.created_at,
@@ -262,6 +267,7 @@ export function defaultConversationSubject(input: { clientName?: string; project
 }
 
 export function displaySenderLabel(message: ConversationMessage, currentUserId: string, tone: MessagingTone): string {
+  if (message.senderRole === "ai") return message.senderLabel || "MotiveScripts Assistant";
   if (message.senderUserId === currentUserId) return tone === "client" ? "You" : message.senderLabel || "You";
   if (tone === "client" && message.senderRole === "admin") return "MotiveScripts";
   return message.senderLabel || (message.senderRole === "admin" ? "MotiveScripts" : "Client");

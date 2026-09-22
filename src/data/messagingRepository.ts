@@ -70,7 +70,11 @@ export async function fetchConversationById(
     .select("id")
     .eq("conversation_id", conversationId)
     .is("read_at", null)
-    .neq("sender_user_id", userId);
+    // Plain .neq("sender_user_id", userId) compiles to SQL "<>", which silently drops rows where
+    // sender_user_id is null (an AI-authored message) -- SQL NULL <> x is NULL, not true. This
+    // explicit OR keeps those counted as unread, same as mark_conversation_read's "IS DISTINCT
+    // FROM" already does server-side.
+    .or(`sender_user_id.neq.${userId},sender_user_id.is.null`);
   throwIf(unreadError, "load conversation", "Unable to load this conversation.");
   return mapConversationRow(data, unread?.length ?? 0, namesFor(data, lookup));
 }
@@ -83,7 +87,14 @@ export async function fetchConversations(userId: string, lookup: NameLookup): Pr
       .select("*")
       .order("last_message_at", { ascending: false })
       .limit(CONVERSATION_LIST_LIMIT),
-    client.from("messages").select("conversation_id").is("read_at", null).neq("sender_user_id", userId).limit(4000),
+    client
+      .from("messages")
+      .select("conversation_id")
+      .is("read_at", null)
+      // See the matching comment in fetchConversationById: plain .neq() would silently exclude
+      // AI-authored messages (sender_user_id null) from everyone's unread count.
+      .or(`sender_user_id.neq.${userId},sender_user_id.is.null`)
+      .limit(4000),
   ]);
   throwIf(convRes.error, "load conversations", "Unable to load messages.");
   throwIf(unreadRes.error, "load unread messages", "Unable to load messages.");

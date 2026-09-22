@@ -105,6 +105,33 @@ Added by `supabase/migrations/20260901210000_production_project_messaging.sql`, 
 
 `staff_may_conversation(conversation_id, perm)` is the single helper both the RLS policies and the `send_message` / `mark_conversation_read` RPCs check — so this isn't just a read restriction, a production communicator can't write into a thread on a project they aren't assigned to either.
 
+## AI intake
+
+Added by `20261019000000_ai_conversation_intake.sql`. When a client starts (or continues) a conversation, an AI assistant ("MotiveScripts Assistant") talks with them first -- asking short clarifying questions -- before a human is paged. It never answers support questions, quotes prices, or makes commitments; it only gathers context.
+
+`conversations.ai_status`:
+
+| Value | Meaning |
+| --- | --- |
+| `active` | The AI is engaging. No `new_message` notification or email has fired yet. |
+| `handed_off` | The AI decided a human should take over (explicit tool call), hit its turn cap, or the model call failed. The normal `new_message` notification/email fired at that moment, referencing the client message that triggered handoff. `ai_handoff_summary` holds the AI's one-to-two-sentence summary (null if the handoff was forced rather than chosen). |
+| `disabled` | A human (admin/staff) already replied, the conversation was staff-initiated, or it predates this feature. The AI never participates. |
+
+New conversations default to `active`; conversations that existed before this migration were backfilled to `disabled` so nothing changed for them retroactively.
+
+Flow, driven entirely from `messages_notify_recipients` (the same trigger that already fires `new_message` notifications):
+
+- Client message, `ai_status = active` → `dispatch_ai_conversation_reply` fires a pg_net call to the `ai-conversation-reply` Edge Function (fire-and-forget, service role, same pattern as `run_scheduled_website_health_checks`). No notification/email yet.
+- Client message, any other `ai_status` → the normal immediate `notify_admins` + `notify_new_message_email`, unchanged from before this feature.
+- Admin/staff message on an `active` thread → `ai_status` flips to `disabled` immediately (a human is in the thread now, even if the AI hadn't handed off).
+- A message with `sender_role = 'ai'` never notifies and never re-dispatches (would loop into itself); only `conversations_ai_handoff`, called explicitly by the Edge Function, changes `ai_status` from `active`.
+
+`ai-conversation-reply` (service-role only, same auth pattern as `check-website-health`'s sweep mode): loads the conversation's history, calls Claude (`claude-opus-5` by default, same `ANTHROPIC_API_KEY`/`ANTHROPIC_MODEL` secrets as `motivescripts-ai`) with a `hand_off_to_team` tool the model calls once it has enough context (or immediately if the client asks for a person or seems urgent), posts the reply as a `sender_role = 'ai'` message (`sender_user_id` null -- the assistant has no `auth.users` row), and calls `conversations_ai_handoff` if the tool was called or the turn cap is reached. Capped at **4 AI turns per conversation** (`MAX_AI_TURNS`, enforced both in the Edge Function and as a SQL-level backstop in `dispatch_ai_conversation_reply` in case the Edge Function never gets to hand off) -- the 4th turn is always a wrap-up message and always hands off, tool call or not. Any model-call error also posts a short fallback message and hands off immediately, so a client is never left waiting on a broken AI.
+
+`messages.sender_role` is now `admin` | `client` | `ai`; `sender_user_id` is nullable (null only for `ai`). The unread-count queries in `messagingRepository.ts` explicitly `OR` in `sender_user_id.is.null` -- a plain PostgREST `.neq()` compiles to SQL `<>`, which silently excludes null rows (`NULL <> x` is `NULL`, not `true`), so a plain `.neq("sender_user_id", userId)` would never count an AI message as unread.
+
+Known limitations: no per-client or global rate limit beyond the 4-turn-per-conversation cap (acceptable since callers are authenticated real accounts, not anonymous traffic); a client sending two messages in quick succession can dispatch two concurrent Edge Function invocations for the same conversation (each checks `ai_status` at its own start, so this is at worst two AI replies instead of one, never a duplicate notification -- `conversations_ai_handoff` is idempotent via `where ai_status = 'active'`).
+
 ## Notification triggers
 
 **New message** (after INSERT on `messages`, via `notify_admins` → `notify_agency`):

@@ -124,6 +124,12 @@ export function ConversationThread({
   ]
     .filter(Boolean)
     .join(" · ");
+  const aiActive = conversation.aiStatus === "active";
+  // Admin-only, and only until a human actually replies -- once someone has, the live thread
+  // below already says everything the summary could, so it'd just be stale clutter after that.
+  const noAdminReplyYet = !messages.some((message) => message.senderRole === "admin");
+  const showAiSummary =
+    tone === "admin" && conversation.aiStatus === "handed_off" && Boolean(conversation.aiHandoffSummary) && noAdminReplyYet;
 
   return (
     <section className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -141,6 +147,13 @@ export function ConversationThread({
           </Link>
           <p className={cn("truncate font-heading text-sm font-semibold", styles.ink)}>{title}</p>
           <p className={cn("truncate text-[12px]", styles.muted)}>{subtitle}</p>
+          {aiActive ? (
+            <p className={cn("mt-1 truncate text-[11px] font-medium", tone === "admin" ? "text-[var(--admin-blue)]" : "text-[var(--client-blue)]")}>
+              {tone === "admin"
+                ? "MotiveScripts Assistant is gathering details before this reaches your team"
+                : "You're chatting with the MotiveScripts Assistant -- a teammate will join shortly"}
+            </p>
+          ) : null}
         </div>
         {onCloseConversation && conversation.status === "open" ? (
           <button
@@ -181,6 +194,12 @@ export function ConversationThread({
           <p className={cn("py-8 text-sm", styles.muted)}>{error}</p>
         ) : (
           <>
+            {showAiSummary ? (
+              <div className={cn("mb-4 rounded-lg border px-3 py-2.5 text-[12px]", styles.line, styles.bg)}>
+                <p className={cn("font-heading font-semibold", styles.ink)}>AI summary</p>
+                <p className={cn("mt-0.5", styles.muted)}>{conversation.aiHandoffSummary}</p>
+              </div>
+            ) : null}
             {hasOlder ? (
               <div className="mb-4 text-center">
                 <button
@@ -199,16 +218,31 @@ export function ConversationThread({
               <ul className="flex flex-col gap-3">
                 {messages.map((message) => {
                   const mine = message.senderUserId === currentUserId;
+                  const isAi = message.senderRole === "ai";
                   return (
                     <li key={message.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
                       <div
                         className={cn(
                           "max-w-[min(28rem,90%)] rounded-2xl px-4 py-3",
-                          mine ? cn(styles.navy, "text-white") : cn(styles.bg, styles.ink),
+                          mine
+                            ? cn(styles.navy, "text-white")
+                            : isAi
+                              ? cn("border border-dashed", styles.line, styles.bg, styles.ink)
+                              : cn(styles.bg, styles.ink),
                         )}
                       >
-                        <p className={cn("text-xs font-medium", mine ? "text-white/70" : styles.muted)}>
+                        <p className={cn("flex items-center gap-1.5 text-xs font-medium", mine ? "text-white/70" : styles.muted)}>
                           {displaySenderLabel(message, currentUserId, tone)}
+                          {isAi ? (
+                            <span
+                              className={cn(
+                                "rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                                tone === "admin" ? "bg-[var(--admin-blue)]/10 text-[var(--admin-blue)]" : "bg-[var(--client-blue)]/10 text-[var(--client-blue)]",
+                              )}
+                            >
+                              AI
+                            </span>
+                          ) : null}
                         </p>
                         <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed">{message.body}</p>
                         <p className={cn("mt-1.5 text-xs", mine ? "text-white/55" : styles.muted)}>

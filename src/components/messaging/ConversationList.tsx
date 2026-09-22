@@ -127,6 +127,16 @@ export function ConversationList({
                       {item.status === "closed" ? (
                         <span className={cn("mt-1 block text-xs", styles.muted)}>Closed</span>
                       ) : null}
+                      {tone === "admin" && item.aiStatus === "active" ? (
+                        <span
+                          className={cn(
+                            "mt-1 inline-flex items-center gap-1 text-[11px] font-medium",
+                            "text-[var(--admin-blue)]",
+                          )}
+                        >
+                          AI is gathering details
+                        </span>
+                      ) : null}
                     </span>
                   </Link>
                 </li>

@@ -7,6 +7,9 @@ verify_jwt = false
 [functions.document-email]
 verify_jwt = false
 
+[functions.ai-conversation-reply]
+verify_jwt = false
+
 [functions.create-checkout-session]
 verify_jwt = false
 

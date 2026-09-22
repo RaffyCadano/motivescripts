@@ -359,6 +359,8 @@ export type ActivityRow = {
 
 export type ConversationStatus = "open" | "closed";
 
+export type ConversationAiStatus = "active" | "handed_off" | "disabled";
+
 export type ConversationRow = {
   id: string;
   client_id: string;
@@ -370,14 +372,16 @@ export type ConversationRow = {
   last_message_at: string;
   created_at: string;
   updated_at: string;
+  ai_status: ConversationAiStatus;
+  ai_handoff_summary: string | null;
 };
 
-export type MessageSenderRole = "admin" | "client";
+export type MessageSenderRole = "admin" | "client" | "ai";
 
 export type MessageRow = {
   id: string;
   conversation_id: string;
-  sender_user_id: string;
+  sender_user_id: string | null;
   sender_role: MessageSenderRole;
   sender_label: string;
   body: string;
