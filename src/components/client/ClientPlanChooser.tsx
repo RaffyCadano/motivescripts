@@ -80,66 +80,57 @@ export function ClientPlanChooser({
         </p>
       ) : null}
 
-      {careTiers.length > 0 ? (
-        <div className="mt-5">
-          <h3 className="font-heading text-base font-semibold text-[var(--client-ink)]">Website Care</h3>
-          <p className="mt-1 text-[13px] text-[var(--client-muted)]">{fallbackCareService.description}</p>
-          <ul className="mt-3 grid gap-3 md:grid-cols-3">
-            {careTiers.map((tier) => {
-              const key = `care:${tier.id}`;
-              const busy = busyKey === key;
-              return (
-                <li key={tier.id} className="flex flex-col rounded-[var(--client-radius)] border border-[var(--client-line)] p-4">
-                  <h4 className="font-heading text-base font-semibold text-[var(--client-ink)]">{tier.name}</h4>
-                  {tier.description ? (
-                    <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[var(--client-muted)]">{tier.description}</p>
-                  ) : (
-                    <div className="flex-1" />
-                  )}
-                  {tier.includedServices.length > 0 ? (
-                    <ul className="mt-3 space-y-1">
-                      {tier.includedServices.map((item) => (
-                        <li key={item} className="text-[12px] text-[var(--client-muted)]">
-                          • {item}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  <p className="mt-4 font-heading text-2xl font-semibold tracking-tight text-[var(--client-ink)]">
-                    {formatUsdWhole(tier.monthlyPriceCents)}
-                    <span className="text-sm font-medium text-[var(--client-muted)]">/month</span>
-                  </p>
-                  {careState.kind === "subscribed" ? (
-                    <p
-                      className={`mt-3 text-[13px] font-semibold ${careState.status === "past_due" ? "text-[#b45309]" : "text-[#0f7a56]"}`}
-                    >
-                      {careState.status === "past_due" ? "Active — payment needs attention" : "You have a Care plan"}
-                    </p>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={busyKey !== null}
-                      onClick={() =>
-                        void go(
-                          key,
-                          careState.kind === "pending"
-                            ? { planId: careState.planId }
-                            : { planType: "care", projectId, templateId: tier.id },
-                        )
-                      }
-                      className="mt-3 inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)] disabled:opacity-60"
-                    >
-                      {busy ? "Opening checkout…" : careState.kind === "pending" ? "Continue to checkout" : "Choose this tier"}
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      ) : null}
-
       <ul className="mt-5 grid gap-3 md:grid-cols-3">
+        {careTiers.map((tier) => {
+          const key = `care:${tier.id}`;
+          const busy = busyKey === key;
+          return (
+            <li key={tier.id} className="flex flex-col rounded-[var(--client-radius)] border border-[var(--client-line)] p-4">
+              <h3 className="font-heading text-base font-semibold text-[var(--client-ink)]">Website Care — {tier.name}</h3>
+              {tier.description ? (
+                <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-[var(--client-muted)]">{tier.description}</p>
+              ) : (
+                <div className="flex-1" />
+              )}
+              {tier.includedServices.length > 0 ? (
+                <ul className="mt-3 space-y-1">
+                  {tier.includedServices.map((item) => (
+                    <li key={item} className="text-[12px] text-[var(--client-muted)]">
+                      • {item}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <p className="mt-4 font-heading text-2xl font-semibold tracking-tight text-[var(--client-ink)]">
+                {formatUsdWhole(tier.monthlyPriceCents)}
+                <span className="text-sm font-medium text-[var(--client-muted)]">/month</span>
+              </p>
+              {careState.kind === "subscribed" ? (
+                <p
+                  className={`mt-3 text-[13px] font-semibold ${careState.status === "past_due" ? "text-[#b45309]" : "text-[#0f7a56]"}`}
+                >
+                  {careState.status === "past_due" ? "Active — payment needs attention" : "You have a Care plan"}
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busyKey !== null}
+                  onClick={() =>
+                    void go(
+                      key,
+                      careState.kind === "pending"
+                        ? { planId: careState.planId }
+                        : { planType: "care", projectId, templateId: tier.id },
+                    )
+                  }
+                  className="mt-3 inline-flex h-10 items-center justify-center rounded-[var(--radius-md)] bg-[var(--client-blue)] px-4 font-heading text-sm font-semibold text-white hover:bg-[var(--client-bright)] disabled:opacity-60"
+                >
+                  {busy ? "Opening checkout…" : careState.kind === "pending" ? "Continue to checkout" : "Choose this tier"}
+                </button>
+              )}
+            </li>
+          );
+        })}
         {([...(careTiers.length > 0 ? [] : [fallbackCareService]), ...hostingAndSeoServices] as (typeof ongoingServices)[number][]).map((service) => {
           const state = planOfferState(service.planType, projectId, plans);
           const busy = busyKey === service.planType;

@@ -193,49 +193,42 @@ export function PricingPage() {
                 are never added automatically.
               </p>
               {careTiers.length > 0 ? (
-                <>
-                  <h3 className="mt-10 text-lg font-bold">Website Care</h3>
-                  <p className="mt-2 max-w-2xl text-sm text-muted">{fallbackCareService.description}</p>
-                  <ul className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {careTiers.map((tier) => (
-                      <li key={tier.id} className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7">
-                        <h4 className="text-xl font-bold">{tier.name}</h4>
-                        {tier.description ? <p className="mt-3 flex-1 text-sm text-muted">{tier.description}</p> : <div className="flex-1" />}
-                        {tier.includedServices.length > 0 ? (
-                          <ul className="mt-4 space-y-2 border-t border-[var(--color-line)] pt-4">
-                            {tier.includedServices.map((item) => (
-                              <li key={item} className="flex items-start gap-2 text-sm text-muted-strong">
-                                <span className="mt-2 size-1 shrink-0 rounded-full bg-cyan" aria-hidden="true" />
-                                {item}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : null}
-                        <TierPrice
-                          className="mt-6"
-                          lead="Starting at"
-                          price={`${formatUsdWhole(tier.monthlyPriceCents)}/mo`}
-                          note="Billed monthly. Choose it yourself from your client portal once your website has launched."
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                  <h3 className="mt-10 text-lg font-bold">More ongoing services</h3>
-                  <ul className="mt-5 grid gap-6 sm:grid-cols-2">
-                    {hostingAndSeoServices.map((service) => (
-                      <li key={service.id} className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7">
-                        <h4 className="text-xl font-bold">{service.name}</h4>
-                        <p className="mt-3 flex-1 text-sm text-muted">{service.description}</p>
-                        <TierPrice
-                          className="mt-6"
-                          lead="Starting at"
-                          price={`${service.price}/mo`}
-                          note="Billed monthly. Choose it yourself from your client portal once your website has launched."
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </>
+                <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {careTiers.map((tier) => (
+                    <li key={tier.id} className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7">
+                      <h3 className="text-xl font-bold">Website Care — {tier.name}</h3>
+                      {tier.description ? <p className="mt-3 flex-1 text-sm text-muted">{tier.description}</p> : <div className="flex-1" />}
+                      {tier.includedServices.length > 0 ? (
+                        <ul className="mt-4 space-y-2 border-t border-[var(--color-line)] pt-4">
+                          {tier.includedServices.map((item) => (
+                            <li key={item} className="flex items-start gap-2 text-sm text-muted-strong">
+                              <span className="mt-2 size-1 shrink-0 rounded-full bg-cyan" aria-hidden="true" />
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                      <TierPrice
+                        className="mt-6"
+                        lead="Starting at"
+                        price={`${formatUsdWhole(tier.monthlyPriceCents)}/mo`}
+                        note="Billed monthly. Choose it yourself from your client portal once your website has launched."
+                      />
+                    </li>
+                  ))}
+                  {hostingAndSeoServices.map((service) => (
+                    <li key={service.id} className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7">
+                      <h3 className="text-xl font-bold">{service.name}</h3>
+                      <p className="mt-3 flex-1 text-sm text-muted">{service.description}</p>
+                      <TierPrice
+                        className="mt-6"
+                        lead="Starting at"
+                        price={`${service.price}/mo`}
+                        note="Billed monthly. Choose it yourself from your client portal once your website has launched."
+                      />
+                    </li>
+                  ))}
+                </ul>
               ) : (
                 <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {[fallbackCareService, ...hostingAndSeoServices].map((service, index, all) => (
