@@ -1,4 +1,4 @@
-import { useMemo, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { WebsiteHealthCheck } from "@/data/websiteHealth";
 
 const WIDTH = 960;
@@ -40,6 +40,14 @@ function formatTimeTick(iso: string, spansMultipleDays: boolean): string {
  */
 export function ResponseTimeChart({ checks }: { checks: WebsiteHealthCheck[] }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
+  // A stale hoverIndex can otherwise stay in bounds for a *new* dataset (project switched, or the
+  // time range changed) and silently show a tooltip/crosshair for whatever point now sits at that
+  // same array index -- a value that has nothing to do with where the pointer actually is, frozen
+  // there until the next mouse move.
+  useEffect(() => {
+    setHoverIndex(null);
+  }, [checks]);
 
   const { points, segments, yMax, spansMultipleDays } = useMemo(() => {
     const withTime = checks

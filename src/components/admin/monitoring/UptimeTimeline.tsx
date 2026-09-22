@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { WebsiteHealthCheck } from "@/data/websiteHealth";
 
 type BucketStatus = "healthy" | "degraded" | "down" | "unknown";
@@ -47,6 +47,13 @@ const BUCKET_COUNT = 48;
  */
 export function UptimeTimeline({ checks, hoursBack }: { checks: WebsiteHealthCheck[]; hoursBack: number }) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+
+  // Bucket count is fixed, so a stale hoverIndex can't go out of bounds here -- but without this,
+  // switching the time range or the selected project without moving the mouse would keep showing
+  // the old bucket's tooltip at the same screen position, now describing a different time slice.
+  useEffect(() => {
+    setHoverIndex(null);
+  }, [checks, hoursBack]);
 
   const buckets = useMemo<Bucket[]>(() => {
     const now = Date.now();

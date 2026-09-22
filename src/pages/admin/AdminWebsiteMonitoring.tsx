@@ -89,8 +89,15 @@ export function AdminWebsiteMonitoring() {
   );
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Also re-selects if the previously selected project drops out of rows entirely (un-launched,
+  // archived, deleted) -- otherwise selectedId stays pinned to a project that's no longer there,
+  // the guard below never re-fires (it only looks for "no selection yet"), and the page gets stuck
+  // showing "Select a project" forever even though other launched projects still exist.
   useEffect(() => {
-    if (!selectedId && rows.length > 0) setSelectedId(rows[0].projectId);
+    if (rows.length === 0) return;
+    if (!selectedId || !rows.some((row) => row.projectId === selectedId)) {
+      setSelectedId(rows[0].projectId);
+    }
   }, [rows, selectedId]);
   const selected = rows.find((row) => row.projectId === selectedId) ?? null;
 
