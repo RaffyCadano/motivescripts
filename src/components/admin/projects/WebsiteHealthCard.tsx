@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { adminGhostBtn } from "@/components/admin/adminActionStyles";
+import { Sparkline } from "@/components/admin/list/Sparkline";
 import {
   currentHealthState,
   formatCheckIssue,
@@ -153,6 +154,12 @@ export function WebsiteHealthCard({
   }, [loading, loadError, environment, state]);
   const latest = checks[0] ?? null;
   const lastSuccess = lastSuccessfulCheck(checks);
+  // Oldest first, for a left-to-right trend line -- only checks that actually completed (down
+  // checks have no response time at all, so they'd otherwise break the line).
+  const responseTimeTrend = checks
+    .filter((check): check is WebsiteHealthCheck & { responseTimeMs: number } => check.responseTimeMs !== null)
+    .map((check) => check.responseTimeMs)
+    .reverse();
 
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
@@ -213,10 +220,15 @@ export function WebsiteHealthCard({
             {state === "healthy" ? (
               <>
                 <Row label="HTTP Status" value={latest?.httpStatus ? String(latest.httpStatus) : "—"} />
-                <Row
-                  label="Response Time"
-                  value={latest?.responseTimeMs !== null && latest?.responseTimeMs !== undefined ? `${latest.responseTimeMs} ms` : "—"}
-                />
+                <div>
+                  <dt className="text-[12px] text-[var(--admin-muted)]">Response Time</dt>
+                  <dd className="mt-1 flex items-center gap-2">
+                    <span className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
+                      {latest?.responseTimeMs !== null && latest?.responseTimeMs !== undefined ? `${latest.responseTimeMs} ms` : "—"}
+                    </span>
+                    {responseTimeTrend.length >= 2 ? <Sparkline values={responseTimeTrend} /> : null}
+                  </dd>
+                </div>
               </>
             ) : state === "degraded" || state === "down" ? (
               <Row label="Issue" value={latest ? formatCheckIssue(latest) : "—"} />

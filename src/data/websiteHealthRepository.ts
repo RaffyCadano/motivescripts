@@ -33,7 +33,7 @@ function mapCheck(row: WebsiteHealthCheckRow): WebsiteHealthCheck {
   };
 }
 
-const HISTORY_LIMIT = 8;
+const HISTORY_LIMIT = 12;
 
 /** Most recent checks first for one environment. Empty array means no check has ever completed. */
 export async function fetchWebsiteHealthHistory(

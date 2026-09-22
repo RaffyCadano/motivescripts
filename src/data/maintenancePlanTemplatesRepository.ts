@@ -1,4 +1,8 @@
-import type { MaintenancePlanTemplate, MaintenancePlanTemplateInput } from "@/data/maintenancePlanTemplates";
+import type {
+  MaintenancePlanTemplate,
+  MaintenancePlanTemplateDefaultPriority,
+  MaintenancePlanTemplateInput,
+} from "@/data/maintenancePlanTemplates";
 import { maintenancePlanTemplateErrorCode, maintenancePlanTemplateErrorMessage } from "@/data/maintenancePlanTemplates";
 import { AgencyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -33,6 +37,7 @@ function toTemplate(row: MaintenancePlanTemplateRow): MaintenancePlanTemplate {
     includedHours: Number(row.included_hours),
     includedServices: services,
     overageRateCents: row.overage_rate_cents === null ? null : Number(row.overage_rate_cents),
+    defaultPriority: (row.default_priority as MaintenancePlanTemplateDefaultPriority) ?? "Medium",
     isActive: row.is_active,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
@@ -48,6 +53,7 @@ function draftFields(input: MaintenancePlanTemplateInput) {
     included_hours: input.includedHours,
     included_services: input.includedServices.filter((s) => s.trim().length > 0),
     overage_rate_cents: input.overageRateCents,
+    default_priority: input.defaultPriority,
     is_active: input.isActive,
     sort_order: input.sortOrder,
   };

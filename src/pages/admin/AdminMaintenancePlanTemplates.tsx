@@ -6,7 +6,11 @@ import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/
 import { AdminEmptyState } from "@/components/admin/list/AdminEmptyState";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { Pencil, RotateCcw, Trash2 } from "lucide-react";
-import type { MaintenancePlanTemplate, MaintenancePlanTemplateInput } from "@/data/maintenancePlanTemplates";
+import {
+  maintenancePlanTemplateDefaultPriorities,
+  type MaintenancePlanTemplate,
+  type MaintenancePlanTemplateInput,
+} from "@/data/maintenancePlanTemplates";
 import {
   createMaintenancePlanTemplate,
   listMaintenancePlanTemplates,
@@ -24,6 +28,7 @@ const EMPTY_DRAFT: MaintenancePlanTemplateInput = {
   includedHours: 0,
   includedServices: [],
   overageRateCents: null,
+  defaultPriority: "Medium",
   isActive: true,
   sortOrder: 0,
 };
@@ -36,6 +41,7 @@ function draftFromTemplate(template: MaintenancePlanTemplate): MaintenancePlanTe
     includedHours: template.includedHours,
     includedServices: template.includedServices,
     overageRateCents: template.overageRateCents,
+    defaultPriority: template.defaultPriority,
     isActive: template.isActive,
     sortOrder: template.sortOrder,
   };
@@ -221,7 +227,30 @@ export function AdminMaintenancePlanTemplates() {
                 className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
               />
             </label>
+            <label className="block text-[12px] font-semibold text-[var(--admin-muted)]">
+              Default request priority
+              <select
+                value={draft.defaultPriority}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    defaultPriority: event.target.value as MaintenancePlanTemplateInput["defaultPriority"],
+                  }))
+                }
+                className="mt-1 h-9 w-full rounded-lg border border-[var(--admin-line)] bg-white px-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+              >
+                {maintenancePlanTemplateDefaultPriorities.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
+          <p className="text-[11px] text-[var(--admin-muted)]">
+            A new Care request from a client on this tier starts at this priority in the admin queue -- staff can
+            still change it by hand afterward. This is what makes "Priority support" real.
+          </p>
           <label className="block text-[12px] font-semibold text-[var(--admin-muted)]">
             Description
             <textarea
@@ -303,6 +332,7 @@ export function AdminMaintenancePlanTemplates() {
                       {formatUsdFromCents(tier.monthlyPriceCents)}/mo
                       {tier.includedHours > 0 ? ` · ${tier.includedHours} hrs/mo included` : ""}
                       {tier.overageRateCents !== null ? ` · ${formatUsdFromCents(tier.overageRateCents)}/hr overage` : ""}
+                      {` · ${tier.defaultPriority} priority`}
                     </p>
                     {tier.description ? <p className="mt-2 text-sm text-[var(--admin-ink)]">{tier.description}</p> : null}
                     {tier.includedServices.length > 0 ? (

@@ -1,3 +1,12 @@
+export type MaintenancePlanTemplateDefaultPriority = "Low" | "Medium" | "High" | "Urgent";
+
+export const maintenancePlanTemplateDefaultPriorities: MaintenancePlanTemplateDefaultPriority[] = [
+  "Low",
+  "Medium",
+  "High",
+  "Urgent",
+];
+
 export type MaintenancePlanTemplate = {
   id: string;
   name: string;
@@ -8,6 +17,8 @@ export type MaintenancePlanTemplate = {
   includedServices: string[];
   /** Suggested per-hour rate for billable overage work quoted off this tier. Informational -- never auto-charged. */
   overageRateCents: number | null;
+  /** A new care request from a client on this tier starts at this priority. Staff can still change it by hand. */
+  defaultPriority: MaintenancePlanTemplateDefaultPriority;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -21,6 +32,7 @@ export type MaintenancePlanTemplateInput = {
   includedHours: number;
   includedServices: string[];
   overageRateCents: number | null;
+  defaultPriority: MaintenancePlanTemplateDefaultPriority;
   isActive: boolean;
   sortOrder: number;
 };

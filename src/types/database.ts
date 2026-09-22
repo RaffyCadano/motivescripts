@@ -775,6 +775,7 @@ export type MaintenancePlanTemplateRow = {
   included_hours: number;
   included_services: Json;
   overage_rate_cents: number | null;
+  default_priority: "Low" | "Medium" | "High" | "Urgent";
   is_active: boolean;
   sort_order: number;
   created_at: string;
