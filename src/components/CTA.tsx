@@ -45,7 +45,7 @@ export function CTA({
               <div className="mt-8 flex justify-center">
                 <Button to="/start-a-project" size="lg">
                   Start Your Project
-                  <span aria-hidden="true">→</span>
+                  <span aria-hidden="true" className="icon-arrow">→</span>
                 </Button>
               </div>
               {secondary ? <p className="mt-5 text-sm text-muted">{secondary}</p> : null}

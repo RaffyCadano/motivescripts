@@ -77,9 +77,25 @@
   transform: translate3d(-1.25rem, 0, 0);
 }
 
+.anim-pending-right {
+  opacity: 0;
+  transform: translate3d(1.25rem, 0, 0);
+}
+
+.anim-pending-fade {
+  opacity: 0;
+}
+
+.anim-pending-scale {
+  opacity: 0;
+  transform: scale(0.96);
+}
+
 .anim-in {
   opacity: 1;
-  transform: translate3d(0, 0, 0);
+  /* "none" (not translate3d(0,0,0)) so this one settled state works for every pending variant above,
+     including the scale one. */
+  transform: none;
   transition:
     opacity var(--duration-reveal) var(--ease-out),
     transform var(--duration-reveal) var(--ease-out);
@@ -154,7 +170,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .anim-pending,
-  .anim-pending-left {
+  .anim-pending-left,
+  .anim-pending-right,
+  .anim-pending-fade,
+  .anim-pending-scale {
     opacity: 1;
     transform: none;
   }
@@ -162,8 +181,152 @@
   .geo-drift,
   .geo-drift-slow,
   .hero-glow-pulse,
-  .hero-scroll-track {
+  .hero-scroll-track,
+  .nav-entrance,
+  .fade-up-in {
     animation: none;
+  }
+
+  /* The global `*` rule a few lines up already collapses every ordinary transition/animation to
+     ~0, but the browser's View Transition pseudo-elements aren't matched by `*` -- they live
+     outside the normal DOM tree -- so they need their own override to actually go instant. */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Public-site page transitions (React Router's `viewTransition` prop wraps the navigation in
+   document.startViewTransition() when the browser supports it; this is what that transition looks
+   like). Unsupported browsers -- and reduced-motion, handled above -- just navigate instantly. */
+::view-transition-old(root) {
+  animation: view-transition-out var(--duration-base) var(--ease-out) both;
+}
+
+::view-transition-new(root) {
+  animation: view-transition-in var(--duration-slow) var(--ease-out) both;
+}
+
+@keyframes view-transition-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes view-transition-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* The arrow glyph next to a link/button's label ("View Work →"): nudges forward on hover. The
+   arrow is a plain child of the hovered <a>/<button>, so this is a direct descendant hover rule,
+   no `group` class needed. */
+.icon-arrow {
+  display: inline-block;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+a:hover .icon-arrow,
+button:hover .icon-arrow {
+  transform: translateX(3px);
+}
+
+/* Primary nav links: a gradient underline that grows in from the left on hover, and stays fully
+   drawn for the current route. transform (not width) so it's compositor-friendly. */
+.nav-link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.5rem;
+  height: 1px;
+  transform-origin: left;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, #0050f0, #00c8ff);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+.nav-link-underline:hover::after {
+  transform: scaleX(1);
+}
+
+.nav-link-underline-active::after {
+  transform: scaleX(1);
+}
+
+/* A one-time entrance for content that appears by mounting rather than by scrolling into view --
+   e.g. a form's success state after submit. AnimateIn doesn't fit here: its IntersectionObserver
+   already fired (and disconnected) the moment the surrounding section first scrolled into view, so
+   swapping its children afterwards wouldn't replay anything. */
+.fade-up-in {
+  animation: fade-up-in var(--duration-reveal) var(--ease-out) both;
+}
+
+@keyframes fade-up-in {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+}
+
+/* The public header's one-time entrance on first load (Navbar persists across route changes, so
+   this plays once per visit, not on every navigation). */
+.nav-entrance {
+  animation: nav-entrance var(--duration-slow) var(--ease-out) both;
+}
+
+@keyframes nav-entrance {
+  from {
+    opacity: 0;
+    transform: translateY(-0.75rem);
+  }
+}
+
+/* Process page: the connecting line down the step numbers. Each step's segment fills in when
+   AnimateIn reveals that step (its own IntersectionObserver, no scroll-position math). Below the
+   `md` breakpoint the step grid collapses to one column, so the line (which tracks the number
+   column's left edge) is skipped there rather than floating disconnected from it. */
+@media (min-width: 768px) {
+  .process-line-segment {
+    position: relative;
+  }
+
+  .process-line-segment::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 3.25rem;
+    bottom: -3rem;
+    width: 2px;
+    background: var(--color-line);
+  }
+
+  .process-line-segment::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 3.25rem;
+    bottom: -3rem;
+    width: 2px;
+    background: var(--gradient-brand);
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform var(--duration-reveal) var(--ease-out);
+  }
+
+  .process-line-segment.anim-in::after {
+    transform: scaleY(1);
+  }
+
+  /* :last-child on the segment itself would always match (it's an only child of its <li>) --
+     the list item is what's actually last. */
+  li:last-child > .process-line-segment::before,
+  li:last-child > .process-line-segment::after {
+    display: none;
   }
 }
 

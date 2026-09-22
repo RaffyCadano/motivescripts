@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { AnimateIn } from "@/components/AnimateIn";
 import { Logo } from "@/components/Logo";
 import { services } from "@/data/services";
 import { site } from "@/data/site";
@@ -6,7 +7,7 @@ import { site } from "@/data/site";
 export function Footer() {
   return (
     <footer className="border-t border-[var(--color-line)] bg-[var(--color-bg)]">
-      <div className="container-wide grid grid-cols-2 gap-x-6 gap-y-10 py-16 lg:grid-cols-4 lg:gap-10 lg:py-20">
+      <AnimateIn className="container-wide grid grid-cols-2 gap-x-6 gap-y-10 py-16 lg:grid-cols-4 lg:gap-10 lg:py-20">
         <div className="col-span-2 md:col-span-1">
           <Logo />
           <p className="mt-5 max-w-xs text-sm leading-relaxed text-muted">{site.tagline}</p>
@@ -18,22 +19,22 @@ export function Footer() {
           </h2>
           <ul className="mt-4 space-y-3 text-sm">
             <li>
-              <Link className="text-muted-strong transition-colors hover:text-ink" to="/about">
+              <Link viewTransition className="text-muted-strong transition-colors hover:text-ink" to="/about">
                 About
               </Link>
             </li>
             <li>
-              <Link className="text-muted-strong transition-colors hover:text-ink" to="/work">
+              <Link viewTransition className="text-muted-strong transition-colors hover:text-ink" to="/work">
                 Work
               </Link>
             </li>
             <li>
-              <Link className="text-muted-strong transition-colors hover:text-ink" to="/process">
+              <Link viewTransition className="text-muted-strong transition-colors hover:text-ink" to="/process">
                 Process
               </Link>
             </li>
             <li>
-              <Link className="text-muted-strong transition-colors hover:text-ink" to="/pricing">
+              <Link viewTransition className="text-muted-strong transition-colors hover:text-ink" to="/pricing">
                 Pricing
               </Link>
             </li>
@@ -47,7 +48,7 @@ export function Footer() {
           <ul className="mt-4 space-y-3 text-sm">
             {services.map((service) => (
               <li key={service.id}>
-                <Link className="text-muted-strong transition-colors hover:text-ink" to={service.href}>
+                <Link viewTransition className="text-muted-strong transition-colors hover:text-ink" to={service.href}>
                   {service.footerLabel}
                 </Link>
               </li>
@@ -62,6 +63,7 @@ export function Footer() {
           <ul className="mt-4 space-y-3 text-sm">
             <li>
               <Link
+                viewTransition
                 className="text-muted-strong transition-colors hover:text-ink"
                 to="/start-a-project"
               >
@@ -78,7 +80,7 @@ export function Footer() {
             </li>
           </ul>
         </div>
-      </div>
+      </AnimateIn>
 
       <div className="border-t border-[var(--color-line)]">
         <div className="container-wide flex flex-col gap-2 py-6 text-xs text-faint sm:flex-row sm:items-center sm:justify-between">

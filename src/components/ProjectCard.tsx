@@ -26,11 +26,12 @@ export function ProjectCard({
   return (
     <article className={cn("group", split && "lg:grid lg:grid-cols-2 lg:items-center lg:gap-12")}>
       <Link
+        viewTransition
         to={`/work/${project.slug}`}
         className={cn("block", reverse && !large && "lg:order-2")}
         aria-label={linkLabel}
       >
-        <div className="origin-center transition-transform duration-500 ease-[var(--ease-out)] group-hover:scale-[1.015]">
+        <div className="origin-center transition-transform duration-500 ease-[var(--ease-out)] group-hover:scale-[1.02]">
           <SitePreview project={project} />
         </div>
       </Link>
@@ -67,12 +68,13 @@ export function ProjectCard({
         </p>
         <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2">
           <Link
+            viewTransition
             to={`/work/${project.slug}`}
             className="inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
             aria-label={linkLabel}
           >
             {ctaLabel}
-            <span aria-hidden="true">→</span>
+            <span aria-hidden="true" className="icon-arrow">→</span>
           </Link>
           {project.liveUrl ? (
             <a
@@ -82,7 +84,7 @@ export function ProjectCard({
               className="inline-flex items-center gap-1.5 font-heading text-sm font-semibold text-muted-strong transition-colors hover:text-blue"
             >
               Visit live site
-              <span aria-hidden="true">↗</span>
+              <span aria-hidden="true" className="icon-arrow">↗</span>
             </a>
           ) : null}
         </div>

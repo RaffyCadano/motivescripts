@@ -123,7 +123,7 @@ export function AboutPage() {
             We don’t treat strategy, design, and development as separate pieces — each stage builds on
             the last so the finished website works as one experience. Every engagement follows the same
             sequence so you are never guessing. The longer version lives on our{" "}
-            <Link className="font-medium text-ink underline-offset-2 hover:underline" to="/process">
+            <Link viewTransition className="font-medium text-ink underline-offset-2 hover:underline" to="/process">
               process page
             </Link>
             .
@@ -155,16 +155,17 @@ export function AboutPage() {
             </p>
             <p className="mt-6 text-sm text-muted">Want to know what working with MotiveScripts looks like?</p>
             <Link
+              viewTransition
               to="/process"
               className="mt-1 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
             >
               See Our Process
-              <span aria-hidden="true">→</span>
+              <span aria-hidden="true" className="icon-arrow">→</span>
             </Link>
           </div>
           <Button to="/work" variant="secondary" className="shrink-0">
             View Our Work
-            <span aria-hidden="true">→</span>
+            <span aria-hidden="true" className="icon-arrow">→</span>
           </Button>
         </section>
         </AnimateIn>

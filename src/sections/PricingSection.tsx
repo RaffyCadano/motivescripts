@@ -14,11 +14,12 @@ export function PricingSection() {
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
             <SectionHeader eyebrow="Pricing" title={`Websites start at ${websiteStartingPrice}. Every project is scoped.`} />
             <Link
+              viewTransition
               to="/pricing"
               className="mt-1 inline-flex shrink-0 items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue sm:mt-11"
             >
               View Pricing
-              <span aria-hidden="true">→</span>
+              <span aria-hidden="true" className="icon-arrow">→</span>
             </Link>
           </div>
         </AnimateIn>
@@ -32,10 +33,10 @@ export function PricingSection() {
             >
               <article
                 className={cn(
-                  "relative flex h-full w-full flex-col rounded-[var(--radius-lg)] border p-6 md:p-7",
+                  "relative flex h-full w-full flex-col rounded-[var(--radius-lg)] border p-6 transition-[transform,box-shadow,border-color] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:-translate-y-1 md:p-7",
                   tier.highlighted
-                    ? "border-[rgb(0_80_240_/_0.35)] bg-[rgb(0_80_240_/_0.03)] shadow-[var(--shadow-card)]"
-                    : "border-[var(--color-line)]",
+                    ? "border-[rgb(0_80_240_/_0.35)] bg-[rgb(0_80_240_/_0.03)] shadow-[var(--shadow-card)] hover:shadow-[0_20px_48px_rgb(0_80_240_/_0.16)]"
+                    : "border-[var(--color-line)] hover:border-[rgb(0_200_255_/_0.28)] hover:shadow-[var(--shadow-card)]",
                 )}
               >
                 {tier.badge ? (

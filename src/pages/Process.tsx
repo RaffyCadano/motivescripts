@@ -26,11 +26,12 @@ export function ProcessPage() {
         description="A clear, collaborative process that takes your website from an initial idea to a finished site ready for your customers."
       >
         <Link
+          viewTransition
           to="/services"
           className="mt-6 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
         >
           Not sure what you need yet? View Services
-          <span aria-hidden="true">→</span>
+          <span aria-hidden="true" className="icon-arrow">→</span>
         </Link>
       </PageHero>
 
@@ -51,7 +52,7 @@ export function ProcessPage() {
       <ol className="container-wide divide-y divide-[var(--color-line)] py-8 md:py-16">
         {processSteps.map((step) => (
           <li key={step.number}>
-            <AnimateIn>
+            <AnimateIn className="process-line-segment">
               <div className="grid gap-6 py-12 md:grid-cols-[7rem_1fr] md:gap-12 lg:grid-cols-[8rem_1fr_18rem] lg:gap-16">
             <p className="font-heading text-4xl font-extrabold text-blue">{step.number}</p>
             <div className="max-w-2xl">

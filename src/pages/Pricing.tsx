@@ -98,10 +98,10 @@ export function PricingPage() {
             >
               <article
                 className={cn(
-                  "relative flex h-full w-full flex-col rounded-[var(--radius-lg)] border p-7 md:p-8",
+                  "relative flex h-full w-full flex-col rounded-[var(--radius-lg)] border p-7 transition-[transform,box-shadow,border-color] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:-translate-y-1 md:p-8",
                   tier.highlighted
-                    ? "border-[rgb(0_80_240_/_0.35)] bg-[rgb(0_80_240_/_0.03)] shadow-[var(--shadow-card)]"
-                    : "border-[var(--color-line)]",
+                    ? "border-[rgb(0_80_240_/_0.35)] bg-[rgb(0_80_240_/_0.03)] shadow-[var(--shadow-card)] hover:shadow-[0_20px_48px_rgb(0_80_240_/_0.16)]"
+                    : "border-[var(--color-line)] hover:border-[rgb(0_200_255_/_0.28)] hover:shadow-[var(--shadow-card)]",
                 )}
               >
                 {tier.badge ? (
@@ -246,11 +246,12 @@ export function PricingPage() {
                 Explore our services to understand what's involved in building and launching your website.
               </p>
               <Link
+                viewTransition
                 to="/services"
                 className="mt-4 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
               >
                 Explore Services
-                <span aria-hidden="true">→</span>
+                <span aria-hidden="true" className="icon-arrow">→</span>
               </Link>
             </div>
           </AnimateIn>
@@ -262,11 +263,12 @@ export function PricingPage() {
                 development, review, and launch.
               </p>
               <Link
+                viewTransition
                 to="/process"
                 className="mt-4 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
               >
                 See Our Process
-                <span aria-hidden="true">→</span>
+                <span aria-hidden="true" className="icon-arrow">→</span>
               </Link>
             </div>
           </AnimateIn>

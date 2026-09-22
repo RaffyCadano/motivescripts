@@ -90,7 +90,7 @@ export function ContactPage() {
       <div className="container-wide grid gap-12 py-10 md:grid-cols-[1fr_18rem] md:py-16 lg:grid-cols-[1fr_22rem]">
         <AnimateIn>
         {submitted ? (
-          <div className="rounded-[var(--radius-lg)] border border-[var(--color-line)] p-8 md:p-10">
+          <div className="fade-up-in rounded-[var(--radius-lg)] border border-[var(--color-line)] p-8 md:p-10">
             <p className="eyebrow">Received</p>
             <h2 className="mt-4 text-2xl">Project inquiry submitted.</h2>
             <p className="mt-4 max-w-lg text-muted">
@@ -105,11 +105,12 @@ export function ContactPage() {
               .
             </p>
             <Link
+              viewTransition
               to="/"
               className="mt-6 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
             >
               Back to homepage
-              <span aria-hidden="true">→</span>
+              <span aria-hidden="true" className="icon-arrow">→</span>
             </Link>
           </div>
         ) : (
@@ -230,7 +231,7 @@ export function ContactPage() {
             <div className="mt-7">
               <Button type="submit" size="lg" disabled={sending}>
                 {sending ? "Sending…" : "Start Your Project"}
-                {sending ? null : <span aria-hidden="true">→</span>}
+                {sending ? null : <span aria-hidden="true" className="icon-arrow">→</span>}
               </Button>
             </div>
           </form>
@@ -257,7 +258,7 @@ export function ContactPage() {
 }
 
 const inputClass =
-  "mt-2 w-full rounded-[var(--radius-md)] border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-ink outline-none transition-colors placeholder:text-faint focus:border-[rgb(0_80_240_/_0.55)]";
+  "mt-2 w-full rounded-[var(--radius-md)] border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-ink outline-none transition-[border-color,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-out)] placeholder:text-faint focus:border-[rgb(0_80_240_/_0.55)] focus:shadow-[0_0_0_3px_rgb(0_80_240_/_0.1)]";
 
 function FormSection({ label, children, last = false }: { label: string; children: ReactNode; last?: boolean }) {
   return (

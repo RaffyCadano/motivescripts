@@ -14,7 +14,7 @@ export function ServiceCard({ title, body, index, href }: ServiceCardProps) {
   const Icon = icons[index % icons.length];
   const content = (
     <>
-      <span className="inline-flex size-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[rgb(0_80_240_/_0.08)] text-blue">
+      <span className="inline-flex size-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[rgb(0_80_240_/_0.08)] text-blue transition-transform duration-[var(--duration-base)] ease-[var(--ease-out)] group-hover:scale-110">
         <Icon />
       </span>
       <h3 className="mt-6 text-xl font-bold">{title}</h3>
@@ -24,13 +24,13 @@ export function ServiceCard({ title, body, index, href }: ServiceCardProps) {
 
   const className = cn(
     "group relative flex h-full w-full flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-6 md:p-7",
-    "transition-[border-color,transform] duration-[var(--duration-base)] ease-[var(--ease-out)]",
-    "hover:-translate-y-0.5 hover:border-[rgb(0_200_255_/_0.28)]",
+    "transition-[border-color,transform,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-out)]",
+    "hover:-translate-y-0.5 hover:border-[rgb(0_200_255_/_0.28)] hover:shadow-[var(--shadow-card)]",
   );
 
   if (href) {
     return (
-      <Link to={href} className={className}>
+      <Link viewTransition to={href} className={className}>
         {content}
         <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#00C8FF,transparent)] opacity-0 transition-opacity duration-[var(--duration-base)] group-hover:opacity-100" />
       </Link>

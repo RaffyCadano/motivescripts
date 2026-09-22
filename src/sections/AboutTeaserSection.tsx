@@ -16,11 +16,12 @@ export function AboutTeaserSection() {
             help them grow.
           </p>
           <Link
+            viewTransition
             to="/about"
             className="mt-6 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
           >
             About MotiveScripts
-            <span aria-hidden="true">→</span>
+            <span aria-hidden="true" className="icon-arrow">→</span>
           </Link>
         </AnimateIn>
 

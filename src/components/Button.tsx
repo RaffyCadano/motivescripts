@@ -41,7 +41,7 @@ const sizes: Record<Size, string> = {
 function buttonClass(variant: Variant, size: Size, className?: string) {
   return cn(
     "inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] border font-heading font-semibold tracking-tight transition-[filter,background-color,border-color,box-shadow,color,transform] duration-[var(--duration-base)] ease-[var(--ease-out)]",
-    "active:translate-y-px",
+    "active:scale-[0.98] active:translate-y-px",
     "disabled:pointer-events-none disabled:opacity-60",
     variants[variant],
     sizes[size],
@@ -53,7 +53,7 @@ export function Button(props: ButtonProps) {
   if ("to" in props && props.to) {
     const { children, className, variant = "primary", size = "md", to } = props;
     return (
-      <Link to={to} className={buttonClass(variant, size, className)}>
+      <Link to={to} viewTransition className={buttonClass(variant, size, className)}>
         {children}
       </Link>
     );

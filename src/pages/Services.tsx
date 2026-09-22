@@ -116,7 +116,7 @@ export function ServicesPage() {
             </div>
             <Button to="/work" variant="secondary" className="shrink-0">
               View Our Work
-              <span aria-hidden="true">→</span>
+              <span aria-hidden="true" className="icon-arrow">→</span>
             </Button>
           </section>
         </AnimateIn>

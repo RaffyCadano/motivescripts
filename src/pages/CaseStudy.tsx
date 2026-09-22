@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 import { Link, useParams } from "react-router-dom";
+import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { FullSitePreview } from "@/components/FullSitePreview";
 import { LiveSiteEmbed } from "@/components/LiveSiteFrame";
@@ -159,7 +160,7 @@ export function CaseStudyPage() {
       <main id="main" className="container-site py-24">
         <h1 className="text-3xl">Project not found</h1>
         <p className="mt-4 text-muted">That case study does not exist.</p>
-        <Link className="mt-6 inline-block text-cyan" to="/work">
+        <Link viewTransition className="mt-6 inline-block text-cyan" to="/work">
           Back to work
         </Link>
       </main>
@@ -170,27 +171,31 @@ export function CaseStudyPage() {
     <main id="main">
       <header className="border-b border-[var(--color-line)] py-16 md:py-20">
         <div className="container-wide">
-          <p className="text-sm text-faint">
-            <Link to="/work" className="hover:text-ink">
-              Work
-            </Link>
-            <span aria-hidden="true"> / </span>
-            {project.name}
-          </p>
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <span className="rounded-full border border-[var(--color-line)] px-2.5 py-1 font-heading text-xs font-semibold uppercase tracking-[0.14em] text-cyan">
-              {project.concept ? "Concept project" : "Client project"}
-            </span>
-            <span className="text-sm text-muted">{project.industry}</span>
-          </div>
-          <h1 className="mt-4 max-w-[18ch] text-[2.15rem] md:text-[3.25rem]">{project.name}</h1>
-          <p className="mt-3 text-muted-strong">{project.services}</p>
-          <p className="mt-5 max-w-2xl text-lg text-muted">{project.summary}</p>
+          <AnimateIn>
+            <p className="text-sm text-faint">
+              <Link viewTransition to="/work" className="hover:text-ink">
+                Work
+              </Link>
+              <span aria-hidden="true"> / </span>
+              {project.name}
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <span className="rounded-full border border-[var(--color-line)] px-2.5 py-1 font-heading text-xs font-semibold uppercase tracking-[0.14em] text-cyan">
+                {project.concept ? "Concept project" : "Client project"}
+              </span>
+              <span className="text-sm text-muted">{project.industry}</span>
+            </div>
+            <h1 className="mt-4 max-w-[18ch] text-[2.15rem] md:text-[3.25rem]">{project.name}</h1>
+          </AnimateIn>
+          <AnimateIn delay={90}>
+            <p className="mt-3 text-muted-strong">{project.services}</p>
+            <p className="mt-5 max-w-2xl text-lg text-muted">{project.summary}</p>
+          </AnimateIn>
         </div>
       </header>
 
       <div className="container-wide py-12 md:py-16">
-        <div className="group relative">
+        <AnimateIn variant="scale" className="group relative">
           <SitePreview project={project} live />
           <button
             type="button"
@@ -202,15 +207,18 @@ export function CaseStudyPage() {
               Preview
             </span>
           </button>
-        </div>
+        </AnimateIn>
         {previewOpen ? <SitePreviewLightbox project={project} onClose={() => setPreviewOpen(false)} /> : null}
 
         <div className="mt-16 grid gap-12 lg:grid-cols-3 lg:items-start lg:gap-x-24">
+          <AnimateIn delay={40}>
           <section>
             <h2 className="text-xl">The brief</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted">{project.challenge}</p>
           </section>
-          <section className="lg:col-span-2 lg:row-span-2">
+          </AnimateIn>
+          <AnimateIn delay={90} className="lg:col-span-2 lg:row-span-2">
+          <section>
             <h2 className="text-xl">{project.concept ? "How we would approach it" : "How we approached it"}</h2>
             <ol className="mt-4 space-y-3">
               {project.approach.map((item, index) => (
@@ -224,8 +232,9 @@ export function CaseStudyPage() {
             </ol>
             <p className="mt-8 max-w-2xl text-sm text-muted">{project.outcome}</p>
           </section>
+          </AnimateIn>
           {/* On desktop this sits in a one-third-width grid column, so the buttons stack instead of squeezing side by side. */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:flex-col lg:flex-nowrap">
+          <AnimateIn delay={140} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap lg:flex-col lg:flex-nowrap">
             {project.liveUrl ? (
               <a
                 href={project.liveUrl}
@@ -234,7 +243,7 @@ export function CaseStudyPage() {
                 className="inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-white px-6 font-heading text-[0.95rem] font-semibold text-ink transition-[filter,background-color,border-color,box-shadow,color,transform] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:border-[rgb(0_80_240_/_0.45)] hover:bg-[rgb(0_80_240_/_0.04)] active:translate-y-px md:h-[3.25rem]"
               >
                 Visit live site
-                <span aria-hidden="true">↗</span>
+                <span aria-hidden="true" className="icon-arrow">↗</span>
               </a>
             ) : null}
             <Button to="/start-a-project" size="lg" className="whitespace-nowrap">
@@ -243,7 +252,7 @@ export function CaseStudyPage() {
             <Button to="/work" variant="secondary" size="lg" className="whitespace-nowrap">
               All work
             </Button>
-          </div>
+          </AnimateIn>
         </div>
       </div>
     </main>

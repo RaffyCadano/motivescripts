@@ -55,9 +55,9 @@ export function Navbar() {
     <>
       <header
         className={cn(
-          "fixed left-0 top-0 z-[60] w-full border-b transition-[background-color,border-color,box-shadow] duration-[var(--duration-base)]",
+          "nav-entrance fixed left-0 top-0 z-[60] w-full border-b transition-[background-color,border-color,box-shadow] duration-[var(--duration-base)]",
           scrolled || open
-            ? "nav-blur border-[var(--color-line)]"
+            ? "nav-blur border-[var(--color-line)] shadow-[0_1px_0_rgb(0_16_48_/_0.02),0_12px_24px_-16px_rgb(0_16_48_/_0.12)]"
             : "border-transparent bg-transparent",
         )}
       >
@@ -70,10 +70,11 @@ export function Navbar() {
             <NavLink
               key={item.href}
               to={item.href}
+              viewTransition
               className={({ isActive }) =>
                 cn(
-                  "relative font-heading text-sm font-semibold tracking-tight text-muted transition-colors duration-[var(--duration-fast)] hover:text-ink",
-                  isActive && "text-ink after:absolute after:inset-x-0 after:-bottom-2 after:h-px after:bg-[linear-gradient(90deg,#0050F0,#00C8FF)]",
+                  "nav-link-underline relative py-1 font-heading text-sm font-semibold tracking-tight text-muted transition-colors duration-[var(--duration-fast)] hover:text-ink",
+                  isActive && "text-ink nav-link-underline-active",
                 )
               }
             >
@@ -126,10 +127,12 @@ export function Navbar() {
 
       <div
         id="mobile-nav"
+        inert={open ? undefined : true}
         className={cn(
-          "fixed left-0 top-[var(--nav-height)] z-50 w-full lg:hidden",
+          "fixed left-0 top-[var(--nav-height)] z-50 flex w-full flex-col lg:hidden",
           "h-[calc(100dvh-var(--nav-height))] border-t border-[var(--color-line)] bg-[var(--color-bg)]",
-          open ? "flex" : "hidden",
+          "transition-[opacity,transform] duration-[var(--duration-base)] ease-[var(--ease-out)]",
+          open ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-2 opacity-0",
         )}
       >
         <div className="flex h-full min-h-0 w-full flex-col overflow-y-auto px-[var(--gutter)] pb-[max(2rem,env(safe-area-inset-bottom))] pt-6">
@@ -137,16 +140,19 @@ export function Navbar() {
             Site menu
           </p>
           <nav className="flex flex-col gap-1" aria-label="Mobile">
-            {site.nav.map((item) => (
+            {site.nav.map((item, index) => (
               <NavLink
                 key={item.href}
                 to={item.href}
+                viewTransition
                 className={({ isActive }) =>
                   cn(
-                    "rounded-[var(--radius-md)] px-3 py-3 font-heading text-lg font-semibold text-muted-strong",
+                    "rounded-[var(--radius-md)] px-3 py-3 font-heading text-lg font-semibold text-muted-strong transition-[background-color,color,opacity,transform] duration-[var(--duration-base)] ease-[var(--ease-out)]",
                     isActive && "bg-[var(--color-bg-card)] text-ink",
+                    open ? "translate-x-0 opacity-100" : "translate-x-2 opacity-0",
                   )
                 }
+                style={{ transitionDelay: open ? `${index * 40}ms` : undefined }}
               >
                 {item.label}
               </NavLink>

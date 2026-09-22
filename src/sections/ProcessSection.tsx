@@ -35,11 +35,12 @@ export function ProcessSection() {
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
             <SectionHeader eyebrow="How it works" title="A clear process from idea to launch." />
             <Link
+              viewTransition
               to="/process"
               className="mt-1 inline-flex shrink-0 items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue sm:mt-11"
             >
               See the full process
-              <span aria-hidden="true">→</span>
+              <span aria-hidden="true" className="icon-arrow">→</span>
             </Link>
           </div>
         </AnimateIn>
