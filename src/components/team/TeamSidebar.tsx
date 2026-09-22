@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
-import { isDeveloper } from "@/auth/roles";
+import { teamPortalLabel } from "@/auth/roles";
 import { BrandMark } from "@/components/BrandMark";
 import { TeamNavItem } from "@/components/team/TeamNavItem";
 import { canOpenAdminWorkspace, filterTeamNavGroups } from "@/data/teamNav";
@@ -16,7 +16,7 @@ type TeamSidebarProps = {
 export function TeamSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigate }: TeamSidebarProps) {
   const { profile } = useAuth();
   const showAdmin = canOpenAdminWorkspace(profile);
-  const portalLabel = isDeveloper(profile) ? "Development Workspace" : "Team";
+  const portalLabel = teamPortalLabel(profile);
   const groups = filterTeamNavGroups(profile).map((group) => {
     if (group.label !== "Account" || !showAdmin) return group;
     return {

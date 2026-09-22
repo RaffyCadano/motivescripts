@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Bell, ChevronDown, Globe, LogOut, Menu, PanelLeft, Settings, UserRound } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAdmin } from "@/auth/permissions";
+import { adminPortalLabel } from "@/auth/roles";
 import { userDisplay } from "@/auth/userDisplay";
 import { ConfirmSignOutModal } from "@/components/admin/ConfirmSignOutModal";
 import { NotificationPanel } from "@/components/messaging/NotificationPanel";
@@ -88,7 +89,7 @@ export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMo
           <PanelLeft size={18} strokeWidth={1.75} aria-hidden="true" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-xs font-medium text-[var(--admin-muted)]">Admin</p>
+          <p className="truncate text-xs font-medium text-[var(--admin-muted)]">{adminPortalLabel(profile)}</p>
           <p className="truncate font-heading text-base font-semibold tracking-tight text-[var(--admin-ink)]">
             {page.label}
           </p>

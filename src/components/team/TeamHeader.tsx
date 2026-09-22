@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Bell, ChevronDown, Globe, LayoutDashboard, LogOut, Menu, PanelLeft, UserRound } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
+import { teamPortalLabel } from "@/auth/roles";
 import { userDisplay } from "@/auth/userDisplay";
 import { ConfirmSignOutModal } from "@/components/admin/ConfirmSignOutModal";
 import { NotificationPanel } from "@/components/messaging/NotificationPanel";
@@ -88,7 +89,7 @@ export function TeamHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMob
           <PanelLeft size={18} strokeWidth={1.75} aria-hidden="true" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-xs font-medium text-[var(--admin-muted)]">Team</p>
+          <p className="truncate text-xs font-medium text-[var(--admin-muted)]">{teamPortalLabel(profile)}</p>
           <p className="truncate font-heading text-base font-semibold tracking-tight text-[var(--admin-ink)]">
             {page.label}
           </p>

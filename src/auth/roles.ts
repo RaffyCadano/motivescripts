@@ -125,6 +125,26 @@ export function isAccounting(
   return profile?.role === "staff" && profile.templateKey === "accounting";
 }
 
+/**
+ * What the /admin shell (sidebar subtitle and header eyebrow) calls itself for the signed-in person.
+ * Shared so both stay in sync -- Sales and Accounting are staff, not admins, and should never see "Admin".
+ */
+export function adminPortalLabel(
+  profile: { role?: string | null; templateKey?: string | null; permissions?: string[] } | null | undefined,
+): string {
+  if (isProjectManager(profile)) return "Project Manager";
+  if (isSales(profile)) return "Sales";
+  if (isAccounting(profile)) return "Accounting";
+  return "Admin";
+}
+
+/** What the /team shell calls itself for the signed-in person. Shared between TeamSidebar and TeamHeader. */
+export function teamPortalLabel(
+  profile: { role?: string | null; templateKey?: string | null } | null | undefined,
+): string {
+  return isDeveloper(profile) ? "Development Workspace" : "Team";
+}
+
 /** PM, Sales, Accounting, and other non-production staff belong on /admin. */
 export function isOfficeStaff(
   profile: { role?: string | null; templateKey?: string | null } | null | undefined,

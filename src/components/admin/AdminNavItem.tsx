@@ -23,11 +23,19 @@ export function AdminNavItem({ item, collapsed, onNavigate }: AdminNavItemProps)
   // hash is only active when that exact hash is current; an item with no hash is only
   // active when the URL has no hash at all.
   const itemHash = item.href.split("#")[1];
+  // NavLink's built-in aria-current is also pathname-only, so without this override every
+  // item sharing a base path (Overview plus the PM's #anchor items, all on /admin) would get
+  // aria-current="page" at once -- a screen reader would announce several links as "current
+  // page" with no way to tell which section is actually open. Passing our own hash-aware
+  // value here overrides it; NavLink still only applies it when its own path check passes,
+  // so items on an unrelated path are unaffected.
+  const ariaCurrentOverride = (itemHash ? currentHash === `#${itemHash}` : currentHash === "") ? "page" : "false";
 
   return (
     <NavLink
       to={item.href}
       end={item.end}
+      aria-current={ariaCurrentOverride}
       onClick={onNavigate}
       title={collapsed ? item.label : undefined}
       className={({ isActive: pathActive }) => {
