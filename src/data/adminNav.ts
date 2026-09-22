@@ -31,7 +31,8 @@ export type AdminIconName =
   | "testimonials"
   | "careRequests"
   | "maintenancePlans"
-  | "recurringRevenue";
+  | "recurringRevenue"
+  | "websiteMonitoring";
 
 export type AdminNavItem = {
   label: string;
@@ -65,6 +66,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     items: [
       { label: "Projects", href: "/admin/projects", icon: "projects" },
       { label: "Care requests", href: "/admin/care-requests", icon: "careRequests" },
+      { label: "Website monitoring", href: "/admin/website-monitoring", icon: "websiteMonitoring" },
       { label: "Files", href: "/admin/files", icon: "files" },
     ],
   },
@@ -191,6 +193,7 @@ const navPermission: Record<string, StaffPermissionCode | "admin" | null> = {
   "/admin/my-tasks": "projects.view",
   "/admin/projects": "projects.view",
   "/admin/care-requests": "projects.view",
+  "/admin/website-monitoring": "projects.view",
   "/admin/files": "files.view",
   "/admin/proposals": "proposals.view",
   "/admin/contracts": "contracts.view",

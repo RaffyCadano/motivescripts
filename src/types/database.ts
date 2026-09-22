@@ -1597,6 +1597,10 @@ export type Database = {
         Args: { p_project_id: string };
         Returns: { domain_name: string | null; domain_status: string; hosting_status: string; deployment_status: string }[];
       };
+      staff_project_has_fast_monitoring: {
+        Args: { p_project_id: string };
+        Returns: boolean;
+      };
       recurring_revenue_summary: {
         Args: Record<string, never>;
         Returns: {

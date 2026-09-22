@@ -31,6 +31,9 @@ const ClientLayout = lazy(() => import("@/components/client/ClientLayout").then(
 const AdminActivity = lazy(() => import("@/pages/admin/AdminActivity").then((m) => ({ default: m.AdminActivity })));
 const AdminCapacity = lazy(() => import("@/pages/admin/AdminCapacity").then((m) => ({ default: m.AdminCapacity })));
 const AdminCareRequests = lazy(() => import("@/pages/admin/AdminCareRequests").then((m) => ({ default: m.AdminCareRequests })));
+const AdminWebsiteMonitoring = lazy(() =>
+  import("@/pages/admin/AdminWebsiteMonitoring").then((m) => ({ default: m.AdminWebsiteMonitoring })),
+);
 const AdminMaintenancePlanTemplates = lazy(() =>
   import("@/pages/admin/AdminMaintenancePlanTemplates").then((m) => ({ default: m.AdminMaintenancePlanTemplates })),
 );
@@ -150,6 +153,7 @@ export default function App() {
                 <Route path="projects/:id" element={<AdminProjectDetails />} />
                 <Route path="capacity" element={<AdminCapacity />} />
                 <Route path="care-requests" element={<AdminCareRequests />} />
+                <Route path="website-monitoring" element={<AdminWebsiteMonitoring />} />
                 <Route path="files" element={<AdminFiles />} />
                 <Route path="messages" element={<AdminMessages />} />
                 <Route path="messages/:conversationId" element={<AdminMessages />} />

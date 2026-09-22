@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   LineChart,
   MessageSquare,
+  Radar,
   Paperclip,
   Quote,
   Receipt,
@@ -62,4 +63,5 @@ export const adminIcons: Record<AdminIconName, LucideIcon> = {
   careRequests: HeartHandshake,
   maintenancePlans: Wrench,
   recurringRevenue: LineChart,
+  websiteMonitoring: Radar,
 };

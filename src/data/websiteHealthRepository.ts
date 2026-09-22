@@ -52,6 +52,32 @@ export async function fetchWebsiteHealthHistory(
   return (data ?? []).map(mapCheck);
 }
 
+const TIMELINE_MAX_ROWS = 500;
+
+/**
+ * Every check within the last `hoursBack` hours, oldest first -- for a trend chart, not a "recent
+ * checks" list (see fetchWebsiteHealthHistory for that). Capped at TIMELINE_MAX_ROWS so a very
+ * long window on a fast_monitoring (5-minute cadence) project can't return an unbounded result.
+ */
+export async function fetchWebsiteHealthTimeline(
+  projectId: string,
+  environment: WebsiteHealthEnvironment = "production",
+  hoursBack = 24,
+): Promise<WebsiteHealthCheck[]> {
+  const client = db();
+  const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
+  const { data, error } = await client
+    .from("website_health_checks")
+    .select("*")
+    .eq("project_id", projectId)
+    .eq("environment", environment)
+    .gte("checked_at", since)
+    .order("checked_at", { ascending: true })
+    .limit(TIMELINE_MAX_ROWS);
+  if (error) fail("load website health timeline", error, "Unable to load website health history.");
+  return (data ?? []).map(mapCheck);
+}
+
 /**
  * One batched query for a dashboard-style summary across several projects,
  * instead of one fetchWebsiteHealthHistory call per project. Returns only
@@ -79,6 +105,14 @@ export async function fetchLatestWebsiteHealthByProject(
     result.set(row.project_id, mapCheck(row));
   }
   return result;
+}
+
+/** Whether this project's active Care plan has "Advanced monitoring" (checked every 5 minutes, alerts sooner). */
+export async function fetchProjectHasFastMonitoring(projectId: string): Promise<boolean> {
+  const client = db();
+  const { data, error } = await client.rpc("staff_project_has_fast_monitoring", { p_project_id: projectId });
+  if (error) return false;
+  return Boolean(data);
 }
 
 async function functionErrorCode(error: unknown): Promise<string | null> {
