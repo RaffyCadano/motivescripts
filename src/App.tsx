@@ -86,7 +86,6 @@ const ClientOverview = lazy(() => import("@/pages/client/ClientOverview").then((
 const ClientProject = lazy(() => import("@/pages/client/ClientProject").then((m) => ({ default: m.ClientProject })));
 const ClientDiscovery = lazy(() => import("@/pages/client/ClientDiscovery").then((m) => ({ default: m.ClientDiscovery })));
 const ClientTaskRequests = lazy(() => import("@/pages/client/ClientTaskRequests").then((m) => ({ default: m.ClientTaskRequests })));
-const ClientSupportRequest = lazy(() => import("@/pages/client/ClientSupportRequest").then((m) => ({ default: m.ClientSupportRequest })));
 const ClientScope = lazy(() => import("@/pages/client/ClientScope").then((m) => ({ default: m.ClientScope })));
 const ClientProposalDetails = lazy(() => import("@/pages/client/ClientProposalDetails").then((m) => ({ default: m.ClientProposalDetails })));
 const ClientProposals = lazy(() => import("@/pages/client/ClientProposals").then((m) => ({ default: m.ClientProposals })));
@@ -233,7 +232,7 @@ export default function App() {
             <Route path="files/:deliverableId" element={<ClientReview />} />
             <Route path="feedback" element={<ClientFeedback />} />
             <Route path="approvals" element={<ClientApprovals />} />
-            <Route path="support" element={<ClientSupportRequest />} />
+            <Route path="support" element={<Navigate to="/client/messages" replace />} />
             <Route path="messages" element={<ClientMessages />} />
             <Route path="messages/:conversationId" element={<ClientMessages />} />
             <Route path="proposals" element={<ClientProposals />} />

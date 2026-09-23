@@ -741,16 +741,6 @@ export async function insertTask(projectId: string, draft: AgencyTaskDraft): Pro
   await addActivity(projectId, "task_created", `Task created: ${draft.title.trim()}`, "task");
 }
 
-export async function insertClientTask(projectId: string, title: string, description: string): Promise<void> {
-  const client = db();
-  const { error } = await client.rpc("client_create_task", {
-    p_project_id: projectId,
-    p_title: title.trim(),
-    p_description: description.trim(),
-  });
-  throwIf(error, "create support request", "Unable to submit this request.");
-}
-
 export async function updateTaskRecord(projectId: string, taskId: string, draft: AgencyTaskDraft, completedAt: string | null): Promise<void> {
   const client = db();
   const error = await writeTaskUpdate(client, taskId, taskDraftWriteFields(draft, completedAt));

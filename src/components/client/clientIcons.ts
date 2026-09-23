@@ -11,7 +11,6 @@ import {
   MessageSquareQuote,
   Receipt,
   Settings,
-  LifeBuoy,
   Sparkles,
 } from "lucide-react";
 import type { ClientIconName } from "@/data/clientNav";
@@ -23,7 +22,6 @@ export const clientIcons: Record<ClientIconName, LucideIcon> = {
   files: Files,
   feedback: MessageSquareQuote,
   approvals: BadgeCheck,
-  support: LifeBuoy,
   messages: MessageSquare,
   proposals: FileText,
   contracts: FileSignature,
