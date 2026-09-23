@@ -8,7 +8,9 @@ import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { TeamDirectoryProvider } from "@/components/admin/team/useTeamDirectory";
 import { TeamHeader } from "@/components/team/TeamHeader";
 import { TeamSidebar } from "@/components/team/TeamSidebar";
+import { getTeamPageMeta } from "@/data/teamNav";
 import { cn } from "@/lib/cn";
+import { usePrivatePageTitle } from "@/lib/usePrivatePageTitle";
 import "@/styles/admin.css";
 
 export function TeamLayout() {
@@ -16,6 +18,8 @@ export function TeamLayout() {
   const { profile } = useAuth();
   const { loadStatus, loadError, reload } = useLeads();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  usePrivatePageTitle(`${getTeamPageMeta(pathname, profile).label} — MotiveScripts Team`);
   const [collapsed, setCollapsed] = useState(false);
   const [isLg, setIsLg] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : false,

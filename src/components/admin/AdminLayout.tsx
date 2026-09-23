@@ -5,13 +5,17 @@ import { adminPathToTeamPath, usesTeamWorkspace } from "@/auth/roles";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { TeamDirectoryProvider } from "@/components/admin/team/useTeamDirectory";
+import { getAdminPageMeta } from "@/data/adminNav";
 import { cn } from "@/lib/cn";
+import { usePrivatePageTitle } from "@/lib/usePrivatePageTitle";
 import "@/styles/admin.css";
 
 export function AdminLayout() {
   const { pathname, search, hash } = useLocation();
   const { profile } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  usePrivatePageTitle(`${getAdminPageMeta(pathname).label} — MotiveScripts Admin`);
   const [collapsed, setCollapsed] = useState(false);
   const [isLg, setIsLg] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : false,

@@ -5,7 +5,9 @@ import { LeadToast } from "@/components/admin/leads/LeadToast";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { ClientHeader } from "@/components/client/ClientHeader";
 import { ClientSidebar } from "@/components/client/ClientSidebar";
+import { getClientPageMeta } from "@/data/clientNav";
 import { cn } from "@/lib/cn";
+import { usePrivatePageTitle } from "@/lib/usePrivatePageTitle";
 import "@/styles/client.css";
 
 /**
@@ -16,6 +18,8 @@ export function ClientLayout() {
   const { pathname } = useLocation();
   const { loadStatus, loadError, reload } = useLeads();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  usePrivatePageTitle(`${getClientPageMeta(pathname).label} — MotiveScripts Client Portal`);
   const [collapsed, setCollapsed] = useState(false);
   const [isLg, setIsLg] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : false,
