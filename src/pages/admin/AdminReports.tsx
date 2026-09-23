@@ -4,6 +4,7 @@ import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
 import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { RevenueByPeriodChart } from "@/components/admin/reports/RevenueByPeriodChart";
 import {
   buildRevenueReport,
   startOfCurrentMonth,
@@ -115,6 +116,13 @@ export function AdminReports() {
       ) : visiblePeriods.length === 0 ? (
         <AdminEmptyState title="No periods match this search" body="Try a different period, like a month, quarter, or year." />
       ) : (
+        <>
+        <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-4">
+          <h2 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Revenue by {grainLabels[grain].toLowerCase()}</h2>
+          <div className="mt-3">
+            <RevenueByPeriodChart periods={visiblePeriods} />
+          </div>
+        </div>
         <div className="overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
           <table className="w-full min-w-[40rem] text-left text-[13px]">
             <thead>
@@ -137,6 +145,7 @@ export function AdminReports() {
             </tbody>
           </table>
         </div>
+        </>
       )}
     </div>
   );
