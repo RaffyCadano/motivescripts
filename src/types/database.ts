@@ -1605,6 +1605,10 @@ export type Database = {
         };
         Returns: void;
       };
+      care_requests_convert_to_task: {
+        Args: { p_request_id: string };
+        Returns: string;
+      };
       record_website_version: {
         Args: { p_project_id: string; p_summary: string; p_is_major?: boolean; p_care_request_id?: string | null };
         Returns: string;

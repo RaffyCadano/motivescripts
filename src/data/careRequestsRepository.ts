@@ -162,29 +162,18 @@ export async function insertCareRequestFile(input: {
 
 /**
  * Staff: turn an included Website Care request into a project task (the existing task board, same
- * table every other task lives in), then link the request to it and mark it included.
+ * table every other task lives in), then link the request to it and mark it included. Done
+ * atomically in one RPC, checked against the same single permission (projects.manage on the
+ * request's project) care_requests_resolve uses -- a direct client-side insert into `tasks` here
+ * used to hit a stricter table-level RLS policy (staff_may_coordinate_project, which also requires
+ * clients.manage) than this action actually needs, breaking the button for any staff member with
+ * projects.manage but not clients.manage (Developer, Designer, Content Writer, Team Member).
  */
 export async function convertCareRequestToTask(request: CareRequest): Promise<string> {
   const client = db();
-  const taskPriority: "Low" | "Medium" | "High" | "Urgent" = ["Low", "Medium", "High", "Urgent"].includes(
-    request.priority as string,
-  )
-    ? request.priority
-    : "Medium";
-  const { data, error } = await client
-    .from("tasks")
-    .insert({
-      project_id: request.projectId,
-      title: `Website Care: ${request.message.slice(0, 80)}`,
-      description: request.message,
-      priority: taskPriority,
-    })
-    .select("id")
-    .single();
+  const { data, error } = await client.rpc("care_requests_convert_to_task", { p_request_id: request.id });
   if (error) fail("create task from care request", error, "Unable to create a task for this request.");
-  const taskId = (data as { id: string }).id;
-  await resolveCareRequest({ requestId: request.id, billingDecision: "included", resultingTaskId: taskId });
-  return taskId;
+  return data as string;
 }
 
 /** Staff: record the included/billable call and/or link a request to what it turned into (task, invoice, or project). */
