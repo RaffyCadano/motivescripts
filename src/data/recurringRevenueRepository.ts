@@ -1,4 +1,4 @@
-import type { RecurringRevenueSummary } from "@/data/recurringRevenue";
+import type { RecurringRevenueMonth, RecurringRevenueSummary } from "@/data/recurringRevenue";
 import { AgencyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { Database } from "@/types/database";
@@ -46,4 +46,29 @@ export async function fetchRecurringRevenueSummary(): Promise<RecurringRevenueSu
     billableOveragesThisMonth: Number(row?.billable_overages_this_month ?? 0),
     billableOveragesCentsThisMonth: Number(row?.billable_overages_cents_this_month ?? 0),
   };
+}
+
+/** Last 12 months, oldest first -- backs the MRR trend and new-vs-canceled charts. */
+export async function fetchRecurringRevenueMonthlyTrend(): Promise<RecurringRevenueMonth[]> {
+  const client = db();
+  const { data, error } = await client.rpc("recurring_revenue_monthly_trend");
+  if (error) {
+    logDbError("load recurring revenue trend", error);
+    throw new AgencyDbError("Unable to load the recurring revenue trend.", error);
+  }
+  return (
+    (data ?? []) as {
+      month_start: string;
+      mrr_cents: number;
+      active_count: number;
+      new_count: number;
+      canceled_count: number;
+    }[]
+  ).map((row) => ({
+    monthStart: row.month_start,
+    mrrCents: Number(row.mrr_cents ?? 0),
+    activeCount: Number(row.active_count ?? 0),
+    newCount: Number(row.new_count ?? 0),
+    canceledCount: Number(row.canceled_count ?? 0),
+  }));
 }

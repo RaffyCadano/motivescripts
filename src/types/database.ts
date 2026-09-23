@@ -1641,6 +1641,16 @@ export type Database = {
           billable_overages_cents_this_month: number;
         }[];
       };
+      recurring_revenue_monthly_trend: {
+        Args: Record<string, never>;
+        Returns: {
+          month_start: string;
+          mrr_cents: number;
+          active_count: number;
+          new_count: number;
+          canceled_count: number;
+        }[];
+      };
       service_plan_usage: {
         Args: { p_plan_id: string };
         Returns: {

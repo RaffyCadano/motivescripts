@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
-import { fetchRecurringRevenueSummary } from "@/data/recurringRevenueRepository";
-import type { RecurringRevenueSummary } from "@/data/recurringRevenue";
+import { MrrTrendChart } from "@/components/admin/recurringRevenue/MrrTrendChart";
+import { SubscriptionChangeChart } from "@/components/admin/recurringRevenue/SubscriptionChangeChart";
+import { fetchRecurringRevenueMonthlyTrend, fetchRecurringRevenueSummary } from "@/data/recurringRevenueRepository";
+import type { RecurringRevenueMonth, RecurringRevenueSummary } from "@/data/recurringRevenue";
 import { formatUsdFromCents } from "@/data/money";
 import { AgencyDbError } from "@/lib/dbErrors";
 
@@ -11,6 +13,8 @@ export function AdminRecurringRevenue() {
   const [summary, setSummary] = useState<RecurringRevenueSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [months, setMonths] = useState<RecurringRevenueMonth[]>([]);
+  const [monthsLoading, setMonthsLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -23,6 +27,23 @@ export function AdminRecurringRevenue() {
       })
       .finally(() => {
         if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void fetchRecurringRevenueMonthlyTrend()
+      .then((rows) => {
+        if (active) setMonths(rows);
+      })
+      .catch(() => {
+        if (active) setMonths([]);
+      })
+      .finally(() => {
+        if (active) setMonthsLoading(false);
       });
     return () => {
       active = false;
@@ -49,6 +70,29 @@ export function AdminRecurringRevenue() {
               <AdminStatCard label="Clients with a plan" value={summary.clientsWithPlan} />
               <AdminStatCard label="Clients without a plan" value={summary.clientsWithoutPlan} higherIsBetter={false} />
             </AdminStatGrid>
+          </section>
+
+          <section aria-label="Recurring revenue trend" className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+            <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-4">
+              <h2 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">MRR, last 12 months</h2>
+              {monthsLoading ? (
+                <div className="mt-3 h-[180px] animate-pulse rounded-lg bg-[var(--admin-bg)]" />
+              ) : (
+                <div className="mt-3">
+                  <MrrTrendChart months={months} />
+                </div>
+              )}
+            </div>
+            <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-4">
+              <h2 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">New vs. canceled</h2>
+              {monthsLoading ? (
+                <div className="mt-3 h-[180px] animate-pulse rounded-lg bg-[var(--admin-bg)]" />
+              ) : (
+                <div className="mt-3">
+                  <SubscriptionChangeChart months={months} />
+                </div>
+              )}
+            </div>
           </section>
 
           <section aria-label="Subscription health">
