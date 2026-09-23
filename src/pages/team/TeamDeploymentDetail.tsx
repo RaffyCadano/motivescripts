@@ -4,6 +4,7 @@ import { ArrowLeft, Check, Minus } from "lucide-react";
 import { canCoordinateAssignedWork, hasPermission } from "@/auth/permissions";
 import { adminGhostBtn, adminSoftBtn } from "@/components/admin/adminActionStyles";
 import { DomainHostingStatusBadge } from "@/components/admin/projects/ProjectDevelopmentSection";
+import { WebsiteBackupsCard } from "@/components/admin/projects/WebsiteBackupsCard";
 import { WebsiteHealthCard } from "@/components/admin/projects/WebsiteHealthCard";
 import { DeploymentStatusBadge } from "@/components/team/DeploymentStatusBadge";
 import { TeamDevelopmentEditor } from "@/components/team/TeamDevelopmentEditor";
@@ -113,6 +114,8 @@ export function TeamDeploymentDetail() {
           )}
         </div>
       </section>
+
+      <WebsiteBackupsCard projectId={project.id} canBackUpNow={canManage} />
 
       <div className="grid items-start gap-3 lg:grid-cols-2">
         <section className={cardClass}>

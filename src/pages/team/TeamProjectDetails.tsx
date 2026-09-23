@@ -23,6 +23,7 @@ import { ProjectFilesPanel } from "@/components/admin/projects/ProjectFilesPanel
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
 import { SummaryCard, SummaryRow } from "@/components/admin/projects/ProjectOverview";
 import { ProjectDevelopmentSection } from "@/components/admin/projects/ProjectDevelopmentSection";
+import { WebsiteBackupsCard } from "@/components/admin/projects/WebsiteBackupsCard";
 import { WebsiteHealthCard } from "@/components/admin/projects/WebsiteHealthCard";
 import { ProjectTimePanel } from "@/components/admin/projects/ProjectTimePanel";
 import { TeamDevelopmentEditor } from "@/components/team/TeamDevelopmentEditor";
@@ -557,6 +558,8 @@ function TeamProjectOverview({
         stagingUrl={project.development.stagingUrl}
         canCheckNow={canCheckWebsiteHealth}
       />
+
+      <WebsiteBackupsCard projectId={project.id} canBackUpNow={canCheckWebsiteHealth} />
 
       {canViewActivity ? (
         <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">

@@ -10,6 +10,8 @@ import { fetchClientDeliveryStatus, type ClientDeliveryStatus } from "@/data/cli
 import { formatUsdFromCents } from "@/data/money";
 import { SERVICE_PLAN_STATUS_LABELS, SERVICE_PLAN_TYPE_LABELS, type ServicePlan } from "@/data/servicePlans";
 import { cancelMyServicePlan, fetchServicePlanUsage, resumeMyServicePlan, type ServicePlanUsage } from "@/data/servicePlansRepository";
+import { formatBackupRelativeTime, lastSuccessfulBackup, type WebsiteBackup } from "@/data/websiteBackups";
+import { fetchWebsiteBackupHistory } from "@/data/websiteBackupsRepository";
 import { site } from "@/data/site";
 import { AgencyDbError } from "@/lib/dbErrors";
 
@@ -68,6 +70,7 @@ export function ClientPlans() {
 
   const [deliveryStatus, setDeliveryStatus] = useState<ClientDeliveryStatus | null>(null);
   const [usage, setUsage] = useState<ServicePlanUsage | null>(null);
+  const [latestBackup, setLatestBackup] = useState<WebsiteBackup | null>(null);
 
   useEffect(() => {
     if (!projectId || !launched) {
@@ -86,6 +89,26 @@ export function ClientPlans() {
       active = false;
     };
   }, [projectId, launched]);
+
+  // Status-only, matching the domain/hosting/SSL display above -- clients see that backups are
+  // happening, not the files themselves (storage access stays staff-only).
+  useEffect(() => {
+    if (!projectId || !hasActiveCarePlan) {
+      setLatestBackup(null);
+      return;
+    }
+    let active = true;
+    void fetchWebsiteBackupHistory(projectId)
+      .then((backups) => {
+        if (active) setLatestBackup(lastSuccessfulBackup(backups));
+      })
+      .catch(() => {
+        if (active) setLatestBackup(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [projectId, hasActiveCarePlan]);
 
   useEffect(() => {
     if (!activeCarePlan) {
@@ -313,6 +336,14 @@ export function ClientPlans() {
                           {plan.sslExpiresAt ? (
                             <p className="text-[11px] text-[var(--client-muted)]">SSL renews {formatPlanDate(plan.sslExpiresAt)}</p>
                           ) : null}
+                        </div>
+                      ) : null}
+                      {plan.id === activeCarePlan?.id ? (
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--client-muted)]">Backups</p>
+                          <p className="mt-0.5 text-sm text-[var(--client-ink)]">
+                            {latestBackup ? `Last backup ${formatBackupRelativeTime(latestBackup.createdAt)}` : "First automatic backup runs within a day"}
+                          </p>
                         </div>
                       ) : null}
                     </div>

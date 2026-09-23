@@ -117,6 +117,17 @@ export type WebsiteHealthCheckRow = {
   checked_by: string | null;
 };
 
+export type WebsiteBackupRow = {
+  id: string;
+  project_id: string;
+  status: string;
+  storage_path: string | null;
+  byte_size: number | null;
+  error_message: string;
+  triggered_by: string | null;
+  created_at: string;
+};
+
 export type MilestoneRow = {
   id: string;
   project_id: string;
@@ -1240,6 +1251,7 @@ export type Database = {
         WebsiteHealthCheckRow,
         Partial<WebsiteHealthCheckRow> & { project_id: string; status: string }
       >;
+      website_backups: Table<WebsiteBackupRow, Partial<WebsiteBackupRow> & { project_id: string; status: string }>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -1602,6 +1614,10 @@ export type Database = {
         Returns: { domain_name: string | null; domain_status: string; hosting_status: string; deployment_status: string }[];
       };
       staff_project_has_fast_monitoring: {
+        Args: { p_project_id: string };
+        Returns: boolean;
+      };
+      staff_project_has_active_care_plan: {
         Args: { p_project_id: string };
         Returns: boolean;
       };

@@ -7,6 +7,7 @@ import { InviteClientDialog } from "@/components/admin/clients/InviteClientDialo
 import { ClientNoteModal } from "@/components/admin/clients/ClientNoteModal";
 import { useLeads, useProjectDeliverables } from "@/components/admin/leads/LeadsProvider";
 import { EditWebsiteUrlsModal } from "@/components/admin/projects/EditWebsiteUrlsModal";
+import { WebsiteBackupsCard } from "@/components/admin/projects/WebsiteBackupsCard";
 import { WebsiteHealthCard } from "@/components/admin/projects/WebsiteHealthCard";
 import { ProjectDiscoveryPanel } from "@/components/admin/projects/ProjectDiscoveryPanel";
 import { ProjectCommercialProgress } from "@/components/admin/projects/ProjectCommercialProgress";
@@ -254,6 +255,8 @@ export function ProjectOverview({ project, client, workflow, onOpenTab }: Projec
         stagingUrl={project.development.stagingUrl}
         canCheckNow={hasPermission(profile, "projects.manage")}
       />
+
+      <WebsiteBackupsCard projectId={project.id} canBackUpNow={hasPermission(profile, "projects.manage")} />
 
       {client ? (
         <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
