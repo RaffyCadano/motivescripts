@@ -74,6 +74,19 @@ export const seoPages: SeoPage[] = [
     description: "Sign in to your MotiveScripts project space.",
     indexable: false,
   },
+  {
+    path: "/privacy",
+    title: "Privacy Policy — MotiveScripts",
+    description:
+      "What MotiveScripts collects through our website, client portal, and services, how it's used, and who we share it with.",
+    indexable: true,
+  },
+  {
+    path: "/terms",
+    title: "Terms of Service — MotiveScripts",
+    description: "The terms that cover using MotiveScripts's website, client portal, and services.",
+    indexable: true,
+  },
 ];
 
 /** Looks up a page's entry. Throws for an unknown path so a typo fails loudly instead of shipping empty tags. */

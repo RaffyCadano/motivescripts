@@ -83,9 +83,17 @@ export function Footer() {
       </AnimateIn>
 
       <div className="border-t border-[var(--color-line)]">
-        <div className="container-wide flex flex-col gap-2 py-6 text-xs text-faint sm:flex-row sm:items-center sm:justify-between">
+        <div className="container-wide flex flex-col gap-3 py-6 text-xs text-faint sm:flex-row sm:items-center sm:justify-between">
           <p>© 2026 MotiveScripts. All rights reserved.</p>
-          <p>Websites for small businesses.</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <p>Websites for small businesses.</p>
+            <Link viewTransition className="transition-colors hover:text-ink" to="/privacy">
+              Privacy Policy
+            </Link>
+            <Link viewTransition className="transition-colors hover:text-ink" to="/terms">
+              Terms of Service
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

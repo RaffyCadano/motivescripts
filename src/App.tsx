@@ -14,8 +14,10 @@ import { HomePage } from "@/pages/Home";
 import { LoginPage } from "@/pages/Login";
 import { NotFoundPage } from "@/pages/NotFound";
 import { PricingPage } from "@/pages/Pricing";
+import { PrivacyPage } from "@/pages/Privacy";
 import { ProcessPage } from "@/pages/Process";
 import { ServicesPage } from "@/pages/Services";
+import { TermsPage } from "@/pages/Terms";
 
 // The signed-in areas (admin, team, client), their layouts, and the heavy data providers load only when someone
 // opens them, so a visitor to the public site does not download any of that code.
@@ -256,6 +258,8 @@ export default function App() {
             <Route path="process" element={<ProcessPage />} />
             <Route path="pricing" element={<PricingPage />} />
             <Route path="about" element={<AboutPage />} />
+            <Route path="privacy" element={<PrivacyPage />} />
+            <Route path="terms" element={<TermsPage />} />
             <Route path="start-a-project" element={<ContactPage />} />
             <Route path="invite/:token" element={<InviteAcceptPage />} />
             <Route path="staff-invite/:token" element={<StaffInviteAcceptPage />} />
