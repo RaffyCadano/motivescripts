@@ -7,6 +7,10 @@ import { NeedsAttention } from "@/components/admin/NeedsAttention";
 import { OverviewInvoices } from "@/components/admin/OverviewInvoices";
 import { OverviewDiscoveryAttention } from "@/components/admin/OverviewDiscoveryAttention";
 import { OverviewWorkflow } from "@/components/admin/OverviewWorkflow";
+import { LeadPipelineChart } from "@/components/admin/overview/LeadPipelineChart";
+import { OverviewRevenueTrendChart } from "@/components/admin/overview/OverviewRevenueTrendChart";
+import { ProjectStatusChart } from "@/components/admin/overview/ProjectStatusChart";
+import { StaffWorkloadChart } from "@/components/admin/overview/StaffWorkloadChart";
 import { RecentActivity } from "@/components/admin/RecentActivity";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
@@ -23,6 +27,8 @@ import {
   type OverviewAttentionItem,
 } from "@/data/adminOverview";
 import { fetchContractSummaries, fetchProposalSummaries, type ContractSummary, type ProposalSummary } from "@/data/documentsRepository";
+import { buildRevenueReport, type PaymentReportRow } from "@/data/financialReports";
+import { fetchAllPayments } from "@/data/financialReportsRepository";
 import { fetchInvoiceSummaries, type InvoiceSummary } from "@/data/invoicesRepository";
 import { fetchScopeBriefs } from "@/data/scopeBriefsRepository";
 import type { ClientScopeBrief } from "@/data/scopeBriefs";
@@ -33,9 +39,10 @@ type OverviewRecords = {
   contracts: ContractSummary[];
   invoices: InvoiceSummary[];
   briefs: ClientScopeBrief[];
+  payments: PaymentReportRow[];
 };
 
-const emptyRecords: OverviewRecords = { proposals: [], contracts: [], invoices: [], briefs: [] };
+const emptyRecords: OverviewRecords = { proposals: [], contracts: [], invoices: [], briefs: [], payments: [] };
 
 export function AdminOverview() {
   const { profile } = useAuth();
@@ -48,13 +55,14 @@ export function AdminOverview() {
   const can = (code: StaffPermissionCode) => hasPermission(profile, code);
 
   const loadRecords = useCallback(async () => {
-    const [proposals, contracts, invoices, briefs] = await Promise.all([
+    const [proposals, contracts, invoices, briefs, payments] = await Promise.all([
       can("proposals.view") ? fetchProposalSummaries().catch(() => []) : Promise.resolve([]),
       can("contracts.view") ? fetchContractSummaries().catch(() => []) : Promise.resolve([]),
       can("invoices.view") ? fetchInvoiceSummaries().catch(() => []) : Promise.resolve([]),
       can("clients.view") ? fetchScopeBriefs().catch(() => []) : Promise.resolve([]),
+      can("invoices.view") ? fetchAllPayments().catch(() => []) : Promise.resolve([]),
     ]);
-    setRecords({ proposals, contracts, invoices, briefs });
+    setRecords({ proposals, contracts, invoices, briefs, payments });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
 
@@ -162,6 +170,8 @@ export function AdminOverview() {
     [records.invoices, invoicePeriod],
   );
 
+  const revenueTrend = useMemo(() => buildRevenueReport(records.payments, "month"), [records.payments]);
+
   return (
     <div className="space-y-5">
       <AdminPageHeader
@@ -203,16 +213,53 @@ export function AdminOverview() {
 
       {can("projects.view") ? <OverviewDiscoveryAttention /> : null}
 
+      {can("leads.view") || can("projects.view") ? (
+        <section aria-label="Pipeline breakdown" className="grid gap-4 sm:grid-cols-2">
+          {can("leads.view") ? (
+            <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+              <h2 className="font-heading text-sm font-semibold tracking-tight">Leads by status</h2>
+              <div className="mt-3">
+                <LeadPipelineChart leads={leads} />
+              </div>
+            </div>
+          ) : null}
+          {can("projects.view") ? (
+            <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+              <h2 className="font-heading text-sm font-semibold tracking-tight">Projects by status</h2>
+              <div className="mt-3">
+                <ProjectStatusChart projects={projects} />
+              </div>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       <div className="grid items-start gap-5 xl:grid-cols-[1.65fr_1fr]">
         <div className="space-y-5">
           {can("invoices.view") ? (
             <OverviewInvoices totals={invoiceTotals} period={invoicePeriod} onPeriodChange={setInvoicePeriod} />
+          ) : null}
+          {can("invoices.view") ? (
+            <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+              <h2 className="font-heading text-sm font-semibold tracking-tight">Revenue, last 12 months</h2>
+              <div className="mt-3">
+                <OverviewRevenueTrendChart periods={revenueTrend} />
+              </div>
+            </div>
           ) : null}
           {can("projects.view") && activeProjects.length > 0 ? <ActiveProjects /> : null}
         </div>
         <div className="space-y-5">
           <NeedsAttention items={attention} />
           <OverviewWorkflow counts={pipeline} />
+          {can("team.view") ? (
+            <div className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+              <h2 className="font-heading text-sm font-semibold tracking-tight">Staff workload</h2>
+              <div className="mt-3">
+                <StaffWorkloadChart members={team.data?.members ?? []} />
+              </div>
+            </div>
+          ) : null}
           <RecentActivity />
         </div>
       </div>

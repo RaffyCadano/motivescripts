@@ -1,14 +1,15 @@
 import type { AgencyClient } from "@/data/agencyClients";
-import type { AgencyProject, AgencyProjectActivity } from "@/data/agencyProjects";
+import { projectStatuses, type AgencyProject, type AgencyProjectActivity, type AgencyProjectStatus } from "@/data/agencyProjects";
 import type { ContractSummary, ProposalSummary } from "@/data/documentsRepository";
 import { awaitingResponse } from "@/data/documents";
 import type { AgencyDeliverable } from "@/data/files";
 import { awaitingInvoicePayment } from "@/data/invoices";
 import type { InvoiceSummary } from "@/data/invoicesRepository";
-import type { Lead } from "@/data/leads";
+import { leadStatuses, type Lead, type LeadStatus } from "@/data/leads";
 import { isProductionProject, salesFlags } from "@/data/preProject";
 import { needsAttention, type ReviewFeedback } from "@/data/review";
 import { scopeStatus, type ClientScopeBrief } from "@/data/scopeBriefs";
+import type { TeamMember } from "@/data/team";
 
 export type OverviewAttentionItem = {
   id: string;
@@ -546,4 +547,34 @@ export function overviewHrefAllowed(
   if (href.startsWith("/admin/files")) return can("files.view");
   if (href.startsWith("/admin/messages")) return can("messages.view");
   return true;
+}
+
+export type StatusCount<T extends string> = { status: T; count: number };
+
+/** Non-archived projects grouped by status, in the fixed pipeline order (never re-sorted by size). */
+export function buildProjectStatusCounts(projects: AgencyProject[]): StatusCount<AgencyProjectStatus>[] {
+  const live = projects.filter((item) => !item.archived);
+  return projectStatuses.map((status) => ({
+    status,
+    count: live.filter((item) => item.status === status).length,
+  }));
+}
+
+/** Every lead grouped by its current status, in the fixed pipeline order. */
+export function buildLeadStatusCounts(leads: Lead[]): StatusCount<LeadStatus>[] {
+  return leadStatuses.map((status) => ({
+    status,
+    count: leads.filter((item) => item.status === status).length,
+  }));
+}
+
+export type StaffWorkloadItem = { id: string; name: string; activeTaskCount: number };
+
+/** Active staff ranked by their own already-computed open task count (see teamRepository). */
+export function buildStaffWorkload(members: TeamMember[], limit = 8): StaffWorkloadItem[] {
+  return members
+    .filter((member) => member.isActive)
+    .map((member) => ({ id: member.id, name: member.fullName, activeTaskCount: member.activeTaskCount }))
+    .sort((a, b) => b.activeTaskCount - a.activeTaskCount || a.name.localeCompare(b.name))
+    .slice(0, limit);
 }
