@@ -497,6 +497,18 @@ async function createCheckout(
     }
   }
 
+  // First Website Care plan only, never a repeat: a client who has ever had another
+  // service_plans row actually reach Stripe (stripe_subscription_id set, active or since
+  // canceled) already had their one trial -- without this check, canceling and re-subscribing
+  // would grant a fresh 30 days free every time.
+  const { count: priorActivatedCount } = await admin
+    .from("service_plans")
+    .select("id", { count: "exact", head: true })
+    .eq("client_id", plan.client_id)
+    .neq("id", plan.id)
+    .not("stripe_subscription_id", "is", null);
+  const isFirstPlan = !priorActivatedCount || priorActivatedCount === 0;
+
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
@@ -519,6 +531,7 @@ async function createCheckout(
       client_id: plan.client_id,
     },
     subscription_data: {
+      ...(isFirstPlan ? { trial_period_days: 30 } : {}),
       metadata: {
         service_plan_id: plan.id,
         client_id: plan.client_id,
