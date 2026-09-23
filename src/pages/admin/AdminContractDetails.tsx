@@ -251,7 +251,7 @@ export function AdminContractDetails() {
       },
     });
   }
-  if (!isDraft && status !== "accepted" && status !== "cancelled") {
+  if (!isDraft && status !== "accepted" && status !== "cancelled" && canManage) {
     contractActions.push({
       id: "revision",
       label: "New revision",
@@ -279,7 +279,7 @@ export function AdminContractDetails() {
       href: createInvoiceHref,
     });
   }
-  if (status !== "accepted" && status !== "cancelled") {
+  if (status !== "accepted" && status !== "cancelled" && canManage) {
     contractActions.push({
       id: "cancel",
       label: "Cancel contract",
