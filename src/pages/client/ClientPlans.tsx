@@ -435,7 +435,12 @@ export function ClientPlans() {
       ) : null}
 
       {launched && client && projectId ? (
-        <ClientCareRequests clientId={client.id} projectId={projectId} hasActiveCarePlan={hasActiveCarePlan} />
+        <ClientCareRequests
+          clientId={client.id}
+          projectId={projectId}
+          hasActiveCarePlan={hasActiveCarePlan}
+          trialEndsAt={deliveryStatus?.launchTrialEndsAt ?? null}
+        />
       ) : null}
 
       {launched && projectId ? <ClientWebsiteVersions projectId={projectId} /> : null}

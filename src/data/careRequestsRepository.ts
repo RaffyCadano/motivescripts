@@ -35,6 +35,7 @@ function mapCareRequest(row: CareRequestRow): CareRequest {
     status: row.status,
     category: row.category,
     hasActiveCarePlan: row.has_active_care_plan,
+    inLaunchTrial: row.in_launch_trial,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     resolvedAt: row.resolved_at,

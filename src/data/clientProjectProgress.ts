@@ -98,6 +98,9 @@ export type ClientDeliveryStatus = {
   domainStatus: string;
   hostingStatus: string;
   deploymentStatus: string;
+  /** End of the automatic post-launch Care Requests grace period, or null if the project launched
+   * before this existed. See project_development.launch_trial_ends_at. */
+  launchTrialEndsAt: string | null;
 };
 
 /**
@@ -116,6 +119,7 @@ export async function fetchClientDeliveryStatus(projectId: string): Promise<Clie
     domain_status: string;
     hosting_status: string;
     deployment_status: string;
+    launch_trial_ends_at: string | null;
   } | null;
   if (!row) return null;
   return {
@@ -123,7 +127,14 @@ export async function fetchClientDeliveryStatus(projectId: string): Promise<Clie
     domainStatus: row.domain_status,
     hostingStatus: row.hosting_status,
     deploymentStatus: row.deployment_status,
+    launchTrialEndsAt: row.launch_trial_ends_at,
   };
+}
+
+/** Whether the automatic post-launch Care Requests grace period is still running. */
+export function isInLaunchTrial(status: ClientDeliveryStatus | null): boolean {
+  if (!status?.launchTrialEndsAt) return false;
+  return new Date(status.launchTrialEndsAt).getTime() > Date.now();
 }
 
 export function clientDeliveryStagesFromGates(gates: ClientDeliveryGates | null): ProjectStage[] {

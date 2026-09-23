@@ -36,10 +36,13 @@ export type CareRequest = {
   status: CareRequestStatus;
   category: CareRequestCategory;
   /** Whether the client had an active (or past-due) Website Care plan at the moment they asked.
-   * Submitting one requires an active plan now, so this is true for every new row -- kept for the
-   * requests that predate that rule, and because a row still shouldn't change if the plan is
-   * canceled afterwards. */
+   * Submitting requires either an active plan or being inside the automatic post-launch grace
+   * period (see inLaunchTrial) -- so this can legitimately be false. Doesn't change afterwards if
+   * the plan is later canceled. */
   hasActiveCarePlan: boolean;
+  /** True when hasActiveCarePlan is false but the client was still inside the automatic 30-day
+   * post-launch grace period -- expected, not a gate failure. See project_development.launch_trial_ends_at. */
+  inLaunchTrial: boolean;
   createdAt: string;
   updatedAt: string;
   resolvedAt: string | null;

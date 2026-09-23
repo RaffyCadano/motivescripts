@@ -32,21 +32,32 @@ function formatRequestDate(iso: string): string {
   return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
+function daysRemaining(iso: string): number {
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+}
+
 /**
  * Where a client asks for the small updates and support their Website Care plan covers, shown next
- * to "Choose a plan" once the site has launched. Submitting requires an active plan -- the server
- * enforces this (care_requests_before_insert); `hasActiveCarePlan` just decides whether this shows
- * the form or a nudge toward "Choose a plan" above.
+ * to "Choose a plan" once the site has launched. Submitting requires an active plan OR being
+ * inside the automatic 30-day post-launch grace period (`trialEndsAt`) -- the server enforces this
+ * either way (care_requests_before_insert); the props here just decide whether this shows the
+ * form, a trial countdown, or a nudge toward "Choose a plan" above.
  */
 export function ClientCareRequests({
   clientId,
   projectId,
   hasActiveCarePlan,
+  trialEndsAt,
 }: {
   clientId: string;
   projectId: string;
   hasActiveCarePlan: boolean;
+  /** End of the automatic post-launch grace period, or null if it's already over (or the project
+   * launched before this existed). See project_development.launch_trial_ends_at. */
+  trialEndsAt?: string | null;
 }) {
+  const inTrial = Boolean(trialEndsAt && new Date(trialEndsAt).getTime() > Date.now());
+  const canSubmit = hasActiveCarePlan || inTrial;
   const [requests, setRequests] = useState<CareRequest[]>([]);
   const [filesByRequest, setFilesByRequest] = useState<Record<string, CareRequestFile[]>>({});
   const [loading, setLoading] = useState(true);
@@ -141,7 +152,14 @@ export function ClientCareRequests({
         A small update, a content change, or something that needs fixing — tell us here and we'll take it from there.
       </p>
 
-      {hasActiveCarePlan ? (
+      {inTrial && !hasActiveCarePlan ? (
+        <p className="mt-3 rounded-lg border border-[rgb(0_80_240_/_0.25)] bg-[rgb(0_80_240_/_0.04)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--client-ink)]">
+          You're in your free {daysRemaining(trialEndsAt!)}-day post-launch period — requests are open with no plan
+          needed. Choose a plan below to keep sending requests once it ends.
+        </p>
+      ) : null}
+
+      {canSubmit ? (
         <form className="mt-4 space-y-4" onSubmit={onSubmit}>
           <label className="block">
             <span className="font-heading text-sm font-semibold text-[var(--client-ink)]">What kind of request is this?</span>
@@ -237,7 +255,9 @@ export function ClientCareRequests({
       ) : (
         <div className="mt-4 rounded-lg border border-[var(--client-line)] bg-[var(--client-bg)] p-4">
           <p className="text-sm text-[var(--client-ink)]">
-            Website Care requests are part of the Website Care plan. Choose it below to start sending requests.
+            {trialEndsAt
+              ? "Your free post-launch period has ended. Website Care requests are part of the Website Care plan -- choose it below to start sending requests again."
+              : "Website Care requests are part of the Website Care plan. Choose it below to start sending requests."}
           </p>
           <a
             href="#plans"

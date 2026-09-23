@@ -825,6 +825,7 @@ export type CareRequestRow = {
   status: CareRequestStatus;
   category: CareRequestCategory;
   has_active_care_plan: boolean;
+  in_launch_trial: boolean;
   created_at: string;
   updated_at: string;
   resolved_at: string | null;
@@ -1615,7 +1616,13 @@ export type Database = {
       };
       client_project_delivery_status: {
         Args: { p_project_id: string };
-        Returns: { domain_name: string | null; domain_status: string; hosting_status: string; deployment_status: string }[];
+        Returns: {
+          domain_name: string | null;
+          domain_status: string;
+          hosting_status: string;
+          deployment_status: string;
+          launch_trial_ends_at: string | null;
+        }[];
       };
       client_website_health: {
         Args: { p_project_id: string };

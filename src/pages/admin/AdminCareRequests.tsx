@@ -279,7 +279,11 @@ export function AdminCareRequests() {
                     <p className="mt-1.5 max-w-2xl text-sm text-[var(--admin-ink)]">{request.message}</p>
                     <p className="mt-1.5 text-[12px] text-[var(--admin-muted)]">
                       {CARE_REQUEST_TYPE_LABELS[request.requestType]} · Sent {formatRequestDate(request.createdAt)}
-                      {request.hasActiveCarePlan ? null : (
+                      {request.hasActiveCarePlan ? null : request.inLaunchTrial ? (
+                        <span className="ml-2 rounded-full border border-[rgb(0_80_240_/_0.35)] bg-[rgb(0_80_240_/_0.06)] px-2 py-0.5 font-semibold text-[var(--admin-blue)]">
+                          Launch trial
+                        </span>
+                      ) : (
                         <span className="ml-2 rounded-full border border-[rgb(217_119_6_/_0.4)] bg-[rgb(217_119_6_/_0.06)] px-2 py-0.5 font-semibold text-[#92610a]">
                           No active Care plan
                         </span>
