@@ -1,15 +1,27 @@
 import { useState, type FormEvent, type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { PageHero } from "@/components/PageHero";
 import { leadIndustries, referralSources } from "@/data/leads";
 import { announceLeadsChanged } from "@/lib/leadsEvents";
 import { inquiryMailtoHref, submitPublicLead, type PublicLeadDraft } from "@/data/publicLead";
+import { pricingTiers } from "@/data/pricing";
 import { site } from "@/data/site";
 import { cn } from "@/lib/cn";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { seoPage } from "@/data/seoPages";
+
+/** Starter sentence for the goal textarea when arriving from a pricing tier's "Start a Project"
+ * button (?tier=website|growth|custom) -- saves re-typing which package they want, while leaving
+ * the rest of the field free to fill in. Only ever sets the textarea's initial value (defaultValue,
+ * uncontrolled), so the visitor can freely edit or delete it. */
+function tierIntro(tier: (typeof pricingTiers)[number]): string {
+  const intro = tier.price.startsWith("$")
+    ? `I'm interested in the ${tier.name} package, starting at ${tier.price}.`
+    : `I'm interested in a ${tier.name.toLowerCase()} project.`;
+  return `${intro}\n\n`;
+}
 
 const nextSteps = [
   "Tell us about your project",
@@ -36,6 +48,10 @@ function draftFromForm(form: HTMLFormElement): PublicLeadDraft {
 export function ContactPage() {
   const meta = seoPage("/start-a-project");
   usePageMeta(meta.title, meta.description, meta.path);
+
+  const [searchParams] = useSearchParams();
+  const selectedTier = pricingTiers.find((tier) => tier.id === searchParams.get("tier"));
+  const initialGoal = selectedTier ? tierIntro(selectedTier) : "";
 
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
@@ -175,6 +191,7 @@ export function ContactPage() {
                     required
                     minLength={8}
                     rows={5}
+                    defaultValue={initialGoal}
                     className={cn(inputClass, "mt-2")}
                     placeholder="Describe the website you want to build."
                     onInvalid={(event) => event.currentTarget.setCustomValidity("Tell us what you need.")}

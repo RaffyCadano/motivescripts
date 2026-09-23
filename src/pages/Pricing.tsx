@@ -136,7 +136,7 @@ export function PricingPage() {
                     </li>
                   ))}
                 </ul>
-                <Button to="/start-a-project" className="mt-8" variant={tier.highlighted ? "primary" : "secondary"}>
+                <Button to={`/start-a-project?tier=${tier.id}`} className="mt-8" variant={tier.highlighted ? "primary" : "secondary"}>
                   Start a Project
                 </Button>
               </article>
