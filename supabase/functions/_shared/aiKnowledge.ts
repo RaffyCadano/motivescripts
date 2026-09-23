@@ -17,10 +17,13 @@
  *
  * Bump AI_KNOWLEDGE_VERSION whenever this content changes.
  */
-export const AI_KNOWLEDGE_VERSION = "2026-09-22.2";
+export const AI_KNOWLEDGE_VERSION = "2026-09-23.1";
 
 /** Must match websiteStartingPrice in src/data/pricing.ts. */
 export const WEBSITE_STARTING_PRICE = "$2,500";
+
+/** Must match growthStartingPrice in src/data/pricing.ts. */
+export const GROWTH_STARTING_PRICE = "$3,500";
 
 /**
  * Must match careStartingPrice in src/data/pricing.ts -- the cheapest Website Care tier (Essential).
@@ -52,11 +55,11 @@ SEO: every site is built with clean structure, metadata, and performance fundame
 
 PUBLIC PRICING (starting prices, not final prices)
 - Website: starting at ${WEBSITE_STARTING_PRICE}. For businesses that need a professional website. The starting price covers: a homepage plus pages scoped to the business, responsive mobile-first design, a contact form, basic SEO setup and performance optimization, and launch support. It is a base package; extra scope is added on top.
-- Growth: quoted to scope (no public price). For projects that need more pages or added functionality: additional pages (for example a gallery, FAQ, or locations), booking, appointment, or quote-request forms, and integrations with other tools. It builds on the base website, with the extra scope priced in the proposal.
+- Growth: starting at ${GROWTH_STARTING_PRICE}. For projects that need more pages or added functionality: additional pages (for example a gallery, FAQ, or locations), booking, appointment, or quote-request forms, and integrations with other tools. It builds on the base website; the starting price is a floor, and the final price depends on the added scope, priced in the proposal.
 - Custom: custom quote (no public price). For requirements outside the standard website: e-commerce or an online store, customer login or portal features, complex integrations, multi-location or multi-brand sites.
 - Hosting setup, domain registration, and business email are quoted as separate line items when a project needs them; they are not automatically part of the starting price.
 - Website Care is optional, separate from the website project, and never included automatically. It is the only ongoing monthly plan MotiveScripts offers -- hosting and SEO are not sold as separate plans, they're included in Website Care starting at the Essential and Pro tiers respectively. It is billed monthly and renews automatically until canceled. Published STARTING price: ${CARE_STARTING_PRICE}/month (the Essential tier; higher tiers cost more and add more). This is a starting price. Website Care is only available once the client's website has launched: after that, the client can choose a tier themselves from their client portal at the listed monthly price and confirm it on a secure checkout page before anything is charged. A different or custom plan can be arranged by asking the team. Clients can cancel a plan themselves from their client portal at any time: an active plan then stays active until the end of the period already paid for and they are not charged again. To change a plan (rather than cancel it), they contact the team. Hosting setup for a new website project is a separate item quoted in the proposal, distinct from ongoing hosting under Website Care.
-- ${WEBSITE_STARTING_PRICE} is a STARTING price, never a guaranteed or final price. The final price depends on the project's scope: number of pages, design complexity and custom layouts, custom functionality (such as booking or e-commerce), integrations with other tools, the amount of content, and whether hosting, domain, or business email are needed.
+- ${WEBSITE_STARTING_PRICE} and ${GROWTH_STARTING_PRICE} are STARTING prices, never guaranteed or final prices. The final price depends on the project's scope: number of pages, design complexity and custom layouts, custom functionality (such as booking or e-commerce), integrations with other tools, the amount of content, and whether hosting, domain, or business email are needed.
 - The exact price is set in a project proposal after MotiveScripts understands the requirements. Visitors get a specific proposal by starting a project.
 - Common add-ons (examples only, each priced in the proposal): booking or appointment functionality, online payments, e-commerce, customer login, advanced integrations. There is no public price list for individual features.
 

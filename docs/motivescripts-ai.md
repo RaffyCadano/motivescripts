@@ -41,7 +41,7 @@ supabase functions deploy motivescripts-ai
 
 When a public page changes, update the matching section there and bump `AI_KNOWLEDGE_VERSION`. `node --test scripts/test-ai-endpoint.mjs` checks that the starting price, service names, process steps, and project names still match `src/data/*` and that the knowledge contains no internal terms or catalog prices.
 
-Pricing behavior: the assistant states that Website starts at the published starting price ($2,500) and that this is a starting price, never a final one. Growth and Custom are "quoted to scope". Hosting, domain, business email, Website Care, SEO, and individual features are "scoped and priced in the proposal", and it will not quote numbers for them.
+Pricing behavior: the assistant states that Website and Growth each start at their published starting price ($2,500 and $3,500) and that these are starting prices, never final ones. Custom remains "quoted to scope" (no public price). Hosting, domain, business email, Website Care, SEO, and individual features are "scoped and priced in the proposal", and it will not quote numbers for them.
 
 ## Limits and abuse protection
 

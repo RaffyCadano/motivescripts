@@ -11,6 +11,14 @@
 export const websiteStartingPrice = "$2,500";
 
 /**
+ * Starting price for the Growth tier -- unlike Custom, Growth now publishes a floor price. Final
+ * price still depends on the added scope (extra pages, forms, integrations), same as Website's
+ * starting price. If changed here, change it in supabase/functions/_shared/aiKnowledge.ts too
+ * (scripts/test-ai-endpoint.mjs checks they match).
+ */
+export const growthStartingPrice = "$3,500";
+
+/**
  * Starting price for Website Care, the one ongoing monthly service shown on the Pricing page. This is
  * the public "starting at" figure only: each client's actual plan amount is set when their plan is
  * created in Admin (Recurring plans) and is confirmed in their proposal. If you change it here, change
@@ -62,9 +70,9 @@ export const pricingTiers = [
     id: "growth",
     name: "Growth",
     tagline: "For projects that need more pages or added functionality.",
-    priceLead: "Pricing",
-    price: "Quoted to scope",
-    priceNote: "Built on the base website, with the extra scope priced in your proposal.",
+    priceLead: "Starting at",
+    price: growthStartingPrice,
+    priceNote: "Built on the base website. Final price depends on your project's added scope.",
     features: [
       "Additional pages, such as a gallery, FAQ, or locations",
       "Booking, appointment, or quote-request forms",

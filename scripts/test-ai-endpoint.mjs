@@ -16,6 +16,7 @@ import {
   AI_KNOWLEDGE_VERSION,
   START_PROJECT_TOKEN,
   CARE_STARTING_PRICE,
+  GROWTH_STARTING_PRICE,
   WEBSITE_STARTING_PRICE,
   buildSystemPrompt,
 } from "../supabase/functions/_shared/aiKnowledge.ts";
@@ -270,6 +271,13 @@ const prompt = buildSystemPrompt();
 test("knowledge stays in sync with the public site", () => {
   const pricing = readFileSync("src/data/pricing.ts", "utf8");
   assert.match(pricing, new RegExp(`websiteStartingPrice = "${WEBSITE_STARTING_PRICE.replace("$", "\\$")}"`));
+
+  assert.match(
+    pricing,
+    new RegExp(`growthStartingPrice = "${GROWTH_STARTING_PRICE.replace("$", "\\$")}"`),
+    "growthStartingPrice out of sync with the knowledge",
+  );
+  assert.ok(prompt.includes(`Growth: starting at ${GROWTH_STARTING_PRICE}`), "Growth starting price missing from knowledge");
 
   assert.match(pricing, new RegExp(`careStartingPrice = "${CARE_STARTING_PRICE.replace("$", "\\$")}"`), "careStartingPrice out of sync with the knowledge");
   assert.ok(prompt.includes(`${CARE_STARTING_PRICE}/month`), "monthly starting price missing from knowledge");
