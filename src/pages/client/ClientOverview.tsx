@@ -11,10 +11,16 @@ import { ClientTimeline } from "@/components/client/ClientTimeline";
 import { useClientPlanOffer } from "@/components/client/useClientPlanOffer";
 import { useClientPortalAction } from "@/components/client/useClientPortalAction";
 import { usePortalIdentity, usePortalSession } from "@/components/admin/leads/LeadsProvider";
-import { formatProjectDate } from "@/data/agencyProjects";
+import { formatProjectDate, formatProjectDay } from "@/data/agencyProjects";
 import { hasNoOpenPlans } from "@/data/clientPlanOffer";
 import { greetingForHour } from "@/data/clientPortal";
-import { timelineStagesFromProject } from "@/data/clientProjectProgress";
+import {
+  daysUntil,
+  fetchClientDeliveryStatus,
+  isInLaunchTrial,
+  timelineStagesFromProject,
+  type ClientDeliveryStatus,
+} from "@/data/clientProjectProgress";
 import { fetchClientPortalWelcome } from "@/data/settingsRepository";
 import { useMessaging } from "@/providers/MessagingProvider";
 
@@ -26,6 +32,7 @@ export function ClientOverview() {
   const { action, waiting, onboarding, loading } = useClientPortalAction();
   const { unreadMessageCount, conversations } = useMessaging();
   const planOffer = useClientPlanOffer();
+  const [deliveryStatus, setDeliveryStatus] = useState<ClientDeliveryStatus | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -38,6 +45,26 @@ export function ClientOverview() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!project?.id || !planOffer.launched) {
+      setDeliveryStatus(null);
+      return;
+    }
+    let active = true;
+    void fetchClientDeliveryStatus(project.id)
+      .then((status) => {
+        if (active) setDeliveryStatus(status);
+      })
+      .catch(() => {
+        if (active) setDeliveryStatus(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [project?.id, planOffer.launched]);
+
+  const inLaunchTrial = isInLaunchTrial(deliveryStatus);
 
   const stages = timelineStagesFromProject(project);
   const activity = (project?.activity ?? []).slice(0, 4).map((item) => ({
@@ -116,6 +143,11 @@ export function ClientOverview() {
             <p className="mt-1 text-sm text-[var(--client-muted)]">
               Keep it running smoothly with an optional monthly plan: Website Care, Hosting, or SEO.
             </p>
+            {inLaunchTrial && deliveryStatus?.launchTrialEndsAt ? (
+              <p className="mt-2 text-[13px] font-medium text-[var(--client-ink)]">
+                Free trial ends: {formatProjectDay(deliveryStatus.launchTrialEndsAt)} · {daysUntil(deliveryStatus.launchTrialEndsAt)} days remaining
+              </p>
+            ) : null}
           </div>
           <Link
             to="/client/plans"

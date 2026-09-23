@@ -16,6 +16,7 @@ import {
   listCareRequests,
   submitCareRequest,
 } from "@/data/careRequestsRepository";
+import { daysUntil } from "@/data/clientProjectProgress";
 import { uploadCareRequestFile, signedUrlForPath } from "@/data/fileStorage";
 import { fileExtension } from "@/data/fileUploadConfig";
 import { AgencyDbError } from "@/lib/dbErrors";
@@ -30,10 +31,6 @@ function formatRequestDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-}
-
-function daysRemaining(iso: string): number {
-  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
 }
 
 /**
@@ -154,7 +151,7 @@ export function ClientCareRequests({
 
       {inTrial && !hasActiveCarePlan ? (
         <p className="mt-3 rounded-lg border border-[rgb(0_80_240_/_0.25)] bg-[rgb(0_80_240_/_0.04)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--client-ink)]">
-          You're in your free {daysRemaining(trialEndsAt!)}-day post-launch period — requests are open with no plan
+          You're in your free {daysUntil(trialEndsAt!)}-day post-launch period — requests are open with no plan
           needed. Choose a plan below to keep sending requests once it ends.
         </p>
       ) : null}

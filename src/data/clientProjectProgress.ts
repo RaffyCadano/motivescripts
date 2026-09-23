@@ -137,6 +137,11 @@ export function isInLaunchTrial(status: ClientDeliveryStatus | null): boolean {
   return new Date(status.launchTrialEndsAt).getTime() > Date.now();
 }
 
+/** Whole days remaining until an ISO timestamp, floored at 0 for an already-past date. */
+export function daysUntil(iso: string): number {
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / (24 * 60 * 60 * 1000)));
+}
+
 export function clientDeliveryStagesFromGates(gates: ClientDeliveryGates | null): ProjectStage[] {
   if (!gates) return [];
   const steps = [
