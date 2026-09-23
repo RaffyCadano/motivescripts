@@ -231,11 +231,13 @@ select cron.schedule(
 
 -- ---------------------------------------------------------------------------
 -- 5. Storage RLS for the snapshot files, at path
---    projects/<project_id>/website-backups/<timestamp>.html (see websiteBackupStoragePath in
---    src/data/fileUploadConfig.ts). Staff-view-only, same bucket as everything else
---    (project-files) -- no authenticated insert/update/delete policy at all: every snapshot is
---    written by the website-backup Edge Function's service role, which bypasses RLS entirely, the
---    same way website_health_checks rows are never inserted by an authenticated session.
+--    projects/<project_id>/website-backups/<timestamp>.html (built once, server-side, by
+--    backupStoragePath in supabase/functions/website-backup/index.ts -- the frontend never
+--    reconstructs this path itself; it reads storage_path straight off the website_backups row).
+--    Staff-view-only, same bucket as everything else (project-files) -- no authenticated
+--    insert/update/delete policy at all: every snapshot is written by the website-backup Edge
+--    Function's service role, which bypasses RLS entirely, the same way website_health_checks
+--    rows are never inserted by an authenticated session.
 -- ---------------------------------------------------------------------------
 
 create or replace function public.can_access_website_backup_file(object_name text)

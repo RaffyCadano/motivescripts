@@ -57,16 +57,41 @@ const BACKUP_NOW_ERRORS: Record<string, string> = {
   server_error: "Unable to back up the website right now. Try again shortly.",
 };
 
+function backupNowErrorMessage(code: string | null): string {
+  return BACKUP_NOW_ERRORS[code ?? ""] ?? BACKUP_NOW_ERRORS.server_error;
+}
+
+// A non-2xx response (401/403/404/500) makes supabase-js treat the call as an "error" with no
+// parsed body -- the specific { ok: false, error: "not_allowed" } etc. the Edge Function actually
+// sent is still there, just on error.context (the raw Response), not on `data`. Same pattern as
+// checkWebsiteHealthNow's functionErrorCode in websiteHealthRepository.ts -- without this, every
+// non-2xx failure (wrong permission, project not found, ...) would collapse into the generic
+// "Unable to back up the website right now" instead of its real, more useful message.
+async function functionErrorCode(error: unknown): Promise<string | null> {
+  if (!error || typeof error !== "object" || !("context" in error)) return null;
+  const context = (error as { context?: unknown }).context;
+  if (!context || typeof context !== "object" || !("json" in context)) return null;
+  const jsonFn = (context as { json?: unknown }).json;
+  if (typeof jsonFn !== "function") return null;
+  try {
+    const body = (await jsonFn.call(context)) as { error?: string };
+    return typeof body?.error === "string" && body.error ? body.error : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Triggers a real, on-demand snapshot of the project's stored production URL. */
 export async function backupWebsiteNow(projectId: string): Promise<WebsiteBackup> {
   const client = db();
   const { data, error } = await client.functions.invoke("website-backup", { body: { projectId } });
   if (error) {
-    throw new AgencyDbError(BACKUP_NOW_ERRORS.server_error, error);
+    const code = await functionErrorCode(error);
+    throw new AgencyDbError(backupNowErrorMessage(code), error);
   }
   const payload = data as { ok?: boolean; backup?: BackupNowPayload; error?: string } | null;
   if (!payload?.ok || !payload.backup) {
-    throw new AgencyDbError(BACKUP_NOW_ERRORS[payload?.error ?? ""] ?? BACKUP_NOW_ERRORS.server_error);
+    throw new AgencyDbError(backupNowErrorMessage(payload?.error ?? null));
   }
   const backup = payload.backup;
   return {
