@@ -3,6 +3,7 @@ import {
   isWebsiteHealthEnvironment,
   type WebsiteHealthCheck,
   type WebsiteHealthEnvironment,
+  type WebsiteHealthState,
 } from "@/data/websiteHealth";
 import { AgencyDbError, friendlyDbError, logDbError } from "@/lib/dbErrors";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -113,6 +114,28 @@ export async function fetchProjectHasFastMonitoring(projectId: string): Promise<
   const { data, error } = await client.rpc("staff_project_has_fast_monitoring", { p_project_id: projectId });
   if (error) return false;
   return Boolean(data);
+}
+
+/** Latest status per environment, keyed by environment -- a missing key means no check has completed yet. */
+export type ClientWebsiteHealth = Partial<Record<WebsiteHealthEnvironment, WebsiteHealthState>>;
+
+/**
+ * Client-safe read of the caller's own project's website health (see client_website_health --
+ * website_health_checks itself has no client-facing RLS policy at all). Failures are swallowed to
+ * "no data yet" rather than surfaced as an error: this is a supplementary status dot on the
+ * client portal, not something worth blocking the page or showing a scary error for.
+ */
+export async function fetchClientWebsiteHealth(projectId: string): Promise<ClientWebsiteHealth> {
+  const client = db();
+  const { data, error } = await client.rpc("client_website_health", { p_project_id: projectId });
+  if (error) return {};
+  const result: ClientWebsiteHealth = {};
+  for (const row of data ?? []) {
+    if (isWebsiteHealthEnvironment(row.environment) && isWebsiteHealthCheckStatus(row.status)) {
+      result[row.environment] = row.status;
+    }
+  }
+  return result;
 }
 
 async function functionErrorCode(error: unknown): Promise<string | null> {

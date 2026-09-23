@@ -1617,6 +1617,10 @@ export type Database = {
         Args: { p_project_id: string };
         Returns: { domain_name: string | null; domain_status: string; hosting_status: string; deployment_status: string }[];
       };
+      client_website_health: {
+        Args: { p_project_id: string };
+        Returns: { environment: string; status: string; checked_at: string }[];
+      };
       staff_project_has_fast_monitoring: {
         Args: { p_project_id: string };
         Returns: boolean;

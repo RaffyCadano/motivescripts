@@ -127,7 +127,9 @@ export function ClientOverview() {
       ) : null}
 
       <ClientProjectCard nextLabel={action && action.kind !== "idle" ? action.title : "We’ll notify you when the next step is ready."} />
-      {project ? <ClientWebsiteSection projectName={project.name} development={project.development} /> : null}
+      {project ? (
+        <ClientWebsiteSection projectId={project.id} projectName={project.name} development={project.development} />
+      ) : null}
       {stages.length > 0 ? <ClientTimeline stages={stages} /> : null}
 
       <div className="grid gap-6 lg:grid-cols-2">

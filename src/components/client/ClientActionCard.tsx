@@ -11,7 +11,10 @@ type ClientActionCardProps = {
 export function ClientActionCard({ action, loading = false }: ClientActionCardProps) {
   const needsAction = Boolean(action?.href && action.buttonLabel);
   const informational =
-    action?.kind === "waiting_production" || action?.kind === "in_development" || action?.kind === "launched";
+    action?.kind === "waiting_production" ||
+    action?.kind === "in_development" ||
+    action?.kind === "launched" ||
+    action?.kind === "completed";
   // action.href is normally an internal route (e.g. /client/proposals/:id).
   // The "launched" action is the one case where it's a real production URL
   // -- render that as an actual external link instead of an internal <Link>,

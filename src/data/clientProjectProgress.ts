@@ -23,6 +23,25 @@ export function timelineStagesFromProject(project: AgencyProject | null | undefi
   }));
 }
 
+/**
+ * The real date the project's last milestone (by order) was marked Completed, read from the
+ * project's own activity log -- milestones_notify_update already writes "<name> is now Completed"
+ * there with that row's own real timestamp (see 20260919000000_activity_task_milestone_events.sql),
+ * so this is an actual recorded event, not an estimate or a guess from targetLaunchDate. Returns
+ * null if the last milestone isn't Completed yet, or no matching activity entry exists (e.g. it
+ * was marked Completed before that trigger shipped).
+ */
+export function projectCompletedDate(project: AgencyProject | null | undefined): string | null {
+  if (!project?.milestones.length) return null;
+  const sorted = [...project.milestones].sort((a, b) => a.order - b.order);
+  const last = sorted[sorted.length - 1];
+  if (last.status !== "Completed") return null;
+  const marker = `${last.name} is now Completed`;
+  const matches = project.activity.filter((item) => item.description === marker);
+  if (matches.length === 0) return null;
+  return matches.reduce((latest, item) => (item.createdAt > latest.createdAt ? item : latest)).createdAt;
+}
+
 export type ClientDeliveryGates = {
   designApproved: boolean;
   developmentComplete: boolean;

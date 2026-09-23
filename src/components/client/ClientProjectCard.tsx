@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ClientProgress } from "@/components/client/ClientProgress";
 import { ClientStatusBadge } from "@/components/client/ClientStatusBadge";
@@ -5,6 +6,7 @@ import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { calculateProjectProgress, currentMilestone, formatProjectDay, type AgencyProject } from "@/data/agencyProjects";
 import { displayMilestoneName } from "@/data/projectMilestones";
 import { clientProjectStatusExplanation, clientProjectStatusTone } from "@/data/clientPortal";
+import { projectCompletedDate, timelineStagesFromProject } from "@/data/clientProjectProgress";
 import { cn } from "@/lib/cn";
 
 type ClientProjectCardProps = {
@@ -22,6 +24,9 @@ export function ClientProjectCard({ compact = false, project: projectProp, nextL
   const milestone = currentMilestone(project);
   const statusNote = clientProjectStatusExplanation(project.status);
   const nextStep = nextLabel ?? "We’ll notify you when the next step is ready.";
+  const isCompleted = project.status === "Completed";
+  const stages = isCompleted ? timelineStagesFromProject(project) : [];
+  const completedDate = isCompleted ? projectCompletedDate(project) : null;
 
   return (
     <article
@@ -56,28 +61,47 @@ export function ClientProjectCard({ compact = false, project: projectProp, nextL
         <ClientProgress value={progress} label="Progress" />
       </div>
 
-      <dl className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div>
-          <dt className="text-[12px] text-[var(--client-muted)]">Current milestone</dt>
-          <dd className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">
-            {milestone ? displayMilestoneName(milestone.name) : "None yet"}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[12px] text-[var(--client-muted)]">Next</dt>
-          <dd className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">{nextStep}</dd>
-        </div>
-        <div>
-          <dt className="text-[12px] text-[var(--client-muted)]">Project status</dt>
-          <dd className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">{project.status}</dd>
-        </div>
-        <div>
-          <dt className="text-[12px] text-[var(--client-muted)]">Estimated completion</dt>
-          <dd className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">
-            {formatProjectDay(project.targetLaunchDate)}
-          </dd>
-        </div>
-      </dl>
+      {isCompleted ? (
+        <>
+          <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
+            {stages.map((stage) => (
+              <li key={stage.id} className="flex items-center gap-1.5 text-sm text-[var(--client-ink)]">
+                <Check size={14} strokeWidth={2.6} className="text-[#0f7a56]" aria-hidden="true" />
+                {stage.label}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-6">
+            <dt className="text-[12px] text-[var(--client-muted)]">Completed</dt>
+            <dd className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">
+              {completedDate ? formatProjectDay(completedDate) : "Completed"}
+            </dd>
+          </div>
+        </>
+      ) : (
+        <dl className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div>
+            <dt className="text-[12px] text-[var(--client-muted)]">Current milestone</dt>
+            <dd className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">
+              {milestone ? displayMilestoneName(milestone.name) : "None yet"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[12px] text-[var(--client-muted)]">Next</dt>
+            <dd className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">{nextStep}</dd>
+          </div>
+          <div>
+            <dt className="text-[12px] text-[var(--client-muted)]">Project status</dt>
+            <dd className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">{project.status}</dd>
+          </div>
+          <div>
+            <dt className="text-[12px] text-[var(--client-muted)]">Estimated completion</dt>
+            <dd className="mt-1 font-heading text-sm font-semibold text-[var(--client-ink)]">
+              {formatProjectDay(project.targetLaunchDate)}
+            </dd>
+          </div>
+        </dl>
+      )}
 
       {compact ? (
         <Link

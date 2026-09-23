@@ -1,10 +1,33 @@
+import { useEffect, useState } from "react";
 import { ClientStatusBadge } from "@/components/client/ClientStatusBadge";
 import {
   clientWebsitePhase,
   clientWebsiteStatusLabel,
   type ProjectDevelopment,
 } from "@/data/projectDevelopment";
+import { websiteHealthStateLabel, type WebsiteHealthState } from "@/data/websiteHealth";
+import { fetchClientWebsiteHealth, type ClientWebsiteHealth } from "@/data/websiteHealthRepository";
 import { displayHttpHost, safeHttpHref } from "@/lib/safeUrl";
+
+const HEALTH_DOT_COLOR: Record<WebsiteHealthState, string> = {
+  healthy: "#0f7a56",
+  degraded: "#eda100",
+  down: "#b42318",
+  unknown: "var(--client-muted)",
+};
+
+/** Only rendered once a check has actually completed -- most projects without an active
+ * monitoring-enabled Care plan will never have a row, and "Unknown" next to every URL would
+ * just be noise. */
+function HealthDot({ state }: { state: WebsiteHealthState | undefined }) {
+  if (!state || state === "unknown") return null;
+  return (
+    <span className="mt-1.5 inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--client-ink)]">
+      <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: HEALTH_DOT_COLOR[state] }} aria-hidden="true" />
+      {websiteHealthStateLabel(state)}
+    </span>
+  );
+}
 
 function WebsiteLink({ href, label }: { href: string; label: string }) {
   const safe = safeHttpHref(href);
@@ -26,11 +49,13 @@ function WebsiteField({
   url,
   emptyLabel,
   actionLabel,
+  health,
 }: {
   label: string;
   url: string;
   emptyLabel: string;
   actionLabel: string;
+  health?: WebsiteHealthState;
 }) {
   const safe = safeHttpHref(url);
   return (
@@ -41,6 +66,7 @@ function WebsiteField({
           <p className="mt-1 break-all font-heading text-sm font-semibold text-[var(--client-ink)]">
             {displayHttpHost(url)}
           </p>
+          <HealthDot state={health} />
           <WebsiteLink href={url} label={actionLabel} />
         </>
       ) : (
@@ -51,13 +77,25 @@ function WebsiteField({
 }
 
 type ClientWebsiteSectionProps = {
+  projectId: string;
   projectName: string;
   development: ProjectDevelopment;
 };
 
-export function ClientWebsiteSection({ projectName, development }: ClientWebsiteSectionProps) {
+export function ClientWebsiteSection({ projectId, projectName, development }: ClientWebsiteSectionProps) {
   const phase = clientWebsitePhase(development);
   const staging = safeHttpHref(development.stagingUrl);
+  const [health, setHealth] = useState<ClientWebsiteHealth>({});
+
+  useEffect(() => {
+    let active = true;
+    void fetchClientWebsiteHealth(projectId).then((result) => {
+      if (active) setHealth(result);
+    });
+    return () => {
+      active = false;
+    };
+  }, [projectId]);
 
   return (
     <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
@@ -89,6 +127,7 @@ export function ClientWebsiteSection({ projectName, development }: ClientWebsite
             url={development.stagingUrl}
             emptyLabel="Not available yet"
             actionLabel="View Staging Website"
+            health={health.staging}
           />
         ) : null}
         <WebsiteField
@@ -96,6 +135,7 @@ export function ClientWebsiteSection({ projectName, development }: ClientWebsite
           url={development.productionUrl}
           emptyLabel="Not available yet"
           actionLabel="Visit Website"
+          health={health.production}
         />
       </div>
     </section>

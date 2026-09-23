@@ -30,6 +30,7 @@ export type ClientActionKind =
   | "waiting_production"
   | "in_development"
   | "launched"
+  | "completed"
   | "idle";
 
 export type ClientAction = {
@@ -132,6 +133,16 @@ export function deriveClientPortalAction(
       kind: "in_development",
       title: "Your project is now in development.",
       body: "We’re building your website. You’ll see files and reviews here as work is ready.",
+    };
+  }
+
+  if (flags.isLaunched && flags.projectStatus === "Completed") {
+    return {
+      id: "completed",
+      kind: "completed",
+      eyebrow: "You're all caught up ✓",
+      title: "Your website is live and your project is complete.",
+      body: "There's nothing else needed from you. Visit your website or explore your project details below any time.",
     };
   }
 
