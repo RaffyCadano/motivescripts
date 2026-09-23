@@ -46,7 +46,7 @@ export const careService = {
 
 /** Shown under Website Care and repeated in the FAQ, so the terms are stated wherever the price is. */
 export const ongoingServicesTerms =
-  "Your first 30 days are free, then billed monthly and renews automatically until you cancel. After your website launches you can choose a plan yourself from your client portal at the listed price, and you confirm it on Stripe's secure checkout before anything is charged -- Stripe holds your card but nothing is charged until the trial ends. You can cancel any time from your client portal: canceling during the free month means you're never charged at all, and canceling later means the plan runs to the end of the period you've already paid for and you aren't charged again. Need something different? Ask us about a custom plan.";
+  "Billed monthly and renews automatically until you cancel. After your website launches you can choose a plan yourself from your client portal at the listed price, and you confirm it on Stripe's secure checkout before anything is charged. You can cancel any time from your client portal: the plan then runs to the end of the period you've already paid for and you aren't charged again. Need something different? Ask us about a custom plan.";
 
 export const pricingTiers = [
   {
