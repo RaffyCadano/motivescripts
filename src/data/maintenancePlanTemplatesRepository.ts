@@ -65,7 +65,7 @@ function draftFields(input: MaintenancePlanTemplateInput) {
   };
 }
 
-/** All tiers a staff member with invoices.manage can see (active + retired). Client-facing screens should filter to isActive. */
+/** All tiers a staff member with invoices.view can see (active + retired) -- editing still requires invoices.manage. Client-facing screens should filter to isActive. */
 export async function listMaintenancePlanTemplates(): Promise<MaintenancePlanTemplate[]> {
   const client = db();
   const { data, error } = await client
