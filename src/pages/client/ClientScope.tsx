@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Check, CircleCheck, ExternalLink, Globe, Heart, LayoutTemplate, Package, Palette, Puzzle, StickyNote, Target, type LucideIcon } from "lucide-react";
 import { ClientConfirmDialog } from "@/components/client/ClientConfirmDialog";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { useUnsavedNavigation } from "@/components/documents/UnsavedChangesDialog";
@@ -28,7 +29,9 @@ import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
 import { ScopeRecommendPanel } from "@/components/client/ScopeRecommendPanel";
 import { ScopePackageChooser } from "@/components/client/ScopePackageChooser";
+import { pricingTiers } from "@/data/pricing";
 import { projectPackageLabels } from "@/data/projectPackages";
+import { displayHttpHost, safeHttpHref } from "@/lib/safeUrl";
 import { scopePackageHint } from "@/data/scopePackageHint";
 
 const fieldClass =
@@ -517,89 +520,110 @@ export function ClientScope() {
 }
 
 function ScopeSummary({ draft, onEdit }: { draft: ScopeBriefDraft; onEdit: () => void }) {
+  const tier = draft.package ? pricingTiers.find((item) => item.id === draft.package) : undefined;
+  const currentSite = safeHttpHref(draft.currentWebsiteUrl.trim());
+  const pages = [
+    ...draft.pages.filter((item) => item !== "Other"),
+    ...(draft.pages.includes("Other") && draft.otherPages.trim() ? [draft.otherPages.trim()] : []),
+  ];
+  const features = [
+    ...draft.features.filter((item) => item !== "Other"),
+    ...(draft.features.includes("Other") && draft.otherFeatures.trim() ? [draft.otherFeatures.trim()] : []),
+  ];
+  const styles = [
+    ...draft.styles.filter((item) => item !== "Other"),
+    ...(draft.styles.includes("Other") && draft.otherStyle.trim() ? [draft.otherStyle.trim()] : []),
+  ];
+
   return (
-    <div className="space-y-8 rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
-      <SummaryBlock title="Package">
-        <p className="text-sm text-[var(--client-ink)]">
-          {draft.package ? `${projectPackageLabels[draft.package]}` : "Not sure yet. We'll recommend one."}
-        </p>
-        <p className="mt-1 text-[12px] text-[var(--client-muted)]">We confirm the package and the price in your proposal.</p>
-      </SummaryBlock>
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <SummaryCard icon={Package} title="Your package">
+          <p className="font-heading text-2xl font-semibold tracking-tight text-[var(--client-ink)]">
+            {draft.package ? projectPackageLabels[draft.package] : "Not sure yet"}
+          </p>
+          {tier ? (
+            <p className="mt-1 font-heading text-sm font-semibold text-[var(--client-blue)]">
+              {tier.price.startsWith("$") ? `Starting at ${tier.price}` : tier.price}
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-[var(--client-muted)]">We’ll recommend one that fits.</p>
+          )}
+          <p className="mt-3 text-[12px] leading-relaxed text-[var(--client-muted)]">
+            We confirm the package and the price in your proposal.
+          </p>
+        </SummaryCard>
 
-      <section>
-        <h2 className="font-heading text-sm font-semibold text-[var(--client-ink)]">Included with every package</h2>
-        <ul className="mt-3 space-y-2">
-          {SCOPE_PACKAGE_INCLUDED.map((item) => (
-            <li key={item} className="text-sm font-medium text-[var(--client-ink)]">
-              ✓ {item}
-            </li>
-          ))}
-        </ul>
-      </section>
+        <SummaryCard icon={CircleCheck} title="Included with every package">
+          <ul className="space-y-2">
+            {SCOPE_PACKAGE_INCLUDED.map((item) => (
+              <li key={item} className="flex items-center gap-2.5 text-sm font-medium text-[var(--client-ink)]">
+                <Check size={16} strokeWidth={2.6} className="shrink-0 text-[var(--client-blue)]" aria-hidden="true" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </SummaryCard>
+      </div>
 
-      <SummaryBlock title="Pages">
-        {draft.pages.length > 0 ? (
-          <SelectedList items={draft.pages} />
-        ) : (
-          <p className="text-sm text-[var(--client-muted)]">No additional pages selected.</p>
-        )}
-        {draft.pages.includes("Other") && draft.otherPages.trim() ? (
-          <p className="mt-2 text-sm text-[var(--client-ink)]">{draft.otherPages}</p>
-        ) : null}
-      </SummaryBlock>
-
-      <SummaryBlock title="Features">
-        {draft.features.length > 0 ? (
-          <SelectedList items={draft.features} />
-        ) : (
-          <p className="text-sm text-[var(--client-muted)]">No additional features selected.</p>
-        )}
-        {draft.features.includes("Other") && draft.otherFeatures.trim() ? (
-          <p className="mt-2 text-sm text-[var(--client-ink)]">{draft.otherFeatures}</p>
-        ) : null}
-      </SummaryBlock>
-
-      <SummaryBlock title="What is your website for?">
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--client-ink)]">
+      <SummaryCard icon={Target} title="What your website is for">
+        <p className="whitespace-pre-wrap border-l-2 border-[var(--client-blue)] pl-4 text-[15px] leading-relaxed text-[var(--client-ink)]">
           {draft.goal.trim() || "—"}
         </p>
-      </SummaryBlock>
+      </SummaryCard>
 
-      <SummaryBlock title="Do you currently have a website?">
-        <p className="text-sm font-medium text-[var(--client-ink)]">
-          {draft.hasExistingWebsite === true ? "Yes" : draft.hasExistingWebsite === false ? "No" : "—"}
-        </p>
-        {draft.hasExistingWebsite ? (
-          <div className="mt-2 space-y-1 text-sm text-[var(--client-ink)]">
-            {draft.currentWebsiteUrl.trim() ? <p>{draft.currentWebsiteUrl}</p> : null}
-            {draft.currentWebsiteNotes.trim() ? (
-              <p className="whitespace-pre-wrap leading-relaxed text-[var(--client-muted)]">{draft.currentWebsiteNotes}</p>
-            ) : null}
-          </div>
-        ) : null}
-      </SummaryBlock>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <SummaryCard icon={LayoutTemplate} title="Extra pages">
+          <TagList items={pages} empty="No additional pages selected." />
+        </SummaryCard>
+        <SummaryCard icon={Puzzle} title="Features">
+          <TagList items={features} empty="No additional features selected." />
+        </SummaryCard>
+      </div>
 
-      <SummaryBlock title="Style">
-        {draft.styles.length > 0 ? (
-          <SelectedList items={draft.styles} />
-        ) : (
-          <p className="text-sm text-[var(--client-muted)]">No style selected.</p>
-        )}
-        {draft.styles.includes("Other") && draft.otherStyle.trim() ? (
-          <p className="mt-2 text-sm text-[var(--client-ink)]">{draft.otherStyle}</p>
-        ) : null}
-      </SummaryBlock>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <SummaryCard icon={Globe} title="Your current website">
+          {draft.hasExistingWebsite ? (
+            <div className="space-y-2">
+              {currentSite ? (
+                <a
+                  href={currentSite}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 font-heading text-sm font-semibold text-[var(--client-blue)] hover:underline"
+                >
+                  {displayHttpHost(draft.currentWebsiteUrl)}
+                  <ExternalLink size={14} strokeWidth={2.2} aria-hidden="true" />
+                </a>
+              ) : draft.currentWebsiteUrl.trim() ? (
+                <p className="text-sm font-medium text-[var(--client-ink)]">{draft.currentWebsiteUrl}</p>
+              ) : null}
+              {draft.currentWebsiteNotes.trim() ? (
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--client-muted)]">{draft.currentWebsiteNotes}</p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-sm text-[var(--client-muted)]">
+              {draft.hasExistingWebsite === false ? "No current website. This will be your first." : "Not answered."}
+            </p>
+          )}
+        </SummaryCard>
+
+        <SummaryCard icon={Palette} title="Style">
+          <TagList items={styles} empty="No style selected." />
+        </SummaryCard>
+      </div>
 
       {draft.likedWebsites.trim() ? (
-        <SummaryBlock title="Websites you like">
+        <SummaryCard icon={Heart} title="Websites you like">
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--client-ink)]">{draft.likedWebsites}</p>
-        </SummaryBlock>
+        </SummaryCard>
       ) : null}
 
       {draft.additionalNotes.trim() ? (
-        <SummaryBlock title="Anything else?">
+        <SummaryCard icon={StickyNote} title="Anything else">
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--client-ink)]">{draft.additionalNotes}</p>
-        </SummaryBlock>
+        </SummaryCard>
       ) : null}
 
       <button
@@ -613,23 +637,30 @@ function ScopeSummary({ draft, onEdit }: { draft: ScopeBriefDraft; onEdit: () =>
   );
 }
 
-function SummaryBlock({ title, children }: { title: string; children: ReactNode }) {
+function SummaryCard({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children: ReactNode }) {
   return (
-    <section>
-      <h2 className="font-heading text-sm font-semibold text-[var(--client-ink)]">{title}</h2>
-      <div className="mt-3">{children}</div>
+    <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5">
+      <h2 className="flex items-center gap-2.5 font-heading text-[13px] font-semibold uppercase tracking-[0.1em] text-[var(--client-muted)]">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[rgb(0_80_240_/_0.08)] text-[var(--client-blue)]">
+          <Icon size={15} strokeWidth={2} aria-hidden="true" />
+        </span>
+        {title}
+      </h2>
+      <div className="mt-4">{children}</div>
     </section>
   );
 }
 
-function SelectedList({ items }: { items: string[] }) {
+function TagList({ items, empty }: { items: string[]; empty: string }) {
+  if (items.length === 0) return <p className="text-sm text-[var(--client-muted)]">{empty}</p>;
   return (
     <ul className="flex flex-wrap gap-2">
       {items.map((item) => (
         <li
           key={item}
-          className="inline-flex min-h-9 items-center rounded-full border border-[var(--client-navy)] bg-[var(--client-navy)] px-3 py-1.5 font-heading text-[12px] font-semibold text-white"
+          className="inline-flex items-center gap-1.5 rounded-full bg-[rgb(0_80_240_/_0.07)] px-3 py-1.5 font-heading text-[12px] font-semibold text-[var(--client-ink)]"
         >
+          <Check size={12} strokeWidth={3} className="text-[var(--client-blue)]" aria-hidden="true" />
           {item}
         </li>
       ))}
