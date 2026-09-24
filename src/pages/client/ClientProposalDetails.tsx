@@ -183,7 +183,7 @@ export function ClientProposalDetails() {
           <div className="relative w-full max-w-lg rounded-[var(--client-radius)] border border-[var(--client-line)] bg-white p-5">
             <h2 className="font-heading text-lg font-semibold">Decline proposal</h2>
             <p className="mt-2 text-sm text-[var(--client-muted)]">Optional reason for MotiveScripts.</p>
-            <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={4} className="mt-4 w-full rounded-lg border border-[var(--client-line)] px-3 py-2 text-sm" />
+            <textarea aria-label="Reason for declining (optional)" value={reason} onChange={(event) => setReason(event.target.value)} rows={4} className="mt-4 w-full rounded-lg border border-[var(--client-line)] px-3 py-2 text-sm" />
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button type="button" className={secondaryBtn} onClick={() => setDeclineOpen(false)}>
                 Cancel

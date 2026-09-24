@@ -84,7 +84,7 @@ export function TeamBlocked() {
               placeholder="Search task, project, or reason"
               className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
             />
-            <select
+            <select aria-label="All priorities"
               value={priority}
               onChange={(event) => setPriority(event.target.value as AgencyTaskPriority | "All")}
               className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"

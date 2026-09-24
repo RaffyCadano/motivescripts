@@ -11,6 +11,8 @@ type ProjectCardProps = {
   large?: boolean;
   /** Visible label for the case-study link, e.g. "View Case Study" or "View Project". */
   ctaLabel?: string;
+  /** The project name's heading level: h2 when the card sits directly under the page's h1 (the Work page), h3 under a section heading. */
+  headingLevel?: "h2" | "h3";
 };
 
 export function ProjectCard({
@@ -19,6 +21,7 @@ export function ProjectCard({
   reverse = false,
   large = false,
   ctaLabel = "View Case Study",
+  headingLevel: Heading = "h3",
 }: ProjectCardProps) {
   const split = !large && (featured || reverse);
   const linkLabel = `${ctaLabel} — ${project.name}`;
@@ -48,14 +51,14 @@ export function ProjectCard({
           </span>
           <span className="text-faint">{project.industry}</span>
         </div>
-        <h3
+        <Heading
           className={cn(
             "mt-3 font-bold",
             large ? "text-3xl md:text-4xl" : split ? "text-2xl md:text-3xl" : "text-xl md:text-2xl",
           )}
         >
           {project.name}
-        </h3>
+        </Heading>
         <p className="mt-1 text-sm text-muted-strong">{project.services}</p>
         <p
           className={cn(

@@ -51,11 +51,11 @@ export function WorkPage() {
 
         <div className="mt-16 space-y-14 md:mt-20 md:space-y-24">
           <AnimateIn>
-            <ProjectCard project={featured} large ctaLabel="View Project" />
+            <ProjectCard project={featured} large ctaLabel="View Project" headingLevel="h2" />
           </AnimateIn>
           {rest.map((project, index) => (
             <AnimateIn key={project.slug} delay={index * 40}>
-              <ProjectCard project={project} featured reverse={index % 2 === 0} ctaLabel="View Project" />
+              <ProjectCard project={project} featured reverse={index % 2 === 0} ctaLabel="View Project" headingLevel="h2" />
             </AnimateIn>
           ))}
         </div>

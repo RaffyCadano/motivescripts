@@ -262,7 +262,7 @@ export function TeamTime() {
                   placeholder="Search reference, notes, or amount…"
                   className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
                 />
-                <select
+                <select aria-label="All methods"
                   value={paymentMethod}
                   onChange={(event) => setPaymentMethod(event.target.value as PayrollPaymentMethod | "All")}
                   className="h-9 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"
@@ -342,7 +342,7 @@ export function TeamTime() {
                   placeholder="Search project, task, or note…"
                   className="h-9 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
                 />
-                <select
+                <select aria-label="All statuses"
                   value={entryStatus}
                   onChange={(event) => setEntryStatus(event.target.value as "All" | "Paid" | "Not yet paid")}
                   className="h-9 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"

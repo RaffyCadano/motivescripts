@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { safeHttpHref } from "@/lib/safeUrl";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
@@ -212,15 +213,20 @@ export function TeamTaskDetail({
               {task.referenceUrl ? (
                 <div>
                   <dt className="text-[12px] text-[var(--admin-muted)]">Reference link</dt>
-                  <dd className="mt-1 text-sm">
-                    <a
-                      href={task.referenceUrl}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      className="font-medium text-[var(--admin-blue)] hover:underline"
-                    >
-                      Open link ↗
-                    </a>
+                  <dd className="mt-1 break-all text-sm">
+                    {/* Free text staff typed in: only ever make it a link if it's really http(s), never javascript: and friends. */}
+                    {safeHttpHref(task.referenceUrl) ? (
+                      <a
+                        href={safeHttpHref(task.referenceUrl) ?? undefined}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="font-medium text-[var(--admin-blue)] hover:underline"
+                      >
+                        Open link ↗
+                      </a>
+                    ) : (
+                      <span className="text-[var(--admin-ink)]">{task.referenceUrl}</span>
+                    )}
                   </dd>
                 </div>
               ) : null}

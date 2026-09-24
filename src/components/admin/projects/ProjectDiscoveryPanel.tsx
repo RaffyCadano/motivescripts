@@ -415,7 +415,7 @@ function DiscoveryRequestMoreDialog({
             );
           })}
         </div>
-        <textarea
+        <textarea aria-label="Message to the client"
           rows={6}
           className="w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-3 py-2 text-sm"
           placeholder="Message to the client"

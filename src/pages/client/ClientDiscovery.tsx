@@ -342,7 +342,7 @@ export function ClientDiscovery() {
                 }}
               />
               {form.goals.mainGoals.includes("Other") ? (
-                <input className={fieldClass} placeholder="Other goal" value={form.goals.mainGoalOther} onChange={(e) => patchForm({ goals: { ...form.goals, mainGoalOther: e.target.value } })} />
+                <input aria-label="Other goal" className={fieldClass} placeholder="Other goal" value={form.goals.mainGoalOther} onChange={(e) => patchForm({ goals: { ...form.goals, mainGoalOther: e.target.value } })} />
               ) : null}
               <p className="text-sm font-medium text-[var(--client-ink)]">What should visitors do after visiting?</p>
               <ChipGroup

@@ -282,7 +282,7 @@ export function ClientContractDetails() {
           <button type="button" className="absolute inset-0 bg-[rgb(7_17_31_/_0.4)]" aria-label="Close" onClick={() => setDeclineOpen(false)} />
           <div className="relative w-full max-w-lg rounded-[var(--client-radius)] border border-[var(--client-line)] bg-white p-5">
             <h2 className="font-heading text-lg font-semibold">Decline contract</h2>
-            <textarea value={reason} onChange={(event) => setReason(event.target.value)} rows={4} className="mt-4 w-full rounded-lg border border-[var(--client-line)] px-3 py-2 text-sm" placeholder="Optional reason" />
+            <textarea aria-label="Reason for declining (optional)" value={reason} onChange={(event) => setReason(event.target.value)} rows={4} className="mt-4 w-full rounded-lg border border-[var(--client-line)] px-3 py-2 text-sm" placeholder="Optional reason" />
             <div className="mt-5 flex justify-end gap-2">
               <button type="button" className={secondaryBtn} onClick={() => setDeclineOpen(false)}>
                 Cancel

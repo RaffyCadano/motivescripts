@@ -651,7 +651,7 @@ function ChecklistManager({ templateId, busy }: { templateId: string; busy: bool
       )}
 
       <div className="mt-3 flex gap-2">
-        <input
+        <input aria-label="Add checklist item"
           className={`${fieldClass} mt-0 flex-1`}
           placeholder="Add checklist item"
           value={newTitle}

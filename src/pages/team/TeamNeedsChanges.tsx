@@ -73,7 +73,7 @@ export function TeamNeedsChanges() {
               placeholder="Search deliverable, project, or feedback"
               className="h-10 min-w-0 flex-1 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
             />
-            <select
+            <select aria-label="All projects"
               value={projectId}
               onChange={(event) => setProjectId(event.target.value)}
               className="h-10 rounded-lg border border-[var(--admin-line)] bg-white px-3 text-sm"

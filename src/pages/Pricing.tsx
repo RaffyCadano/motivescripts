@@ -236,7 +236,12 @@ export function PricingPage() {
               {/* relative: the sr-only labels in the cells are position:absolute, and a scroll box only clips
                   absolutely positioned children when it is itself positioned. Without this they escaped it and
                   widened the whole page on phones. */}
-              <div className="relative mt-8 overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-line)]">
+              <div
+                tabIndex={0}
+                role="region"
+                aria-label="Package comparison table, scrolls sideways on small screens"
+                className="relative mt-8 overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-line)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ms-blue)]"
+              >
                 <table className="w-full min-w-[36rem] text-left text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-line)]">
