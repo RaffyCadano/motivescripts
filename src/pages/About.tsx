@@ -60,8 +60,8 @@ export function AboutPage() {
 
         <AnimateIn>
         <section>
-          <h2 className="text-2xl md:text-3xl">Who we work with</h2>
-          <p className="mt-4 max-w-2xl text-muted">
+          <h2 className="text-center text-2xl md:text-3xl">Who we work with</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-muted">
             Local and service businesses that need a clear website — not a freelancer portfolio.
             If customers find you on their phone and need to decide quickly, we know that shape of
             site.
@@ -70,7 +70,7 @@ export function AboutPage() {
             {clientTypes.map((item) => (
               <li
                 key={item}
-                className="rounded-[var(--radius-lg)] border border-[var(--color-line)] px-4 py-4 text-sm font-medium text-ink"
+                className="rounded-[var(--radius-lg)] border border-[var(--color-line)] px-4 py-4 text-center text-sm font-medium text-ink"
               >
                 {item}
               </li>
@@ -81,8 +81,8 @@ export function AboutPage() {
 
         <AnimateIn>
         <section>
-          <h2 className="text-2xl md:text-3xl">How we work with you</h2>
-          <p className="mt-4 max-w-2xl text-muted">
+          <h2 className="text-center text-2xl md:text-3xl">How we work with you</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-muted">
             We keep the project practical. You should always know what stage you’re in, what we need
             from you, and what happens next.
           </p>
@@ -90,7 +90,7 @@ export function AboutPage() {
             {whyPoints.map((point, index) => (
               <li
                 key={point.title}
-                className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-line)] p-6"
+                className="relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-line)] p-6 text-center"
               >
                 <span
                   className="absolute inset-y-0 left-0 w-px bg-[linear-gradient(180deg,#0038C8,#00C8FF)]"
@@ -109,8 +109,8 @@ export function AboutPage() {
 
         <AnimateIn>
         <section>
-          <h2 className="text-2xl md:text-3xl">Thoughtful from strategy to launch.</h2>
-          <p className="mt-4 max-w-2xl text-muted">
+          <h2 className="text-center text-2xl md:text-3xl">Thoughtful from strategy to launch.</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-muted">
             We don’t treat strategy, design, and development as separate pieces — each stage builds on
             the last so the finished website works as one experience. Every engagement follows the same
             sequence so you are never guessing. The longer version lives on our{" "}
@@ -123,7 +123,7 @@ export function AboutPage() {
             {pipeline.map((stage, index) => (
               <li
                 key={stage.title}
-                className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] px-4 py-5"
+                className="flex flex-col items-center rounded-[var(--radius-lg)] border border-[var(--color-line)] px-4 py-5 text-center"
               >
                 <span className="font-heading text-xs font-bold tracking-[0.16em] text-cyan">
                   {String(index + 1).padStart(2, "0")}
@@ -137,27 +137,27 @@ export function AboutPage() {
         </AnimateIn>
 
         <AnimateIn>
-        <section className="flex flex-col items-start gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="max-w-xl">
-            <h2 className="text-2xl md:text-3xl">See the approach in practice.</h2>
-            <p className="mt-4 text-muted">
-              Explore website concepts that demonstrate how we approach structure, design, and user
-              experience for different types of businesses.
-            </p>
-            <p className="mt-6 text-sm text-muted">Want to know what working with MotiveScripts looks like?</p>
+        <section className="mx-auto max-w-xl text-center">
+          <h2 className="text-2xl md:text-3xl">See the approach in practice.</h2>
+          <p className="mt-4 text-muted">
+            Explore website concepts that demonstrate how we approach structure, design, and user
+            experience for different types of businesses.
+          </p>
+          <p className="mt-6 text-sm text-muted">Want to know what working with MotiveScripts looks like?</p>
+          <div className="mt-4 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-8">
             <Link
               viewTransition
               to="/process"
-              className="mt-1 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
+              className="inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
             >
               See Our Process
               <span aria-hidden="true" className="icon-arrow">→</span>
             </Link>
+            <Button to="/work" variant="secondary" className="shrink-0">
+              View Our Work
+              <span aria-hidden="true" className="icon-arrow">→</span>
+            </Button>
           </div>
-          <Button to="/work" variant="secondary" className="shrink-0">
-            View Our Work
-            <span aria-hidden="true" className="icon-arrow">→</span>
-          </Button>
         </section>
         </AnimateIn>
       </div>
