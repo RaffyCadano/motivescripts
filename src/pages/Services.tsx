@@ -1,3 +1,4 @@
+import { Code2, Search, Wrench, PenTool, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/Button";
 import { CTA } from "@/components/CTA";
 import { AnimateIn } from "@/components/AnimateIn";
@@ -6,6 +7,13 @@ import { pipeline } from "@/data/site";
 import { services } from "@/data/services";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { seoPage } from "@/data/seoPages";
+
+const serviceIcons: Record<(typeof services)[number]["id"], LucideIcon> = {
+  design: PenTool,
+  development: Code2,
+  care: Wrench,
+  seo: Search,
+};
 
 const included = [
   "Responsive, mobile-first design",
@@ -37,24 +45,30 @@ export function ServicesPage() {
           <AnimateIn className="text-center">
             <p className="eyebrow eyebrow--plain">What we do</p>
           </AnimateIn>
-          <div className="-mx-3 mt-8 flex flex-col gap-8 px-3 py-3">
-          {services.map((service, index) => (
-            <AnimateIn key={service.id} delay={index * 80}>
-              <article
-                id={service.id}
-                className="flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7 text-center md:gap-5 md:p-10"
-              >
-              <p className="font-heading text-sm font-bold tracking-[0.16em] text-cyan">
-                {String(index + 1).padStart(2, "0")}
-              </p>
-              <div>
-                <h2 className="text-2xl md:text-3xl">{service.title}</h2>
-                <p className="mx-auto mt-3 max-w-2xl text-muted">{service.body}</p>
-                <p className="mx-auto mt-4 max-w-2xl text-muted-strong">{service.detail}</p>
-              </div>
-              </article>
-            </AnimateIn>
-          ))}
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            {services.map((service, index) => {
+              const Icon = serviceIcons[service.id];
+              return (
+                <AnimateIn key={service.id} className="flex h-full" delay={index * 80}>
+                  <article
+                    id={service.id}
+                    className="group relative flex h-full w-full scroll-mt-28 flex-col items-center rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7 text-center transition-[transform,box-shadow,border-color] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:-translate-y-1 hover:border-[rgb(0_200_255_/_0.28)] hover:shadow-[var(--shadow-card)] md:p-9"
+                  >
+                    <span className="absolute left-6 top-6 font-heading text-xs font-bold tracking-[0.16em] text-cyan">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="flex size-14 items-center justify-center rounded-2xl bg-[rgb(0_80_240_/_0.06)] text-blue transition-colors duration-[var(--duration-base)] ease-[var(--ease-out)] group-hover:bg-[rgb(0_80_240_/_0.1)]">
+                      <Icon size={26} strokeWidth={1.8} aria-hidden="true" />
+                    </span>
+                    <h2 className="mt-5 text-2xl">{service.title}</h2>
+                    <p className="mt-3 max-w-md font-medium text-muted-strong">{service.body}</p>
+                    <p className="mt-5 w-full max-w-md border-t border-[var(--color-line)] pt-5 text-sm leading-relaxed text-muted">
+                      {service.detail}
+                    </p>
+                  </article>
+                </AnimateIn>
+              );
+            })}
           </div>
         </div>
 
