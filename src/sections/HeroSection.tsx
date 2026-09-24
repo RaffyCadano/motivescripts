@@ -41,11 +41,8 @@ export function HeroSection() {
                 ·
               </li>
               <li>Custom-built</li>
-              <li aria-hidden="true" className="font-bold text-bright">
-                ·
-              </li>
-              <li>Based in Winston-Salem, North Carolina</li>
             </ul>
+            <p className="mt-2 text-base text-faint md:text-lg">Based in Winston-Salem, North Carolina</p>
             <p className="mt-2 max-w-xl text-sm text-faint">
               Custom web design in Winston-Salem, North Carolina — serving Greensboro, High Point,
               Kernersville, and Clemmons.
