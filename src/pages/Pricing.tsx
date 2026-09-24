@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
@@ -10,7 +11,9 @@ import {
   careService,
   careStartingPrice,
   commonAddOns,
+  comparisonRows,
   ongoingServicesTerms,
+  packageDetails,
   pricingTiers,
   websiteStartingPrice,
 } from "@/data/pricing";
@@ -148,6 +151,138 @@ export function PricingPage() {
           Not sure which fits? Tell us about your business when you start a project and we'll recommend the right
           scope.
         </p>
+      </div>
+
+      <div className="border-t border-[var(--color-line)]">
+        <div className="container-wide py-16 md:py-24">
+          <AnimateIn>
+            <section aria-labelledby="what-you-get-heading">
+              <div className="mx-auto max-w-2xl text-center">
+                <p className="eyebrow">What you get</p>
+                <h2 id="what-you-get-heading" className="mt-4 text-2xl md:text-3xl">
+                  Everything included, in detail.
+                </h2>
+                <p className="mt-4 text-muted">
+                  The full list for each package. Final price depends on your project&apos;s scope.
+                </p>
+              </div>
+              <div className="mt-10 grid gap-6 lg:grid-cols-3">
+                {pricingTiers.map((tier) => {
+                  const detail = packageDetails[tier.id];
+                  return (
+                    <article
+                      key={tier.id}
+                      className={cn(
+                        "flex flex-col rounded-[var(--radius-lg)] border p-7 md:p-8",
+                        tier.highlighted
+                          ? "border-[rgb(0_80_240_/_0.35)] bg-[rgb(0_80_240_/_0.03)]"
+                          : "border-[var(--color-line)]",
+                      )}
+                    >
+                      <div className="flex items-baseline justify-between gap-3">
+                        <h3 className="text-xl font-bold">{tier.name}</h3>
+                        {tier.badge ? (
+                          <span className="font-heading text-xs font-bold uppercase tracking-[0.1em] text-blue">{tier.badge}</span>
+                        ) : null}
+                      </div>
+                      <p className="mt-2 font-heading text-sm font-semibold text-ink">
+                        {tier.priceLead === "Pricing" ? tier.price : `${tier.priceLead} ${tier.price}`}
+                      </p>
+                      {detail.intro ? <p className="mt-4 text-sm font-semibold text-muted-strong">{detail.intro}</p> : null}
+                      <div className="mt-5 space-y-6">
+                        {detail.groups.map((group) => (
+                          <div key={group.title}>
+                            <h4 className="font-heading text-xs font-bold uppercase tracking-[0.14em] text-faint">{group.title}</h4>
+                            <ul className="mt-3 space-y-2.5">
+                              {group.items.map((item) => (
+                                <li key={item} className="flex items-start gap-2.5 text-sm text-muted-strong">
+                                  <Check size={16} strokeWidth={2.4} className="mt-0.5 shrink-0 text-cyan" aria-hidden="true" />
+                                  {item}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          </AnimateIn>
+        </div>
+      </div>
+
+      <div className="border-t border-[var(--color-line)]">
+        <div className="container-wide py-16 md:py-24">
+          <AnimateIn>
+            <section aria-labelledby="compare-heading">
+              <h2 id="compare-heading" className="text-center text-2xl md:text-3xl">
+                Compare packages.
+              </h2>
+              <div className="mt-8 overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-line)]">
+                <table className="w-full min-w-[36rem] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--color-line)]">
+                      <th scope="col" className="px-5 py-4">
+                        <span className="sr-only">Feature</span>
+                      </th>
+                      {pricingTiers.map((tier) => (
+                        <th
+                          key={tier.id}
+                          scope="col"
+                          className={cn("px-5 py-4 text-center font-heading text-base font-bold", tier.highlighted && "text-blue")}
+                        >
+                          {tier.name}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {comparisonRows.map((row) => (
+                      <tr key={row.label} className="border-b border-[var(--color-line)] last:border-b-0">
+                        <th scope="row" className="px-5 py-3.5 font-medium text-muted-strong">
+                          {row.label}
+                        </th>
+                        {row.cells.map((cell, index) => (
+                          <td key={pricingTiers[index].id} className="px-5 py-3.5 text-center text-muted-strong">
+                            {cell === true ? (
+                              <>
+                                <Check size={16} strokeWidth={2.6} className="mx-auto text-cyan" aria-hidden="true" />
+                                <span className="sr-only">Included</span>
+                              </>
+                            ) : cell === false ? (
+                              <>
+                                <span aria-hidden="true" className="text-faint">
+                                  —
+                                </span>
+                                <span className="sr-only">Not included</span>
+                              </>
+                            ) : (
+                              <span className="font-semibold text-ink">{cell}</span>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-10 flex flex-col items-center gap-4 text-center">
+                <p className="font-heading text-lg font-semibold text-ink">Ready when you are.</p>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button to="/start-a-project?tier=website" variant="secondary">
+                    Choose Website
+                  </Button>
+                  <Button to="/start-a-project?tier=growth">Choose Growth</Button>
+                  <Button to="/start-a-project?tier=custom" variant="secondary">
+                    Request a quote
+                  </Button>
+                </div>
+              </div>
+            </section>
+          </AnimateIn>
+        </div>
       </div>
 
       <div className="border-t border-[var(--color-line)]">

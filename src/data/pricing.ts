@@ -126,3 +126,90 @@ export const commonAddOns = [
     description: "Connect your website to the other tools your business uses.",
   },
 ] as const;
+
+/**
+ * The detailed "What you get" lists on the Pricing page, keyed by pricingTiers[].id. Every line here
+ * restates something already published in that tier's own feature list (above) or something true of
+ * every project (the client portal, approving the site before it launches) -- nothing is claimed here
+ * that isn't claimed on the tier cards, so the two can't contradict each other. Prices are not
+ * repeated: the page reads them from pricingTiers so they can't drift.
+ */
+export const packageDetails: Record<
+  (typeof pricingTiers)[number]["id"],
+  { intro: string | null; groups: { title: string; items: string[] }[] }
+> = {
+  website: {
+    intro: null,
+    groups: [
+      {
+        title: "Design & build",
+        items: ["Homepage, plus pages scoped to your business", "Responsive, mobile-first design", "Contact form"],
+      },
+      {
+        title: "Get found",
+        items: ["Basic SEO setup", "Performance optimization"],
+      },
+      {
+        title: "Launch & after",
+        items: [
+          "Launch support",
+          "Client portal access: track your project, review files, and pay invoices",
+          "You approve the site before it launches",
+        ],
+      },
+    ],
+  },
+  growth: {
+    intro: "Everything in Website, plus:",
+    groups: [
+      {
+        title: "Design & build",
+        items: [
+          "Additional pages, such as a gallery, FAQ, or locations",
+          "Content structured around your services and inquiries",
+        ],
+      },
+      {
+        title: "Get customers",
+        items: ["Booking, appointment, or quote-request forms", "Integrations with other tools, scoped per project"],
+      },
+    ],
+  },
+  custom: {
+    intro: "Everything in Growth, plus whatever your project needs:",
+    groups: [
+      {
+        title: "Build",
+        items: [
+          "E-commerce or an online store",
+          "Customer login or portal features",
+          "Complex integrations",
+          "Multi-location or multi-brand sites",
+        ],
+      },
+      {
+        title: "How it's quoted",
+        items: ["Scoped around your exact requirements", "A clear quote before development begins"],
+      },
+    ],
+  },
+};
+
+/** A cell is true (included), false (not included), or a short string shown as-is. Order: Website, Growth, Custom. */
+export type ComparisonCell = boolean | string;
+
+export const comparisonRows: { label: string; cells: [ComparisonCell, ComparisonCell, ComparisonCell] }[] = [
+  { label: "Starting price", cells: [websiteStartingPrice, growthStartingPrice, "Custom quote"] },
+  { label: "Homepage, plus pages scoped to your business", cells: [true, true, true] },
+  { label: "Additional pages (gallery, FAQ, locations)", cells: [false, true, true] },
+  { label: "Responsive, mobile-first design", cells: [true, true, true] },
+  { label: "Contact form", cells: [true, true, true] },
+  { label: "Basic SEO setup and performance optimization", cells: [true, true, true] },
+  { label: "Booking, appointment, or quote-request forms", cells: [false, true, true] },
+  { label: "Integrations with other tools", cells: [false, "Scoped per project", "Complex integrations"] },
+  { label: "E-commerce or an online store", cells: [false, false, true] },
+  { label: "Customer login or portal features", cells: [false, false, true] },
+  { label: "Multi-location or multi-brand sites", cells: [false, false, true] },
+  { label: "Client portal (track project, files, invoices)", cells: [true, true, true] },
+  { label: "Launch support", cells: [true, true, true] },
+];
