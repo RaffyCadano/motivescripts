@@ -233,7 +233,10 @@ export function PricingPage() {
               <h2 id="compare-heading" className="text-center text-2xl md:text-3xl">
                 Compare packages.
               </h2>
-              <div className="mt-8 overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-line)]">
+              {/* relative: the sr-only labels in the cells are position:absolute, and a scroll box only clips
+                  absolutely positioned children when it is itself positioned. Without this they escaped it and
+                  widened the whole page on phones. */}
+              <div className="relative mt-8 overflow-x-auto rounded-[var(--radius-lg)] border border-[var(--color-line)]">
                 <table className="w-full min-w-[36rem] text-left text-sm">
                   <thead>
                     <tr className="border-b border-[var(--color-line)]">
