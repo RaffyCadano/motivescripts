@@ -48,7 +48,7 @@ export function HeroVisual() {
     <div className="relative mx-auto w-full max-w-[36rem] lg:max-w-none">
       <div className="hero-glow-pulse pointer-events-none absolute -right-8 top-6 size-56 rounded-full bg-[radial-gradient(circle,rgb(0_104_255_/_0.06),transparent_64%)] blur-2xl" />
 
-      <div className="relative z-10 px-3 pb-10 pt-2 sm:px-7 sm:pb-14 sm:pt-8 md:px-10 md:pb-16 md:pt-14">
+      <div className="relative z-10 pb-[16%] pt-2 sm:pt-6 md:pt-10">
         <Laptop3D>
           <BrowserChrome url="yoursite.com" />
           <div className="relative min-h-0 flex-1">
@@ -58,19 +58,19 @@ export function HeroVisual() {
           </div>
         </Laptop3D>
 
-        <DeviceFrame device={TABLET} className="absolute bottom-0 left-0 w-[30%] sm:left-2 sm:w-[28%] md:left-4">
+        <DeviceFrame device={TABLET} className="absolute bottom-0 left-0 w-[27%] sm:w-[25%]">
           <ScrollingMock pageWidth={TABLET_W} delaySeconds={5} overlay={<TabletOverlay />}>
             <TabletSiteMock />
           </ScrollingMock>
         </DeviceFrame>
 
-        <DeviceFrame device={PHONE} className="absolute bottom-1 right-0 w-[15%] sm:right-2 sm:w-[13%] md:right-4">
+        <DeviceFrame device={PHONE} className="absolute bottom-[2%] right-[1%] w-[14%] sm:w-[12.5%]">
           <ScrollingMock pageWidth={PHONE_W} delaySeconds={9} overlay={<PhoneOverlay />}>
             <PhoneSiteMock />
           </ScrollingMock>
         </DeviceFrame>
 
-        <div className="absolute bottom-3 left-1/2 hidden -translate-x-1/2 rounded-[var(--radius-lg)] border border-[#d9dfe8] bg-[var(--ms-white)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
+        <div className="absolute bottom-[3%] left-[56%] hidden -translate-x-1/2 rounded-[var(--radius-lg)] border border-[#d9dfe8] bg-[var(--ms-white)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
           <BrandMark className="h-7 w-auto" decorative />
           <p className="whitespace-nowrap font-heading text-xs font-semibold text-ink">Built by MotiveScripts</p>
         </div>
@@ -97,7 +97,7 @@ const KEY_ROWS = [14, 14, 13, 13, 11];
 function Laptop3D({ children }: { children: ReactNode }) {
   const deckLeft = -LAPTOP_DECK_W / 2;
   return (
-    <div className="relative ml-[2%] w-[80%] [container-type:inline-size] md:ml-[3%] md:w-[84%]" style={{ aspectRatio: "1 / 0.66" }} aria-hidden="true">
+    <div className="relative mx-auto w-[94%] [container-type:inline-size]" style={{ aspectRatio: "1 / 0.66" }} aria-hidden="true">
       <div
         className="absolute left-[8%] right-[8%] bottom-[3%] h-[7%] rounded-[50%] bg-[#0b1b3a]/40 blur-xl"
         aria-hidden="true"
@@ -106,7 +106,7 @@ function Laptop3D({ children }: { children: ReactNode }) {
         <div
           className="absolute"
           style={{
-            left: "50%",
+            left: "47%",
             top: "70%",
             width: 0,
             height: 0,
