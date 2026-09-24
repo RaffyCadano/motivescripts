@@ -30,6 +30,12 @@ export function HeroSection() {
               </Button>
             </div>
           </AnimateIn>
+          <AnimateIn delay={230}>
+            <ul className="mt-5 space-y-1 text-sm text-faint">
+              <li>Built for speed</li>
+              <li>Based in Winston-Salem, North Carolina</li>
+            </ul>
+          </AnimateIn>
         </div>
         <AnimateIn delay={220} variant="scale">
           <HeroVisual />
