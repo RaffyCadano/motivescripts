@@ -18,12 +18,9 @@ export function ScopePackageChooser({
 }) {
   return (
     <fieldset>
-      <legend className="font-heading text-sm font-semibold text-[var(--client-ink)]">Which package fits you?</legend>
-      <p className="mt-1 text-[12px] text-[var(--client-muted)]">
-        Pick the closest match. We confirm the package and the price in your proposal, so you can change your mind.
-      </p>
+      <legend className="sr-only">Which package fits you?</legend>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-3">
         {pricingTiers.map((tier) => {
           const selected = value === tier.id;
           return (
