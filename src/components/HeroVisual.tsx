@@ -3,7 +3,6 @@ import { BatteryFull, Signal, Wifi } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { cn } from "@/lib/cn";
 import houseHero from "@/assets/previews/landscape-stone.webp";
-import laptopImage from "@/assets/devices/laptop.webp";
 import phoneImage from "@/assets/devices/phone.webp";
 import tabletImage from "@/assets/devices/tablet.webp";
 
@@ -30,8 +29,7 @@ const REVIEW_QUOTE = "“Showed up on time, quoted a fair price, and the kitchen
 const REVIEW_BY = "Dana R. · South Austin";
 
 /**
- * Real device renders (a silver MacBook Pro, an iPad Air, an iPhone 17 Pro Max), each with a transparent
- * screen: the live, scrolling mock site is drawn *behind* the image and shows through that window, so it
+ * Real device renders (an iPad Air and an iPhone 17 Pro Max), each with a transparent screen: the live, scrolling mock site is drawn *behind* the image and shows through that window, so it
  * reads as the site running on the actual hardware. `hole` is where the transparent screen sits, as a
  * percentage of the image, measured from the image's own alpha channel (not eyeballed).
  *
@@ -39,11 +37,10 @@ const REVIEW_BY = "Dana R. · South Austin";
  * without attribution (only reselling the file by itself is excluded). The brands and models belong to
  * their respective owners.
  */
-const LAPTOP = { src: laptopImage, w: 800, h: 489, hole: { left: 9.4, top: 3.9, width: 81.3, height: 85.9 } };
 const TABLET = { src: tabletImage, w: 577, h: 800, hole: { left: 5.9, top: 4.5, width: 87.9, height: 91.1 } };
 const PHONE = { src: phoneImage, w: 389, h: 800, hole: { left: 4.4, top: 1.8, width: 91.3, height: 96.5 } };
 
-type Device = typeof LAPTOP;
+type Device = typeof TABLET;
 
 /** The same site on a laptop, a tablet, and a phone -- the point of a responsive website, shown rather than told. */
 export function HeroVisual() {
@@ -52,16 +49,14 @@ export function HeroVisual() {
       <div className="hero-glow-pulse pointer-events-none absolute -right-8 top-6 size-56 rounded-full bg-[radial-gradient(circle,rgb(0_104_255_/_0.06),transparent_64%)] blur-2xl" />
 
       <div className="relative z-10 px-3 pb-10 pt-2 sm:px-7 sm:pb-14 sm:pt-8 md:px-10 md:pb-16 md:pt-14">
-        <DeviceFrame device={LAPTOP} className="relative">
-          <div className="flex size-full flex-col">
-            <BrowserChrome url="yoursite.com" />
-            <div className="relative min-h-0 flex-1">
-              <ScrollingMock pageWidth={DESKTOP_W}>
-                <HeroSiteMock />
-              </ScrollingMock>
-            </div>
+        <Laptop3D>
+          <BrowserChrome url="yoursite.com" />
+          <div className="relative min-h-0 flex-1">
+            <ScrollingMock pageWidth={DESKTOP_W}>
+              <HeroSiteMock />
+            </ScrollingMock>
           </div>
-        </DeviceFrame>
+        </Laptop3D>
 
         <DeviceFrame device={TABLET} className="absolute bottom-0 left-0 w-[30%] sm:left-2 sm:w-[28%] md:left-4">
           <ScrollingMock pageWidth={TABLET_W} delaySeconds={5} overlay={<TabletOverlay />}>
@@ -78,6 +73,115 @@ export function HeroVisual() {
         <div className="absolute bottom-3 left-1/2 hidden -translate-x-1/2 rounded-[var(--radius-lg)] border border-[#d9dfe8] bg-[var(--ms-white)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
           <BrandMark className="h-7 w-auto" decorative />
           <p className="whitespace-nowrap font-heading text-xs font-semibold text-ink">Built by MotiveScripts</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The laptop, built in CSS 3D so it can sit at an angle with its keyboard showing (the transparent-screen
+ * laptop mockups on offer are all straight-on, which hides the keys). The lid and the deck are two flat
+ * panels hinged along the back edge of the deck; the whole thing is then turned a little and tipped
+ * toward the viewer. Everything is sized in `cqw` (1% of this box's width), so it scales as one piece,
+ * and the live page is an ordinary child of the lid, which the browser projects into perspective.
+ */
+const LAPTOP_LID_W = 78;
+const LAPTOP_LID_H = 48.5;
+const LAPTOP_DECK_W = 82;
+const LAPTOP_DECK_D = 34;
+const LAPTOP_EDGE = 1.5; // thickness of the deck's front and side edges
+
+const KEY_ROWS = [14, 14, 13, 13, 11];
+
+function Laptop3D({ children }: { children: ReactNode }) {
+  const deckLeft = -LAPTOP_DECK_W / 2;
+  return (
+    <div className="relative [container-type:inline-size]" style={{ aspectRatio: "1 / 0.66" }} aria-hidden="true">
+      <div
+        className="absolute left-[8%] right-[8%] bottom-[3%] h-[7%] rounded-[50%] bg-[#0b1b3a]/40 blur-xl"
+        aria-hidden="true"
+      />
+      <div className="absolute inset-0" style={{ perspective: "260cqw" }}>
+        <div
+          className="absolute"
+          style={{
+            left: "50%",
+            top: "70%",
+            width: 0,
+            height: 0,
+            transformStyle: "preserve-3d",
+            transform: "rotateX(-11deg) rotateY(-13deg)",
+          }}
+        >
+          {/* deck: a flat panel lying back from the hinge toward the viewer */}
+          <div
+            className="absolute overflow-hidden rounded-[0.8cqw] border border-[#b9c0cc] bg-[linear-gradient(180deg,#e7eaef,#cfd4dc)]"
+            style={{
+              left: `${deckLeft}cqw`,
+              top: 0,
+              width: `${LAPTOP_DECK_W}cqw`,
+              height: `${LAPTOP_DECK_D}cqw`,
+              transformOrigin: "50% 0",
+              transform: "rotateX(90deg)",
+            }}
+          >
+            <div className="absolute inset-x-[4%] top-[6%] flex h-[56%] flex-col gap-[0.5cqw] rounded-[0.6cqw] bg-[#1c2028] p-[0.6cqw]">
+              {KEY_ROWS.map((keys, row) => (
+                <div key={row} className="flex min-h-0 flex-1 gap-[0.5cqw]">
+                  {Array.from({ length: keys }, (_, key) => (
+                    <span
+                      key={key}
+                      className={cn(
+                        "rounded-[0.3cqw] bg-[#3b4250]",
+                        row === 4 && key === 5 ? "flex-[5]" : "flex-1",
+                      )}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+            <div className="absolute bottom-[6%] left-1/2 h-[24%] w-[34%] -translate-x-1/2 rounded-[0.8cqw] border border-[#b0b7c3] bg-[linear-gradient(180deg,#dde1e8,#d0d5dd)]" />
+          </div>
+
+          {/* the deck's front and right edges, so it reads as a slab and not a sheet */}
+          <div
+            className="absolute rounded-b-[0.8cqw] bg-[linear-gradient(180deg,#c3c9d3,#9da5b2)]"
+            style={{
+              left: `${deckLeft}cqw`,
+              top: 0,
+              width: `${LAPTOP_DECK_W}cqw`,
+              height: `${LAPTOP_EDGE}cqw`,
+              transform: `translateZ(${LAPTOP_DECK_D}cqw)`,
+            }}
+          />
+          <div
+            className="absolute bg-[linear-gradient(180deg,#b3bac6,#8f97a4)]"
+            style={{
+              left: `${-deckLeft}cqw`,
+              top: 0,
+              width: `${LAPTOP_DECK_D}cqw`,
+              height: `${LAPTOP_EDGE}cqw`,
+              transformOrigin: "0 50%",
+              transform: "rotateY(-90deg)",
+            }}
+          />
+
+          {/* lid: hinged at the back of the deck, leaning back a little past upright */}
+          <div
+            className="absolute rounded-[1.4cqw] bg-[#0d0f14] p-[1.3cqw] shadow-[0_0_0_0.35cqw_#c4cad4]"
+            style={{
+              left: `${-LAPTOP_LID_W / 2}cqw`,
+              bottom: 0,
+              width: `${LAPTOP_LID_W}cqw`,
+              height: `${LAPTOP_LID_H}cqw`,
+              transformOrigin: "50% 100%",
+              transform: "rotateX(6deg)",
+            }}
+          >
+            <span className="absolute left-1/2 top-[0.55cqw] size-[0.45cqw] -translate-x-1/2 rounded-full bg-[#2b3140]" />
+            <div className="flex size-full flex-col overflow-hidden rounded-[0.4cqw] bg-white">{children}</div>
+          </div>
         </div>
       </div>
     </div>
