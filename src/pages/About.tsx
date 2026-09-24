@@ -1,25 +1,12 @@
-import { Briefcase, Car, HardHat, House, SprayCan, Store, TreePine, Utensils, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { CTA } from "@/components/CTA";
 import { PageHero } from "@/components/PageHero";
+import { clientTypeIcons } from "@/data/clientTypeIcons";
 import { clientTypes, pipeline, whyPoints } from "@/data/site";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { seoPage } from "@/data/seoPages";
-
-// Keyed by client type (a typed literal from site.ts), so adding a type there without an icon here is a
-// type error rather than a card with a missing icon.
-const clientTypeIcons: Record<(typeof clientTypes)[number], LucideIcon> = {
-  "Home service businesses": House,
-  Contractors: HardHat,
-  "Landscaping and tree services": TreePine,
-  "Cleaning companies": SprayCan,
-  "Restaurants and salons": Utensils,
-  "Auto shops": Car,
-  "Professional services": Briefcase,
-  "Other local businesses": Store,
-};
 
 const websiteJobs = [
   {

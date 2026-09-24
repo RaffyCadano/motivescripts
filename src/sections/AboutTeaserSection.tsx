@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
+import { clientTypeIcons } from "@/data/clientTypeIcons";
 import { clientTypes } from "@/data/site";
 
 export function AboutTeaserSection() {
@@ -26,17 +27,26 @@ export function AboutTeaserSection() {
         </AnimateIn>
 
         <AnimateIn delay={100}>
-          <p className="font-heading text-xs font-bold uppercase tracking-[0.16em] text-faint">Who we work with</p>
-          <ul className="mt-5 grid grid-cols-2 gap-2.5">
-            {clientTypes.map((item) => (
-              <li
-                key={item}
-                className="rounded-[var(--radius-md)] border border-[var(--color-line)] px-3.5 py-3 text-sm font-medium text-ink"
-              >
-                {item}
-              </li>
-            ))}
-          </ul>
+          <div className="rounded-[var(--radius-xl)] border border-[var(--color-line)] bg-[var(--ms-bg-card)] p-5 sm:p-7">
+            <h3 className="font-heading text-lg font-bold text-ink">Who we work with</h3>
+            <p className="mt-1.5 text-sm text-muted">Local and service businesses that need a clear, fast website.</p>
+            <ul className="mt-5 grid gap-2.5 sm:grid-cols-2">
+              {clientTypes.map((item) => {
+                const Icon = clientTypeIcons[item];
+                return (
+                  <li
+                    key={item}
+                    className="group flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--ms-white)] p-3 transition-[transform,box-shadow,border-color] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-[rgb(0_80_240_/_0.3)] hover:shadow-[var(--shadow-card)]"
+                  >
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[rgb(0_80_240_/_0.08)] text-blue transition-colors duration-[var(--duration-base)] group-hover:bg-blue group-hover:text-white">
+                      <Icon size={18} strokeWidth={1.9} aria-hidden="true" />
+                    </span>
+                    <span className="text-sm font-semibold leading-snug text-ink">{item}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </AnimateIn>
       </div>
     </section>
