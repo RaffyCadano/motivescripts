@@ -9,9 +9,11 @@ type PageHeroProps = {
   children?: ReactNode;
   aside?: ReactNode;
   className?: string;
+  /** Centers the eyebrow, title, and description instead of left-aligning them. Ignored when there is an aside. */
+  centered?: boolean;
 };
 
-export function PageHero({ eyebrow, title, description, children, aside, className }: PageHeroProps) {
+export function PageHero({ eyebrow, title, description, children, aside, className, centered }: PageHeroProps) {
   return (
     <header className={cn("border-b border-[var(--color-line)] py-16 md:py-24", className)}>
       <div
@@ -20,7 +22,7 @@ export function PageHero({ eyebrow, title, description, children, aside, classNa
           aside ? "grid items-end gap-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:gap-16" : undefined,
         )}
       >
-        <div className="max-w-3xl">
+        <div className={cn("max-w-3xl", centered && !aside && "mx-auto text-center")}>
           <AnimateIn>
             <p className="eyebrow">{eyebrow}</p>
             <h1 className="mt-5 text-[2.15rem] md:text-[3.25rem]">{title}</h1>

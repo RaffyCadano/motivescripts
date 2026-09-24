@@ -21,6 +21,7 @@ export function ProcessPage() {
   return (
     <main id="main">
       <PageHero
+        centered
         eyebrow="Process"
         title="From first conversation to launch."
         description="A clear, collaborative process that takes your website from an initial idea to a finished site ready for your customers."

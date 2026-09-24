@@ -99,6 +99,7 @@ export function PricingPage() {
   return (
     <main id="main">
       <PageHero
+        centered
         eyebrow="Pricing"
         title="Simple pricing for websites built around your business."
         description={`Websites start at ${websiteStartingPrice}. Every project is scoped around what your business needs, so you get a clear quote before development begins.`}
