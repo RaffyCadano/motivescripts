@@ -55,7 +55,7 @@ export function ProcessPage() {
         {processSteps.map((step) => (
           <li key={step.number}>
             <AnimateIn className="process-line-segment">
-              <div className="grid gap-6 py-12 md:grid-cols-[7rem_1fr] md:gap-12 lg:grid-cols-[8rem_1fr_18rem] lg:gap-16">
+              <div className="grid gap-6 py-12 md:grid-cols-[7rem_1fr] md:gap-12 md:pl-8 lg:grid-cols-[8rem_1fr_18rem] lg:gap-16">
             <p className="font-heading text-4xl font-extrabold text-blue">{step.number}</p>
             <div className="max-w-2xl">
               <div className="flex flex-wrap items-center gap-3">

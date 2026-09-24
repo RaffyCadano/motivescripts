@@ -290,33 +290,35 @@ button:hover .icon-arrow {
   }
 }
 
-/* Process page: the connecting line down the step numbers. Each step's segment fills in when
-   AnimateIn reveals that step (its own IntersectionObserver, no scroll-position math). Below the
-   `md` breakpoint the step grid collapses to one column, so the line (which tracks the number
-   column's left edge) is skipped there rather than floating disconnected from it. */
+/* Process page: the connecting line beside the step numbers. Each step's segment fills in when
+   AnimateIn reveals that step (its own IntersectionObserver, no scroll-position math). Segments run
+   the full height of their step and 1px past it (over the divider between steps), so the line is one
+   unbroken stroke from the first number to the last: it starts at the top of the first number and
+   ends at the bottom of the last one. A single solid blue (the numbers' own color), not a per-step
+   gradient, which would visibly restart from blue at every step. Below the `md` breakpoint the step
+   grid collapses to one column, so the line (which tracks the number column's left edge) is skipped
+   there rather than floating disconnected from it. */
 @media (min-width: 768px) {
   .process-line-segment {
     position: relative;
   }
 
-  .process-line-segment::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 3.25rem;
-    bottom: -3rem;
-    width: 2px;
-    background: var(--color-line);
-  }
-
+  .process-line-segment::before,
   .process-line-segment::after {
     content: "";
     position: absolute;
     left: 0;
-    top: 3.25rem;
-    bottom: -3rem;
+    top: 0;
+    bottom: -1px;
     width: 2px;
-    background: var(--gradient-brand);
+  }
+
+  .process-line-segment::before {
+    background: var(--color-line);
+  }
+
+  .process-line-segment::after {
+    background: var(--ms-blue);
     transform: scaleY(0);
     transform-origin: top;
     transition: transform var(--duration-reveal) var(--ease-out);
@@ -326,11 +328,19 @@ button:hover .icon-arrow {
     transform: scaleY(1);
   }
 
-  /* :last-child on the segment itself would always match (it's an only child of its <li>) --
-     the list item is what's actually last. */
+  /* The step grid has 3rem of top padding (py-12). The number below it is text-4xl, whose line box is
+     var(--text-4xl) x (2.5 / 2.25) -- read from the same variable, since variables.css overrides
+     Tailwind's default size, so this stays right if that changes. */
+  li:first-child > .process-line-segment::before,
+  li:first-child > .process-line-segment::after {
+    top: 3rem;
+  }
+
+  /* The list item is what's last, not the segment (it's an only child of its <li>). */
   li:last-child > .process-line-segment::before,
   li:last-child > .process-line-segment::after {
-    display: none;
+    bottom: auto;
+    height: calc(3rem + var(--text-4xl) * 2.5 / 2.25);
   }
 }
 
