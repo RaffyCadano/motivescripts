@@ -290,10 +290,10 @@ export function PricingPage() {
         <div className="container-wide py-16 md:py-24">
           <AnimateIn>
             <section aria-labelledby="add-ons-heading">
-              <h2 id="add-ons-heading" className="text-2xl md:text-3xl">
+              <h2 id="add-ons-heading" className="text-center text-2xl md:text-3xl">
                 Common add-ons.
               </h2>
-              <p className="mt-4 max-w-2xl text-muted">
+              <p className="mx-auto mt-4 max-w-2xl text-center text-muted">
                 Some projects need more than the base website. These are a few examples of what can be added — they&apos;re
                 examples, not a price list. Add-ons are scoped and priced in your proposal.
               </p>
@@ -301,7 +301,7 @@ export function PricingPage() {
                 {commonAddOns.map((item) => (
                   <li
                     key={item.name}
-                    className="rounded-[var(--radius-lg)] border border-[var(--color-line)] p-5"
+                    className="rounded-[var(--radius-lg)] border border-[var(--color-line)] p-5 text-center"
                   >
                     <h3 className="text-base font-bold">{item.name}</h3>
                     <p className="mt-2 text-sm text-muted">{item.description}</p>
@@ -317,10 +317,10 @@ export function PricingPage() {
         <div className="container-wide py-16 md:py-24">
           <AnimateIn>
             <section aria-labelledby="ongoing-heading">
-              <h2 id="ongoing-heading" className="text-2xl md:text-3xl">
+              <h2 id="ongoing-heading" className="text-center text-2xl md:text-3xl">
                 Ongoing services.
               </h2>
-              <p className="mt-4 max-w-2xl text-muted">
+              <p className="mx-auto mt-4 max-w-2xl text-center text-muted">
                 Optional monthly services for after your website launches. They&apos;re separate from your project and
                 are never added automatically.
               </p>
@@ -363,7 +363,7 @@ export function PricingPage() {
                   </div>
                 </div>
               )}
-              <p className="mt-6 max-w-2xl text-sm text-faint">{ongoingServicesTerms}</p>
+              <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-faint">{ongoingServicesTerms}</p>
             </section>
           </AnimateIn>
         </div>
