@@ -129,8 +129,9 @@ export const commonAddOns = [
 
 /**
  * The detailed "What you get" lists on the Pricing page, keyed by pricingTiers[].id. Every line here
- * restates something already published in that tier's own feature list (above) or something true of
- * every project (the client portal, approving the site before it launches) -- nothing is claimed here
+ * restates something already published in that tier's own feature list (above), plus two things the
+ * packages differ on or share: the client portal (Growth and up, not the base Website package) and
+ * approving the site before it launches (every project) -- nothing is claimed here
  * that isn't claimed on the tier cards, so the two can't contradict each other. Prices are not
  * repeated: the page reads them from pricingTiers so they can't drift.
  */
@@ -151,11 +152,7 @@ export const packageDetails: Record<
       },
       {
         title: "Launch & after",
-        items: [
-          "Launch support",
-          "Client portal access: track your project, review files, and pay invoices",
-          "You approve the site before it launches",
-        ],
+        items: ["Launch support", "You approve the site before it launches"],
       },
     ],
   },
@@ -172,6 +169,10 @@ export const packageDetails: Record<
       {
         title: "Get customers",
         items: ["Booking, appointment, or quote-request forms", "Integrations with other tools, scoped per project"],
+      },
+      {
+        title: "After launch",
+        items: ["Client portal access: track your project, review files, and pay invoices"],
       },
     ],
   },
@@ -210,6 +211,6 @@ export const comparisonRows: { label: string; cells: [ComparisonCell, Comparison
   { label: "E-commerce or an online store", cells: [false, false, true] },
   { label: "Customer login or portal features", cells: [false, false, true] },
   { label: "Multi-location or multi-brand sites", cells: [false, false, true] },
-  { label: "Client portal (track project, files, invoices)", cells: [true, true, true] },
+  { label: "Client portal (track project, files, invoices)", cells: [false, true, true] },
   { label: "Launch support", cells: [true, true, true] },
 ];
