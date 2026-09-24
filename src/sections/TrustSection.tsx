@@ -1,6 +1,13 @@
 import { AnimateIn } from "@/components/AnimateIn";
 
-const trustPoints = ["Mobile-first", "Fast performance", "Responsive design", "SEO-ready", "Ongoing support"];
+const trustPoints = [
+  "Mobile-first",
+  "Fast performance",
+  "Responsive design",
+  "SEO-ready",
+  "Ongoing support",
+  "Based in Winston-Salem, North Carolina",
+];
 
 export function TrustSection() {
   return (
