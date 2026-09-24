@@ -117,15 +117,13 @@ export function ServicesPage() {
         </AnimateIn>
 
         <AnimateIn>
-          <section className="flex flex-col items-start gap-6 sm:flex-row sm:items-end sm:justify-between">
-            <div className="max-w-xl">
-              <h2 className="text-2xl md:text-3xl">See the work in action.</h2>
-              <p className="mt-4 text-muted">
-                Explore website concepts that show how we approach structure, design, and user experience for
-                different types of businesses.
-              </p>
-            </div>
-            <Button to="/work" variant="secondary" className="shrink-0">
+          <section className="rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[linear-gradient(135deg,rgb(0_80_240_/_0.04),rgb(0_200_255_/_0.05))] px-6 py-12 text-center md:px-12 md:py-14">
+            <h2 className="text-2xl md:text-3xl">See the work in action.</h2>
+            <p className="mx-auto mt-4 max-w-xl text-muted">
+              Explore website concepts that show how we approach structure, design, and user experience for
+              different types of businesses.
+            </p>
+            <Button to="/work" variant="secondary" className="mt-8">
               View Our Work
               <span aria-hidden="true" className="icon-arrow">→</span>
             </Button>
