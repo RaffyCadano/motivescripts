@@ -9,6 +9,7 @@ export function ServicesSection() {
       <div className="container-wide">
         <AnimateIn>
           <SectionHeader
+            align="center"
             eyebrow="What we do"
             title="Everything your business needs online."
           />

@@ -7,7 +7,7 @@ export function WhySection() {
     <section className="border-t border-[var(--color-line)] py-20 md:py-28">
       <div className="container-wide">
         <AnimateIn>
-          <SectionHeader eyebrow="Why MotiveScripts" title="Built around your business. Not a template." />
+          <SectionHeader align="center" eyebrow="Why MotiveScripts" title="Built around your business. Not a template." />
         </AnimateIn>
         <div className="mt-12 grid gap-4 md:grid-cols-2">
           {whyPoints.map((point, index) => (

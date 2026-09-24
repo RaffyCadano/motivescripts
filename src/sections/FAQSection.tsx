@@ -8,7 +8,7 @@ export function FAQSection() {
     <section className="border-t border-[var(--color-line)] py-20 md:py-28">
       <div className="container-site">
         <AnimateIn>
-          <SectionHeader eyebrow="FAQ" title="Common questions." />
+          <SectionHeader align="center" eyebrow="FAQ" title="Common questions." />
         </AnimateIn>
         <AnimateIn delay={80}>
           <div className="mt-10">

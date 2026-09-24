@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { SectionHeader } from "@/components/SectionHeader";
@@ -11,17 +10,11 @@ export function PricingSection() {
     <section id="pricing" className="border-t border-[var(--color-line)] py-20 md:py-28">
       <div className="container-wide">
         <AnimateIn>
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
-            <SectionHeader eyebrow="Pricing" title={`Websites start at ${websiteStartingPrice}. Every project is scoped.`} />
-            <Link
-              viewTransition
-              to="/pricing"
-              className="mt-1 inline-flex shrink-0 items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue sm:mt-11"
-            >
-              View Pricing
-              <span aria-hidden="true" className="icon-arrow">→</span>
-            </Link>
-          </div>
+          <SectionHeader
+            align="center"
+            eyebrow="Pricing"
+            title={`Websites start at ${websiteStartingPrice}. Every project is scoped.`}
+          />
         </AnimateIn>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
