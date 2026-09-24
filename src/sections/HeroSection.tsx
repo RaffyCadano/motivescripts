@@ -31,13 +31,19 @@ export function HeroSection() {
             </div>
           </AnimateIn>
           <AnimateIn delay={230}>
-            <ul className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-faint">
+            <ul className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-base text-faint md:text-lg">
               <li>Built for speed</li>
-              <li aria-hidden="true">·</li>
+              <li aria-hidden="true" className="font-bold text-blue">
+                ·
+              </li>
               <li>Mobile-first</li>
-              <li aria-hidden="true">·</li>
+              <li aria-hidden="true" className="font-bold text-cyan">
+                ·
+              </li>
               <li>Custom-built</li>
-              <li aria-hidden="true">·</li>
+              <li aria-hidden="true" className="font-bold text-bright">
+                ·
+              </li>
               <li>Based in Winston-Salem, North Carolina</li>
             </ul>
             <p className="mt-2 max-w-xl text-sm text-faint">
