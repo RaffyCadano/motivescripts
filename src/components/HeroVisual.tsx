@@ -31,14 +31,14 @@ const REVIEW_BY = "Dana R. · South Austin";
 /**
  * Real device renders (an iPad Air and an iPhone 17 Pro Max), each with a transparent screen: the live, scrolling mock site is drawn *behind* the image and shows through that window, so it
  * reads as the site running on the actual hardware. `hole` is where the transparent screen sits, as a
- * percentage of the image, measured from the image's own alpha channel (not eyeballed).
+ * percentage of the image, and `radius` is the screen's corner rounding (as % of the screen box, horizontal / vertical), both measured from the image's own alpha channel (not eyeballed). Without the radius the square page pokes out of the rounded screen corners.
  *
  * Source: the transparent mockups from webmobilefirst.com, whose FAQ allows personal and commercial use
  * without attribution (only reselling the file by itself is excluded). The brands and models belong to
  * their respective owners.
  */
-const TABLET = { src: tabletImage, w: 577, h: 800, hole: { left: 5.9, top: 4.5, width: 87.9, height: 91.1 } };
-const PHONE = { src: phoneImage, w: 389, h: 800, hole: { left: 4.4, top: 1.8, width: 91.3, height: 96.5 } };
+const TABLET = { src: tabletImage, w: 577, h: 800, hole: { left: 5.9, top: 4.5, width: 87.9, height: 91.1 }, radius: "1.4% / 1%" };
+const PHONE = { src: phoneImage, w: 389, h: 800, hole: { left: 4.4, top: 1.8, width: 91.3, height: 96.5 }, radius: "19.7% / 9.1%" };
 
 type Device = typeof TABLET;
 
@@ -97,7 +97,7 @@ const KEY_ROWS = [14, 14, 13, 13, 11];
 function Laptop3D({ children }: { children: ReactNode }) {
   const deckLeft = -LAPTOP_DECK_W / 2;
   return (
-    <div className="relative [container-type:inline-size]" style={{ aspectRatio: "1 / 0.66" }} aria-hidden="true">
+    <div className="relative ml-[2%] w-[80%] [container-type:inline-size] md:ml-[3%] md:w-[84%]" style={{ aspectRatio: "1 / 0.66" }} aria-hidden="true">
       <div
         className="absolute left-[8%] right-[8%] bottom-[3%] h-[7%] rounded-[50%] bg-[#0b1b3a]/40 blur-xl"
         aria-hidden="true"
@@ -201,7 +201,7 @@ function DeviceFrame({ device, className, children }: { device: Device; classNam
     <div className={className} style={{ aspectRatio: `${device.w} / ${device.h}` }} aria-hidden="true">
       <div
         className="absolute overflow-hidden bg-white"
-        style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` }}
+        style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, borderRadius: device.radius }}
       >
         {children}
       </div>
