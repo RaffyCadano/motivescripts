@@ -11,9 +11,11 @@ type PageHeroProps = {
   className?: string;
   /** Centers the eyebrow, title, and description instead of left-aligning them. Ignored when there is an aside. */
   centered?: boolean;
+  /** Hides the small accent dash the eyebrow label normally has before it. */
+  plainEyebrow?: boolean;
 };
 
-export function PageHero({ eyebrow, title, description, children, aside, className, centered }: PageHeroProps) {
+export function PageHero({ eyebrow, title, description, children, aside, className, centered, plainEyebrow }: PageHeroProps) {
   return (
     <header className={cn("border-b border-[var(--color-line)] py-16 md:py-24", className)}>
       <div
@@ -24,7 +26,7 @@ export function PageHero({ eyebrow, title, description, children, aside, classNa
       >
         <div className={cn("max-w-3xl", centered && !aside && "mx-auto text-center")}>
           <AnimateIn>
-            <p className="eyebrow">{eyebrow}</p>
+            <p className={cn("eyebrow", plainEyebrow && "eyebrow--plain")}>{eyebrow}</p>
             <h1 className="mt-5 text-[2.15rem] md:text-[3.25rem]">{title}</h1>
           </AnimateIn>
           {description ? (

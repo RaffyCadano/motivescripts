@@ -40,6 +40,10 @@
   color: var(--ms-blue);
 }
 
+.eyebrow--plain::before {
+  display: none;
+}
+
 .eyebrow::before {
   content: "";
   flex: 0 0 1.5rem;

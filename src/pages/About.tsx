@@ -29,6 +29,8 @@ export function AboutPage() {
   return (
     <main id="main">
       <PageHero
+        centered
+        plainEyebrow
         eyebrow="About MotiveScripts"
         title="Websites built around your business."
         description="MotiveScripts helps small businesses build a stronger presence online through thoughtful strategy, modern design, and reliable development."

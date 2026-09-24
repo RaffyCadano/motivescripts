@@ -17,6 +17,7 @@ export function WorkPage() {
     <main id="main">
       <PageHero
         centered
+        plainEyebrow
         eyebrow="Work"
         title="Websites designed to make small businesses stand out."
         description="Explore a selection of website concepts built around clear messaging, modern design, and conversion-focused user experiences."

@@ -103,6 +103,7 @@ export function PricingPage() {
     <main id="main">
       <PageHero
         centered
+        plainEyebrow
         eyebrow="Pricing"
         title="Simple pricing for websites built around your business."
         description={`Websites start at ${websiteStartingPrice}. Every project is scoped around what your business needs, so you get a clear quote before development begins.`}
@@ -158,7 +159,7 @@ export function PricingPage() {
           <AnimateIn>
             <section aria-labelledby="what-you-get-heading">
               <div className="mx-auto max-w-2xl text-center">
-                <p className="eyebrow">What you get</p>
+                <p className="eyebrow eyebrow--plain">What you get</p>
                 <h2 id="what-you-get-heading" className="mt-4 text-2xl md:text-3xl">
                   Everything included, in detail.
                 </h2>

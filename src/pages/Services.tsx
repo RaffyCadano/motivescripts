@@ -26,6 +26,7 @@ export function ServicesPage() {
     <main id="main">
       <PageHero
         centered
+        plainEyebrow
         eyebrow="Services"
         title="Everything your business needs for a better website."
         description="From strategy and design to development and launch, we handle the website from first idea to finished product."
