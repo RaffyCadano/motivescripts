@@ -24,7 +24,7 @@ export function WorkPage() {
 
       <div className="container-wide py-16 md:py-24">
         <AnimateIn>
-          <div className="max-w-2xl">
+          <div className="mx-auto max-w-2xl text-center">
             <p className="font-heading text-sm font-semibold text-ink">
               Real client work and selected concepts for local businesses and growing companies.
             </p>
