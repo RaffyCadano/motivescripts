@@ -20,9 +20,21 @@ const columnClass = {
  * is centered across both instead of stranded under the left one). Numbers come from the order of `steps`; the
  * description is optional (a step can be just a title).
  */
-export function StepList({ steps, columns, className }: { steps: readonly Step[]; columns: keyof typeof columnClass; className?: string }) {
+export function StepList({
+  steps,
+  columns,
+  compact = false,
+  className,
+}: {
+  steps: readonly Step[];
+  columns: keyof typeof columnClass;
+  /** Two steps across on a phone (instead of one tall column) and a smaller title -- for short, title-only
+   * lists that sit above something the visitor came to do, like a form, so they don't push it off screen. */
+  compact?: boolean;
+  className?: string;
+}) {
   return (
-    <ol className={cn("grid gap-x-6 gap-y-10", columnClass[columns], className)}>
+    <ol className={cn("grid gap-x-6", compact ? "grid-cols-2 gap-y-8" : "gap-y-10", columnClass[columns], className)}>
       {steps.map((step, index) => (
         <li
           key={step.title}
@@ -31,7 +43,7 @@ export function StepList({ steps, columns, className }: { steps: readonly Step[]
           <span className="relative z-10 mx-auto flex size-12 items-center justify-center rounded-full border border-[var(--color-line)] bg-white font-heading text-sm font-bold tracking-[0.06em] text-blue shadow-[var(--shadow-card)] transition-colors duration-[var(--duration-base)] ease-[var(--ease-out)] group-hover:border-[rgb(0_80_240_/_0.4)] group-hover:bg-[rgb(0_80_240_/_0.04)]">
             {String(index + 1).padStart(2, "0")}
           </span>
-          <p className="mt-4 font-heading text-lg font-semibold text-ink">{step.title}</p>
+          <p className={cn("mt-4 font-heading font-semibold text-ink", compact ? "text-base sm:text-lg" : "text-lg")}>{step.title}</p>
           {step.body ? (
             <p className="mx-auto mt-2 max-w-[16rem] text-sm leading-relaxed text-muted">{step.body}</p>
           ) : null}

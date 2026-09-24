@@ -94,7 +94,7 @@ export function ContactPage() {
         <div className="container-wide pb-2 pt-10 md:pt-14">
           <AnimateIn>
             <p className="text-center font-heading text-xs font-bold uppercase tracking-[0.16em] text-faint">What happens next?</p>
-            <StepList className="mt-8" steps={nextSteps} columns={4} />
+            <StepList className="mt-8" steps={nextSteps} columns={4} compact />
           </AnimateIn>
         </div>
       )}
@@ -242,7 +242,7 @@ export function ContactPage() {
               </p>
             ) : null}
             <div className="mt-7">
-              <Button type="submit" size="lg" disabled={sending}>
+              <Button type="submit" size="lg" disabled={sending} className="w-full sm:w-auto">
                 {sending ? "Sending…" : "Start Your Project"}
                 {sending ? null : <span aria-hidden="true" className="icon-arrow">→</span>}
               </Button>
