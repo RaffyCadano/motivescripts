@@ -14,7 +14,7 @@ export function HeroVisual() {
         <BrowserFrame url="yoursite.com" className="shadow-[var(--shadow-card),var(--shadow-glow)]">
           <ScrollingSiteMock />
         </BrowserFrame>
-        <div className="absolute -bottom-5 right-4 hidden rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-bg-card)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
+        <div className="absolute -bottom-5 right-4 hidden rounded-[var(--radius-lg)] border border-[#d9dfe8] bg-[var(--ms-white)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
           <BrandMark className="h-7 w-auto" decorative />
           <p className="font-heading text-xs font-semibold text-ink">Built by MotiveScripts</p>
         </div>
