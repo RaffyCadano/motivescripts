@@ -3,6 +3,9 @@ import { BatteryFull, Signal, Wifi } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { cn } from "@/lib/cn";
 import houseHero from "@/assets/previews/landscape-stone.webp";
+import laptopImage from "@/assets/devices/laptop.webp";
+import phoneImage from "@/assets/devices/phone.webp";
+import tabletImage from "@/assets/devices/tablet.webp";
 
 // The width each mock page is laid out at before being scaled down to fit its frame.
 const DESKTOP_W = 1280;
@@ -26,6 +29,22 @@ const SERVICES = [
 const REVIEW_QUOTE = "“Showed up on time, quoted a fair price, and the kitchen looks better than we imagined.”";
 const REVIEW_BY = "Dana R. · South Austin";
 
+/**
+ * Real device renders (a silver MacBook Pro, an iPad Air, an iPhone 17 Pro Max), each with a transparent
+ * screen: the live, scrolling mock site is drawn *behind* the image and shows through that window, so it
+ * reads as the site running on the actual hardware. `hole` is where the transparent screen sits, as a
+ * percentage of the image, measured from the image's own alpha channel (not eyeballed).
+ *
+ * Source: the transparent mockups from webmobilefirst.com, whose FAQ allows personal and commercial use
+ * without attribution (only reselling the file by itself is excluded). The brands and models belong to
+ * their respective owners.
+ */
+const LAPTOP = { src: laptopImage, w: 800, h: 489, hole: { left: 9.4, top: 3.9, width: 81.3, height: 85.9 } };
+const TABLET = { src: tabletImage, w: 577, h: 800, hole: { left: 5.9, top: 4.5, width: 87.9, height: 91.1 } };
+const PHONE = { src: phoneImage, w: 389, h: 800, hole: { left: 4.4, top: 1.8, width: 91.3, height: 96.5 } };
+
+type Device = typeof LAPTOP;
+
 /** The same site on a laptop, a tablet, and a phone -- the point of a responsive website, shown rather than told. */
 export function HeroVisual() {
   return (
@@ -33,14 +52,28 @@ export function HeroVisual() {
       <div className="hero-glow-pulse pointer-events-none absolute -right-8 top-6 size-56 rounded-full bg-[radial-gradient(circle,rgb(0_104_255_/_0.06),transparent_64%)] blur-2xl" />
 
       <div className="relative z-10 px-3 pb-10 pt-2 sm:px-7 sm:pb-14 sm:pt-8 md:px-10 md:pb-16 md:pt-14">
-        <LaptopFrame url="yoursite.com">
-          <ScrollingMock pageWidth={DESKTOP_W}>
-            <HeroSiteMock />
-          </ScrollingMock>
-        </LaptopFrame>
+        <DeviceFrame device={LAPTOP} className="relative">
+          <div className="flex size-full flex-col">
+            <BrowserChrome url="yoursite.com" />
+            <div className="relative min-h-0 flex-1">
+              <ScrollingMock pageWidth={DESKTOP_W}>
+                <HeroSiteMock />
+              </ScrollingMock>
+            </div>
+          </div>
+        </DeviceFrame>
 
-        <TabletFrame className="absolute bottom-0 left-0 w-[34%] sm:left-2 sm:w-[32%] md:left-4" />
-        <PhoneFrame className="absolute bottom-1 right-0 w-[17%] sm:right-2 sm:w-[15%] md:right-4" />
+        <DeviceFrame device={TABLET} className="absolute bottom-0 left-0 w-[30%] sm:left-2 sm:w-[28%] md:left-4">
+          <ScrollingMock pageWidth={TABLET_W} delaySeconds={5} overlay={<TabletOverlay />}>
+            <TabletSiteMock />
+          </ScrollingMock>
+        </DeviceFrame>
+
+        <DeviceFrame device={PHONE} className="absolute bottom-1 right-0 w-[15%] sm:right-2 sm:w-[13%] md:right-4">
+          <ScrollingMock pageWidth={PHONE_W} delaySeconds={9} overlay={<PhoneOverlay />}>
+            <PhoneSiteMock />
+          </ScrollingMock>
+        </DeviceFrame>
 
         <div className="absolute bottom-3 left-1/2 hidden -translate-x-1/2 rounded-[var(--radius-lg)] border border-[#d9dfe8] bg-[var(--ms-white)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
           <BrandMark className="h-7 w-auto" decorative />
@@ -51,54 +84,65 @@ export function HeroVisual() {
   );
 }
 
-/** A soft diagonal reflection across a device's screen, so it reads as glass. */
-function Glare() {
-  return (
-    <span className="pointer-events-none absolute inset-0 z-30 bg-[linear-gradient(125deg,rgba(255,255,255,0.20)_0%,rgba(255,255,255,0)_38%)]" />
-  );
-}
-
 /**
- * A laptop: dark lid with a webcam, a browser window on the screen, and a metal base with a thumb notch
- * that overhangs the lid a little, like a real one sitting on a table.
+ * A device render with its screen cut out. The wrapper takes its size from the image's own aspect ratio,
+ * the screen content is positioned over the measured screen window, and the render is drawn on top, so
+ * the bezel, camera, and island cover the content's edges. Callers supply the positioning class
+ * (`relative` or `absolute ...`); it isn't baked in here, since a `relative` in this base would win
+ * over a caller's `absolute`.
  */
-function LaptopFrame({ url, children }: { url: string; children: ReactNode }) {
+function DeviceFrame({ device, className, children }: { device: Device; className: string; children: ReactNode }) {
+  const { left, top, width, height } = device.hole;
   return (
-    <div className="relative" aria-hidden="true">
-      <div className="relative rounded-t-[0.85rem] bg-[#0f1218] p-[1.8%] pb-[2.2%] shadow-[0_26px_50px_rgb(0_16_48_/_0.30)] ring-1 ring-[#2b303b]">
-        <span className="absolute left-1/2 top-[0.55%] size-[0.28rem] -translate-x-1/2 rounded-full bg-[#2b303b]" />
-        <div className="relative overflow-hidden rounded-[0.3rem] bg-white">
-          <div className="flex aspect-[16/10] flex-col">
-            <div className="flex shrink-0 items-center gap-2 border-b border-[#dfe3ea] bg-[#f1f3f7] px-2.5 py-1.5">
-              <div className="flex gap-1">
-                <span className="size-[5px] rounded-full bg-[#ff5f57]" />
-                <span className="size-[5px] rounded-full bg-[#febc2e]" />
-                <span className="size-[5px] rounded-full bg-[#28c840]" />
-              </div>
-              <p className="min-w-0 flex-1 truncate rounded-full bg-white px-3 py-0.5 text-center font-heading text-[8px] tracking-wide text-[#6b7686]">
-                {url}
-              </p>
-            </div>
-            <div className="relative min-h-0 flex-1">{children}</div>
-          </div>
-          <Glare />
-        </div>
+    <div className={className} style={{ aspectRatio: `${device.w} / ${device.h}` }} aria-hidden="true">
+      <div
+        className="absolute overflow-hidden bg-white"
+        style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` }}
+      >
+        {children}
       </div>
-      <div className="relative -mx-[3.5%] h-[0.7rem] rounded-b-[1rem] rounded-t-[0.1rem] bg-[linear-gradient(180deg,#e9ebf0_0%,#b3b9c5_100%)] shadow-[0_16px_26px_rgb(0_16_48_/_0.24)]">
-        <span className="absolute left-1/2 top-0 h-[0.22rem] w-[18%] -translate-x-1/2 rounded-b-lg bg-[#9aa1ae]" />
-      </div>
+      <img
+        src={device.src}
+        alt=""
+        width={device.w}
+        height={device.h}
+        draggable={false}
+        decoding="async"
+        className="pointer-events-none absolute inset-0 size-full select-none drop-shadow-[0_18px_26px_rgb(0_16_48_/_0.28)]"
+      />
     </div>
   );
 }
 
-/** Phone status bar and home indicator: they stay put while the page scrolls underneath, as on a real phone. */
+/** The laptop's browser window: traffic-light dots and a URL bar above the page. */
+function BrowserChrome({ url }: { url: string }) {
+  return (
+    <div className="flex shrink-0 items-center gap-2 border-b border-[#dfe3ea] bg-[#f1f3f7] px-2.5 py-1.5">
+      <div className="flex gap-1">
+        <span className="size-[5px] rounded-full bg-[#ff5f57]" />
+        <span className="size-[5px] rounded-full bg-[#febc2e]" />
+        <span className="size-[5px] rounded-full bg-[#28c840]" />
+      </div>
+      <p className="min-w-0 flex-1 truncate rounded-full bg-white px-3 py-0.5 text-center font-heading text-[8px] tracking-wide text-[#6b7686]">
+        {url}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * Phone status bar and home indicator: they stay put while the page scrolls underneath, as on a real
+ * phone. The Dynamic Island itself is part of the device render (drawn on top), so only the time and the
+ * signal / Wi-Fi / battery icons are drawn here, either side of it.
+ */
 function PhoneOverlay() {
   return (
     <>
       <div className="absolute inset-x-0 top-0 h-12 bg-white">
-        <span className="absolute left-9 top-[0.95rem] font-heading text-[15px] font-semibold text-[#101828]">9:41</span>
-        <span className="absolute left-1/2 top-2.5 h-[1.85rem] w-[7rem] -translate-x-1/2 rounded-full bg-[#0b0d12]" />
-        <span className="absolute right-6 top-[0.95rem] flex items-center gap-1.5 text-[#101828]">
+        <span className="absolute left-9 top-[1.1rem] font-heading text-[15px] font-semibold leading-none text-[#101828]">
+          9:41
+        </span>
+        <span className="absolute right-7 top-[1.05rem] flex items-center gap-1.5 text-[#101828]">
           <Signal size={16} strokeWidth={2.4} />
           <Wifi size={16} strokeWidth={2.4} />
           <BatteryFull size={21} strokeWidth={2} />
@@ -108,30 +152,6 @@ function PhoneOverlay() {
         <span className="absolute bottom-2 left-1/2 h-[5px] w-32 -translate-x-1/2 rounded-full bg-[#101828]" />
       </div>
     </>
-  );
-}
-
-/** A modern phone: dynamic island, status bar, side buttons, thin bezel, home indicator. */
-function PhoneFrame({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "aspect-[9/19.5] rounded-[1.35rem] bg-[#15181f] shadow-[0_18px_40px_rgb(0_16_48_/_0.32)] ring-1 ring-[#353b47]",
-        className,
-      )}
-      aria-hidden="true"
-    >
-      <span className="absolute -left-[1.5px] top-[17%] h-[5%] w-[2px] rounded-l-sm bg-[#2c313c]" />
-      <span className="absolute -left-[1.5px] top-[24%] h-[9%] w-[2px] rounded-l-sm bg-[#2c313c]" />
-      <span className="absolute -left-[1.5px] top-[35%] h-[9%] w-[2px] rounded-l-sm bg-[#2c313c]" />
-      <span className="absolute -right-[1.5px] top-[27%] h-[13%] w-[2px] rounded-r-sm bg-[#2c313c]" />
-      <div className="absolute inset-[3px] overflow-hidden rounded-[1.05rem] bg-white">
-        <ScrollingMock pageWidth={PHONE_W} delaySeconds={9} overlay={<PhoneOverlay />}>
-          <PhoneSiteMock />
-        </ScrollingMock>
-        <Glare />
-      </div>
-    </div>
   );
 }
 
@@ -149,28 +169,6 @@ function TabletOverlay() {
         <span className="absolute bottom-1.5 left-1/2 h-[4px] w-40 -translate-x-1/2 rounded-full bg-[#101828]" />
       </div>
     </>
-  );
-}
-
-/** An iPad-style tablet: even bezel, front camera, power button on the top edge, home indicator. */
-function TabletFrame({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "aspect-[3/4] rounded-[1.15rem] bg-[#15181f] shadow-[0_18px_40px_rgb(0_16_48_/_0.32)] ring-1 ring-[#353b47]",
-        className,
-      )}
-      aria-hidden="true"
-    >
-      <span className="absolute -top-[1.5px] right-[14%] h-[2px] w-[7%] rounded-t-sm bg-[#2c313c]" />
-      <span className="absolute left-1/2 top-[1.5px] size-[3px] -translate-x-1/2 rounded-full bg-[#333a46]" />
-      <div className="absolute inset-[4px] overflow-hidden rounded-[0.85rem] bg-white">
-        <ScrollingMock pageWidth={TABLET_W} delaySeconds={5} overlay={<TabletOverlay />}>
-          <TabletSiteMock />
-        </ScrollingMock>
-        <Glare />
-      </div>
-    </div>
   );
 }
 
