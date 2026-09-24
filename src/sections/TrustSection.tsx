@@ -12,7 +12,7 @@ export function TrustSection() {
     <section className="border-t border-[var(--color-line)] py-8 md:py-10">
       <div className="container-wide">
         <AnimateIn>
-          <div className="mx-auto max-w-3xl rounded-2xl border border-[var(--color-line)] px-6 py-6 sm:px-10 sm:py-7">
+          <div className="mx-auto max-w-3xl px-6 py-6 sm:px-10 sm:py-7">
             <div className="grid grid-cols-1 divide-y divide-[var(--color-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
               {stats.map((stat) => {
                 const Icon = stat.icon;
