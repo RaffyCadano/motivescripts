@@ -72,7 +72,7 @@ const pricingFaqs = [
   {
     question: "Are hosting and domain costs included?",
     answer:
-      `Not automatically. Hosting setup, domain registration, and business email are quoted as separate line items when your project needs them, so you can see exactly what each one costs in your proposal. Ongoing hosting after launch is included starting with the Essential Website Care tier, at ${careStartingPrice}/month.`,
+      `Not automatically. Hosting setup, domain registration, and business email are quoted as separate line items when your project needs them, so you can see exactly what each one costs in your proposal. Hosting is free for the first 30 days after your site goes live; ongoing hosting after that is included starting with the Essential Website Care tier, at ${careStartingPrice}/month.`,
   },
   {
     question: "Do I need to know exactly what I need before contacting you?",
@@ -284,6 +284,9 @@ export function PricingPage() {
                   </tbody>
                 </table>
               </div>
+              <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-muted">
+                Hosting is free for the first 30 days after your site goes live. To keep it online after that, choose a Website Care plan (from {careStartingPrice}/mo) in your client portal.
+              </p>
               <div className="mt-10 flex flex-col items-center gap-4 text-center">
                 <p className="font-heading text-lg font-semibold text-ink">Ready when you are.</p>
                 <div className="flex flex-col gap-3 sm:flex-row">

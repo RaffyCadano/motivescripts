@@ -206,6 +206,12 @@ export const packageDetails: Record<
 /** A cell is true (included), false (not included), or a short string shown as-is. Order: Website, Growth, Custom. */
 export type ComparisonCell = boolean | string;
 
+/** Hosting is free for the first 30 days after launch (the client portal starts the trial automatically); keeping it online after that means a Website Care plan. */
+const hostingTrial = "Free 30-day trial";
+
+/** Business email is quoted as a separate line item in the proposal (see the hosting/domain FAQ and the AI knowledge), so the table says add-on, not included. */
+const emailAddOn = "Add-on";
+
 export const comparisonRows: { label: string; cells: [ComparisonCell, ComparisonCell, ComparisonCell] }[] = [
   { label: "Starting price", cells: [websiteStartingPrice, growthStartingPrice, "Custom quote"] },
   { label: "Homepage, plus pages scoped to your business", cells: [true, true, true] },
@@ -220,4 +226,6 @@ export const comparisonRows: { label: string; cells: [ComparisonCell, Comparison
   { label: "Multi-location or multi-brand sites", cells: [false, false, true] },
   { label: "Client portal (track project, files, invoices)", cells: [false, true, true] },
   { label: "Launch support", cells: [true, true, true] },
+  { label: "Hosting", cells: [hostingTrial, hostingTrial, hostingTrial] },
+  { label: "Business email account", cells: [emailAddOn, emailAddOn, emailAddOn] },
 ];
