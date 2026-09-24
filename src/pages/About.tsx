@@ -38,7 +38,7 @@ export function AboutPage() {
 
       <div className="container-wide space-y-20 py-16 md:space-y-24 md:py-24">
         <AnimateIn>
-        <section className="max-w-3xl">
+        <section className="mx-auto max-w-3xl text-center">
           <h2 className="text-2xl md:text-3xl">Built for businesses that need more than a template.</h2>
           <p className="mt-4 text-[var(--text-md)] text-muted">
             Your website is often the first place potential customers experience your business.
@@ -50,8 +50,8 @@ export function AboutPage() {
 
         <AnimateIn>
         <section>
-          <h2 className="text-2xl md:text-3xl">What the website has to do</h2>
-          <p className="mt-4 max-w-2xl text-muted">
+          <h2 className="text-center text-2xl md:text-3xl">What the website has to do</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-muted">
             A small-business site is not a brochure. It has a job: help the right people understand
             the company and take action.
           </p>
