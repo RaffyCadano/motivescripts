@@ -209,7 +209,8 @@ export type ComparisonCell = boolean | string;
 /** Hosting is free for the first 30 days after launch (the client portal starts the trial automatically); keeping it online after that means a Website Care plan. */
 const hostingTrial = "Free 30-day trial";
 
-/** Business email is quoted as a separate line item in the proposal (see the hosting/domain FAQ and the AI knowledge), so the table says add-on, not included. */
+/** Domain registration and business email are quoted as separate line items in the proposal (see the hosting/domain FAQ and the AI knowledge), so the table says add-on, not included. */
+const domainAddOn = "Add-on";
 const emailAddOn = "Add-on";
 
 export const comparisonRows: { label: string; cells: [ComparisonCell, ComparisonCell, ComparisonCell] }[] = [
@@ -227,5 +228,6 @@ export const comparisonRows: { label: string; cells: [ComparisonCell, Comparison
   { label: "Client portal (track project, files, invoices)", cells: [false, true, true] },
   { label: "Launch support", cells: [true, true, true] },
   { label: "Hosting", cells: [hostingTrial, hostingTrial, hostingTrial] },
+  { label: "Custom domain name (yourbusiness.com)", cells: [domainAddOn, domainAddOn, domainAddOn] },
   { label: "Business email account", cells: [emailAddOn, emailAddOn, emailAddOn] },
 ];
