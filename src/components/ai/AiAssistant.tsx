@@ -220,13 +220,15 @@ export function AiAssistant() {
         inert={open}
         style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
         className={cn(
-          "fixed right-4 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-navy pl-4 pr-5 font-heading text-sm font-semibold text-white shadow-[var(--shadow-button)] transition-[background-color,opacity,transform] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:bg-blue active:translate-y-px motion-reduce:transition-none sm:right-6",
+          "fixed right-4 z-40 inline-flex h-12 w-12 items-center justify-center gap-2 rounded-full bg-navy font-heading text-sm font-semibold text-white shadow-[var(--shadow-button)] transition-[background-color,opacity,transform] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:bg-blue active:translate-y-px motion-reduce:transition-none sm:right-6 sm:w-auto sm:pl-4 sm:pr-5",
           focusRing,
           open && "pointer-events-none invisible opacity-0",
         )}
       >
         <Sparkles size={17} strokeWidth={2.2} aria-hidden="true" className="text-[#7fd6ff]" />
-        Ask MotiveScripts AI
+        {/* Icon-only on a phone, where a wide pill would cover the page as it scrolls; the button's
+            aria-label already names it for screen readers. */}
+        <span className="sr-only sm:not-sr-only">Ask MotiveScripts AI</span>
       </button>
 
       <section
