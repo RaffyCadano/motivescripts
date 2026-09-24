@@ -961,6 +961,7 @@ export type ClientScopeBriefRow = {
   other_style: string;
   liked_websites: string;
   additional_notes: string;
+  requested_package: string | null;
   submitted_at: string | null;
   updated_at: string;
   updated_by: string | null;

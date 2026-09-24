@@ -27,6 +27,9 @@ import { formatClientDate } from "@/data/agencyClients";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
 import { ScopeRecommendPanel } from "@/components/client/ScopeRecommendPanel";
+import { ScopePackageChooser } from "@/components/client/ScopePackageChooser";
+import { projectPackageLabels } from "@/data/projectPackages";
+import { scopePackageHint } from "@/data/scopePackageHint";
 
 const fieldClass =
   "mt-2 w-full rounded-lg border border-[var(--client-line)] bg-white px-3 py-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]";
@@ -252,8 +255,14 @@ export function ClientScope() {
             </p>
           ) : null}
 
+          <ScopePackageChooser
+            value={draft.package}
+            onChange={(next) => patch({ package: next })}
+            hint={scopePackageHint(draft.package, draft.pages, draft.features)}
+          />
+
           <section>
-            <h2 className="font-heading text-sm font-semibold text-[var(--client-ink)]">Included in your website package</h2>
+            <h2 className="font-heading text-sm font-semibold text-[var(--client-ink)]">Included with every package</h2>
             <ul className="mt-3 space-y-2">
               {SCOPE_PACKAGE_INCLUDED.map((item) => (
                 <li key={item} className="text-sm font-medium text-[var(--client-ink)]">
@@ -510,8 +519,15 @@ export function ClientScope() {
 function ScopeSummary({ draft, onEdit }: { draft: ScopeBriefDraft; onEdit: () => void }) {
   return (
     <div className="space-y-8 rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5 md:p-6">
+      <SummaryBlock title="Package">
+        <p className="text-sm text-[var(--client-ink)]">
+          {draft.package ? `${projectPackageLabels[draft.package]}` : "Not sure yet. We'll recommend one."}
+        </p>
+        <p className="mt-1 text-[12px] text-[var(--client-muted)]">We confirm the package and the price in your proposal.</p>
+      </SummaryBlock>
+
       <section>
-        <h2 className="font-heading text-sm font-semibold text-[var(--client-ink)]">Included in your website package</h2>
+        <h2 className="font-heading text-sm font-semibold text-[var(--client-ink)]">Included with every package</h2>
         <ul className="mt-3 space-y-2">
           {SCOPE_PACKAGE_INCLUDED.map((item) => (
             <li key={item} className="text-sm font-medium text-[var(--client-ink)]">

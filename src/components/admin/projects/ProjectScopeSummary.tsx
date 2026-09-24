@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { projectPackageLabels } from "@/data/projectPackages";
 import { Link } from "react-router-dom";
 import type { AgencyClient } from "@/data/agencyClients";
 import type { ClientScopeBrief } from "@/data/scopeBriefs";
@@ -53,6 +54,7 @@ export function ProjectScopeSummary({
         currentNotes ||
         likedWebsites ||
         additionalNotes ||
+        brief.requestedPackage ||
         brief.hasExistingWebsite !== null),
   );
 
@@ -105,6 +107,11 @@ export function ProjectScopeSummary({
           {goal ? (
             <Block label="Business Goal">
               <p className="whitespace-pre-wrap">{goal}</p>
+            </Block>
+          ) : null}
+          {brief.requestedPackage ? (
+            <Block label="Requested package">
+              <p>{projectPackageLabels[brief.requestedPackage]}</p>
             </Block>
           ) : null}
           {pages.length > 0 ? (

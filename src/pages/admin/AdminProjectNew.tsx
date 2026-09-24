@@ -35,6 +35,8 @@ export function AdminProjectNew() {
   const [clientId, setClientId] = useState(lockedClient ? presetClient : "");
   const [type, setType] = useState<AgencyProjectType>("Website");
   const [projectPackage, setProjectPackage] = useState<ProjectPackage | null>(null);
+  // Once staff touch the Package dropdown, the client's requested package stops pre-filling it.
+  const packageTouched = useRef(false);
   const [description, setDescription] = useState("");
   const [brief, setBrief] = useState<ClientScopeBrief | null>(null);
   const [briefLoading, setBriefLoading] = useState(Boolean(clientId));
@@ -50,6 +52,11 @@ export function AdminProjectNew() {
   const datesInvalid = Boolean(startDate && targetLaunchDate && targetLaunchDate < startDate);
   const briefDescription = useMemo(() => (brief ? projectDescriptionFromBrief(brief) : ""), [brief]);
   const fromBrief = briefDescription !== "" && description === briefDescription;
+
+  // Pre-select the package the client asked for on their Website Scope, until staff choose one themselves.
+  useEffect(() => {
+    if (!packageTouched.current) setProjectPackage(brief?.requestedPackage ?? null);
+  }, [brief]);
 
   // Runs when the chosen client changes, not on every background refresh of the client list.
   useEffect(() => {
@@ -253,7 +260,10 @@ export function AdminProjectNew() {
               Package
               <select
                 value={projectPackage ?? ""}
-                onChange={(event) => setProjectPackage(event.target.value === "" ? null : (event.target.value as ProjectPackage))}
+                onChange={(event) => {
+                    packageTouched.current = true;
+                    setProjectPackage(event.target.value === "" ? null : (event.target.value as ProjectPackage));
+                  }}
                 className={inputClass}
               >
                 <option value="">Not set</option>
@@ -264,7 +274,7 @@ export function AdminProjectNew() {
                 ))}
               </select>
               <span className="mt-1.5 block text-[12px] font-normal text-[var(--admin-muted)]">
-                The package this project was sold as (see the Pricing page). It pre-fills new proposals, and a client whose projects are all Website doesn't get the Files library or live website status in their portal. Leave it unset for no restrictions.
+                {brief?.requestedPackage && !packageTouched.current ? `Pre-filled from what the client chose on their Website Scope (${projectPackageLabels[brief.requestedPackage]}). ` : ""}The package this project was sold as (see the Pricing page). It pre-fills new proposals, and a client whose projects are all Website doesn't get the Files library or live website status in their portal. Leave it unset for no restrictions.
               </span>
             </label>
             <label className="block text-sm font-semibold">

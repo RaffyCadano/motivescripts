@@ -1,3 +1,6 @@
+import type { ProjectPackage } from "@/data/projectPackages";
+
+/** What every package includes (the base website), shown on the scope form and summaries. */
 export const SCOPE_PACKAGE_INCLUDED = [
   "Homepage",
   "Responsive Website Design",
@@ -85,6 +88,8 @@ export type ClientScopeBrief = {
   otherStyle: string;
   likedWebsites: string;
   additionalNotes: string;
+  /** The package the client asked for; a request only (staff set the project's own package). */
+  requestedPackage: ProjectPackage | null;
   submittedAt: string | null;
   updatedAt: string;
 };
@@ -104,6 +109,7 @@ export type ScopeBriefDraft = {
   otherStyle: string;
   likedWebsites: string;
   additionalNotes: string;
+  package: ProjectPackage | null;
 };
 
 export function emptyScopeDraft(): ScopeBriefDraft {
@@ -120,6 +126,7 @@ export function emptyScopeDraft(): ScopeBriefDraft {
     otherStyle: "",
     likedWebsites: "",
     additionalNotes: "",
+    package: null,
   };
 }
 
@@ -149,6 +156,7 @@ export function draftFromBrief(brief: ClientScopeBrief): ScopeBriefDraft {
     otherStyle: brief.otherStyle,
     likedWebsites: brief.likedWebsites,
     additionalNotes: brief.additionalNotes,
+    package: brief.requestedPackage,
   };
 }
 

@@ -1,3 +1,4 @@
+import { isProjectPackage } from "@/data/projectPackages";
 import { deliverablesFromScope } from "@/data/proposalPresets";
 import {
   emptyScopeDraft,
@@ -103,6 +104,7 @@ function mapBrief(row: ClientScopeBriefRow, allowed?: ScopeCatalogAllowList): Cl
     otherStyle: (row.other_style ?? "").trim(),
     likedWebsites: (row.liked_websites ?? "").trim(),
     additionalNotes: (row.additional_notes ?? "").trim(),
+    requestedPackage: isProjectPackage(row.requested_package) ? row.requested_package : null,
     submittedAt: row.submitted_at,
     updatedAt: row.updated_at,
   };
@@ -162,6 +164,7 @@ export async function saveClientScopeBrief(
     other_style: draft.styles.includes("Other") ? draft.otherStyle : "",
     liked_websites: draft.likedWebsites,
     additional_notes: draft.additionalNotes,
+    requested_package: draft.package,
   };
 
   const client = db();
