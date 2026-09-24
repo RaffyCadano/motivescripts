@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { BatteryFull, Signal, Wifi } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import { cn } from "@/lib/cn";
@@ -26,6 +26,11 @@ const SERVICES = [
 ] as const;
 
 const REVIEW_QUOTE = "“Showed up on time, quoted a fair price, and the kitchen looks better than we imagined.”";
+const HOW_IT_WORKS = [
+  ["Book a visit", "Pick a time that suits you; same-week visits for most projects."],
+  ["Get a clear estimate", "A written, itemized quote before any work begins."],
+  ["We do the work", "A tidy, on-time crew, and a walkthrough when it's done."],
+] as const;
 const REVIEW_BY = "Dana R. · South Austin";
 
 /**
@@ -276,10 +281,24 @@ function TabletOverlay() {
   );
 }
 
+const SCROLL_CYCLE_MS = 14000;
+
+/** 0 = top of the page, 1 = bottom: down, a pause, back up, a pause, repeat (`progress` is 0..1 through the cycle). */
+function scrollProgress(progress: number) {
+  const ease = (t: number) => t * t * (3 - 2 * t);
+  if (progress < 0.1) return 0;
+  if (progress < 0.45) return ease((progress - 0.1) / 0.35);
+  if (progress < 0.6) return 1;
+  if (progress < 0.95) return 1 - ease((progress - 0.6) / 0.35);
+  return 0;
+}
+
 /**
  * Plays a mock site like it's being scrolled: measures how much taller the page is than the visible
- * window, then loops a translateY across that distance and back (CSS animation, so it costs nothing in
- * JS after setup). The page is laid out at `pageWidth` and scaled down to the frame, so each device can
+ * window, then loops a translateY across that distance and back. The loop is driven from JS, one
+ * requestAnimationFrame at a time and only while the device is on screen: a CSS animation looked frozen
+ * on the laptop, whose screen sits inside a 3D-rotated lid and isn't repainted for a transform animation
+ * running in the compositor. The page is laid out at `pageWidth` and scaled down to the frame, so each device can
  * show its own responsive layout. `delaySeconds` offsets the loop so the devices don't scroll in
  * lockstep. `overlay` is drawn on top in the same scaled coordinates but does NOT scroll -- a phone's
  * status bar and home indicator stay put while the page moves beneath them. Same width-fit-then-scale
@@ -327,19 +346,34 @@ function ScrollingMock({
     return () => observer.disconnect();
   }, [pageWidth]);
 
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const track = contentRef.current;
+    if (!viewport || !track || scrollDistance <= 0) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const startedAt = performance.now() - delaySeconds * 1000;
+    let frame = 0;
+    const tick = (now: number) => {
+      track.style.transform = `translateY(${-scrollDistance * scrollProgress(((now - startedAt) % SCROLL_CYCLE_MS) / SCROLL_CYCLE_MS)}px)`;
+      frame = requestAnimationFrame(tick);
+    };
+    // Only run while the device is actually on screen.
+    const observer = new IntersectionObserver(([entry]) => {
+      cancelAnimationFrame(frame);
+      if (entry?.isIntersecting) frame = requestAnimationFrame(tick);
+    });
+    observer.observe(viewport);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [scrollDistance, delaySeconds]);
+
   return (
     <div ref={viewportRef} className="absolute inset-0 overflow-hidden">
       <div className="origin-top-left" style={{ width: pageWidth, transform: `scale(${scale})` }}>
-        <div
-          ref={contentRef}
-          className="hero-scroll-track"
-          style={
-            {
-              "--hero-scroll-distance": `${scrollDistance}px`,
-              animationDelay: delaySeconds ? `-${delaySeconds}s` : undefined,
-            } as CSSProperties
-          }
-        >
+        <div ref={contentRef}>
           {children}
         </div>
       </div>
@@ -558,6 +592,32 @@ function TabletSiteMock() {
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#0050F0]">Reviews</p>
         <p className="mt-1.5 max-w-md font-heading text-xl font-extrabold leading-snug tracking-tight">{REVIEW_QUOTE}</p>
         <p className="mt-3 text-[13px] font-semibold text-[#5c6678]">{REVIEW_BY}</p>
+      </div>
+
+      <div className="border-t border-[#e8edf4] px-8 py-9">
+        <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#0050F0]">How it works</p>
+        <p className="mt-1.5 font-heading text-2xl font-extrabold tracking-tight">Three steps, no surprises</p>
+        <div className="mt-5 grid grid-cols-3 gap-3">
+          {HOW_IT_WORKS.map(([title, note], index) => (
+            <div key={title} className="rounded-xl border border-[#e8edf4] px-4 py-4">
+              <span className="flex size-7 items-center justify-center rounded-full bg-[#0050F0] font-heading text-[12px] font-bold text-white">
+                {index + 1}
+              </span>
+              <p className="mt-3 text-[14px] font-semibold">{title}</p>
+              <p className="mt-1.5 text-[12px] leading-relaxed text-[#5c6678]">{note}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-[#0b1b3a] px-8 py-10 text-center text-white">
+        <p className="mx-auto max-w-[18ch] font-heading text-3xl font-extrabold leading-tight">Ready to start your project?</p>
+        <p className="mx-auto mt-3 max-w-md text-[14px] text-white/75">
+          Tell us what you have in mind and we&apos;ll come out for a free estimate.
+        </p>
+        <span className="mt-5 inline-block rounded-full bg-[#0050F0] px-6 py-2.5 font-heading text-[13px] font-semibold">
+          Get a free estimate
+        </span>
       </div>
 
       <div className="flex items-center justify-between border-t border-[#e8edf4] px-8 py-6 text-[12px] text-[#5c6678]">

@@ -131,28 +131,6 @@
   animation: glow-pulse 8s ease-in-out infinite;
 }
 
-/* Plays the hero's mock site like someone is scrolling it: down to the bottom, a pause, back up, a
-   pause, repeat. --hero-scroll-distance is set inline per element (how much taller the page is than
-   the visible window) so this one keyframe list works at any size. */
-.hero-scroll-track {
-  animation: hero-scroll 14s ease-in-out infinite;
-}
-
-@keyframes hero-scroll {
-  0%,
-  10% {
-    transform: translateY(0);
-  }
-  45%,
-  60% {
-    transform: translateY(calc(var(--hero-scroll-distance, 0px) * -1));
-  }
-  95%,
-  100% {
-    transform: translateY(0);
-  }
-}
-
 @keyframes geo-drift {
   from {
     transform: translate3d(0, 0, 0) rotate(0deg);
@@ -185,7 +163,6 @@
   .geo-drift,
   .geo-drift-slow,
   .hero-glow-pulse,
-  .hero-scroll-track,
   .nav-entrance,
   .fade-up-in {
     animation: none;
