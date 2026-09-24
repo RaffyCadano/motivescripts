@@ -64,7 +64,7 @@ export const pricingTiers = [
       "Launch support",
     ],
     badge: "Base package",
-    highlighted: true,
+    highlighted: false,
   },
   {
     id: "growth",
@@ -79,8 +79,8 @@ export const pricingTiers = [
       "Integrations with other tools, scoped per project",
       "Content structured around your services and inquiries",
     ],
-    badge: null,
-    highlighted: false,
+    badge: "Recommended",
+    highlighted: true,
   },
   {
     id: "custom",
