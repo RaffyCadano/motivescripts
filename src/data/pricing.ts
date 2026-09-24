@@ -35,6 +35,13 @@ export const growthStartingPrice = "$3,500";
  */
 export const careStartingPrice = "$49";
 
+/**
+ * Which Website Care tier the Pricing page badges "Recommended". The tiers themselves are admin-editable
+ * and fetched live (see above), so this matches by name rather than pointing at a row: if the tier is
+ * renamed or retired the badge simply doesn't show, it never lands on the wrong plan.
+ */
+export const recommendedCareTierName = "Business";
+
 export const careService = {
   id: "care",
   planType: "care",

@@ -15,6 +15,7 @@ import {
   ongoingServicesTerms,
   packageDetails,
   pricingTiers,
+  recommendedCareTierName,
   websiteStartingPrice,
 } from "@/data/pricing";
 import type { MaintenancePlanTemplate } from "@/data/maintenancePlanTemplates";
@@ -326,8 +327,23 @@ export function PricingPage() {
               </p>
               {careTiers.length > 0 ? (
                 <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {careTiers.map((tier) => (
-                    <li key={tier.id} className="flex flex-col rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7">
+                  {careTiers.map((tier) => {
+                    const recommended = tier.name.trim().toLowerCase() === recommendedCareTierName.toLowerCase();
+                    return (
+                    <li
+                      key={tier.id}
+                      className={cn(
+                        "relative flex flex-col rounded-[var(--radius-lg)] border p-7",
+                        recommended
+                          ? "border-[rgb(0_80_240_/_0.35)] bg-[rgb(0_80_240_/_0.03)] shadow-[var(--shadow-card)]"
+                          : "border-[var(--color-line)]",
+                      )}
+                    >
+                      {recommended ? (
+                        <span className="absolute -top-3 left-7 rounded-full bg-[linear-gradient(135deg,#0050F0,#00A0FF)] px-3 py-1 font-heading text-xs font-bold uppercase tracking-[0.1em] text-white">
+                          Recommended
+                        </span>
+                      ) : null}
                       <h3 className="text-xl font-bold">{tier.name}</h3>
                       {tier.description ? <p className="mt-3 flex-1 text-sm text-muted">{tier.description}</p> : <div className="flex-1" />}
                       {tier.includedServices.length > 0 ? (
@@ -347,7 +363,8 @@ export function PricingPage() {
                         note="Billed monthly. Choose it yourself from your client portal once your website has launched."
                       />
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               ) : (
                 <div className="mt-8 max-w-sm">
