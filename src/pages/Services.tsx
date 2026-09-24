@@ -34,23 +34,23 @@ export function ServicesPage() {
 
       <div className="container-wide space-y-20 py-16 md:space-y-24 md:py-24">
         <div>
-          <AnimateIn>
-            <p className="eyebrow">What we do</p>
+          <AnimateIn className="text-center">
+            <p className="eyebrow eyebrow--plain">What we do</p>
           </AnimateIn>
           <div className="-mx-3 mt-8 flex flex-col gap-8 px-3 py-3">
           {services.map((service, index) => (
             <AnimateIn key={service.id} delay={index * 80}>
               <article
                 id={service.id}
-                className="grid gap-6 rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7 md:grid-cols-[8rem_1fr] md:p-10"
+                className="flex flex-col items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-line)] p-7 text-center md:gap-5 md:p-10"
               >
               <p className="font-heading text-sm font-bold tracking-[0.16em] text-cyan">
                 {String(index + 1).padStart(2, "0")}
               </p>
               <div>
                 <h2 className="text-2xl md:text-3xl">{service.title}</h2>
-                <p className="mt-3 max-w-2xl text-muted">{service.body}</p>
-                <p className="mt-4 max-w-2xl text-muted-strong">{service.detail}</p>
+                <p className="mx-auto mt-3 max-w-2xl text-muted">{service.body}</p>
+                <p className="mx-auto mt-4 max-w-2xl text-muted-strong">{service.detail}</p>
               </div>
               </article>
             </AnimateIn>
