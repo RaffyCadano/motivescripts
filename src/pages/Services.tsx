@@ -1,4 +1,4 @@
-import { Code2, Search, Wrench, PenTool, type LucideIcon } from "lucide-react";
+import { Check, Code2, Search, Wrench, PenTool, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/Button";
 import { CTA } from "@/components/CTA";
 import { AnimateIn } from "@/components/AnimateIn";
@@ -90,14 +90,16 @@ export function ServicesPage() {
         <AnimateIn>
           <section>
             <h2 className="text-center text-2xl md:text-3xl">What's included in your website project</h2>
-            <ul className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <ul className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
               {included.map((item) => (
                 <li
                   key={item}
-                  className="flex items-center gap-2.5 rounded-[var(--radius-md)] border border-[var(--color-line)] px-3.5 py-3 text-sm font-medium text-ink"
+                  className="group flex flex-col items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--color-line)] px-4 py-6 text-center transition-[transform,box-shadow,border-color] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-[rgb(0_200_255_/_0.28)] hover:shadow-[var(--shadow-card)]"
                 >
-                  <span className="size-1.5 shrink-0 rounded-full bg-cyan" aria-hidden="true" />
-                  {item}
+                  <span className="flex size-10 items-center justify-center rounded-full bg-[rgb(0_80_240_/_0.06)] text-blue transition-colors duration-[var(--duration-base)] ease-[var(--ease-out)] group-hover:bg-[rgb(0_80_240_/_0.1)]">
+                    <Check size={18} strokeWidth={2.4} aria-hidden="true" />
+                  </span>
+                  <span className="text-sm font-semibold leading-snug text-ink">{item}</span>
                 </li>
               ))}
             </ul>
