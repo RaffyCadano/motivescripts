@@ -72,7 +72,7 @@ const pricingFaqs = [
   {
     question: "Are hosting and domain costs included?",
     answer:
-      `Not automatically. Hosting setup, domain registration, and business email are quoted as separate line items when your project needs them, so you can see exactly what each one costs in your proposal. Hosting is free for the first 30 days after your site goes live; ongoing hosting after that is included starting with the Essential Website Care tier, at ${careStartingPrice}/month.`,
+      `It depends on the package. Hosting is free for the first 30 days after your site goes live; ongoing hosting after that is included starting with the Essential Website Care tier, at ${careStartingPrice}/month. Your domain name is included for the first year with Growth and Custom, and is an add-on with Website. Business email is included with Custom and is an add-on with Website and Growth. Add-ons are quoted as separate line items, so you can see exactly what each one costs in your proposal.`,
   },
   {
     question: "Do I need to know exactly what I need before contacting you?",
