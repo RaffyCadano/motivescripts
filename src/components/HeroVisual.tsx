@@ -48,7 +48,7 @@ export function HeroVisual() {
     <div className="relative mx-auto w-full max-w-[36rem] lg:max-w-none">
       <div className="hero-glow-pulse pointer-events-none absolute -right-8 top-6 size-56 rounded-full bg-[radial-gradient(circle,rgb(0_104_255_/_0.06),transparent_64%)] blur-2xl" />
 
-      <div className="relative z-10 pb-[16%] pt-2 sm:pt-6 md:pt-10">
+      <div className="relative z-10 pb-[24%] pt-2 sm:pt-6 md:pt-10">
         <Laptop3D>
           <BrowserChrome url="yoursite.com" />
           <div className="relative min-h-0 flex-1">
@@ -58,7 +58,7 @@ export function HeroVisual() {
           </div>
         </Laptop3D>
 
-        <DeviceFrame device={TABLET} className="absolute bottom-0 left-0 w-[32%] sm:w-[30%]">
+        <DeviceFrame device={TABLET} className="absolute bottom-0 left-0 w-[38%] sm:w-[36%]">
           <ScrollingMock pageWidth={TABLET_W} delaySeconds={5} overlay={<TabletOverlay />}>
             <TabletSiteMock />
           </ScrollingMock>
@@ -70,7 +70,7 @@ export function HeroVisual() {
           </ScrollingMock>
         </DeviceFrame>
 
-        <div className="absolute bottom-[3%] left-[55%] hidden -translate-x-1/2 rounded-[var(--radius-lg)] border border-[#d9dfe8] bg-[var(--ms-white)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
+        <div className="absolute bottom-[3%] left-[58%] hidden -translate-x-1/2 rounded-[var(--radius-lg)] border border-[#d9dfe8] bg-[var(--ms-white)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
           <BrandMark className="h-7 w-auto" decorative />
           <p className="whitespace-nowrap font-heading text-xs font-semibold text-ink">Built by MotiveScripts</p>
         </div>
