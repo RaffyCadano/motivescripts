@@ -38,17 +38,6 @@ export function AboutPage() {
 
       <div className="container-wide space-y-20 py-16 md:space-y-24 md:py-24">
         <AnimateIn>
-        <section className="mx-auto max-w-3xl text-center">
-          <h2 className="text-2xl md:text-3xl">Built for businesses that need more than a template.</h2>
-          <p className="mt-4 text-[var(--text-md)] text-muted">
-            Your website is often the first place potential customers experience your business.
-            MotiveScripts focuses on building websites that communicate clearly, look professional, and
-            make it easier for customers to take the next step.
-          </p>
-        </section>
-        </AnimateIn>
-
-        <AnimateIn>
         <section>
           <h2 className="text-center text-2xl md:text-3xl">What the website has to do</h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-muted">
