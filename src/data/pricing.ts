@@ -214,6 +214,8 @@ const hostingTrial = "Free 30-day trial";
  * line item in the proposal ("Add-on"). Keep the Pricing FAQ ("Are hosting and domain costs included?") and
  * the AI knowledge (supabase/functions/_shared/aiKnowledge.ts) in step with these.
  */
+/** There is no fixed number of revision rounds: the contract says they follow the related proposal. */
+const inProposal = "Set in your proposal";
 const addOn = "Add-on";
 const domainGrowth = "Included, first year";
 const includedScoped = "Included, scoped to you";
@@ -231,7 +233,11 @@ export const comparisonRows: { label: string; cells: [ComparisonCell, Comparison
   { label: "Customer login or portal features", cells: [false, false, true] },
   { label: "Multi-location or multi-brand sites", cells: [false, false, true] },
   { label: "Client portal (track project, files, invoices)", cells: [false, true, true] },
+  { label: "Online invoices and secure payment", cells: [false, true, true] },
+  { label: "Live website status in your client portal", cells: [false, true, true] },
   { label: "Launch support", cells: [true, true, true] },
+  { label: "You approve the design and the site before launch", cells: [true, true, true] },
+  { label: "Revision rounds", cells: [inProposal, inProposal, inProposal] },
   { label: "Hosting", cells: [hostingTrial, hostingTrial, hostingTrial] },
   { label: "Custom domain name (yourbusiness.com)", cells: [addOn, domainGrowth, includedScoped] },
   { label: "Business email account", cells: [addOn, addOn, includedScoped] },
