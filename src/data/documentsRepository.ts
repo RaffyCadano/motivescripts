@@ -661,8 +661,16 @@ export async function createContractRevision(contractId: string): Promise<void> 
   throwIf(error, "revise contract", "Unable to create a new revision.");
 }
 
-export function proposalLineDrafts(detail: ProposalDetail, websiteCents?: number): LineItemDraft[] {
-  if (detail.working.status === "draft") return applyProposalLineDefaults(draftsFromItems(detail.items), websiteCents);
+/**
+ * `packageItems` (the project's package starting lines, see packageProposalLineItems) only apply to a draft
+ * that has no lines of its own yet; once staff have written or saved lines they always win.
+ */
+export function proposalLineDrafts(detail: ProposalDetail, websiteCents?: number, packageItems?: LineItemDraft[]): LineItemDraft[] {
+  if (detail.working.status === "draft") {
+    const own = draftsFromItems(detail.items);
+    const start = packageItems && packageItems.length > 0 && !own.some((item) => item.name.trim()) ? packageItems : own;
+    return applyProposalLineDefaults(start, websiteCents);
+  }
   return draftsFromItems(detail.snapshotItems.length > 0 ? detail.snapshotItems : detail.items);
 }
 

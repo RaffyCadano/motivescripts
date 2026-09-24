@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { BrandMark } from "@/components/BrandMark";
 import { ClientNavItem } from "@/components/client/ClientNavItem";
+import { useClientPortalAccess } from "@/components/client/useClientPortalAccess";
 import { clientMainNavFor, clientSettingsNav } from "@/data/clientNav";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
 import { cn } from "@/lib/cn";
@@ -14,7 +15,8 @@ type ClientSidebarProps = {
 
 export function ClientSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigate }: ClientSidebarProps) {
   const { project } = usePortalSession();
-  const mainNav = clientMainNavFor(Boolean(project));
+  const { fullPortal } = useClientPortalAccess();
+  const mainNav = clientMainNavFor(Boolean(project), fullPortal);
   const portalLabel = project ? "Client Portal" : "Pre-Project";
   return (
     <aside

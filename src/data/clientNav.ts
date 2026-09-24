@@ -18,13 +18,15 @@ export type ClientNavItem = {
   icon: ClientIconName;
   end?: boolean;
   requiresProject?: boolean;
+  /** Left out of the portal for a client on the Website package (see clientHasFullPortal). */
+  fullPortalOnly?: boolean;
 };
 
 export const clientMainNav: ClientNavItem[] = [
   { label: "Overview", href: "/client", icon: "overview", end: true },
   { label: "Scope", href: "/client/scope", icon: "scope" },
   { label: "My Project", href: "/client/project", icon: "project", requiresProject: true },
-  { label: "Files", href: "/client/files", icon: "files", requiresProject: true },
+  { label: "Files", href: "/client/files", icon: "files", requiresProject: true, fullPortalOnly: true },
   { label: "Feedback", href: "/client/feedback", icon: "feedback", requiresProject: true },
   { label: "Approvals", href: "/client/approvals", icon: "approvals", requiresProject: true },
   { label: "Messages", href: "/client/messages", icon: "messages" },
@@ -33,8 +35,8 @@ export const clientMainNav: ClientNavItem[] = [
   { label: "Invoices", href: "/client/invoices", icon: "invoices" },
 ];
 
-export function clientMainNavFor(hasProject: boolean): ClientNavItem[] {
-  return clientMainNav.filter((item) => hasProject || !item.requiresProject);
+export function clientMainNavFor(hasProject: boolean, fullPortal = true): ClientNavItem[] {
+  return clientMainNav.filter((item) => (hasProject || !item.requiresProject) && (fullPortal || !item.fullPortalOnly));
 }
 
 export const clientSettingsNav: ClientNavItem[] = [

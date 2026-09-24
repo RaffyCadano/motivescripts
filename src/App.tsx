@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { AuthRedirectHandler } from "@/auth/AuthRedirectHandler";
 import { GuestOnly, RequireAdmin, RequireClient } from "@/auth/guards";
+import { RequireFullPortal } from "@/components/client/RequireFullPortal";
 import { Layout } from "@/components/Layout";
 import { RouteFallback } from "@/components/RouteFallback";
 import { RouteRobots } from "@/components/RouteRobots";
@@ -228,7 +229,7 @@ export default function App() {
             <Route path="project/:projectId" element={<ClientProject />} />
             <Route path="project/:projectId/discovery" element={<ClientDiscovery />} />
             <Route path="project/:projectId/requests" element={<ClientTaskRequests />} />
-            <Route path="files" element={<ClientFilesPage />} />
+            <Route path="files" element={<RequireFullPortal><ClientFilesPage /></RequireFullPortal>} />
             <Route path="files/:deliverableId" element={<ClientReview />} />
             <Route path="feedback" element={<ClientFeedback />} />
             <Route path="approvals" element={<ClientApprovals />} />

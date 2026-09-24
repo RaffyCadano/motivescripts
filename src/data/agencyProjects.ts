@@ -3,6 +3,7 @@
  * Runtime records come from Supabase via LeadsProvider. This module has no seed rows.
  */
 
+import type { ProjectPackage } from "@/data/projectPackages";
 import { formatLeadDate, formatLeadSubmitted, formatLeadTimestamp } from "@/data/leads";
 import type { ProjectDevelopment } from "@/data/projectDevelopment";
 import type { TaskRecommendedRoleId } from "@/data/taskRecommendedRoles";
@@ -148,6 +149,8 @@ export type AgencyProject = {
   archived: boolean;
   approvalStatus: AgencyApprovalStatus;
   development: ProjectDevelopment;
+  /** The package this project was sold as, or null (not set; no package restrictions). */
+  package: ProjectPackage | null;
   billingMode: ProjectBillingMode;
   hourlyRateCents: number | null;
   budgetedHours: number | null;
@@ -166,6 +169,8 @@ export type AgencyProjectDraft = {
   startDate: string;
   targetLaunchDate: string;
   development?: ProjectDevelopment;
+  /** Left out = unchanged on an edit; null clears it. */
+  package?: ProjectPackage | null;
   billingMode?: ProjectBillingMode;
   hourlyRateCents?: number | null;
   budgetedHours?: number | null;

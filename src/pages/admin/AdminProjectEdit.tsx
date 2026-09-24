@@ -14,6 +14,7 @@ import {
   type ProjectDevelopment,
 } from "@/data/agencyProjects";
 import { centsInputValue, parseDollarsToCents } from "@/data/money";
+import { projectPackageLabels, projectPackages, type ProjectPackage } from "@/data/projectPackages";
 import { updateProjectRecord } from "@/data/agencyRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 import {
@@ -50,6 +51,7 @@ export function AdminProjectEdit() {
   const [name, setName] = useState("");
   const [clientId, setClientId] = useState("");
   const [type, setType] = useState<AgencyProjectType>("Website");
+  const [projectPackage, setProjectPackage] = useState<ProjectPackage | null>(null);
   const [status, setStatus] = useState<AgencyProjectStatus>("Planning");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -65,6 +67,7 @@ export function AdminProjectEdit() {
     setName(project.name);
     setClientId(project.clientId);
     setType(project.type);
+    setProjectPackage(project.package);
     setStatus(project.status);
     setDescription(project.description);
     setStartDate(project.startDate);
@@ -108,6 +111,7 @@ export function AdminProjectEdit() {
         name,
         clientId,
         type,
+        package: projectPackage,
         description,
         status,
         startDate,
@@ -203,6 +207,24 @@ export function AdminProjectEdit() {
             </select>
           </label>
         </div>
+        <label className="block text-sm font-semibold">
+          Package
+          <select
+            value={projectPackage ?? ""}
+            onChange={(event) => setProjectPackage(event.target.value === "" ? null : (event.target.value as ProjectPackage))}
+            className={inputClass}
+          >
+            <option value="">Not set</option>
+            {projectPackages.map((item) => (
+              <option key={item} value={item}>
+                {projectPackageLabels[item]}
+              </option>
+            ))}
+          </select>
+          <span className="mt-1.5 block text-[12px] font-normal text-[var(--admin-muted)]">
+            The package this project was sold as (see the Pricing page). It pre-fills new proposals, and a client whose projects are all Website doesn't get the Files library or live website status in their portal. Leave it unset for no restrictions.
+          </span>
+        </label>
         <label className="block text-sm font-semibold">
           Description
           <textarea

@@ -2,20 +2,24 @@ import { FileArchive, FileImage, LayoutTemplate } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ClientStatusBadge } from "@/components/client/ClientStatusBadge";
 import { usePortalSession } from "@/components/admin/leads/LeadsProvider";
+import { useClientPortalAccess } from "@/components/client/useClientPortalAccess";
 import { currentVersion } from "@/data/files";
 import { canClientReview, clientReviewLabel, clientStatusTone } from "@/data/review";
 
 export function ClientFiles() {
   const { files } = usePortalSession();
+  const { fullPortal } = useClientPortalAccess();
   const recent = files.filter((item) => item.status !== "Archived").slice(0, 4);
 
   return (
     <section className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)]">
       <div className="flex items-center justify-between gap-3 border-b border-[var(--client-line)] px-5 py-4">
         <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--client-ink)]">Recent Files</h2>
-        <Link className="text-[12px] font-medium text-[var(--client-blue)] hover:underline" to="/client/files">
-          View all
-        </Link>
+        {fullPortal ? (
+          <Link className="text-[12px] font-medium text-[var(--client-blue)] hover:underline" to="/client/files">
+            View all
+          </Link>
+        ) : null}
       </div>
       {recent.length === 0 ? (
         <div className="px-5 py-6">

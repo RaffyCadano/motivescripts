@@ -5,6 +5,7 @@ import { NeedClientEmpty } from "@/components/admin/NeedClientEmpty";
 import { ProjectScopeSummary } from "@/components/admin/projects/ProjectScopeSummary";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { projectTypes, type AgencyProjectType } from "@/data/agencyProjects";
+import { projectPackageLabels, projectPackages, type ProjectPackage } from "@/data/projectPackages";
 import { projectDescriptionFromBrief, suggestedProjectName, type ClientScopeBrief } from "@/data/scopeBriefs";
 import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
 import { CARE_REQUEST_TYPE_LABELS } from "@/data/careRequests";
@@ -33,6 +34,7 @@ export function AdminProjectNew() {
   // Empty until a client is chosen (or the link names one). Never default to the first client in the list.
   const [clientId, setClientId] = useState(lockedClient ? presetClient : "");
   const [type, setType] = useState<AgencyProjectType>("Website");
+  const [projectPackage, setProjectPackage] = useState<ProjectPackage | null>(null);
   const [description, setDescription] = useState("");
   const [brief, setBrief] = useState<ClientScopeBrief | null>(null);
   const [briefLoading, setBriefLoading] = useState(Boolean(clientId));
@@ -126,6 +128,7 @@ export function AdminProjectNew() {
         name,
         clientId,
         type,
+        package: projectPackage,
         description,
         // Always Planning: production statuses are reached through the workflow (proposal, contract,
         // payment, design approval), and "In Development" would unlock development without design approval.
@@ -246,6 +249,24 @@ export function AdminProjectNew() {
                 </span>
               </div>
             </div>
+            <label className="block text-sm font-semibold">
+              Package
+              <select
+                value={projectPackage ?? ""}
+                onChange={(event) => setProjectPackage(event.target.value === "" ? null : (event.target.value as ProjectPackage))}
+                className={inputClass}
+              >
+                <option value="">Not set</option>
+                {projectPackages.map((item) => (
+                  <option key={item} value={item}>
+                    {projectPackageLabels[item]}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1.5 block text-[12px] font-normal text-[var(--admin-muted)]">
+                The package this project was sold as (see the Pricing page). It pre-fills new proposals, and a client whose projects are all Website doesn't get the Files library or live website status in their portal. Leave it unset for no restrictions.
+              </span>
+            </label>
             <label className="block text-sm font-semibold">
               Description
               <textarea

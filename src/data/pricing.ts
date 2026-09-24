@@ -137,7 +137,7 @@ export const commonAddOns = [
 /**
  * The detailed "What you get" lists on the Pricing page, keyed by pricingTiers[].id. Every line here
  * restates something already published in that tier's own feature list (above), plus two things the
- * packages differ on or share: the client portal (Growth and up, not the base Website package) and
+ * packages differ on or share: the client portal (approvals, feedback, messages and invoices for every package; the files library and live status from Growth up) and
  * approving the site before it launches (every project) -- nothing is claimed here
  * that isn't claimed on the tier cards, so the two can't contradict each other. Prices are not
  * repeated: the page reads them from pricingTiers so they can't drift.
@@ -159,7 +159,11 @@ export const packageDetails: Record<
       },
       {
         title: "Launch & after",
-        items: ["Launch support", "You approve the site before it launches"],
+        items: [
+          "Launch support",
+          "You approve the design and the site before it launches",
+          "Client portal: approvals, feedback, messages, and invoices you can pay online",
+        ],
       },
     ],
   },
@@ -179,7 +183,7 @@ export const packageDetails: Record<
       },
       {
         title: "After launch",
-        items: ["Client portal access: track your project, review files, and pay invoices"],
+        items: ["Project files library in your client portal", "Live website status in your portal, with a Website Care plan"],
       },
     ],
   },
@@ -217,6 +221,8 @@ const hostingTrial = "Free 30-day trial";
 /** There is no fixed number of revision rounds: the contract says they follow the related proposal. */
 const inProposal = "Set in your proposal";
 const addOn = "Add-on";
+/** The live status shows once uptime checks are running for the site, which a Website Care plan sets up. */
+const withCare = "With Website Care";
 const domainGrowth = "Included, first year";
 const includedScoped = "Included, scoped to you";
 
@@ -232,9 +238,10 @@ export const comparisonRows: { label: string; cells: [ComparisonCell, Comparison
   { label: "E-commerce or an online store", cells: [false, false, true] },
   { label: "Customer login or portal features", cells: [false, false, true] },
   { label: "Multi-location or multi-brand sites", cells: [false, false, true] },
-  { label: "Client portal (track project, files, invoices)", cells: [false, true, true] },
-  { label: "Online invoices and secure payment", cells: [false, true, true] },
-  { label: "Live website status in your client portal", cells: [false, true, true] },
+  { label: "Client portal (approvals, feedback, messages, invoices)", cells: [true, true, true] },
+  { label: "Online invoices and secure payment", cells: [true, true, true] },
+  { label: "Project files library in your portal", cells: [false, true, true] },
+  { label: "Live website status in your portal", cells: [false, withCare, withCare] },
   { label: "Launch support", cells: [true, true, true] },
   { label: "You approve the design and the site before launch", cells: [true, true, true] },
   { label: "Revision rounds", cells: [inProposal, inProposal, inProposal] },

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { packageProposalLineItems } from "@/data/packageProposalLines";
 import {
   Ban,
   Check,
@@ -133,6 +134,8 @@ export function AdminProposalDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { clients, projects, notify, reload, portalAccounts } = useLeads();
+  const projectsRef = useRef(projects);
+  projectsRef.current = projects;
   const { profile } = useAuth();
   const canManage = hasPermission(profile, "proposals.manage");
   const [detail, setDetail] = useState<ProposalDetail | null>(null);
@@ -207,7 +210,13 @@ export function AdminProposalDetails() {
       validUntil: next.working.valid_until ?? "",
       adminNotes: next.adminNotes,
     };
-    const nextItems = proposalLineDrafts(next, proposalWebsitePriceCents(settingsRef.current));
+    const websiteCents = proposalWebsitePriceCents(settingsRef.current);
+    const projectPackage = projectsRef.current.find((item) => item.id === next.proposal.project_id)?.package ?? null;
+    const nextItems = proposalLineDrafts(
+      next,
+      websiteCents,
+      projectPackage ? packageProposalLineItems(projectPackage, websiteCents) : undefined,
+    );
     setForm(nextForm);
     setItems(nextItems);
     if (next.working.status !== "draft") return;

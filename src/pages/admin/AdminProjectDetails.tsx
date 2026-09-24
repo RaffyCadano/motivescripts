@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { projectPackageLabels } from "@/data/projectPackages";
 import {
   Archive,
   MessageSquare,
@@ -198,6 +199,7 @@ export function AdminProjectDetails() {
             <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">{project.name}</h1>
             <p className="mt-1 text-sm text-[var(--admin-muted)]">
               {project.type}
+              {project.package ? ` · ${projectPackageLabels[project.package]} package` : ""}
               {" · "}
               {project.status}
               {" · "}

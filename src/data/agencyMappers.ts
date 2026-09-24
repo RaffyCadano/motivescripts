@@ -19,6 +19,7 @@ import type {
 import { taskBlockedReasons, taskQaResults } from "@/data/agencyProjects";
 import { parseStoredRecommendedRole } from "@/data/taskRecommendedRoles";
 import { isTaskType } from "@/data/taskTypes";
+import { isProjectPackage } from "@/data/projectPackages";
 import {
   emptyProjectDevelopment,
   isDeploymentStatus,
@@ -271,6 +272,7 @@ export function mapProject(
       stagingUrl: row.staging_url ?? "",
       productionUrl: row.production_url ?? "",
     },
+    package: isProjectPackage(row.package) ? row.package : null,
     billingMode: row.billing_mode === "hourly" ? "hourly" : "fixed",
     hourlyRateCents: row.hourly_rate_cents ?? null,
     budgetedHours: row.budgeted_hours ?? null,

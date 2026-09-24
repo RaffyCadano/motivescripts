@@ -84,6 +84,7 @@ export type ProjectRow = {
   staging_url: string | null;
   production_url: string | null;
   billing_mode: string;
+  package: string | null;
   hourly_rate_cents: number | null;
   budgeted_hours: number | null;
   created_at: string;
