@@ -30,6 +30,11 @@ export function HeroSection() {
               </Button>
             </div>
           </AnimateIn>
+          <AnimateIn delay={230}>
+            <p className="mt-5 text-sm text-faint">
+              Based in Winston-Salem, North Carolina · 2–4 week typical launch
+            </p>
+          </AnimateIn>
         </div>
         <AnimateIn delay={220} variant="scale">
           <HeroVisual />
