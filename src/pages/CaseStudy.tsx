@@ -170,7 +170,7 @@ export function CaseStudyPage() {
   return (
     <main id="main">
       <header className="border-b border-[var(--color-line)] py-16 md:py-20">
-        <div className="container-wide">
+        <div className="container-wide text-center">
           <AnimateIn>
             <p className="text-sm text-faint">
               <Link viewTransition to="/work" className="hover:text-ink">
@@ -179,17 +179,17 @@ export function CaseStudyPage() {
               <span aria-hidden="true"> / </span>
               {project.name}
             </p>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <span className="rounded-full border border-[var(--color-line)] px-2.5 py-1 font-heading text-xs font-semibold uppercase tracking-[0.14em] text-cyan">
                 {project.concept ? "Concept project" : "Client project"}
               </span>
               <span className="text-sm text-muted">{project.industry}</span>
             </div>
-            <h1 className="mt-4 max-w-[18ch] text-[2.15rem] md:text-[3.25rem]">{project.name}</h1>
+            <h1 className="mx-auto mt-4 max-w-[18ch] text-[2.15rem] md:text-[3.25rem]">{project.name}</h1>
           </AnimateIn>
           <AnimateIn delay={90}>
             <p className="mt-3 text-muted-strong">{project.services}</p>
-            <p className="mt-5 max-w-2xl text-lg text-muted">{project.summary}</p>
+            <p className="mx-auto mt-5 max-w-2xl text-lg text-muted">{project.summary}</p>
           </AnimateIn>
         </div>
       </header>
