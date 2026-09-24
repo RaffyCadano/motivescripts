@@ -210,7 +210,7 @@ export const packageDetails: Record<
 /** A cell is true (included), false (not included), or a short string shown as-is. Order: Website, Growth, Custom. */
 export type ComparisonCell = boolean | string;
 
-/** Hosting is free for the first 30 days after launch (the client portal starts the trial automatically); keeping it online after that means a Website Care plan. */
+/** Hosting is free for the first 30 days after launch (the client portal starts the trial automatically); after that the site is paused unless there is an active Website Care plan (run_launch_trial_sweep, with reminders at 7 and 1 day). */
 const hostingTrial = "Free 30-day trial";
 
 /**

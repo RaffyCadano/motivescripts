@@ -83,9 +83,11 @@ type ClientWebsiteSectionProps = {
   projectId: string;
   projectName: string;
   development: ProjectDevelopment;
+  /** The free period ended with no Care plan and the site is paused. */
+  paused?: boolean;
 };
 
-export function ClientWebsiteSection({ projectId, projectName, development }: ClientWebsiteSectionProps) {
+export function ClientWebsiteSection({ projectId, projectName, development, paused = false }: ClientWebsiteSectionProps) {
   const phase = clientWebsitePhase(development);
   const staging = safeHttpHref(development.stagingUrl);
   const [health, setHealth] = useState<ClientWebsiteHealth>({});
@@ -107,10 +109,14 @@ export function ClientWebsiteSection({ projectId, projectName, development }: Cl
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--client-muted)]">Your Website</p>
           <h2 className="mt-2 font-heading text-xl font-semibold tracking-tight text-[var(--client-ink)]">{projectName}</h2>
         </div>
-        <ClientStatusBadge
-          label={clientWebsiteStatusLabel(phase)}
-          tone={phase === "live" ? "done" : phase === "preview" ? "progress" : "neutral"}
-        />
+        {paused ? (
+          <ClientStatusBadge label="Paused" tone="changes" />
+        ) : (
+          <ClientStatusBadge
+            label={clientWebsiteStatusLabel(phase)}
+            tone={phase === "live" ? "done" : phase === "preview" ? "progress" : "neutral"}
+          />
+        )}
       </div>
 
       {phase === "preview" ? (

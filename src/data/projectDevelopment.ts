@@ -27,6 +27,12 @@ export type ProjectDevelopment = {
   domainName: string;
   domainStatus: DomainHostingStatus;
   hostingStatus: DomainHostingStatus;
+  /** When the free 30-day launch period ends (ISO), or "" if it never started. Read-only here. */
+  launchTrialEndsAt: string;
+  /** When the sweep paused the website (ISO), or "" if it isn't paused. Read-only here; see unpause_website(). */
+  pausedAt: string;
+  /** An admin chose "keep live indefinitely": the sweep never pauses it. Read-only here. */
+  pauseExempt: boolean;
 };
 
 export function emptyProjectDevelopment(): ProjectDevelopment {
@@ -42,6 +48,9 @@ export function emptyProjectDevelopment(): ProjectDevelopment {
     domainName: "",
     domainStatus: "Not configured",
     hostingStatus: "Not configured",
+    launchTrialEndsAt: "",
+    pausedAt: "",
+    pauseExempt: false,
   };
 }
 

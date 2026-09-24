@@ -102,6 +102,9 @@ export type ProjectDevelopmentRow = {
   domain_name: string | null;
   domain_status: string;
   hosting_status: string;
+  launch_trial_ends_at: string | null;
+  paused_at: string | null;
+  pause_exempt: boolean;
   updated_at: string;
   updated_by: string | null;
 };
@@ -442,6 +445,9 @@ export type NotificationType =
   | "qa_passed"
   | "client_review_ready"
   | "launch_completed"
+  | "launch_trial_ending"
+  | "website_paused"
+  | "website_unpaused"
   | "lead_submitted";
 
 export type NotificationRow = {
@@ -1624,7 +1630,12 @@ export type Database = {
           hosting_status: string;
           deployment_status: string;
           launch_trial_ends_at: string | null;
+          paused_at: string | null;
         }[];
+      };
+      unpause_website: {
+        Args: { p_project_id: string; p_days?: number | null };
+        Returns: null;
       };
       client_website_health: {
         Args: { p_project_id: string };

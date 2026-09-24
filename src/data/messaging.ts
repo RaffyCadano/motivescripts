@@ -161,6 +161,12 @@ export function notificationHref(item: AppNotification, role: "admin" | "staff" 
       // client's Plans tab -- the list is still a correct destination,
       // unlike the old default fallback these silently hit before (Messages).
       return agency ? "/admin/clients" : "/client/plans";
+    case "website_paused":
+    case "website_unpaused":
+    case "launch_trial_ending":
+      // Staff go to the project (where Unpause lives); the client to Plans, or their overview once it is live again.
+      if (agency) return item.projectId ? `/admin/projects/${item.projectId}` : "/admin/projects";
+      return item.type === "website_unpaused" ? "/client" : "/client/plans";
     case "project_assigned":
     case "milestone_updated":
     case "qa_failed":

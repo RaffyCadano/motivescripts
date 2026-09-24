@@ -243,6 +243,9 @@ export function mapProjectDevelopment(row: ProjectDevelopmentRow): ProjectDevelo
     domainName: row.domain_name ?? "",
     domainStatus: isDomainHostingStatus(row.domain_status) ? row.domain_status : "Not configured",
     hostingStatus: isDomainHostingStatus(row.hosting_status) ? row.hosting_status : "Not configured",
+    launchTrialEndsAt: row.launch_trial_ends_at ?? "",
+    pausedAt: row.paused_at ?? "",
+    pauseExempt: row.pause_exempt ?? false,
   };
 }
 

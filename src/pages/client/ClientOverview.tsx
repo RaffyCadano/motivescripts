@@ -5,6 +5,7 @@ import { ClientActivity } from "@/components/client/ClientActivity";
 import { ClientFiles } from "@/components/client/ClientFiles";
 import { ClientPreProjectDashboard } from "@/components/client/ClientPreProjectDashboard";
 import { ClientProjectCard } from "@/components/client/ClientProjectCard";
+import { ClientPausedBanner } from "@/components/client/ClientPausedBanner";
 import { ClientWebsiteSection } from "@/components/client/ClientWebsiteSection";
 import { ClientStatusBadge } from "@/components/client/ClientStatusBadge";
 import { ClientTimeline } from "@/components/client/ClientTimeline";
@@ -118,6 +119,8 @@ export function ClientOverview() {
         <ClientStatusBadge label={onboarding.phaseLabel} tone={onboarding.phaseTone} />
       </header>
 
+      {deliveryStatus?.pausedAt ? <ClientPausedBanner pausedAt={deliveryStatus.pausedAt} /> : null}
+
       <ClientActionCard action={action} loading={loading} />
 
       {waiting.length > 1 && action?.kind === "review" ? (
@@ -145,7 +148,7 @@ export function ClientOverview() {
             </p>
             {inLaunchTrial && deliveryStatus?.launchTrialEndsAt ? (
               <p className="mt-2 text-[13px] font-medium text-[var(--client-ink)]">
-                Free trial ends: {formatProjectDay(deliveryStatus.launchTrialEndsAt)} · {daysUntil(deliveryStatus.launchTrialEndsAt)} days remaining
+                Free period ends {formatProjectDay(deliveryStatus.launchTrialEndsAt)} · {daysUntil(deliveryStatus.launchTrialEndsAt)} days remaining. After that your website is paused unless you have a Website Care plan.
               </p>
             ) : null}
           </div>
@@ -160,7 +163,12 @@ export function ClientOverview() {
 
       <ClientProjectCard nextLabel={action && action.kind !== "idle" ? action.title : "We’ll notify you when the next step is ready."} />
       {project ? (
-        <ClientWebsiteSection projectId={project.id} projectName={project.name} development={project.development} />
+        <ClientWebsiteSection
+          projectId={project.id}
+          projectName={project.name}
+          development={project.development}
+          paused={Boolean(deliveryStatus?.pausedAt)}
+        />
       ) : null}
       {stages.length > 0 ? <ClientTimeline stages={stages} /> : null}
 

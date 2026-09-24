@@ -101,6 +101,8 @@ export type ClientDeliveryStatus = {
   /** End of the automatic post-launch Care Requests grace period, or null if the project launched
    * before this existed. See project_development.launch_trial_ends_at. */
   launchTrialEndsAt: string | null;
+  /** When the website was paused (the free period ended with no Care plan), or null if it isn't. */
+  pausedAt: string | null;
 };
 
 /**
@@ -120,6 +122,7 @@ export async function fetchClientDeliveryStatus(projectId: string): Promise<Clie
     hosting_status: string;
     deployment_status: string;
     launch_trial_ends_at: string | null;
+    paused_at: string | null;
   } | null;
   if (!row) return null;
   return {
@@ -128,6 +131,7 @@ export async function fetchClientDeliveryStatus(projectId: string): Promise<Clie
     hostingStatus: row.hosting_status,
     deploymentStatus: row.deployment_status,
     launchTrialEndsAt: row.launch_trial_ends_at,
+    pausedAt: row.paused_at,
   };
 }
 

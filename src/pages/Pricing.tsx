@@ -72,7 +72,7 @@ const pricingFaqs = [
   {
     question: "Are hosting and domain costs included?",
     answer:
-      `It depends on the package. Hosting is free for the first 30 days after your site goes live; ongoing hosting after that is included starting with the Essential Website Care tier, at ${careStartingPrice}/month. Your domain name is included for the first year with Growth and Custom, and is an add-on with Website. Business email is included with Custom and is an add-on with Website and Growth. Add-ons are quoted as separate line items, so you can see exactly what each one costs in your proposal.`,
+      `It depends on the package. Hosting is free for the first 30 days after your site goes live. After that your site is paused unless you have a Website Care plan, which includes ongoing hosting starting with the Essential tier at ${careStartingPrice}/month. We email you a week and a day before the free period ends, and you can choose a plan from your client portal at any time to keep the site online or bring it back. Your domain name is included for the first year with Growth and Custom, and is an add-on with Website. Business email is included with Custom and is an add-on with Website and Growth. Add-ons are quoted as separate line items, so you can see exactly what each one costs in your proposal.`,
   },
   {
     question: "Do I need to know exactly what I need before contacting you?",
@@ -290,7 +290,7 @@ export function PricingPage() {
                 </table>
               </div>
               <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-muted">
-                Hosting is free for the first 30 days after your site goes live. To keep it online after that, choose a Website Care plan (from {careStartingPrice}/mo) in your client portal.
+                Hosting is free for the first 30 days after your site goes live. After that, your site is paused unless you have a Website Care plan (from {careStartingPrice}/mo). We email you before it ends, and you choose a plan in your client portal.
               </p>
               <div className="mt-10 flex flex-col items-center gap-4 text-center">
                 <p className="font-heading text-lg font-semibold text-ink">Ready when you are.</p>

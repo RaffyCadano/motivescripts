@@ -11,6 +11,8 @@ import { validateExtraRecipients } from "../_shared/emailRecipients.ts";
 type RequestBody = {
   kind?: string;
   id?: string;
+  /** launch_trial only: "7d" and "1d" (the free period is about to end) or "paused" (it ended and the site is paused). */
+  stage?: string;
   paymentId?: string;
   /** Invoice emails only: up to 3 extra addresses that receive a copy (CC). Ignored for every other kind. */
   extraRecipients?: unknown;
@@ -123,6 +125,7 @@ Deno.serve(async (req) => {
       body.kind !== "invoice_overdue" &&
       body.kind !== "plan_past_due" &&
       body.kind !== "plan_canceled" &&
+      body.kind !== "launch_trial" &&
       body.kind !== "new_message") ||
     !body.id
   ) {
@@ -140,7 +143,8 @@ Deno.serve(async (req) => {
 
   // Same as "payment": no interactive user triggers these either -- invoice_overdue
   // is called by the daily overdue-reminder cron job, plan_past_due / plan_canceled
-  // are called by the stripe-webhook function reacting to a Stripe event, and
+  // are called by the stripe-webhook function reacting to a Stripe event, launch_trial is called by the
+  // daily launch-trial sweep (run_launch_trial_sweep), and
   // new_message is called by the messages_notify_recipients trigger on every new
   // message. All are authenticated with the service role key, never a browser session.
   if (
@@ -148,6 +152,7 @@ Deno.serve(async (req) => {
     body.kind === "invoice_overdue" ||
     body.kind === "plan_past_due" ||
     body.kind === "plan_canceled" ||
+    body.kind === "launch_trial" ||
     body.kind === "new_message"
   ) {
     if (!isServiceRole) return fail("not_allowed", 403);
@@ -426,6 +431,79 @@ Deno.serve(async (req) => {
         html,
       );
       console.log("document-email sent", { kind: body.kind, id: plan.id });
+      return json({ ok: true });
+    }
+
+    if (body.kind === "launch_trial") {
+      const stage = body.stage === "1d" || body.stage === "paused" ? body.stage : "7d";
+      const { data: project } = await admin
+        .from("projects")
+        .select("id, name, client_id")
+        .eq("id", body.id)
+        .maybeSingle();
+      if (!project) return fail("not_found");
+      const { data: dev } = await admin
+        .from("project_development")
+        .select("launch_trial_ends_at")
+        .eq("project_id", project.id)
+        .maybeSingle();
+      const { data: clientRow } = await admin
+        .from("clients")
+        .select("business_name, email")
+        .eq("id", project.client_id)
+        .maybeSingle();
+      const { data: recipients } = await admin
+        .from("profiles")
+        .select("email")
+        .eq("client_id", project.client_id)
+        .eq("role", "client");
+      const emails = [
+        ...new Set(
+          [...(recipients ?? []).map((row: { email: string | null }) => row.email), clientRow?.email]
+            .map((value) => (value ?? "").trim().toLowerCase())
+            .filter((value) => value.includes("@")),
+        ),
+      ];
+      if (emails.length === 0) return fail("no_recipient");
+      const endsOn = dev?.launch_trial_ends_at
+        ? new Date(dev.launch_trial_ends_at as string).toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+            timeZone: "UTC",
+          })
+        : "";
+      const paused = stage === "paused";
+      const html = brandedEmail({
+        heading: paused
+          ? "Your website has been paused."
+          : stage === "1d"
+            ? "Your free period ends tomorrow."
+            : "Your free period ends soon.",
+        company: clientRow?.business_name ?? "your team",
+        number: project.name,
+        title: paused ? "Website paused" : "Free launch period",
+        summary: paused
+          ? "Your free 30 days after launch have ended and there is no active Website Care plan, so we've paused your website. Choose a plan and we'll bring it back online."
+          : `Your free 30 days after launch end on ${endsOn}. After that your website is paused unless you have a Website Care plan (hosting, updates, and support).`,
+        expiresLabel: paused
+          ? "Questions, or need more time? Reply to this email and we'll help."
+          : "Choosing a plan now means no gap and nothing changes for your visitors.",
+        url: `${origin}/client/plans`,
+        cta: paused ? "Choose a plan to restore it" : "Choose a Website Care plan",
+        supportEmail,
+      });
+      await sendResend(
+        apiKey,
+        emails,
+        paused
+          ? "Your website has been paused"
+          : stage === "1d"
+            ? "Your free period ends tomorrow"
+            : "Your free period ends in about a week",
+        html,
+      );
+      console.log("document-email sent", { kind: "launch_trial", stage, id: project.id });
       return json({ ok: true });
     }
 

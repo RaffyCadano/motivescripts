@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
+import { hasPermission } from "@/auth/permissions";
 import { AdminActionsMenu } from "@/components/admin/AdminActionsMenu";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { adminPrimaryBtn } from "@/components/admin/adminActionStyles";
@@ -28,6 +29,7 @@ import { ProjectVersionsPanel } from "@/components/admin/projects/ProjectVersion
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
 import { ProjectOverview } from "@/components/admin/projects/ProjectOverview";
 import { ProjectSectionNav } from "@/components/admin/projects/ProjectSectionNav";
+import { ProjectWebsitePauseBanner } from "@/components/admin/projects/ProjectWebsitePauseBanner";
 import { ProjectStatusModal } from "@/components/admin/projects/ProjectStatusModal";
 import { ProjectTasksPanel } from "@/components/admin/projects/ProjectTasksPanel";
 import { TaskFormModal } from "@/components/admin/projects/TaskFormModal";
@@ -254,6 +256,8 @@ export function AdminProjectDetails() {
           </div>
         </div>
       </div>
+
+      <ProjectWebsitePauseBanner project={project} canManage={hasPermission(profile, "projects.manage")} />
 
       <div className="grid gap-6 lg:grid-cols-[15.5rem_minmax(0,1fr)]">
         <ProjectSectionNav tab={tab} taskCount={openTaskCount} onSelect={setTab} />
