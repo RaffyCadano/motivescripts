@@ -1,12 +1,9 @@
 import { AnimateIn } from "@/components/AnimateIn";
 
-const trustPoints = [
-  "Mobile-first",
-  "Fast performance",
-  "Responsive design",
-  "SEO-ready",
-  "Ongoing support",
-  "Based in Winston-Salem, North Carolina",
+const stats = [
+  { value: "2–4 wk", label: "Typical launch" },
+  { value: "100%", label: "Custom-built" },
+  { value: "100%", label: "Mobile-friendly" },
 ];
 
 export function TrustSection() {
@@ -15,17 +12,17 @@ export function TrustSection() {
       <div className="container-wide">
         <AnimateIn>
           <div className="flex flex-col items-center gap-6 text-center">
-            <p className="font-heading text-xs font-bold uppercase tracking-[0.16em] text-faint">
-              Built for growing businesses
-            </p>
-            <ul className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-              {trustPoints.map((point) => (
-                <li key={point} className="flex items-center gap-2 text-sm font-semibold text-muted-strong">
-                  <span className="size-1.5 shrink-0 rounded-full bg-cyan" aria-hidden="true" />
-                  {point}
+            <ul className="flex flex-wrap items-start justify-center gap-x-12 gap-y-6">
+              {stats.map((stat) => (
+                <li key={stat.label} className="flex flex-col items-center gap-1">
+                  <span className="font-heading text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+                    {stat.value}
+                  </span>
+                  <span className="text-sm font-semibold text-muted-strong">{stat.label}</span>
                 </li>
               ))}
             </ul>
+            <p className="text-sm text-faint">Based in Winston-Salem, North Carolina</p>
           </div>
         </AnimateIn>
       </div>
