@@ -60,12 +60,14 @@ export function ServicesPage() {
 
         <AnimateIn>
           <section>
-            <p className="eyebrow">How it fits together</p>
-            <h2 className="mt-4 max-w-[24ch] text-2xl md:text-3xl">One website process, from idea to launch.</h2>
-            <p className="mt-4 max-w-2xl text-muted">
-              Each project brings strategy, design, development, and launch together so your website works as
-              one cohesive experience.
-            </p>
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="eyebrow eyebrow--plain">How it fits together</p>
+              <h2 className="mx-auto mt-4 max-w-[24ch] text-2xl md:text-3xl">One website process, from idea to launch.</h2>
+              <p className="mt-4 text-muted">
+                Each project brings strategy, design, development, and launch together so your website works as
+                one cohesive experience.
+              </p>
+            </div>
             <ol className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {pipeline.slice(0, 4).map((stage, index) => (
                 <li key={stage.title}>
@@ -82,7 +84,7 @@ export function ServicesPage() {
 
         <AnimateIn>
           <section>
-            <h2 className="text-2xl md:text-3xl">What's included in your website project</h2>
+            <h2 className="text-center text-2xl md:text-3xl">What's included in your website project</h2>
             <ul className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
               {included.map((item) => (
                 <li
@@ -98,7 +100,7 @@ export function ServicesPage() {
         </AnimateIn>
 
         <AnimateIn>
-          <section className="max-w-3xl">
+          <section className="mx-auto max-w-3xl text-center">
             <h2 className="text-2xl md:text-3xl">Built around your business.</h2>
             <p className="mt-4 text-[var(--text-md)] text-muted">
               Every business has different goals, customers, and priorities. We scope each website around what
