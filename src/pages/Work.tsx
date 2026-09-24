@@ -25,14 +25,27 @@ export function WorkPage() {
 
       <div className="container-wide py-16 md:py-24">
         <AnimateIn>
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="font-heading text-sm font-semibold text-ink">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="font-heading text-base font-semibold text-ink md:text-lg">
               Real client work and selected concepts for local businesses and growing companies.
             </p>
-            <p className="mt-2 text-sm text-faint">
-              Each project is labeled as either real client work or a design concept created to
-              demonstrate how MotiveScripts approaches strategy, design, and development.
-            </p>
+            <div className="mt-6 grid divide-y divide-[var(--color-line)] rounded-[var(--radius-lg)] border border-[var(--color-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+              <div className="flex flex-col items-center gap-2.5 px-5 py-5">
+                <span className="rounded-full border border-[var(--color-line)] px-2.5 py-1 font-heading text-xs font-semibold uppercase tracking-[0.14em] text-cyan">
+                  Client project
+                </span>
+                <p className="text-sm leading-relaxed text-muted">Real client work, with the live site to visit.</p>
+              </div>
+              <div className="flex flex-col items-center gap-2.5 px-5 py-5">
+                <span className="rounded-full border border-[var(--color-line)] px-2.5 py-1 font-heading text-xs font-semibold uppercase tracking-[0.14em] text-cyan">
+                  Concept project
+                </span>
+                <p className="text-sm leading-relaxed text-muted">
+                  A design concept created to demonstrate how MotiveScripts approaches strategy, design, and
+                  development.
+                </p>
+              </div>
+            </div>
           </div>
         </AnimateIn>
 
