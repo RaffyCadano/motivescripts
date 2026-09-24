@@ -1,6 +1,6 @@
 import { cn } from "@/lib/cn";
 
-type Step = { title: string; body: string };
+type Step = { title: string; body?: string };
 
 // Full class strings, not built from the column count: Tailwind only generates utilities it can see
 // spelled out in the source.
@@ -14,7 +14,8 @@ const columnClass = {
  * On desktop a thin line runs circle to circle -- each step's ::after reaches from its own center to the
  * next step's, so it lines up whatever the column width (the +1.5rem is the grid's gap-x-6) and is
  * hidden on the last step. Below lg the columns wrap, where a connecting line wouldn't line up, so it
- * is left out and the steps are just a centered grid. Numbers come from the order of `steps`.
+ * is left out and the steps are just a centered grid. Numbers come from the order of `steps`; the
+ * description is optional (a step can be just a title).
  */
 export function StepList({ steps, columns, className }: { steps: readonly Step[]; columns: keyof typeof columnClass; className?: string }) {
   return (
@@ -28,7 +29,9 @@ export function StepList({ steps, columns, className }: { steps: readonly Step[]
             {String(index + 1).padStart(2, "0")}
           </span>
           <p className="mt-4 font-heading text-lg font-semibold text-ink">{step.title}</p>
-          <p className="mx-auto mt-2 max-w-[16rem] text-sm leading-relaxed text-muted">{step.body}</p>
+          {step.body ? (
+            <p className="mx-auto mt-2 max-w-[16rem] text-sm leading-relaxed text-muted">{step.body}</p>
+          ) : null}
         </li>
       ))}
     </ol>

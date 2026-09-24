@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { PageHero } from "@/components/PageHero";
+import { StepList } from "@/components/StepList";
 import { leadIndustries, referralSources } from "@/data/leads";
 import { announceLeadsChanged } from "@/lib/leadsEvents";
 import { inquiryMailtoHref, submitPublicLead, type PublicLeadDraft } from "@/data/publicLead";
@@ -24,10 +25,10 @@ function tierIntro(tier: (typeof pricingTiers)[number]): string {
 }
 
 const nextSteps = [
-  "Tell us about your project",
-  "We review your requirements",
-  "We define the project scope",
-  "We move into the project process",
+  { title: "Tell us about your project" },
+  { title: "We review your requirements" },
+  { title: "We define the project scope" },
+  { title: "We move into the project process" },
 ];
 
 function draftFromForm(form: HTMLFormElement): PublicLeadDraft {
@@ -92,15 +93,8 @@ export function ContactPage() {
       {submitted ? null : (
         <div className="container-wide pb-2 pt-10 md:pt-14">
           <AnimateIn>
-            <p className="font-heading text-xs font-bold uppercase tracking-[0.16em] text-faint">What happens next?</p>
-            <ol className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {nextSteps.map((step, index) => (
-                <li key={step} className="flex items-start gap-3">
-                  <span className="font-heading text-xs font-bold text-cyan">{String(index + 1).padStart(2, "0")}</span>
-                  <span className="text-sm text-muted-strong">{step}</span>
-                </li>
-              ))}
-            </ol>
+            <p className="text-center font-heading text-xs font-bold uppercase tracking-[0.16em] text-faint">What happens next?</p>
+            <StepList className="mt-8" steps={nextSteps} columns={4} />
           </AnimateIn>
         </div>
       )}
