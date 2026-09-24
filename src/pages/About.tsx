@@ -1,3 +1,4 @@
+import { Briefcase, Car, HardHat, House, SprayCan, Store, TreePine, Utensils, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
@@ -6,6 +7,19 @@ import { PageHero } from "@/components/PageHero";
 import { clientTypes, pipeline, whyPoints } from "@/data/site";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { seoPage } from "@/data/seoPages";
+
+// Keyed by client type (a typed literal from site.ts), so adding a type there without an icon here is a
+// type error rather than a card with a missing icon.
+const clientTypeIcons: Record<(typeof clientTypes)[number], LucideIcon> = {
+  "Home service businesses": House,
+  Contractors: HardHat,
+  "Landscaping and tree services": TreePine,
+  "Cleaning companies": SprayCan,
+  "Restaurants and salons": Utensils,
+  "Auto shops": Car,
+  "Professional services": Briefcase,
+  "Other local businesses": Store,
+};
 
 const websiteJobs = [
   {
@@ -66,15 +80,21 @@ export function AboutPage() {
             If customers find you on their phone and need to decide quickly, we know that shape of
             site.
           </p>
-          <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {clientTypes.map((item) => (
-              <li
-                key={item}
-                className="rounded-[var(--radius-lg)] border border-[var(--color-line)] px-4 py-4 text-center text-sm font-medium text-ink"
-              >
-                {item}
-              </li>
-            ))}
+          <ul className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {clientTypes.map((item) => {
+              const Icon = clientTypeIcons[item];
+              return (
+                <li
+                  key={item}
+                  className="group flex items-center gap-3 rounded-[var(--radius-lg)] border border-[var(--color-line)] p-3.5 transition-[transform,box-shadow,border-color] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-[rgb(0_200_255_/_0.28)] hover:shadow-[var(--shadow-card)] sm:p-4"
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[rgb(0_80_240_/_0.06)] text-blue transition-colors duration-[var(--duration-base)] ease-[var(--ease-out)] group-hover:bg-[rgb(0_80_240_/_0.1)]">
+                    <Icon size={20} strokeWidth={1.8} aria-hidden="true" />
+                  </span>
+                  <span className="text-sm font-semibold leading-snug text-ink">{item}</span>
+                </li>
+              );
+            })}
           </ul>
         </section>
         </AnimateIn>
