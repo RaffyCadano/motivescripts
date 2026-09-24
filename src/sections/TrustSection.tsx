@@ -8,21 +8,21 @@ const stats = [
 
 export function TrustSection() {
   return (
-    <section className="border-t border-[var(--color-line)] py-10 md:py-14">
+    <section className="border-t border-[var(--color-line)] py-6 md:py-8">
       <div className="container-wide">
         <AnimateIn>
-          <div className="flex flex-col items-center gap-6 text-center">
-            <ul className="flex flex-wrap items-start justify-center gap-x-12 gap-y-6">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <ul className="flex flex-wrap items-start justify-center gap-x-8 gap-y-3">
               {stats.map((stat) => (
-                <li key={stat.label} className="flex flex-col items-center gap-1">
-                  <span className="font-heading text-3xl font-bold tracking-tight text-ink sm:text-4xl">
+                <li key={stat.label} className="flex flex-col items-center gap-0.5">
+                  <span className="font-heading text-lg font-bold tracking-tight text-ink sm:text-xl">
                     {stat.value}
                   </span>
-                  <span className="text-sm font-semibold text-muted-strong">{stat.label}</span>
+                  <span className="text-xs font-semibold text-muted-strong">{stat.label}</span>
                 </li>
               ))}
             </ul>
-            <p className="text-sm text-faint">Based in Winston-Salem, North Carolina</p>
+            <p className="text-xs text-faint">Based in Winston-Salem, North Carolina</p>
           </div>
         </AnimateIn>
       </div>
