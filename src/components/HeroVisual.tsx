@@ -200,7 +200,7 @@ function DeviceFrame({ device, className, children }: { device: Device; classNam
   return (
     <div className={className} style={{ aspectRatio: `${device.w} / ${device.h}` }} aria-hidden="true">
       <div
-        className="absolute overflow-hidden bg-white"
+        className="absolute isolate overflow-hidden bg-white"
         style={{ left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%`, borderRadius: device.radius }}
       >
         {children}
