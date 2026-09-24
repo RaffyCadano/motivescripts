@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { CTA } from "@/components/CTA";
 import { AnimateIn } from "@/components/AnimateIn";
 import { PageHero } from "@/components/PageHero";
+import { StepList } from "@/components/StepList";
 import { processSteps } from "@/data/process";
 import { usePageMeta } from "@/lib/usePageMeta";
 import { seoPage } from "@/data/seoPages";
@@ -39,20 +40,7 @@ export function ProcessPage() {
 
       <div className="container-wide py-10 md:py-14">
         <AnimateIn>
-          <ol className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-6">
-            {processSteps.map((step) => (
-              <li
-                key={step.number}
-                className="group relative text-center lg:after:absolute lg:after:left-1/2 lg:after:top-6 lg:after:h-px lg:after:w-[calc(100%+1.5rem)] lg:after:bg-[var(--color-line)] lg:last:after:hidden"
-              >
-                <span className="relative z-10 mx-auto flex size-12 items-center justify-center rounded-full border border-[var(--color-line)] bg-white font-heading text-sm font-bold tracking-[0.06em] text-blue shadow-[var(--shadow-card)] transition-colors duration-[var(--duration-base)] ease-[var(--ease-out)] group-hover:border-[rgb(0_80_240_/_0.4)] group-hover:bg-[rgb(0_80_240_/_0.04)]">
-                  {step.number}
-                </span>
-                <p className="mt-4 font-heading text-lg font-semibold text-ink">{step.title}</p>
-                <p className="mx-auto mt-2 max-w-[16rem] text-sm leading-relaxed text-muted">{step.body}</p>
-              </li>
-            ))}
-          </ol>
+          <StepList steps={processSteps} columns={6} />
         </AnimateIn>
       </div>
 

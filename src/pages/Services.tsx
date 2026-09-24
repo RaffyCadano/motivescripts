@@ -3,6 +3,7 @@ import { Button } from "@/components/Button";
 import { CTA } from "@/components/CTA";
 import { AnimateIn } from "@/components/AnimateIn";
 import { PageHero } from "@/components/PageHero";
+import { StepList } from "@/components/StepList";
 import { pipeline } from "@/data/site";
 import { services } from "@/data/services";
 import { usePageMeta } from "@/lib/usePageMeta";
@@ -82,17 +83,7 @@ export function ServicesPage() {
                 one cohesive experience.
               </p>
             </div>
-            <ol className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {pipeline.slice(0, 4).map((stage, index) => (
-                <li key={stage.title}>
-                  <p className="font-heading text-xs font-bold tracking-[0.16em] text-cyan">
-                    {String(index + 1).padStart(2, "0")}
-                  </p>
-                  <p className="mt-2 font-heading text-lg font-semibold text-ink">{stage.title}</p>
-                  <p className="mt-1.5 text-sm leading-relaxed text-muted">{stage.body}</p>
-                </li>
-              ))}
-            </ol>
+            <StepList className="mt-12" steps={pipeline.slice(0, 4)} columns={4} />
           </section>
         </AnimateIn>
 
