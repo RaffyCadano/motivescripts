@@ -6,6 +6,7 @@ type Step = { title: string; body?: string };
 // spelled out in the source.
 const columnClass = {
   4: "sm:grid-cols-2 lg:grid-cols-4",
+  5: "sm:grid-cols-2 lg:grid-cols-5",
   6: "sm:grid-cols-2 lg:grid-cols-6",
 } as const;
 

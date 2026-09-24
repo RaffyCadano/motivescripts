@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { CalendarCheck, Check, CreditCard, LockKeyhole, Plug, ShoppingCart, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
@@ -6,6 +6,7 @@ import { Button } from "@/components/Button";
 import { CTA } from "@/components/CTA";
 import { FaqItem } from "@/components/FaqItem";
 import { PageHero } from "@/components/PageHero";
+import { StepList } from "@/components/StepList";
 import { TierPrice } from "@/components/TierPrice";
 import {
   careService,
@@ -34,6 +35,16 @@ const priceFactors = [
   "Amount of content to design around",
   "Hosting setup, domain, or business email, if you need them",
 ];
+
+// Keyed by add-on name (a typed literal), so adding an add-on to pricing.ts without an icon here is a
+// type error rather than a card with a missing icon.
+const addOnIcons: Record<(typeof commonAddOns)[number]["name"], LucideIcon> = {
+  "Booking / appointments": CalendarCheck,
+  "Online payments": CreditCard,
+  "E-commerce": ShoppingCart,
+  "Customer login": LockKeyhole,
+  "Advanced integrations": Plug,
+};
 
 const quoteSteps = [
   "Tell us about your business.",
@@ -298,16 +309,22 @@ export function PricingPage() {
                 Some projects need more than the base website. These are a few examples of what can be added — they&apos;re
                 examples, not a price list. Add-ons are scoped and priced in your proposal.
               </p>
-              <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {commonAddOns.map((item) => (
-                  <li
-                    key={item.name}
-                    className="rounded-[var(--radius-lg)] border border-[var(--color-line)] p-5 text-center"
-                  >
-                    <h3 className="text-base font-bold">{item.name}</h3>
-                    <p className="mt-2 text-sm text-muted">{item.description}</p>
-                  </li>
-                ))}
+              <ul className="mt-10 flex flex-wrap justify-center gap-4">
+                {commonAddOns.map((item) => {
+                  const Icon = addOnIcons[item.name];
+                  return (
+                    <li
+                      key={item.name}
+                      className="group flex w-full flex-col items-center rounded-[var(--radius-lg)] border border-[var(--color-line)] p-6 text-center transition-[transform,box-shadow,border-color] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-[rgb(0_200_255_/_0.28)] hover:shadow-[var(--shadow-card)] sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-2rem)/3)]"
+                    >
+                      <span className="flex size-11 items-center justify-center rounded-xl bg-[rgb(0_80_240_/_0.06)] text-blue transition-colors duration-[var(--duration-base)] ease-[var(--ease-out)] group-hover:bg-[rgb(0_80_240_/_0.1)]">
+                        <Icon size={22} strokeWidth={1.8} aria-hidden="true" />
+                      </span>
+                      <h3 className="mt-4 text-base font-bold">{item.name}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-muted">{item.description}</p>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           </AnimateIn>
@@ -387,74 +404,75 @@ export function PricingPage() {
       </div>
 
       <div className="border-t border-[var(--color-line)]">
-        <div className="container-wide grid gap-16 py-16 md:py-24 lg:grid-cols-2 lg:gap-20">
+        <div className="container-wide py-16 md:py-24">
           <AnimateIn>
-            <section>
+            <section className="mx-auto max-w-3xl text-center">
               <h2 className="text-2xl md:text-3xl">What determines the price?</h2>
               <p className="mt-4 text-muted">
                 Every website is scoped around your goals, content, functionality, and integrations. Your final
                 proposal reflects the specific requirements of your project. A few things shape the scope and price:
               </p>
-              <ul className="mt-6 space-y-3">
+              <ul className="mt-8 flex flex-wrap justify-center gap-3">
                 {priceFactors.map((factor) => (
-                  <li key={factor} className="flex items-start gap-2.5 text-sm text-ink">
-                    <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-cyan" aria-hidden="true" />
+                  <li
+                    key={factor}
+                    className="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-ink"
+                  >
                     {factor}
                   </li>
                 ))}
               </ul>
             </section>
           </AnimateIn>
+        </div>
+      </div>
 
-          <AnimateIn delay={80}>
+      <div className="border-t border-[var(--color-line)]">
+        <div className="container-wide py-16 md:py-24">
+          <AnimateIn>
             <section>
-              <h2 className="text-2xl md:text-3xl">Your project gets a clear scope and quote.</h2>
-              <p className="mt-4 text-muted">
-                Before development begins, we define what your website needs and provide a project quote based on
-                that scope.
-              </p>
-              <ol className="mt-6 space-y-3">
-                {quoteSteps.map((step, index) => (
-                  <li key={step} className="flex items-start gap-3 text-sm text-ink">
-                    <span className="font-heading text-xs font-bold text-cyan">{String(index + 1).padStart(2, "0")}</span>
-                    {step}
-                  </li>
-                ))}
-              </ol>
+              <div className="mx-auto max-w-2xl text-center">
+                <h2 className="text-2xl md:text-3xl">Your project gets a clear scope and quote.</h2>
+                <p className="mt-4 text-muted">
+                  Before development begins, we define what your website needs and provide a project quote based on
+                  that scope.
+                </p>
+              </div>
+              <StepList className="mt-12" steps={quoteSteps.map((title) => ({ title }))} columns={5} />
             </section>
           </AnimateIn>
         </div>
       </div>
 
       <div className="border-t border-[var(--color-line)]">
-        <div className="container-wide grid gap-10 py-16 md:py-24 sm:grid-cols-2">
-          <AnimateIn>
-            <div>
+        <div className="container-wide grid gap-6 py-16 md:py-24 sm:grid-cols-2">
+          <AnimateIn className="flex h-full">
+            <div className="flex h-full w-full flex-col items-center rounded-[var(--radius-lg)] border border-[var(--color-line)] p-8 text-center transition-[transform,box-shadow,border-color] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-[rgb(0_200_255_/_0.28)] hover:shadow-[var(--shadow-card)]">
               <h2 className="text-xl font-bold">Not sure which option fits your business?</h2>
-              <p className="mt-3 text-sm text-muted">
+              <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
                 Explore our services to understand what's involved in building and launching your website.
               </p>
               <Link
                 viewTransition
                 to="/services"
-                className="mt-4 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
+                className="mt-5 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
               >
                 Explore Services
                 <span aria-hidden="true" className="icon-arrow">→</span>
               </Link>
             </div>
           </AnimateIn>
-          <AnimateIn delay={80}>
-            <div>
+          <AnimateIn className="flex h-full" delay={80}>
+            <div className="flex h-full w-full flex-col items-center rounded-[var(--radius-lg)] border border-[var(--color-line)] p-8 text-center transition-[transform,box-shadow,border-color] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-[rgb(0_200_255_/_0.28)] hover:shadow-[var(--shadow-card)]">
               <h2 className="text-xl font-bold">Curious how the project runs?</h2>
-              <p className="mt-3 text-sm text-muted">
+              <p className="mt-3 flex-1 text-sm leading-relaxed text-muted">
                 Your project starts with understanding what you need, then moves through strategy, design,
                 development, review, and launch.
               </p>
               <Link
                 viewTransition
                 to="/process"
-                className="mt-4 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
+                className="mt-5 inline-flex items-center gap-2 font-heading text-sm font-semibold text-ink transition-colors hover:text-blue"
               >
                 See Our Process
                 <span aria-hidden="true" className="icon-arrow">→</span>
