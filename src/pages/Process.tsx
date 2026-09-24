@@ -102,9 +102,9 @@ export function ProcessPage() {
       <div className="border-t border-[var(--color-line)]">
         <div className="container-wide py-16 md:py-24">
           <AnimateIn>
-            <section className="max-w-3xl">
+            <section className="mx-auto max-w-3xl text-center">
               <h2 className="text-2xl md:text-3xl">What you can expect from MotiveScripts.</h2>
-              <ul className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <ul className="mt-8 flex flex-wrap justify-center gap-3">
                 {expectations.map((item) => (
                   <li
                     key={item}
