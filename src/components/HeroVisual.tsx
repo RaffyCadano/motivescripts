@@ -58,7 +58,7 @@ export function HeroVisual() {
           </div>
         </Laptop3D>
 
-        <DeviceFrame device={TABLET} className="absolute bottom-0 left-0 w-[27%] sm:w-[25%]">
+        <DeviceFrame device={TABLET} className="absolute bottom-0 left-0 w-[32%] sm:w-[30%]">
           <ScrollingMock pageWidth={TABLET_W} delaySeconds={5} overlay={<TabletOverlay />}>
             <TabletSiteMock />
           </ScrollingMock>
@@ -70,7 +70,7 @@ export function HeroVisual() {
           </ScrollingMock>
         </DeviceFrame>
 
-        <div className="absolute bottom-[3%] left-[51%] hidden -translate-x-1/2 rounded-[var(--radius-lg)] border border-[#d9dfe8] bg-[var(--ms-white)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
+        <div className="absolute bottom-[3%] left-[55%] hidden -translate-x-1/2 rounded-[var(--radius-lg)] border border-[#d9dfe8] bg-[var(--ms-white)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
           <BrandMark className="h-7 w-auto" decorative />
           <p className="whitespace-nowrap font-heading text-xs font-semibold text-ink">Built by MotiveScripts</p>
         </div>
