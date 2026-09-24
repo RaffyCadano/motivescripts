@@ -82,6 +82,8 @@ export function ContactPage() {
   return (
     <main id="main">
       <PageHero
+        centered
+        plainEyebrow
         eyebrow="Start a project"
         title="Let's build a website that works for your business."
         description="Tell us a little about your business, your goals, and what you're looking to build. We'll use that information to understand your project and determine the right next step."
