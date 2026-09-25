@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { CalendarDays, CircleDollarSign, FolderKanban, GitBranch, Globe, PauseCircle, Server } from "lucide-react";
+import { AdminFormCard } from "@/components/admin/AdminFormCard";
 import { useAgencyProject, useLeads } from "@/components/admin/leads/LeadsProvider";
 import {
   deploymentStatuses,
@@ -164,131 +166,139 @@ export function AdminProjectEdit() {
       <Link to={returnTo} className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
         {backLabel}
       </Link>
-      <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">Edit project</h1>
-      <p className="max-w-2xl text-sm text-[var(--admin-muted)]">Update this project record.</p>
-      <form
-        className="w-full max-w-2xl space-y-4 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6"
-        onSubmit={onSubmit}
-      >
-        <label className="block text-sm font-semibold">
-          Project name
-          <input required value={name} onChange={(event) => setName(event.target.value)} className={inputClass} />
-        </label>
-        <label className="block text-sm font-semibold">
-          Client
-          <select
-            required
-            value={clientId}
-            onChange={(event) => setClientId(event.target.value)}
-            className={inputClass}
-          >
-            <option value="" disabled>
-              Select a client
-            </option>
-            {clients.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.businessName}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="grid gap-4 sm:grid-cols-2">
+      <div>
+        <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">Edit project</h1>
+        <p className="mt-1 max-w-2xl text-sm text-[var(--admin-muted)]">
+          {project.name}
+          {" · "}
+          Update this project record.
+        </p>
+      </div>
+      <form className="w-full max-w-3xl space-y-4" onSubmit={onSubmit}>
+        <AdminFormCard icon={FolderKanban} title="Basics" description="What this project is, who it is for, and where it stands.">
           <label className="block text-sm font-semibold">
-            Project type
-            <select
-              required
-              value={type}
-              onChange={(event) => setType(event.target.value as AgencyProjectType)}
-              className={inputClass}
-            >
-              {projectTypes.map((item) => (
-                <option key={item} value={item}>
-                  {item}
+            Project name
+            <input required value={name} onChange={(event) => setName(event.target.value)} className={inputClass} />
+          </label>
+          <label className="block text-sm font-semibold">
+            Client
+            <select required value={clientId} onChange={(event) => setClientId(event.target.value)} className={inputClass}>
+              <option value="" disabled>
+                Select a client
+              </option>
+              {clients.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.businessName}
                 </option>
               ))}
             </select>
           </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-semibold">
+              Project type
+              <select
+                required
+                value={type}
+                onChange={(event) => setType(event.target.value as AgencyProjectType)}
+                className={inputClass}
+              >
+                {projectTypes.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm font-semibold">
+              Status
+              <select
+                required
+                value={status}
+                onChange={(event) => setStatus(event.target.value as AgencyProjectStatus)}
+                className={inputClass}
+              >
+                {projectStatuses.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           <label className="block text-sm font-semibold">
-            Status
+            Package
             <select
-              required
-              value={status}
-              onChange={(event) => setStatus(event.target.value as AgencyProjectStatus)}
+              value={projectPackage ?? ""}
+              onChange={(event) => setProjectPackage(event.target.value === "" ? null : (event.target.value as ProjectPackage))}
               className={inputClass}
             >
-              {projectStatuses.map((item) => (
+              <option value="">Not set</option>
+              {projectPackages.map((item) => (
                 <option key={item} value={item}>
-                  {item}
+                  {projectPackageLabels[item]}
                 </option>
               ))}
             </select>
-          </label>
-        </div>
-        <label className="block text-sm font-semibold">
-          Package
-          <select
-            value={projectPackage ?? ""}
-            onChange={(event) => setProjectPackage(event.target.value === "" ? null : (event.target.value as ProjectPackage))}
-            className={inputClass}
-          >
-            <option value="">Not set</option>
-            {projectPackages.map((item) => (
-              <option key={item} value={item}>
-                {projectPackageLabels[item]}
-              </option>
-            ))}
-          </select>
-          <span className="mt-1.5 block text-[12px] font-normal text-[var(--admin-muted)]">
-            The package this project was sold as (see the Pricing page). It pre-fills new proposals, and a client whose projects are all Website doesn't get the Files library or live website status in their portal. Leave it unset for no restrictions.
-          </span>
-        </label>
-        <label className="block text-sm font-semibold">
-          Description
-          <textarea
-            required
-            rows={3}
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            className="mt-1.5 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 py-2 text-sm font-normal outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-          />
-        </label>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm font-semibold">
-            Start date
-            <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className={inputClass} />
+            <span className="mt-1.5 block text-[12px] font-normal leading-relaxed text-[var(--admin-muted)]">
+              The package this project was sold as (see the Pricing page). It pre-fills new proposals, and a client whose projects are all Website doesn't get the Files library or live website status in their portal. Leave it unset for no restrictions.
+            </span>
           </label>
           <label className="block text-sm font-semibold">
-            Target launch date
-            <input
-              type="date"
-              value={targetLaunchDate}
-              onChange={(event) => setTargetLaunchDate(event.target.value)}
-              className={inputClass}
+            Description
+            <textarea
+              required
+              rows={4}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              className="mt-1.5 w-full rounded-lg border border-[var(--admin-line)] bg-white px-3 py-2 text-sm font-normal outline-none focus:border-[rgb(0_80_240_/_0.45)]"
             />
           </label>
-        </div>
-        <fieldset className="space-y-4 border-t border-[var(--admin-line)] pt-4">
-          <legend className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
-            Billing
-          </legend>
-          <p className="text-sm text-[var(--admin-muted)]">
-            Fixed projects can carry an optional hours budget to compare against logged time. Hourly projects use a
-            rate to generate invoice line items from logged time.
-          </p>
-          <label className="block text-sm font-semibold">
-            Billing mode
-            <select
-              value={billingMode}
-              onChange={(event) => setBillingMode(event.target.value as ProjectBillingMode)}
-              className={inputClass}
-            >
+        </AdminFormCard>
+
+        <AdminFormCard icon={CalendarDays} title="Timeline">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-semibold">
+              Start date
+              <input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} className={inputClass} />
+            </label>
+            <label className="block text-sm font-semibold">
+              Target launch date
+              <input
+                type="date"
+                value={targetLaunchDate}
+                onChange={(event) => setTargetLaunchDate(event.target.value)}
+                className={inputClass}
+              />
+            </label>
+          </div>
+        </AdminFormCard>
+
+        <AdminFormCard
+          icon={CircleDollarSign}
+          title="Billing"
+          description="Fixed projects can carry an optional hours budget to compare against logged time. Hourly projects use a rate to generate invoice line items from logged time."
+        >
+          <fieldset>
+            <legend className="text-sm font-semibold">Billing mode</legend>
+            <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
               {projectBillingModes.map((mode) => (
-                <option key={mode} value={mode}>
+                <label
+                  key={mode}
+                  className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-[var(--admin-line)] bg-white px-3 py-2.5 text-sm font-medium has-[:checked]:border-[var(--admin-blue)] has-[:checked]:bg-[rgb(0_80_240_/_0.05)]"
+                >
+                  <input
+                    type="radio"
+                    name="billing-mode"
+                    value={mode}
+                    checked={billingMode === mode}
+                    onChange={() => setBillingMode(mode)}
+                    className="size-4 accent-[var(--admin-blue)]"
+                  />
                   {mode === "fixed" ? "Fixed fee" : "Hourly"}
-                </option>
+                </label>
               ))}
-            </select>
-          </label>
+            </div>
+          </fieldset>
           {billingMode === "hourly" ? (
             <label className="block text-sm font-semibold">
               Hourly rate (USD)
@@ -302,7 +312,7 @@ export function AdminProjectEdit() {
             </label>
           ) : (
             <label className="block text-sm font-semibold">
-              Budgeted hours
+              Budgeted hours <span className="font-normal text-[var(--admin-muted)]">(optional)</span>
               <input
                 type="number"
                 min="0"
@@ -314,14 +324,14 @@ export function AdminProjectEdit() {
               />
             </label>
           )}
-        </fieldset>
-        <fieldset id="project-development" className="scroll-mt-6 space-y-4 border-t border-[var(--admin-line)] pt-4">
-          <legend className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
-            Development
-          </legend>
-          <p className="text-sm text-[var(--admin-muted)]">
-            Manual links to GitHub and hosting. This does not change project status.
-          </p>
+        </AdminFormCard>
+
+        <AdminFormCard
+          id="project-development"
+          icon={GitBranch}
+          title="Code & deployment"
+          description="Manual links to GitHub and hosting. This does not change project status."
+        >
           <label className="block text-sm font-semibold">
             Repository URL
             <input
@@ -333,104 +343,12 @@ export function AdminProjectEdit() {
               className={inputClass}
             />
           </label>
-          <label className="block text-sm font-semibold">
-            Branch
-            <input
-              value={development.repositoryBranch}
-              onChange={(event) => patchDevelopment("repositoryBranch", event.target.value)}
-              className={inputClass}
-            />
-          </label>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm font-semibold">
-              Staging URL
+              Branch
               <input
-                type="text"
-                inputMode="url"
-                autoComplete="off"
-                value={development.stagingUrl}
-                onChange={(event) => patchDevelopment("stagingUrl", event.target.value)}
-                className={inputClass}
-              />
-            </label>
-            <label className="block text-sm font-semibold">
-              Production URL
-              <input
-                type="text"
-                inputMode="url"
-                autoComplete="off"
-                value={development.productionUrl}
-                onChange={(event) => patchDevelopment("productionUrl", event.target.value)}
-                className={inputClass}
-              />
-            </label>
-          </div>
-          <fieldset className="space-y-3 rounded-lg border border-[var(--admin-line)] p-4">
-            <legend className="px-1 text-sm font-semibold">Automatic pause on Vercel (optional)</legend>
-            <label className="flex items-start gap-2.5 text-sm font-normal">
-              <input
-                type="checkbox"
-                checked={development.autoPauseOnVercel}
-                onChange={(event) => patchDevelopment("autoPauseOnVercel", event.target.checked)}
-                className="mt-1 size-4 accent-[var(--admin-blue)]"
-              />
-              <span>
-                Pause this site on Vercel when its free launch period ends with no Care plan, and unpause it when a plan
-                starts or you press Unpause. Off by default: nothing goes offline unless you turn this on.
-              </span>
-            </label>
-            {development.autoPauseOnVercel ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block text-sm font-semibold">
-                  Vercel project name or ID
-                  <input
-                    value={development.vercelProjectId}
-                    onChange={(event) => patchDevelopment("vercelProjectId", event.target.value.trim())}
-                    className={inputClass}
-                    placeholder="unlistedgarage"
-                    required
-                    autoComplete="off"
-                    pattern="[A-Za-z0-9._\-]{1,100}"
-                    title="Letters, digits, dot, dash and underscore only"
-                  />
-                </label>
-                <label className="block text-sm font-semibold">
-                  Vercel team ID or slug <span className="font-normal text-[var(--admin-muted)]">(if any)</span>
-                  <input
-                    value={development.vercelTeamId}
-                    onChange={(event) => patchDevelopment("vercelTeamId", event.target.value.trim())}
-                    className={inputClass}
-                    placeholder="team_… or my-team"
-                    autoComplete="off"
-                    pattern="[A-Za-z0-9._\-]{1,100}"
-                    title="Letters, digits, dot, dash and underscore only"
-                  />
-                </label>
-                <div className="sm:col-span-2">
-                  <button
-                    type="button"
-                    disabled={checkingVercel || !development.vercelProjectId.trim()}
-                    onClick={() => void onCheckVercel()}
-                    className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--admin-line)] bg-white px-4 text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60"
-                  >
-                    {checkingVercel ? "Checking…" : "Check Vercel connection"}
-                  </button>
-                  <span className="ml-3 text-[12px] text-[var(--admin-muted)]">Looks the project up on Vercel. Pauses nothing.</span>
-                  {vercelCheck ? (
-                    <p className={`mt-2 text-sm font-medium ${vercelCheck.ok ? "text-emerald-800" : "text-red-700"}`} role="status">
-                      {vercelCheck.message}
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-          </fieldset>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block text-sm font-semibold">
-              Hosting provider
-              <input
-                value={development.hostingProvider}
-                onChange={(event) => patchDevelopment("hostingProvider", event.target.value)}
+                value={development.repositoryBranch}
+                onChange={(event) => patchDevelopment("repositoryBranch", event.target.value)}
                 className={inputClass}
               />
             </label>
@@ -458,15 +376,123 @@ export function AdminProjectEdit() {
               className={inputClass}
             />
           </label>
-        </fieldset>
-        <fieldset className="space-y-4 border-t border-[var(--admin-line)] pt-4">
-          <legend className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
-            Domain &amp; hosting delivery
-          </legend>
-          <p className="text-sm text-[var(--admin-muted)]">
-            The agency's own tracking of domain and hosting setup for this project. Domains and hosting are handled
-            externally &mdash; nothing here purchases or configures anything.
-          </p>
+        </AdminFormCard>
+
+        <AdminFormCard icon={Globe} title="Website" description="Where the site lives, and who hosts it.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block text-sm font-semibold">
+              Staging URL
+              <input
+                type="text"
+                inputMode="url"
+                autoComplete="off"
+                value={development.stagingUrl}
+                onChange={(event) => patchDevelopment("stagingUrl", event.target.value)}
+                className={inputClass}
+              />
+            </label>
+            <label className="block text-sm font-semibold">
+              Production URL
+              <input
+                type="text"
+                inputMode="url"
+                autoComplete="off"
+                value={development.productionUrl}
+                onChange={(event) => patchDevelopment("productionUrl", event.target.value)}
+                className={inputClass}
+              />
+            </label>
+          </div>
+          <label className="block text-sm font-semibold">
+            Hosting provider
+            <input
+              value={development.hostingProvider}
+              onChange={(event) => patchDevelopment("hostingProvider", event.target.value)}
+              className={inputClass}
+            />
+          </label>
+        </AdminFormCard>
+
+        <AdminFormCard
+          icon={PauseCircle}
+          title="Automatic pause on Vercel"
+          description="Pause this site on Vercel when its free launch period ends with no Care plan, and unpause it when a plan starts or you press Unpause. Off by default: nothing goes offline unless you turn this on."
+        >
+          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-[var(--admin-line)] bg-white px-4 py-3">
+            <span className="text-sm font-semibold">
+              {development.autoPauseOnVercel ? "On for this project" : "Off for this project"}
+            </span>
+            <input
+              type="checkbox"
+              role="switch"
+              checked={development.autoPauseOnVercel}
+              onChange={(event) => patchDevelopment("autoPauseOnVercel", event.target.checked)}
+              className="peer sr-only"
+            />
+            <span
+              aria-hidden="true"
+              className="relative h-6 w-11 shrink-0 rounded-full bg-[var(--admin-line)] transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-white after:shadow after:transition-transform peer-checked:bg-[var(--admin-blue)] peer-checked:after:translate-x-5 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--admin-blue)]"
+            />
+          </label>
+          {development.autoPauseOnVercel ? (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block text-sm font-semibold">
+                  Vercel project name or ID
+                  <input
+                    value={development.vercelProjectId}
+                    onChange={(event) => patchDevelopment("vercelProjectId", event.target.value.trim())}
+                    className={inputClass}
+                    placeholder="unlistedgarage"
+                    required
+                    autoComplete="off"
+                    pattern="[A-Za-z0-9._\-]{1,100}"
+                    title="Letters, digits, dot, dash and underscore only"
+                  />
+                </label>
+                <label className="block text-sm font-semibold">
+                  Vercel team ID or slug <span className="font-normal text-[var(--admin-muted)]">(if any)</span>
+                  <input
+                    value={development.vercelTeamId}
+                    onChange={(event) => patchDevelopment("vercelTeamId", event.target.value.trim())}
+                    className={inputClass}
+                    placeholder="team_… or my-team"
+                    autoComplete="off"
+                    pattern="[A-Za-z0-9._\-]{1,100}"
+                    title="Letters, digits, dot, dash and underscore only"
+                  />
+                </label>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  disabled={checkingVercel || !development.vercelProjectId.trim()}
+                  onClick={() => void onCheckVercel()}
+                  className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--admin-line)] bg-white px-4 text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60"
+                >
+                  {checkingVercel ? "Checking…" : "Check Vercel connection"}
+                </button>
+                <span className="text-[12px] text-[var(--admin-muted)]">Looks the project up on Vercel. Pauses nothing.</span>
+              </div>
+              {vercelCheck ? (
+                <p
+                  className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                    vercelCheck.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"
+                  }`}
+                  role="status"
+                >
+                  {vercelCheck.message}
+                </p>
+              ) : null}
+            </>
+          ) : null}
+        </AdminFormCard>
+
+        <AdminFormCard
+          icon={Server}
+          title="Domain & hosting delivery"
+          description="The agency's own tracking of domain and hosting setup for this project. Domains and hosting are handled externally: nothing here purchases or configures anything."
+        >
           {canManageDomainHosting ? (
             <>
               <label className="block text-sm font-semibold">
@@ -536,14 +562,20 @@ export function AdminProjectEdit() {
               </p>
             </div>
           )}
-        </fieldset>
-        <button
-          type="submit"
-          disabled={busy}
-          className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white disabled:opacity-60"
-        >
-          {busy ? "Saving…" : "Save Changes"}
-        </button>
+        </AdminFormCard>
+
+        <div className="sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center justify-end gap-3 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]/95 px-4 py-3 shadow-[0_-6px_18px_rgb(0_16_48_/_0.06)] backdrop-blur">
+          <Link to={returnTo} className="inline-flex h-10 items-center px-3 text-sm font-semibold text-[var(--admin-muted)] hover:text-[var(--admin-ink)]">
+            Cancel
+          </Link>
+          <button
+            type="submit"
+            disabled={busy}
+            className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-5 font-heading text-sm font-semibold text-white disabled:opacity-60"
+          >
+            {busy ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
       </form>
     </div>
   );
