@@ -46,7 +46,7 @@ export function AdminClientScope() {
       ) : !client ? (
         <p className="text-sm text-[var(--admin-muted)]">That client could not be found.</p>
       ) : (
-        <div className="client-theme max-w-3xl" style={ADMIN_LOOK}>
+        <div className="client-theme w-full" style={ADMIN_LOOK}>
           <ScopeFormPage
             client={client}
             staff
