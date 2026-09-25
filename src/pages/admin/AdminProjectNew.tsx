@@ -251,7 +251,7 @@ export function AdminProjectNew() {
       {clients.length === 0 ? (
         <NeedClientEmpty document="project" />
       ) : (
-        <form className="grid max-w-3xl gap-4" onSubmit={onSubmit} noValidate>
+        <form className="grid w-full gap-4" onSubmit={onSubmit} noValidate>
           <AdminWizardSteps steps={WIZARD_STEPS} current={step} onGo={goToStep} hint="Takes about a minute" />
 
           {step === 0 ? (

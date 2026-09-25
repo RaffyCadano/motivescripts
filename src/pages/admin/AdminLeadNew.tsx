@@ -161,7 +161,7 @@ export function AdminLeadNew() {
       {!hasPermission(profile, "leads.manage") ? (
         <p className="text-sm text-[var(--admin-muted)]">You don’t have permission to add leads.</p>
       ) : (
-        <form noValidate className="grid w-full max-w-3xl gap-4" onSubmit={onFormSubmit}>
+        <form noValidate className="grid w-full gap-4" onSubmit={onFormSubmit}>
           <AdminWizardSteps steps={WIZARD_STEPS} current={step} onGo={goToStep} hint="Takes about a minute" />
 
           {hasFieldErrors ? (
