@@ -67,6 +67,8 @@ export function ClientScope() {
   // The package question must be answered (a package, or "Not sure yet") before the client can leave step 1.
   const [packageAnswered, setPackageAnswered] = useState(false);
   const [packageInvalid, setPackageInvalid] = useState(false);
+  // Step 2 needs at least one page and one feature; the messages show once they try to continue without them.
+  const [scopeItemsInvalid, setScopeItemsInvalid] = useState(false);
   const snapshotRef = useRef(draftSnapshot(emptyScopeDraft()));
   const blocker = useUnsavedNavigation(dirty);
 
@@ -152,8 +154,8 @@ export function ClientScope() {
       setError("We couldn't identify your account yet. Refresh the page and try again.");
       return;
     }
-    if (submit && !packageAnswered) {
-      goToStep(1);
+    if (submit && blockedStep(SCOPE_STEPS.length - 1) !== null) {
+      goToStep(SCOPE_STEPS.length - 1);
       return;
     }
     if (submit) {
@@ -196,11 +198,36 @@ export function ClientScope() {
     await persist(true);
   }
 
+  /** What is still missing on step 2: a page, and a feature (or a description when they picked "Other"). */
+  function scopeItemIssues(): { pages: string | null; features: string | null } {
+    const pages = !draft.pages.length
+      ? "Select at least one page, or use Recommend Pages."
+      : draft.pages.includes("Other") && !draft.otherPages.trim()
+        ? "Describe the other page you need."
+        : null;
+    const features = !draft.features.length
+      ? "Select at least one feature, or use Recommend Features."
+      : draft.features.includes("Other") && !draft.otherFeatures.trim()
+        ? "Describe the other functionality you need."
+        : null;
+    return { pages, features };
+  }
+
+  /** The earliest step that must be finished before the client can reach `target`, or null when nothing blocks them. */
+  function blockedStep(target: number): number | null {
+    if (target > 0 && !packageAnswered) return 0;
+    const issues = scopeItemIssues();
+    if (target > 1 && (issues.pages || issues.features)) return 1;
+    return null;
+  }
+
   function goToStep(next: number) {
     setError(null);
-    if (next > 0 && !packageAnswered) {
-      setPackageInvalid(true);
-      setStep(0);
+    const blocked = blockedStep(next);
+    if (blocked !== null) {
+      if (blocked === 0) setPackageInvalid(true);
+      else setScopeItemsInvalid(true);
+      setStep(blocked);
       document.getElementById("client-main")?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -387,6 +414,7 @@ export function ClientScope() {
           <FormCard
             icon={LayoutTemplate}
             title="What pages do you need?"
+            badge="Required"
             hint="Select any additional pages you’d like included in the first build."
           >
             <div className="flex flex-wrap gap-2">
@@ -405,6 +433,11 @@ export function ClientScope() {
                 />
               </label>
             ) : null}
+            {scopeItemsInvalid && scopeItemIssues().pages ? (
+              <p className="mt-3 text-[13px] font-medium text-red-700" role="alert">
+                {scopeItemIssues().pages}
+              </p>
+            ) : null}
             <ScopeRecommendPanel
               kind="pages"
               industry={client?.industry}
@@ -414,7 +447,7 @@ export function ClientScope() {
             />
           </FormCard>
 
-          <FormCard icon={Puzzle} title="What should your website do?" hint="Select the features or functionality you need.">
+          <FormCard icon={Puzzle} title="What should your website do?" badge="Required" hint="Select the features or functionality you need.">
             <div className="flex flex-wrap gap-2">
               {catalogFeatures.map((item) => (
                 <Chip key={item.id} label={item.name} on={draft.features.includes(item.name)} onClick={() => toggle("features", item.name)} />
@@ -435,6 +468,11 @@ export function ClientScope() {
               <p className="mt-4 text-[12px] leading-relaxed text-[var(--client-muted)]">
                 Some features may require additional development or services. MotiveScripts will review your requirements
                 and include applicable costs in your proposal.
+              </p>
+            ) : null}
+            {scopeItemsInvalid && scopeItemIssues().features ? (
+              <p className="mt-3 text-[13px] font-medium text-red-700" role="alert">
+                {scopeItemIssues().features}
               </p>
             ) : null}
             <ScopeRecommendPanel
