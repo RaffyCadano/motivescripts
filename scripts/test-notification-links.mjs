@@ -33,10 +33,11 @@ for (const type of types) {
 }
 
 test("notification links to deletable records cascade or clear, so deleting a project or file never fails", () => {
-  const sql = readFileSync(`${dir}/20261108000000_notification_audit_fixes.sql`, "utf8");
-  for (const column of ["deliverable_id", "proposal_id", "contract_id", "invoice_id", "message_id", "conversation_id"]) {
-    assert.match(sql, new RegExp(`foreign key \(${column}\) references public\.\w+ \(id\) on delete cascade`), column);
+  const sql = readFileSync(`${dir}/20261108000000_notification_audit_fixes.sql`, "utf8").replace(/\s+/g, " ");
+  const tables = { deliverable_id: "deliverables", proposal_id: "proposals", contract_id: "contracts", invoice_id: "invoices", message_id: "messages", conversation_id: "conversations" };
+  for (const [column, table] of Object.entries(tables)) {
+    assert.ok(sql.includes(`foreign key (${column}) references public.${table} (id) on delete cascade`), column);
   }
-  assert.match(sql, /foreign key \(project_id\) references public\.projects \(id\) on delete set null/);
-  assert.match(sql, /purge-old-notifications/);
+  assert.ok(sql.includes("foreign key (project_id) references public.projects (id) on delete set null"));
+  assert.ok(sql.includes("purge-old-notifications"));
 });
