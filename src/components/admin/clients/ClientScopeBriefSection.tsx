@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
+import { hasPermission } from "@/auth/permissions";
 import { projectPackageLabels } from "@/data/projectPackages";
 import { describePackageSuggestion, suggestProjectPackage } from "@/data/scopePackageHint";
-import { adminGhostBtn } from "@/components/admin/adminActionStyles";
+import { adminBlueBtn, adminGhostBtn } from "@/components/admin/adminActionStyles";
 import type { AgencyClient } from "@/data/agencyClients";
 import { formatClientDate } from "@/data/agencyClients";
 import { SCOPE_PACKAGE_INCLUDED, scopeStatus, scopeStatusLabel, type ClientScopeBrief } from "@/data/scopeBriefs";
@@ -12,6 +15,8 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
   const [brief, setBrief] = useState<ClientScopeBrief | null>(null);
   const [loading, setLoading] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const { profile } = useAuth();
+  const canFill = hasPermission(profile, "clients.manage");
 
   useEffect(() => {
     let active = true;
@@ -58,11 +63,18 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
         <>
           <p className="mt-2 font-heading text-sm font-semibold text-[var(--admin-ink)]">Not Started</p>
           <p className="mt-1 text-sm text-[var(--admin-muted)]">
-            Waiting for the client to complete the Website Scope.
+            Waiting for the client to complete the Website Scope{canFill ? ", or you can fill it in for them" : ""}.
           </p>
-          <button type="button" disabled className={`${adminGhostBtn} mt-4 justify-center opacity-60`}>
-            View Scope
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {canFill ? (
+              <Link to={`/admin/clients/${client.id}/scope`} className={`${adminBlueBtn} justify-center`}>
+                Fill in scope for client
+              </Link>
+            ) : null}
+            <button type="button" disabled className={`${adminGhostBtn} justify-center opacity-60`}>
+              View Scope
+            </button>
+          </div>
         </>
       ) : (
         <>
@@ -86,13 +98,20 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
               ? `Submitted ${formatClientDate(brief.submittedAt)}`
               : `Last saved ${formatClientDate(brief.updatedAt)}`}
           </p>
-          <button
-            type="button"
-            className={`${adminGhostBtn} mt-4 justify-center`}
-            onClick={() => setDetailsOpen((open) => !open)}
-          >
-            {detailsOpen ? "Hide Scope" : "View Scope"}
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={`${adminGhostBtn} justify-center`}
+              onClick={() => setDetailsOpen((open) => !open)}
+            >
+              {detailsOpen ? "Hide Scope" : "View Scope"}
+            </button>
+            {canFill ? (
+              <Link to={`/admin/clients/${client.id}/scope`} className={`${adminGhostBtn} justify-center`}>
+                {submitted ? "Edit scope for client" : "Continue scope for client"}
+              </Link>
+            ) : null}
+          </div>
           {detailsOpen ? (
             <dl className="mt-4 space-y-4 border-t border-[var(--admin-line)] pt-4">
               <Block

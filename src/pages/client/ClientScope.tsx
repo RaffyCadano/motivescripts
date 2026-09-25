@@ -51,8 +51,32 @@ function catalogAllowList(items: FeatureCatalogItem[]): ScopeCatalogAllowList {
   };
 }
 
+/** The client whose scope this is: the signed-in client in their portal, or the one staff are filling it in for. */
+export type ScopeClient = { id: string; industry?: string | null };
+
+/** The Website Scope form in the client portal. */
 export function ClientScope() {
   const { client } = usePortalSession();
+  return <ScopeFormPage client={client} />;
+}
+
+function scrollScopeToTop() {
+  (document.getElementById("client-main") ?? document.getElementById("admin-main"))?.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/**
+ * The scope form itself. `staff` is set when an admin fills it in on the client's behalf (from the client's
+ * profile): the wording changes from "you" to "the client", and `staffActions` sits under the submitted card.
+ */
+export function ScopeFormPage({
+  client,
+  staff = false,
+  staffActions,
+}: {
+  client: ScopeClient | null | undefined;
+  staff?: boolean;
+  staffActions?: ReactNode;
+}) {
   const [draft, setDraft] = useState<ScopeBriefDraft>(emptyScopeDraft);
   const [status, setStatus] = useState<ScopeStatus>("not_started");
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
@@ -228,11 +252,11 @@ export function ClientScope() {
       if (blocked === 0) setPackageInvalid(true);
       else setScopeItemsInvalid(true);
       setStep(blocked);
-      document.getElementById("client-main")?.scrollTo({ top: 0, behavior: "smooth" });
+      scrollScopeToTop();
       return;
     }
     setStep(next);
-    document.getElementById("client-main")?.scrollTo({ top: 0, behavior: "smooth" });
+    scrollScopeToTop();
   }
 
   const submitted = status === "submitted";
@@ -251,10 +275,12 @@ export function ClientScope() {
   return (
     <div className="w-full space-y-6">
       <header>
-        <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight md:text-3xl">Website Scope</h1>
+        {/* Staff already have the page title from the admin header. */}
+        {staff ? null : <h1 className="font-heading text-[1.75rem] font-semibold tracking-tight md:text-3xl">Website Scope</h1>}
         <p className="mt-1 max-w-2xl text-sm text-[var(--client-muted)]">
-          Tell us what you want your website to include and what you want it to do. This helps MotiveScripts plan your
-          project and prepare an accurate proposal.
+          {staff
+            ? "You’re filling in this scope on the client’s behalf. They will see it as submitted in their portal and can edit it later. It helps plan the project and prepare an accurate proposal."
+            : "Tell us what you want your website to include and what you want it to do. This helps MotiveScripts plan your project and prepare an accurate proposal."}
         </p>
       </header>
 
@@ -271,8 +297,9 @@ export function ClientScope() {
                 Scope Submitted ✓
               </p>
               <p className="mt-2 text-sm leading-relaxed text-[var(--client-muted)]">
-                Thanks! We’ve received your website requirements. MotiveScripts will review your scope and use it to
-                plan your project and prepare your proposal.
+                {staff
+                  ? "This scope is saved and shows as submitted in the client’s portal. Use it to plan the project and prepare the proposal."
+                  : "Thanks! We’ve received your website requirements. MotiveScripts will review your scope and use it to plan your project and prepare your proposal."}
               </p>
               <p className="mt-3 text-sm text-[var(--client-ink)]">
                 Status: <span className="font-heading font-semibold">Submitted</span>
@@ -281,7 +308,9 @@ export function ClientScope() {
                 ) : null}
               </p>
               <p className="mt-3 text-sm text-[var(--client-muted)]">
-                You can update this if something changes. We still keep one scope record for your account.
+                {staff
+                  ? "You can update this if something changes. There is one scope record per client."
+                  : "You can update this if something changes. We still keep one scope record for your account."}
               </p>
               {!editing ? (
                 <button
@@ -296,8 +325,11 @@ export function ClientScope() {
                   Edit scope
                 </button>
               ) : (
-                <p className="mt-3 text-sm text-[var(--client-ink)]">You’re editing your submitted scope.</p>
+                <p className="mt-3 text-sm text-[var(--client-ink)]">
+                  {staff ? "You’re editing the client’s submitted scope." : "You’re editing your submitted scope."}
+                </p>
               )}
+              {staff && !editing ? staffActions : null}
             </>
           ) : (
             <>
@@ -306,8 +338,12 @@ export function ClientScope() {
               </p>
               <p className="mt-1 text-sm text-[var(--client-muted)]">
                 {status === "in_progress"
-                  ? "Your scope is saved as a draft. You can come back and finish it later."
-                  : "Tell us what you want your website to include."}
+                  ? staff
+                    ? "This scope is saved as a draft. You can come back and finish it later."
+                    : "Your scope is saved as a draft. You can come back and finish it later."
+                  : staff
+                    ? "No scope has been started for this client yet."
+                    : "Tell us what you want your website to include."}
               </p>
             </>
           )}
@@ -609,13 +645,14 @@ export function ClientScope() {
         {error ? <p className="text-sm text-red-700">{error}</p> : null}
           {notice === "draft" ? (
             <p className="text-sm text-[var(--client-ink)]">
-              Draft saved ✓ Your scope has been saved. You can come back and finish it later.
+              {staff ? "Draft saved ✓ The scope has been saved. You can come back and finish it later." : "Draft saved ✓ Your scope has been saved. You can come back and finish it later."}
             </p>
           ) : null}
           {notice === "submit" ? (
             <p className="text-sm text-[var(--client-ink)]">
-              Scope submitted ✓ Thanks! We’ve received your website requirements. MotiveScripts will review your scope
-              and use it to plan your project and prepare your proposal.
+              {staff
+                ? "Scope submitted ✓ It now shows as submitted in the client’s portal."
+                : "Scope submitted ✓ Thanks! We’ve received your website requirements. MotiveScripts will review your scope and use it to plan your project and prepare your proposal."}
             </p>
           ) : null}
 

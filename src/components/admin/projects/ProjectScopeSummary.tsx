@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { projectPackageLabels } from "@/data/projectPackages";
 import { describePackageSuggestion, suggestProjectPackage } from "@/data/scopePackageHint";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/auth/AuthProvider";
+import { hasPermission } from "@/auth/permissions";
 import type { AgencyClient } from "@/data/agencyClients";
 import type { ClientScopeBrief } from "@/data/scopeBriefs";
 import { scopeStatus } from "@/data/scopeBriefs";
@@ -28,6 +30,8 @@ export function ProjectScopeSummary({
   brief: ClientScopeBrief | null;
   loading: boolean;
 }) {
+  const { profile } = useAuth();
+  const canFillScope = hasPermission(profile, "clients.manage");
   const status = scopeStatus(brief);
   const submitted = status === "submitted";
   const pages = brief ? ["Homepage", ...brief.selectedPages.filter((item) => item !== "Other")] : [];
@@ -97,6 +101,15 @@ export function ProjectScopeSummary({
         <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-950">
           This client has not submitted a Website Scope yet. You can still create the project if you already have the
           project brief.
+          {canFillScope ? (
+            <>
+              {" "}
+              <Link to={`/admin/clients/${client.id}/scope`} className="font-semibold text-[var(--admin-blue)] underline underline-offset-2">
+                Fill in the scope for them
+              </Link>
+              .
+            </>
+          ) : null}
         </p>
       ) : null}
 

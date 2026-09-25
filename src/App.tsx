@@ -45,6 +45,7 @@ const AdminRecurringRevenue = lazy(() =>
 );
 const AdminPayroll = lazy(() => import("@/pages/admin/AdminPayroll").then((m) => ({ default: m.AdminPayroll })));
 const AdminClientDetails = lazy(() => import("@/pages/admin/AdminClientDetails").then((m) => ({ default: m.AdminClientDetails })));
+const AdminClientScope = lazy(() => import("@/pages/admin/AdminClientScope").then((m) => ({ default: m.AdminClientScope })));
 const AdminClientNew = lazy(() => import("@/pages/admin/AdminClientNew").then((m) => ({ default: m.AdminClientNew })));
 const AdminClients = lazy(() => import("@/pages/admin/AdminClients").then((m) => ({ default: m.AdminClients })));
 const AdminContractDetails = lazy(() => import("@/pages/admin/AdminContractDetails").then((m) => ({ default: m.AdminContractDetails })));
@@ -149,6 +150,7 @@ export default function App() {
                 <Route path="clients" element={<AdminClients />} />
                 <Route path="clients/new" element={<AdminClientNew />} />
                 <Route path="clients/:id" element={<AdminClientDetails />} />
+                <Route path="clients/:id/scope" element={<AdminClientScope />} />
                 <Route path="projects" element={<AdminProjects />} />
                 <Route path="projects/new" element={<AdminProjectNew />} />
                 <Route path="projects/:id/edit" element={<AdminProjectEdit />} />
