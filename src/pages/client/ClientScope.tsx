@@ -64,6 +64,9 @@ export function ClientScope() {
   const [dirty, setDirty] = useState(false);
   const [editing, setEditing] = useState(false);
   const [step, setStep] = useState(0);
+  // The package question must be answered (a package, or "Not sure yet") before the client can leave step 1.
+  const [packageAnswered, setPackageAnswered] = useState(false);
+  const [packageInvalid, setPackageInvalid] = useState(false);
   const snapshotRef = useRef(draftSnapshot(emptyScopeDraft()));
   const blocker = useUnsavedNavigation(dirty);
 
@@ -89,6 +92,14 @@ export function ClientScope() {
       setDraft(next);
       setStatus(scopeStatus(brief));
       setSubmittedAt(brief?.submittedAt ?? null);
+      // A saved draft that already has pages, features or a goal was answered before, even if it chose "Not sure".
+      setPackageAnswered(
+        next.package !== null ||
+          scopeStatus(brief) === "submitted" ||
+          next.pages.length > 0 ||
+          next.features.length > 0 ||
+          Boolean(next.goal.trim()),
+      );
       remember(next);
     }
     load(client.id)
@@ -141,6 +152,10 @@ export function ClientScope() {
       setError("We couldn't identify your account yet. Refresh the page and try again.");
       return;
     }
+    if (submit && !packageAnswered) {
+      goToStep(1);
+      return;
+    }
     if (submit) {
       const invalid = validateScopeBrief(draft);
       if (invalid) {
@@ -183,6 +198,12 @@ export function ClientScope() {
 
   function goToStep(next: number) {
     setError(null);
+    if (next > 0 && !packageAnswered) {
+      setPackageInvalid(true);
+      setStep(0);
+      document.getElementById("client-main")?.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
     setStep(next);
     document.getElementById("client-main")?.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -332,11 +353,18 @@ export function ClientScope() {
           <FormCard
             icon={Package}
             title="Which package fits you?"
+            badge="Required"
             hint="Pick the closest match. We confirm the package and the price in your proposal, so you can change your mind."
           >
             <ScopePackageChooser
               value={draft.package}
-              onChange={(next) => patch({ package: next })}
+              answered={packageAnswered}
+              invalid={packageInvalid}
+              onChange={(next) => {
+                setPackageAnswered(true);
+                setPackageInvalid(false);
+                patch({ package: next });
+              }}
               hint={scopePackageHint(draft.package, draft.pages, draft.features)}
             />
           </FormCard>

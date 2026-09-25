@@ -9,16 +9,22 @@ import { cn } from "@/lib/cn";
  */
 export function ScopePackageChooser({
   value,
+  answered,
+  invalid,
   onChange,
   hint,
 }: {
   value: ProjectPackage | null;
+  /** False until the client has picked something, so "Not sure yet" is not pre-selected for them. */
+  answered: boolean;
+  /** They tried to continue without choosing. */
+  invalid: boolean;
   onChange: (next: ProjectPackage | null) => void;
   hint: string | null;
 }) {
   return (
-    <fieldset>
-      <legend className="sr-only">Which package fits you?</legend>
+    <fieldset aria-required="true" aria-invalid={invalid || undefined}>
+      <legend className="sr-only">Which package fits you? Required.</legend>
 
       <div className="grid gap-3 sm:grid-cols-3">
         {pricingTiers.map((tier) => {
@@ -29,7 +35,7 @@ export function ScopePackageChooser({
                 type="radio"
                 name="scope-package"
                 value={tier.id}
-                checked={selected}
+                checked={answered && selected}
                 onChange={() => onChange(tier.id)}
                 className="peer sr-only"
               />
@@ -79,12 +85,18 @@ export function ScopePackageChooser({
           type="radio"
           name="scope-package"
           value=""
-          checked={value === null}
+          checked={answered && value === null}
           onChange={() => onChange(null)}
           className="size-4 accent-[var(--client-blue)]"
         />
         Not sure yet. Recommend one for me.
       </label>
+
+      {invalid && !answered ? (
+        <p className="mt-3 text-[13px] font-medium text-red-700" role="alert">
+          Choose a package, or select “Not sure yet”, to continue.
+        </p>
+      ) : null}
 
       {hint ? (
         <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] leading-relaxed text-amber-950" role="status">
