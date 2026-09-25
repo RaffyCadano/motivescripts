@@ -14,22 +14,20 @@ import { ProjectCommercialProgress } from "@/components/admin/projects/ProjectCo
 import { ProjectDeliveryProgress } from "@/components/admin/projects/ProjectDeliveryProgress";
 import { ProjectNextAction } from "@/components/admin/projects/ProjectNextAction";
 import { ProjectOverviewTeam } from "@/components/admin/projects/ProjectOverviewTeam";
-import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
+import { ProjectClientCard, ProjectFactsCard, ProjectScopeCard } from "@/components/admin/projects/ProjectSummaryCards";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import type { ProjectWorkflowState } from "@/components/admin/projects/useProjectWorkflowState";
 import type { AgencyClient } from "@/data/agencyClients";
-import { formatClientDate, formatClientTimestamp } from "@/data/agencyClients";
+import { formatClientTimestamp } from "@/data/agencyClients";
 import { adminStatusLabel } from "@/data/documents";
 import { deliverableApprovalStats } from "@/data/files";
 import { adminInvoiceStatusLabel } from "@/data/invoices";
-import { portalStatusLabel } from "@/data/invitation";
 import {
   calculateProjectProgress,
   formatProjectDate,
   formatProjectDay,
   type AgencyProject,
 } from "@/data/agencyProjects";
-import { scopeStatus } from "@/data/scopeBriefs";
 import { displayHttpHost, safeHttpHref } from "@/lib/safeUrl";
 
 type ProjectOverviewProps = {
@@ -96,98 +94,33 @@ export function ProjectOverview({ project, client, workflow, onOpenTab }: Projec
       {client ? <ProjectDiscoveryPanel projectId={project.id} clientId={client.id} projectName={project.name} brief={brief} /> : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <SummaryCard title="Project">
-          <SummaryRow label="Status" value={<ProjectStatusBadge status={project.status} />} />
-          <SummaryRow label="Progress" value={`${progress}%`} />
-          {deliverableStats.total > 0 ? (
-            <SummaryRow label="Deliverables" value={`${deliverableStats.approved}/${deliverableStats.total} approved`} />
-          ) : null}
-          <SummaryRow label="Type" value={project.type} />
-          <SummaryRow label="Pages" value={brief ? String(pageCount) : "—"} />
-          <SummaryRow label="Features" value={brief ? String(featureCount) : "—"} />
-          <SummaryRow
-            label="Staging"
-            value={
-              stagingHref ? (
-                <a className="text-[var(--admin-blue)] hover:underline" href={stagingHref} target="_blank" rel="noreferrer">
-                  {displayHttpHost(stagingHref)}
-                </a>
-              ) : (
-                <span className="text-[var(--admin-muted)]">Not available yet</span>
-              )
-            }
-          />
-          <SummaryRow
-            label="Production"
-            value={
-              productionHref ? (
-                <a className="text-[var(--admin-blue)] hover:underline" href={productionHref} target="_blank" rel="noreferrer">
-                  {displayHttpHost(productionHref)}
-                </a>
-              ) : (
-                <span className="text-[var(--admin-muted)]">Not available yet</span>
-              )
-            }
-          />
-        </SummaryCard>
-
+        <ProjectFactsCard
+          project={project}
+          progress={progress}
+          deliverables={deliverableStats}
+          pages={brief ? pageCount : null}
+          features={brief ? featureCount : null}
+          stagingHref={stagingHref}
+          productionHref={productionHref}
+        />
         {client ? (
-          <SummaryCard title="Client">
-            <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{client.contactName}</p>
-            <p className="mt-2 text-sm">
-              <a className="text-[var(--admin-blue)] hover:underline" href={`mailto:${client.email}`}>
-                {client.email}
-              </a>
-            </p>
-            <p className="mt-1 text-sm text-[var(--admin-ink)]">{client.phone !== "—" ? client.phone : "Not provided"}</p>
-            <p className="mt-3 text-sm text-[var(--admin-muted)]">
-              Portal <span className="text-[var(--admin-ink)]">● {portalStatusLabel(portalStatus)}</span>
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link to={`/admin/clients/${client.id}`} className={adminGhostBtn}>
-                Manage client
-              </Link>
-              {!portalLinked && isActiveAdmin(profile) ? (
-                <button type="button" className={adminGhostBtn} onClick={() => setInviteOpen(true)}>
-                  Invite
-                </button>
-              ) : null}
-            </div>
-          </SummaryCard>
+          <ProjectClientCard
+            client={client}
+            portalLinked={portalLinked}
+            portalStatus={portalStatus}
+            canInvite={isActiveAdmin(profile)}
+            onInvite={() => setInviteOpen(true)}
+          />
         ) : null}
-
-        <SummaryCard title="Website scope">
-          {workflow.loading ? (
-            <p className="text-sm text-[var(--admin-muted)]">Loading…</p>
-          ) : brief && scopeStatus(brief) !== "not_started" ? (
-            <>
-              <p className="text-sm text-[var(--admin-ink)]">
-                {pageCount} page{pageCount === 1 ? "" : "s"}
-              </p>
-              <p className="mt-1 text-sm text-[var(--admin-ink)]">
-                {featureCount} feature{featureCount === 1 ? "" : "s"}
-              </p>
-              <p className="mt-2 text-[12px] text-[var(--admin-muted)]">
-                {brief.submittedAt ? `Submitted ${formatClientDate(brief.submittedAt)}` : "Draft saved"}
-              </p>
-              <button type="button" className={`${adminGhostBtn} mt-4`} onClick={() => setScopeOpen((open) => !open)}>
-                {scopeOpen ? "Hide scope" : "View scope"}
-              </button>
-              {scopeOpen ? (
-                <div className="mt-4 space-y-2 border-t border-[var(--admin-line)] pt-4 text-sm text-[var(--admin-muted)]">
-                  {brief.goal.trim() ? <p>{brief.goal.trim()}</p> : null}
-                  {client ? (
-                    <Link to={`/admin/clients/${client.id}#website-scope`} className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
-                      Open full scope on client
-                    </Link>
-                  ) : null}
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <p className="text-sm text-[var(--admin-muted)]">No scope submitted yet.</p>
-          )}
-        </SummaryCard>
+        <ProjectScopeCard
+          loading={workflow.loading}
+          brief={brief}
+          pages={pageCount}
+          features={featureCount}
+          open={scopeOpen}
+          onToggle={() => setScopeOpen((open) => !open)}
+          clientId={client?.id ?? null}
+        />
       </div>
 
       {team.data ? (
@@ -335,6 +268,7 @@ export function ProjectOverview({ project, client, workflow, onOpenTab }: Projec
   );
 }
 
+/** The plain card the team's project page still uses; the admin overview now has its own (ProjectSummaryCards). */
 export function SummaryCard({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
