@@ -103,6 +103,8 @@ export function AiAssistant() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<AskAiFailure | null>(null);
+  // Once the page has scrolled the launcher shrinks to its icon, so it stays out of the way of the content and the main buttons.
+  const [compact, setCompact] = useState(false);
 
   const nextId = useRef(1);
   const launcherRef = useRef<HTMLButtonElement>(null);
@@ -116,6 +118,13 @@ export function AiAssistant() {
   const closePanel = useCallback(() => {
     setOpen(false);
     requestAnimationFrame(() => launcherRef.current?.focus());
+  }, []);
+
+  useEffect(() => {
+    const update = () => setCompact(window.scrollY > 160);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
   }, []);
 
   // Leaving the marketing pages (e.g. via the Start a Project button) closes the panel.
@@ -220,15 +229,16 @@ export function AiAssistant() {
         inert={open}
         style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
         className={cn(
-          "fixed right-4 z-40 inline-flex h-12 w-12 items-center justify-center gap-2 rounded-full bg-navy font-heading text-sm font-semibold text-white shadow-[var(--shadow-button)] transition-[background-color,opacity,transform] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:bg-blue active:translate-y-px motion-reduce:transition-none sm:right-6 sm:w-auto sm:pl-4 sm:pr-5",
+          "group fixed right-4 z-40 inline-flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-[var(--color-line-strong)] bg-white/95 font-heading text-sm font-semibold text-ink shadow-[0_6px_18px_rgb(0_16_48_/_0.12)] backdrop-blur transition-[background-color,border-color,opacity,transform] duration-[var(--duration-base)] ease-[var(--ease-out)] hover:border-[rgb(0_80_240_/_0.45)] hover:bg-white active:translate-y-px motion-reduce:transition-none sm:right-6",
+          compact ? "sm:hover:w-auto sm:hover:pl-4 sm:hover:pr-5 sm:focus-visible:w-auto sm:focus-visible:pl-4 sm:focus-visible:pr-5" : "sm:w-auto sm:pl-4 sm:pr-5",
           focusRing,
           open && "pointer-events-none invisible opacity-0",
         )}
       >
-        <Sparkles size={17} strokeWidth={2.2} aria-hidden="true" className="text-[#7fd6ff]" />
+        <Sparkles size={17} strokeWidth={2.2} aria-hidden="true" className="text-blue" />
         {/* Icon-only on a phone, where a wide pill would cover the page as it scrolls; the button's
             aria-label already names it for screen readers. */}
-        <span className="sr-only sm:not-sr-only">Ask MotiveScripts AI</span>
+        <span className={compact ? "sr-only sm:group-hover:not-sr-only sm:group-focus-visible:not-sr-only" : "sr-only sm:not-sr-only"}>Ask MotiveScripts AI</span>
       </button>
 
       <section
