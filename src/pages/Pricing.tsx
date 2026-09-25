@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
 import { CTA } from "@/components/CTA";
-import { FaqItem } from "@/components/FaqItem";
+import { FaqItem, FaqPanel } from "@/components/FaqItem";
 import { PageHero } from "@/components/PageHero";
 import { StepList } from "@/components/StepList";
 import { TierPrice } from "@/components/TierPrice";
@@ -498,9 +498,11 @@ export function PricingPage() {
           <AnimateIn>
             <h2 className="text-2xl md:text-3xl">Pricing questions.</h2>
             <div className="mt-8">
-              {pricingFaqs.map((item) => (
-                <FaqItem key={item.question} question={item.question} answer={item.answer} />
-              ))}
+              <FaqPanel>
+                {pricingFaqs.map((item) => (
+                  <FaqItem key={item.question} question={item.question} answer={item.answer} group="pricing-faq" />
+                ))}
+              </FaqPanel>
             </div>
           </AnimateIn>
         </div>
