@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Briefcase, Code, Palette, PenLine, Plus, ShieldCheck, UserPlus, UsersRound, X, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { canCoordinateAssignedWork, hasPermission } from "@/auth/permissions";
 import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
@@ -10,6 +11,7 @@ import {
 } from "@/data/team";
 import { assignStaffToClient, assignStaffToProject, unassignStaffFromClient, unassignStaffFromProject } from "@/data/teamRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
+import { cn } from "@/lib/cn";
 
 export function ProjectOverviewTeam({
   members,
@@ -42,6 +44,8 @@ export function ProjectOverviewTeam({
       member.templateKey === "project_manager" &&
       member.clientAssignments.some((item) => item.entityId === clientId),
   );
+  const filledRoles =
+    (pmSlot?.names.length || pmAssigned.length ? 1 : 0) + productionSlots.filter((slot) => slot.names.length > 0).length;
   const canManageClient = hasPermission(profile, "clients.manage");
   const canManageProject = canCoordinateAssignedWork(profile);
   const [pmPickerOpen, setPmPickerOpen] = useState(false);
@@ -126,35 +130,56 @@ export function ProjectOverviewTeam({
   return (
     <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
       <div className="flex items-start justify-between gap-3">
-        <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Team</h2>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]">
+            <UsersRound size={15} strokeWidth={2} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Team</h2>
+            <p className="text-[12px] text-[var(--admin-muted)]">
+              {filledRoles} of {slots.length} roles filled
+            </p>
+          </div>
+        </div>
         {canManageProject ? (
-          <button type="button" className={adminGhostBtn} onClick={() => setProjectPickerOpen((open) => !open)}>
-            {projectPickerOpen ? "Cancel" : "Assign"}
+          <button type="button" className={`${adminGhostBtn} gap-1.5`} onClick={() => setProjectPickerOpen((open) => !open)}>
+            {projectPickerOpen ? (
+              "Cancel"
+            ) : (
+              <>
+                <UserPlus size={14} strokeWidth={2.2} aria-hidden="true" />
+                Assign
+              </>
+            )}
           </button>
         ) : null}
       </div>
 
-      <dl className="mt-4 space-y-3 text-sm">
-        <TeamRow
+      <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <TeamRole
+          slotId="project_manager"
           label="Project Manager"
           names={pmSlot?.names.length ? pmSlot.names : pmAssigned.map((member) => member.fullName || member.email)}
           canManage={canManageClient && Boolean(clientId)}
           onAssign={() => setPmPickerOpen((open) => !open)}
           onRemove={pmAssigned[0] ? () => void removePm(pmAssigned[0].id) : undefined}
+          busy={busy}
         />
         {productionSlots.map((slot) => {
           const member = memberForSlot(slot.id);
           return (
-            <TeamRow
+            <TeamRole
               key={slot.id}
+              slotId={slot.id}
               label={slot.label}
               names={slot.names}
               canManage={canManageProject && Boolean(member)}
               onRemove={member ? () => void removeProduction(member.id) : undefined}
+              busy={busy}
             />
           );
         })}
-      </dl>
+      </ul>
 
       {canManageClient && pmPickerOpen && clientId ? (
         <div className="mt-4 flex flex-col gap-2 border-t border-[var(--admin-line)] pt-4 sm:flex-row sm:items-center">
@@ -206,38 +231,89 @@ export function ProjectOverviewTeam({
   );
 }
 
-function TeamRow({
+const ROLE_ICONS: Record<string, LucideIcon> = {
+  project_manager: Briefcase,
+  developer: Code,
+  designer: Palette,
+  content_writer: PenLine,
+  team_member: ShieldCheck,
+};
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts.length > 1 ? (parts[parts.length - 1][0] ?? "") : "")).toUpperCase() || "?";
+}
+
+/** One role on the project: who holds it (avatar and name, with a remove button) or a dashed "Unassigned" tile. */
+function TeamRole({
+  slotId,
   label,
   names,
   canManage,
   onAssign,
   onRemove,
+  busy,
 }: {
+  slotId: string;
   label: string;
   names: string[];
   canManage: boolean;
   onAssign?: () => void;
   onRemove?: () => void;
+  busy: boolean;
 }) {
-  const display = names.length > 0 ? names.join(", ") : "Unassigned";
+  const Icon = ROLE_ICONS[slotId] ?? UsersRound;
+  const filled = names.length > 0;
   return (
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--admin-muted)]">{label}</dt>
-        <dd className="mt-0.5 text-[var(--admin-ink)]">{display}</dd>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {canManage && names.length === 0 && onAssign ? (
-          <button type="button" className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline" onClick={onAssign}>
-            Assign
-          </button>
-        ) : null}
-        {canManage && names.length > 0 && onRemove ? (
-          <button type="button" className="font-heading text-[12px] font-semibold text-[var(--admin-muted)] hover:text-[var(--admin-ink)]" onClick={onRemove}>
-            Remove
-          </button>
-        ) : null}
-      </div>
-    </div>
+    <li
+      className={cn(
+        "flex min-w-0 flex-col gap-2.5 rounded-lg border p-3.5",
+        filled ? "border-[var(--admin-line)] bg-[var(--admin-card)]" : "border-dashed border-[var(--admin-line)] bg-[var(--admin-bg)]",
+      )}
+    >
+      <p className="flex items-center gap-1.5 text-[12px] font-semibold text-[var(--admin-muted)]">
+        <Icon size={14} strokeWidth={2} aria-hidden="true" />
+        {label}
+      </p>
+      {filled ? (
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span
+              aria-hidden="true"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[rgb(0_80_240_/_0.1)] font-heading text-[12px] font-semibold text-[var(--admin-blue)]"
+            >
+              {initials(names[0])}
+            </span>
+            <span className="min-w-0 truncate text-sm font-semibold text-[var(--admin-ink)]">{names.join(", ")}</span>
+          </div>
+          {canManage && onRemove ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={onRemove}
+              aria-label={`Remove ${names[0]} from ${label}`}
+              title="Remove"
+              className="flex size-7 shrink-0 items-center justify-center rounded-md text-[var(--admin-muted)] hover:bg-[var(--admin-bg)] hover:text-[var(--admin-ink)] disabled:opacity-50"
+            >
+              <X size={15} strokeWidth={2.2} aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm text-[var(--admin-muted)]">Unassigned</span>
+          {canManage && onAssign ? (
+            <button
+              type="button"
+              onClick={onAssign}
+              className="inline-flex items-center gap-1 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+            >
+              <Plus size={13} strokeWidth={2.4} aria-hidden="true" />
+              Assign
+            </button>
+          ) : null}
+        </div>
+      )}
+    </li>
   );
 }

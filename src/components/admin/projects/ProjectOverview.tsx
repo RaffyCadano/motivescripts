@@ -15,6 +15,7 @@ import { ProjectDeliveryProgress } from "@/components/admin/projects/ProjectDeli
 import { ProjectNextAction } from "@/components/admin/projects/ProjectNextAction";
 import { ProjectOverviewTeam } from "@/components/admin/projects/ProjectOverviewTeam";
 import { ProjectClientCard, ProjectFactsCard, ProjectScopeCard } from "@/components/admin/projects/ProjectSummaryCards";
+import { ProjectDocumentsPanel, ProjectWebsitePanel } from "@/components/admin/projects/ProjectOverviewPanels";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import type { ProjectWorkflowState } from "@/components/admin/projects/useProjectWorkflowState";
 import type { AgencyClient } from "@/data/agencyClients";
@@ -28,7 +29,7 @@ import {
   formatProjectDay,
   type AgencyProject,
 } from "@/data/agencyProjects";
-import { displayHttpHost, safeHttpHref } from "@/lib/safeUrl";
+import { safeHttpHref } from "@/lib/safeUrl";
 
 type ProjectOverviewProps = {
   project: AgencyProject;
@@ -133,54 +134,41 @@ export function ProjectOverview({ project, client, workflow, onOpenTab }: Projec
         />
       ) : null}
 
-      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Documents</h2>
-        <dl className="mt-4 divide-y divide-[var(--admin-line)] text-sm">
-          <DocumentRow
-            label="Proposal"
-            value={workflow.proposal ? adminStatusLabel(workflow.proposal.effectiveStatus) : "Not created"}
-            href={workflow.proposal ? `/admin/proposals/${workflow.proposal.id}` : undefined}
-          />
-          <DocumentRow
-            label="Contract"
-            value={workflow.contract ? adminStatusLabel(workflow.contract.effectiveStatus) : "Not created"}
-            href={workflow.contract ? `/admin/contracts/${workflow.contract.id}` : undefined}
-          />
-          <DocumentRow
-            label="Invoice"
-            value={
-              workflow.invoices[0]
-                ? adminInvoiceStatusLabel(workflow.invoices[0].effectiveStatus)
-                : "Not created"
-            }
-            href={workflow.invoices[0] ? `/admin/invoices/${workflow.invoices[0].id}` : undefined}
-          />
-        </dl>
-        <button type="button" className="mt-4 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline" onClick={() => onOpenTab("files")}>
-          View project files
-        </button>
-      </section>
+      <ProjectDocumentsPanel
+        onOpenFiles={() => onOpenTab("files")}
+        rows={[
+          {
+            id: "proposal",
+            label: "Proposal",
+            value: workflow.proposal ? adminStatusLabel(workflow.proposal.effectiveStatus) : "Not created",
+            created: Boolean(workflow.proposal),
+            href: workflow.proposal ? `/admin/proposals/${workflow.proposal.id}` : undefined,
+          },
+          {
+            id: "contract",
+            label: "Contract",
+            value: workflow.contract ? adminStatusLabel(workflow.contract.effectiveStatus) : "Not created",
+            created: Boolean(workflow.contract),
+            href: workflow.contract ? `/admin/contracts/${workflow.contract.id}` : undefined,
+          },
+          {
+            id: "invoice",
+            label: "Invoice",
+            value: workflow.invoices[0] ? adminInvoiceStatusLabel(workflow.invoices[0].effectiveStatus) : "Not created",
+            created: Boolean(workflow.invoices[0]),
+            href: workflow.invoices[0] ? `/admin/invoices/${workflow.invoices[0].id}` : undefined,
+          },
+        ]}
+      />
 
-      <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Website</h2>
-            <p className="mt-1 text-[12px] text-[var(--admin-muted)]">Staging, production, and deliverables.</p>
-          </div>
-          <button type="button" className={adminGhostBtn} onClick={() => setEditUrlsOpen(true)}>
-            Edit URLs
-          </button>
-        </div>
-        <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-          <SummaryRow label="Staging" value={stagingHref ? displayHttpHost(stagingHref) : "Not available yet"} />
-          <SummaryRow label="Production" value={productionHref ? displayHttpHost(productionHref) : "Not available yet"} />
-          <SummaryRow label="Target launch" value={summaryValue(formatProjectDay(project.targetLaunchDate))} />
-          <SummaryRow label="Started" value={summaryValue(formatProjectDay(project.startDate))} />
-        </dl>
-        <button type="button" className="mt-4 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline" onClick={() => onOpenTab("files")}>
-          View deliverables
-        </button>
-      </section>
+      <ProjectWebsitePanel
+        stagingHref={stagingHref}
+        productionHref={productionHref}
+        targetLaunch={summaryValue(formatProjectDay(project.targetLaunchDate))}
+        started={summaryValue(formatProjectDay(project.startDate))}
+        onEditUrls={() => setEditUrlsOpen(true)}
+        onOpenFiles={() => onOpenTab("files")}
+      />
 
       <WebsiteHealthCard
         projectId={project.id}
@@ -283,23 +271,6 @@ export function SummaryRow({ label, value }: { label: string; value: ReactNode }
     <div className="flex items-start justify-between gap-3 py-1.5">
       <dt className="text-[12px] text-[var(--admin-muted)]">{label}</dt>
       <dd className="text-right text-sm font-medium text-[var(--admin-ink)]">{value}</dd>
-    </div>
-  );
-}
-
-function DocumentRow({ label, value, href }: { label: string; value: string; href?: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-      <dt className="text-[var(--admin-muted)]">{label}</dt>
-      <dd>
-        {href ? (
-          <Link to={href} className="font-medium text-[var(--admin-blue)] hover:underline">
-            {value}
-          </Link>
-        ) : (
-          <span className="text-[var(--admin-ink)]">{value}</span>
-        )}
-      </dd>
     </div>
   );
 }
