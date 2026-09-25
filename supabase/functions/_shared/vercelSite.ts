@@ -42,6 +42,43 @@ async function vercelErrorMessage(response: Response): Promise<string> {
   return `Vercel answered ${response.status}${detail ? `: ${detail}` : ""}`.slice(0, 240);
 }
 
+export type VercelProjectInfo = { id: string; name: string; paused: boolean | null };
+
+/**
+ * Read-only: look a project up by name or id (GET /v9/projects/{idOrName}). Changes nothing on Vercel. Used by the
+ * pause flow to turn a name into the id the pause endpoint needs, and by the admin "Check Vercel connection" button.
+ */
+export async function lookupVercelProject(input: {
+  token: string | undefined;
+  projectIdOrName: string;
+  teamId?: string | null;
+  fetchFn?: typeof fetch;
+}): Promise<{ ok: true; project: VercelProjectInfo } | { ok: false; message: string }> {
+  const { token, projectIdOrName, teamId } = input;
+  const fetchFn = input.fetchFn ?? fetch;
+  if (!token) return { ok: false, message: "VERCEL_API_TOKEN is not set on the server." };
+  if (!isSafeVercelId(projectIdOrName)) return { ok: false, message: "The Vercel project name has characters Vercel does not allow." };
+  if (teamId && !isSafeVercelId(teamId)) return { ok: false, message: "The Vercel team id has characters Vercel does not allow." };
+
+  let response: Response;
+  try {
+    response = await fetchFn(vercelProjectLookupUrl(projectIdOrName, teamId), {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    });
+  } catch {
+    return { ok: false, message: "Could not reach Vercel." };
+  }
+  if (!response.ok) return { ok: false, message: await vercelErrorMessage(response) };
+  try {
+    const body = (await response.json()) as { id?: string; name?: string; paused?: boolean };
+    if (!body?.id || !isSafeVercelId(body.id)) return { ok: false, message: "Vercel did not return a usable project id." };
+    return { ok: true, project: { id: body.id, name: body.name ?? projectIdOrName, paused: typeof body.paused === "boolean" ? body.paused : null } };
+  } catch {
+    return { ok: false, message: "Vercel did not return a usable project id." };
+  }
+}
+
 export async function controlVercelProject(input: {
   token: string | undefined;
   action: SiteAction;
@@ -61,21 +98,9 @@ export async function controlVercelProject(input: {
   // The lookup also proves the token works and the project exists, with a clearer error than a bare 400.
   let idToUse = projectId;
   if (!projectId.startsWith("prj_")) {
-    let lookup: Response;
-    try {
-      lookup = await fetchFn(vercelProjectLookupUrl(projectId, teamId), { method: "GET", headers });
-    } catch {
-      return { ok: false, message: "Could not reach Vercel." };
-    }
-    if (!lookup.ok) return { ok: false, message: await vercelErrorMessage(lookup) };
-    try {
-      const found = (await lookup.json()) as { id?: string };
-      if (!found?.id) return { ok: false, message: "Vercel did not return a project id for that name." };
-      idToUse = found.id;
-    } catch {
-      return { ok: false, message: "Vercel did not return a project id for that name." };
-    }
-    if (!isSafeVercelId(idToUse)) return { ok: false, message: "Vercel returned an unexpected project id." };
+    const found = await lookupVercelProject({ token, projectIdOrName: projectId, teamId, fetchFn });
+    if (!found.ok) return { ok: false, message: found.message };
+    idToUse = found.project.id;
   }
 
   let response: Response;

@@ -3,7 +3,7 @@
 //   node --test scripts/test-vercel-site.mjs
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { controlVercelProject, isSafeVercelId, vercelProjectLookupUrl, vercelSiteUrl } from "../supabase/functions/_shared/vercelSite.ts";
+import { controlVercelProject, isSafeVercelId, lookupVercelProject, vercelProjectLookupUrl, vercelSiteUrl } from "../supabase/functions/_shared/vercelSite.ts";
 
 const okResponse = () => new Response("{}", { status: 200 });
 const errResponse = (status, message) => new Response(JSON.stringify({ error: { message } }), { status });
@@ -116,4 +116,32 @@ test("no token, or an unsafe id, never calls Vercel", async () => {
   assert.equal((await controlVercelProject({ token: "tok", action: "pause", projectId: "../evil", fetchFn })).ok, false);
   assert.equal((await controlVercelProject({ token: "tok", action: "pause", projectId: "site", teamId: "a/b", fetchFn })).ok, false);
   assert.equal(calls, 0);
+});
+
+test("lookupVercelProject is read-only and reports what it found", async () => {
+  const seen = [];
+  const found = await lookupVercelProject({
+    token: "tok",
+    projectIdOrName: "unlistedgarage",
+    teamId: "unlisted-garage-production",
+    fetchFn: async (url, init) => {
+      seen.push({ url, method: init.method });
+      return new Response(JSON.stringify({ id: "prj_x1", name: "unlistedgarage", paused: false }), { status: 200 });
+    },
+  });
+  assert.equal(found.ok, true);
+  assert.deepEqual(found.project, { id: "prj_x1", name: "unlistedgarage", paused: false });
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].method, "GET");
+  assert.equal(seen[0].url, "https://api.vercel.com/v9/projects/unlistedgarage?slug=unlisted-garage-production");
+});
+
+test("lookupVercelProject explains a missing project, a missing token and a bad name", async () => {
+  const missing = await lookupVercelProject({ token: "tok", projectIdOrName: "nope", fetchFn: async () => errResponse(404, "Project not found.") });
+  assert.equal(missing.ok, false);
+  assert.match(missing.message, /404/);
+  assert.equal((await lookupVercelProject({ token: undefined, projectIdOrName: "x", fetchFn: async () => okResponse() })).ok, false);
+  assert.equal((await lookupVercelProject({ token: "tok", projectIdOrName: "../x", fetchFn: async () => okResponse() })).ok, false);
+  const noPause = await lookupVercelProject({ token: "tok", projectIdOrName: "x", fetchFn: async () => new Response(JSON.stringify({ id: "prj_1" }), { status: 200 }) });
+  assert.equal(noPause.ok && noPause.project.paused, null);
 });

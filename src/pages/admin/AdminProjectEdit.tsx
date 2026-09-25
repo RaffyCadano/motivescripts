@@ -15,6 +15,7 @@ import {
 } from "@/data/agencyProjects";
 import { centsInputValue, parseDollarsToCents } from "@/data/money";
 import { projectPackageLabels, projectPackages, type ProjectPackage } from "@/data/projectPackages";
+import { checkVercelConnection } from "@/data/websitePauseRepository";
 import { updateProjectRecord } from "@/data/agencyRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 import {
@@ -85,6 +86,22 @@ export function AdminProjectEdit() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [locationState.focus, project]);
+
+  const [checkingVercel, setCheckingVercel] = useState(false);
+  const [vercelCheck, setVercelCheck] = useState<{ ok: boolean; message: string } | null>(null);
+
+  async function onCheckVercel() {
+    if (!project) return;
+    setCheckingVercel(true);
+    setVercelCheck(null);
+    try {
+      setVercelCheck(await checkVercelConnection(project.id, development.vercelProjectId, development.vercelTeamId));
+    } catch (error) {
+      setVercelCheck({ ok: false, message: error instanceof AgencyDbError ? error.message : "Couldn't run the check." });
+    } finally {
+      setCheckingVercel(false);
+    }
+  }
 
   function patchDevelopment<K extends keyof ProjectDevelopment>(key: K, value: ProjectDevelopment[K]) {
     setDevelopment((current) => ({ ...current, [key]: value }));
@@ -389,6 +406,22 @@ export function AdminProjectEdit() {
                     title="Letters, digits, dot, dash and underscore only"
                   />
                 </label>
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    disabled={checkingVercel || !development.vercelProjectId.trim()}
+                    onClick={() => void onCheckVercel()}
+                    className="inline-flex h-10 items-center justify-center rounded-lg border border-[var(--admin-line)] bg-white px-4 text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60"
+                  >
+                    {checkingVercel ? "Checking…" : "Check Vercel connection"}
+                  </button>
+                  <span className="ml-3 text-[12px] text-[var(--admin-muted)]">Looks the project up on Vercel. Pauses nothing.</span>
+                  {vercelCheck ? (
+                    <p className={`mt-2 text-sm font-medium ${vercelCheck.ok ? "text-emerald-800" : "text-red-700"}`} role="status">
+                      {vercelCheck.message}
+                    </p>
+                  ) : null}
+                </div>
               </div>
             ) : null}
           </fieldset>

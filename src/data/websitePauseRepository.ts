@@ -6,6 +6,29 @@ import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
  * many more days of free period, with reminders starting over; `null` keeps it live indefinitely.
  * See unpause_website() in 20261104000000_launch_trial_pause_and_reminders.sql.
  */
+/**
+ * Read-only check of the Vercel setup on the project form: looks the project up on Vercel with the values typed
+ * in (saved or not) and says whether it was found. Changes nothing anywhere. Needs projects.manage.
+ */
+export async function checkVercelConnection(
+  projectId: string,
+  vercelProjectId: string,
+  vercelTeamId: string,
+): Promise<{ ok: boolean; message: string }> {
+  if (!isSupabaseConfigured()) throw new AgencyDbError("Supabase is not configured.");
+  const client = getSupabase();
+  if (!client) throw new AgencyDbError("Supabase is not configured.");
+  const { data, error } = await client.functions.invoke("vercel-site-control", {
+    body: { projectId, action: "check", vercelProjectId, vercelTeamId },
+  });
+  if (error) {
+    logDbError("check vercel connection", error);
+    throw new AgencyDbError("Couldn't run the check. Try again in a moment.", error);
+  }
+  const result = data as { ok?: boolean; message?: string } | null;
+  return { ok: Boolean(result?.ok), message: result?.message ?? "No answer from the server." };
+}
+
 /** Retry the automatic pause / unpause on Vercel after it failed (see retry_host_site_control). */
 export async function retryHostSiteControl(projectId: string): Promise<void> {
   if (!isSupabaseConfigured()) throw new AgencyDbError("Supabase is not configured.");
