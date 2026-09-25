@@ -69,13 +69,13 @@ export function HeroVisual() {
           </ScrollingMock>
         </DeviceFrame>
 
-        <DeviceFrame device={PHONE} className="absolute bottom-0 right-0 w-[22%]">
+        <DeviceFrame device={PHONE} className="absolute bottom-0 right-[7%] w-[22%] lg:right-0">
           <ScrollingMock pageWidth={PHONE_W} delaySeconds={9} overlay={<PhoneOverlay />}>
             <PhoneSiteMock />
           </ScrollingMock>
         </DeviceFrame>
 
-        <div className="absolute bottom-[3%] left-[58%] hidden -translate-x-1/2 rounded-[var(--radius-lg)] border border-[#d9dfe8] bg-[var(--ms-white)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
+        <div className="absolute bottom-[3%] left-[51%] xl:left-[58%] hidden -translate-x-1/2 rounded-[var(--radius-lg)] border border-[#d9dfe8] bg-[var(--ms-white)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
           <BrandMark className="h-7 w-auto" decorative />
           <p className="whitespace-nowrap font-heading text-xs font-semibold text-ink">Built by MotiveScripts</p>
         </div>
