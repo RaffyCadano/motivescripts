@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { projectPackageLabels } from "@/data/projectPackages";
+import { describePackageSuggestion, suggestProjectPackage } from "@/data/scopePackageHint";
 import { adminGhostBtn } from "@/components/admin/adminActionStyles";
 import type { AgencyClient } from "@/data/agencyClients";
 import { formatClientDate } from "@/data/agencyClients";
@@ -94,7 +95,14 @@ export function ClientScopeBriefSection({ client }: { client: AgencyClient }) {
           </button>
           {detailsOpen ? (
             <dl className="mt-4 space-y-4 border-t border-[var(--admin-line)] pt-4">
-              <Block label="Requested package" value={brief.requestedPackage ? projectPackageLabels[brief.requestedPackage] : "Not chosen yet"} />
+              <Block
+                label="Requested package"
+                value={
+                  brief.requestedPackage
+                    ? projectPackageLabels[brief.requestedPackage]
+                    : `Not sure, needs a recommendation. Suggested: ${describePackageSuggestion(suggestProjectPackage(brief.selectedPages, brief.features))}`
+                }
+              />
               <Block label="Business goal" value={brief.goal || "Not entered yet"} />
               <ChipBlock label="Pages" values={pages} />
               <ChipBlock label="Features" values={features.length ? features : ["None selected"]} muted={!features.length} />

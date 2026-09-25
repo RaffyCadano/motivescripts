@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { projectPackageLabels } from "@/data/projectPackages";
+import { describePackageSuggestion, suggestProjectPackage } from "@/data/scopePackageHint";
 import { Link } from "react-router-dom";
 import type { AgencyClient } from "@/data/agencyClients";
 import type { ClientScopeBrief } from "@/data/scopeBriefs";
@@ -109,11 +110,13 @@ export function ProjectScopeSummary({
               <p className="whitespace-pre-wrap">{goal}</p>
             </Block>
           ) : null}
-          {brief.requestedPackage ? (
-            <Block label="Requested package">
+          <Block label="Requested package">
+            {brief.requestedPackage ? (
               <p>{projectPackageLabels[brief.requestedPackage]}</p>
-            </Block>
-          ) : null}
+            ) : (
+              <p>Not sure, needs a recommendation. Suggested: {describePackageSuggestion(suggestProjectPackage(brief.selectedPages, brief.features))}</p>
+            )}
+          </Block>
           {pages.length > 0 ? (
             <Block label="Pages">
               <p>{joinValues(pages)}</p>

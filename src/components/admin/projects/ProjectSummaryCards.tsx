@@ -9,6 +9,7 @@ import { formatClientDate } from "@/data/agencyClients";
 import type { AgencyProject } from "@/data/agencyProjects";
 import { portalStatusLabel } from "@/data/invitation";
 import { projectPackageLabels } from "@/data/projectPackages";
+import { suggestProjectPackage } from "@/data/scopePackageHint";
 import { scopeStatus, type ClientScopeBrief } from "@/data/scopeBriefs";
 import { cn } from "@/lib/cn";
 import { displayHttpHost } from "@/lib/safeUrl";
@@ -214,7 +215,9 @@ export function ProjectScopeCard({
           </div>
           <p className="mt-3 text-[12px] text-[var(--admin-muted)]">
             {brief.submittedAt ? `Submitted ${formatClientDate(brief.submittedAt)}` : "Draft saved"}
-            {brief.requestedPackage ? ` · Requested ${projectPackageLabels[brief.requestedPackage]}` : ""}
+            {brief.requestedPackage
+              ? ` · Requested ${projectPackageLabels[brief.requestedPackage]}`
+              : ` · Not sure of a package (suggested ${projectPackageLabels[suggestProjectPackage(brief.selectedPages, brief.features).package]})`}
           </p>
           <button type="button" className={`${adminGhostBtn} mt-4`} onClick={onToggle}>
             {open ? "Hide scope" : "View scope"}

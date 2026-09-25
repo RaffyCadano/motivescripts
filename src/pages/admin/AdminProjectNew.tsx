@@ -6,7 +6,8 @@ import { ProjectScopeSummary } from "@/components/admin/projects/ProjectScopeSum
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { projectTypes, type AgencyProjectType } from "@/data/agencyProjects";
 import { projectPackageLabels, projectPackages, type ProjectPackage } from "@/data/projectPackages";
-import { projectDescriptionFromBrief, suggestedProjectName, type ClientScopeBrief } from "@/data/scopeBriefs";
+import { describePackageSuggestion, suggestProjectPackage } from "@/data/scopePackageHint";
+import { projectDescriptionFromBrief, scopeStatus, suggestedProjectName, type ClientScopeBrief } from "@/data/scopeBriefs";
 import { fetchClientScopeBrief } from "@/data/scopeBriefsRepository";
 import { CARE_REQUEST_TYPE_LABELS } from "@/data/careRequests";
 import { fetchCareRequestById, resolveCareRequest } from "@/data/careRequestsRepository";
@@ -52,6 +53,11 @@ export function AdminProjectNew() {
   const datesInvalid = Boolean(startDate && targetLaunchDate && targetLaunchDate < startDate);
   const briefDescription = useMemo(() => (brief ? projectDescriptionFromBrief(brief) : ""), [brief]);
   const fromBrief = briefDescription !== "" && description === briefDescription;
+  // A package worked out from the pages and features they picked (a suggestion only; staff choose the package).
+  const suggestion = useMemo(
+    () => (brief && scopeStatus(brief) !== "not_started" ? suggestProjectPackage(brief.selectedPages, brief.features) : null),
+    [brief],
+  );
 
   // Pre-select the package the client asked for on their Website Scope, until staff choose one themselves.
   useEffect(() => {
@@ -273,6 +279,28 @@ export function AdminProjectNew() {
                   </option>
                 ))}
               </select>
+              {suggestion ? (
+                <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] px-3 py-2 text-[12px] font-normal text-[var(--admin-ink)]">
+                  <span>
+                    {brief?.requestedPackage ? "Suggested from their scope: " : "The client wasn’t sure of a package. Suggested from their scope: "}
+                    <strong className="font-semibold">{describePackageSuggestion(suggestion)}</strong>
+                  </span>
+                  {projectPackage !== suggestion.package ? (
+                    <button
+                      type="button"
+                      className="font-heading font-semibold text-[var(--admin-blue)] hover:underline"
+                      onClick={() => {
+                        packageTouched.current = true;
+                        setProjectPackage(suggestion.package);
+                      }}
+                    >
+                      Use suggestion
+                    </button>
+                  ) : (
+                    <span className="text-[var(--admin-muted)]">Selected</span>
+                  )}
+                </span>
+              ) : null}
               <span className="mt-1.5 block text-[12px] font-normal text-[var(--admin-muted)]">
                 {brief?.requestedPackage && !packageTouched.current ? `Pre-filled from what the client chose on their Website Scope (${projectPackageLabels[brief.requestedPackage]}). ` : ""}The package this project was sold as (see the Pricing page). It pre-fills new proposals, and a client whose projects are all Website doesn't get the Files library or live website status in their portal. Leave it unset for no restrictions.
               </span>
