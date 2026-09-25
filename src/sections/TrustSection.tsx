@@ -12,20 +12,20 @@ export function TrustSection() {
     <section className="border-t border-[var(--color-line)] py-8 md:py-10">
       <div className="container-wide">
         <AnimateIn>
-          <div className="mx-auto max-w-3xl px-6 py-6 sm:px-10 sm:py-7">
-            <div className="grid grid-cols-1 divide-y divide-[var(--color-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <div className="mx-auto max-w-3xl px-2 py-6 sm:px-10 sm:py-7">
+            <div className="grid grid-cols-3 divide-x divide-[var(--color-line)]">
               {stats.map((stat) => {
                 const Icon = stat.icon;
                 return (
                   <div
                     key={stat.label}
-                    className="flex flex-col items-center gap-1.5 py-3 text-center first:pt-0 last:pb-0 sm:px-4 sm:py-0"
+                    className="flex flex-col items-center gap-1 px-2 text-center sm:gap-1.5 sm:px-4"
                   >
                     <Icon size={18} strokeWidth={2.2} className={stat.color} aria-hidden="true" />
-                    <span className="font-heading text-xl font-bold tracking-tight text-ink sm:text-2xl">
+                    <span className="whitespace-nowrap font-heading text-lg font-bold tracking-tight text-ink sm:text-2xl">
                       {stat.value}
                     </span>
-                    <span className="text-xs font-semibold text-muted-strong">{stat.label}</span>
+                    <span className="text-[11px] font-semibold leading-tight text-muted-strong sm:text-xs">{stat.label}</span>
                   </div>
                 );
               })}
