@@ -31,3 +31,12 @@ for (const type of types) {
     assert.ok(database.includes(`| "${type}"`), `NotificationType lacks ${type}`);
   });
 }
+
+test("notification links to deletable records cascade or clear, so deleting a project or file never fails", () => {
+  const sql = readFileSync(`${dir}/20261108000000_notification_audit_fixes.sql`, "utf8");
+  for (const column of ["deliverable_id", "proposal_id", "contract_id", "invoice_id", "message_id", "conversation_id"]) {
+    assert.match(sql, new RegExp(`foreign key \(${column}\) references public\.\w+ \(id\) on delete cascade`), column);
+  }
+  assert.match(sql, /foreign key \(project_id\) references public\.projects \(id\) on delete set null/);
+  assert.match(sql, /purge-old-notifications/);
+});
