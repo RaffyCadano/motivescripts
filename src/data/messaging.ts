@@ -143,6 +143,28 @@ export function notificationHref(item: AppNotification, role: "admin" | "staff" 
         return item.conversationId ? `/admin/messages/${item.conversationId}` : "/admin/messages";
       }
       return item.conversationId ? `/client/messages/${item.conversationId}` : "/client/messages";
+    case "task_comment_added":
+      // The assignee works from Tasks; anyone else lands on the project.
+      if (staff) return "/team/tasks";
+      return item.projectId ? `/admin/projects/${item.projectId}` : "/admin/projects";
+    case "task_response_submitted":
+    case "development_completed":
+    case "website_down":
+    case "website_recovered":
+    case "website_slow":
+    case "website_speed_recovered":
+    case "backup_failed":
+      // Staff-only alerts about one project (the team workspace redirects /admin/projects/:id to its own page).
+      return item.projectId ? `/admin/projects/${item.projectId}` : "/admin/projects";
+    case "care_request_submitted":
+      // Care requests live on their own admin page; production roles do not see it, so they go to the project.
+      if (staff && item.projectId) return `/admin/projects/${item.projectId}`;
+      return "/admin/care-requests";
+    case "task_info_requested":
+    case "project_completed":
+      // Sent to the client (and the project completion to nobody else): open their project.
+      if (agency) return item.projectId ? `/admin/projects/${item.projectId}` : "/admin/projects";
+      return item.projectId ? `/client/project/${item.projectId}` : "/client/project";
     case "task_assigned":
     case "task_status_changed":
     case "task_due_soon":

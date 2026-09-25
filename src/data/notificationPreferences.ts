@@ -49,7 +49,7 @@ export function teamNotificationEvents(access: { canFiles: boolean; canMessages:
 /**
  * The events that can reach someone in the admin workspace (Admin, Project Manager, Sales, Accounting),
  * decided by what they are allowed to see: an event only appears if they hold the permission behind it.
- * New-lead notifications go to admins only, so that switch is admin-only too.
+ * New-lead notifications go to admins and to anyone holding leads.view (Sales).
  */
 export function officeNotificationEvents(access: {
   isAdmin: boolean;
@@ -62,6 +62,7 @@ export function officeNotificationEvents(access: {
   if (access.can("invoices.view")) keys.push("invoice_paid", "payment_received");
   if (access.can("files.view")) keys.push("file_feedback", "approval_activity");
   if (access.can("messages.view")) keys.push("new_message");
+  if (access.can("leads.view")) keys.push("lead_submitted");
   return notificationEvents.filter((event) => keys.includes(event.key)).map((event) => event.key);
 }
 

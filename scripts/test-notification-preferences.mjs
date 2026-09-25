@@ -76,16 +76,16 @@ test("admins see every event", () => {
   );
 });
 
-test("office staff only see events behind permissions they hold, and never lead submissions", () => {
+test("office staff only see events behind permissions they hold; the lead switch needs leads.view", () => {
   const holds = (...codes) => (code) => codes.includes(code);
   assert.deepEqual(officeNotificationEvents({ isAdmin: false, can: holds("leads.view", "leads.manage", "proposals.view", "contracts.view", "messages.view") }), [
     "proposal_accepted",
     "contract_accepted",
     "new_message",
-  ]); // Sales: no lead switch, lead notifications go to admins only
+    "lead_submitted",
+  ]); // Sales holds leads.view, so lead notifications reach them
   assert.deepEqual(officeNotificationEvents({ isAdmin: false, can: holds("invoices.view", "clients.view") }), ["invoice_paid", "payment_received"]); // Accounting
   assert.deepEqual(officeNotificationEvents({ isAdmin: false, can: () => false }), []);
-  for (const code of ["leads.view", "leads.manage"]) {
-    assert.ok(!officeNotificationEvents({ isAdmin: false, can: holds(code) }).includes("lead_submitted"));
-  }
+  assert.ok(officeNotificationEvents({ isAdmin: false, can: holds("leads.view") }).includes("lead_submitted"));
+  assert.ok(!officeNotificationEvents({ isAdmin: false, can: holds("leads.manage") }).includes("lead_submitted"));
 });
