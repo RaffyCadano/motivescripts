@@ -94,7 +94,7 @@ export function Navbar() {
 
         <button
           type="button"
-          className="ml-auto inline-flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-line-strong)] text-ink lg:ml-0 lg:hidden"
+          className="ml-auto inline-flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink lg:ml-0 lg:hidden"
           aria-expanded={open}
           aria-controls="mobile-nav"
           aria-label={open ? "Close menu" : "Open menu"}
