@@ -10,6 +10,7 @@ a trigger when `deployment_status` first becomes Production). What happens aroun
 | 1 day before | Second reminder, same rules. (A project first seen inside the last day gets only this one.) |
 | Period over, no plan | The daily sweep **pauses** the project: sets `paused_at`, notifies staff (`website_paused`, with "take the site offline at the host"), notifies the client and emails them. |
 | Client gets an active Care/hosting plan | Trigger `service_plans_unpause_on_activation` clears `paused_at`, tells the client, and alerts staff to bring the site back at the host. |
+| Admin presses **Pause website** (project page menu) | `pause_website(project, note, notifyClient)`: pauses a launched site on demand, for reasons the system can't see (unpaid invoice, a client's request). Optional note shown to the client; untick "Tell the client" to pause for staff only (the client portal then doesn't show it as paused). Same status as the automatic pause, so everything below applies; also pauses on Vercel if the project is opted in. Needs `projects.manage`. |
 | Admin presses **Unpause website** | `unpause_website(project, days)`: 7 or 30 more days (reminders start over), or `null` = keep live indefinitely (`pause_exempt`). Needs `projects.manage`. |
 
 ## "Paused" is a status; Vercel pause is opt-in
@@ -46,7 +47,7 @@ Use a Vercel access token scoped to the account/team that owns the sites. It liv
 
 ## Moving parts
 
-- Migrations `20261104000000_launch_trial_pause_and_reminders.sql` and `20261105000000_vercel_auto_pause.sql` (the Vercel columns, `request_host_site_control`, `retry_host_site_control`): columns, the sweep, `unpause_website`, the plan trigger,
+- Migrations `20261104000000_launch_trial_pause_and_reminders.sql`, `20261105000000_vercel_auto_pause.sql` and `20261106000000_manual_pause.sql` (`pause_website`, `pause_reason`) (the Vercel columns, `request_host_site_control`, `retry_host_site_control`): columns, the sweep, `unpause_website`, the plan trigger,
   the `launch-trial-sweep` pg_cron job (daily 14:00 UTC), new notification types, and `paused_at` in
   `client_project_delivery_status`.
 - Edge function `vercel-site-control` (service-role only; helper `_shared/vercelSite.ts`, tests `scripts/test-vercel-site.mjs`).

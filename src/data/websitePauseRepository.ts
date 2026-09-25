@@ -21,6 +21,30 @@ export async function retryHostSiteControl(projectId: string): Promise<void> {
   throw new AgencyDbError("Unable to retry on Vercel.", error);
 }
 
+/**
+ * Pause a launched website now (admin / anyone with projects.manage). `note` (max 500 chars) is shown to the
+ * client when `notifyClient` is true; false pauses it for staff only. See pause_website() in
+ * 20261106000000_manual_pause.sql.
+ */
+export async function pauseWebsite(projectId: string, note: string, notifyClient: boolean): Promise<void> {
+  if (!isSupabaseConfigured()) throw new AgencyDbError("Supabase is not configured.");
+  const client = getSupabase();
+  if (!client) throw new AgencyDbError("Supabase is not configured.");
+  const { error } = await client.rpc("pause_website", {
+    p_project_id: projectId,
+    p_note: note.trim() || null,
+    p_notify_client: notifyClient,
+  });
+  if (!error) return;
+  logDbError("pause website", error);
+  const message = error.message ?? "";
+  if (message.includes("ALREADY_PAUSED")) throw new AgencyDbError("This website is already paused.", error);
+  if (message.includes("NOT_LAUNCHED")) throw new AgencyDbError("Only a launched website can be paused.", error);
+  if (message.includes("NOTE_TOO_LONG")) throw new AgencyDbError("Keep the note to 500 characters.", error);
+  if (message.includes("Not allowed")) throw new AgencyDbError("You don't have permission to pause this website.", error);
+  throw new AgencyDbError("Unable to pause this website.", error);
+}
+
 export async function unpauseWebsite(projectId: string, days: number | null): Promise<void> {
   if (!isSupabaseConfigured()) throw new AgencyDbError("Supabase is not configured.");
   const client = getSupabase();

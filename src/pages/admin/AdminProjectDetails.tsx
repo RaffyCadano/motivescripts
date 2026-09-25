@@ -4,6 +4,7 @@ import {
   Archive,
   MessageSquare,
   Pause,
+  PauseCircle,
   PencilLine,
   RefreshCw,
   Trash2,
@@ -29,6 +30,7 @@ import { ProjectVersionsPanel } from "@/components/admin/projects/ProjectVersion
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
 import { ProjectOverview } from "@/components/admin/projects/ProjectOverview";
 import { ProjectSectionNav } from "@/components/admin/projects/ProjectSectionNav";
+import { PauseWebsiteDialog } from "@/components/admin/projects/PauseWebsiteDialog";
 import { ProjectWebsitePauseBanner } from "@/components/admin/projects/ProjectWebsitePauseBanner";
 import { ProjectStatusModal } from "@/components/admin/projects/ProjectStatusModal";
 import { ProjectTasksPanel } from "@/components/admin/projects/ProjectTasksPanel";
@@ -76,6 +78,7 @@ export function AdminProjectDetails() {
   const [statusOpen, setStatusOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [pauseOpen, setPauseOpen] = useState(false);
   const [milestoneOpen, setMilestoneOpen] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<AgencyMilestone | null>(null);
   const [removingMilestone, setRemovingMilestone] = useState<AgencyMilestone | null>(null);
@@ -182,6 +185,11 @@ export function AdminProjectDetails() {
   const { project, client } = match;
   const openTask = openTaskId ? (project.tasks.find((item) => item.id === openTaskId) ?? null) : null;
   const progress = calculateProjectProgress(project);
+  // A launched website that isn't already paused can be paused by hand.
+  const canPauseWebsite =
+    hasPermission(profile, "projects.manage") &&
+    project.development.deploymentStatus === "Production" &&
+    !project.development.pausedAt;
   const headerAction = workflow.action;
   const showHeaderAction =
     headerAction &&
@@ -236,6 +244,16 @@ export function AdminProjectDetails() {
                 icon: Pause,
                 onSelect: () => setProjectStatus(project.id, "On Hold"),
               },
+              ...(canPauseWebsite
+                ? [
+                    {
+                      id: "pause-website",
+                      label: "Pause website",
+                      icon: PauseCircle,
+                      onSelect: () => setPauseOpen(true),
+                    },
+                  ]
+                : []),
               {
                 id: "archive",
                 label: "Archive Project",
@@ -373,6 +391,7 @@ export function AdminProjectDetails() {
           setArchiveOpen(false);
         }}
       />
+      <PauseWebsiteDialog project={project} open={pauseOpen} onClose={() => setPauseOpen(false)} />
       <ConfirmDocumentModal
         open={deleteOpen}
         danger

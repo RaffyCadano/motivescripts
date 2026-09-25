@@ -251,6 +251,9 @@ export function mapProjectDevelopment(row: ProjectDevelopmentRow): ProjectDevelo
     autoPauseOnVercel: row.auto_pause_on_vercel ?? false,
     hostPausedAt: row.host_paused_at ?? "",
     hostPauseError: row.host_pause_error ?? "",
+    pauseReason: row.pause_reason === "manual" || row.pause_reason === "trial_ended" ? row.pause_reason : "",
+    pauseClientNote: row.pause_client_note ?? "",
+    pauseClientVisible: row.pause_client_visible ?? true,
   };
 }
 

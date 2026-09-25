@@ -110,6 +110,9 @@ export type ProjectDevelopmentRow = {
   auto_pause_on_vercel: boolean;
   host_paused_at: string | null;
   host_pause_error: string | null;
+  pause_reason: string | null;
+  pause_client_note: string | null;
+  pause_client_visible: boolean;
   updated_at: string;
   updated_by: string | null;
 };
@@ -1637,7 +1640,13 @@ export type Database = {
           deployment_status: string;
           launch_trial_ends_at: string | null;
           paused_at: string | null;
+          pause_reason: string | null;
+          pause_note: string | null;
         }[];
+      };
+      pause_website: {
+        Args: { p_project_id: string; p_note?: string | null; p_notify_client?: boolean };
+        Returns: null;
       };
       unpause_website: {
         Args: { p_project_id: string; p_days?: number | null };

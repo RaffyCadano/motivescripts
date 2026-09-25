@@ -43,6 +43,12 @@ export type ProjectDevelopment = {
   hostPausedAt: string;
   /** The last automatic pause / unpause failure, or "". Read-only. */
   hostPauseError: string;
+  /** Why it is paused: "trial_ended" (the daily sweep), "manual" (an admin), or "" when not paused. Read-only. */
+  pauseReason: "" | "trial_ended" | "manual";
+  /** The note an admin wrote for the client with a manual pause, or "". Read-only. */
+  pauseClientNote: string;
+  /** False for a manual pause the client was not told about. Read-only. */
+  pauseClientVisible: boolean;
 };
 
 export function emptyProjectDevelopment(): ProjectDevelopment {
@@ -66,6 +72,9 @@ export function emptyProjectDevelopment(): ProjectDevelopment {
     autoPauseOnVercel: false,
     hostPausedAt: "",
     hostPauseError: "",
+    pauseReason: "",
+    pauseClientNote: "",
+    pauseClientVisible: true,
   };
 }
 

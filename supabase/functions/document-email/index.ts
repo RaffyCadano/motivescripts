@@ -11,7 +11,7 @@ import { validateExtraRecipients } from "../_shared/emailRecipients.ts";
 type RequestBody = {
   kind?: string;
   id?: string;
-  /** launch_trial only: "7d" and "1d" (the free period is about to end) or "paused" (it ended and the site is paused). */
+  /** launch_trial only: "7d" and "1d" (the free period is about to end), "paused" (it ended and the site is paused) or "manual" (an admin paused it). */
   stage?: string;
   paymentId?: string;
   /** Invoice emails only: up to 3 extra addresses that receive a copy (CC). Ignored for every other kind. */
@@ -435,7 +435,7 @@ Deno.serve(async (req) => {
     }
 
     if (body.kind === "launch_trial") {
-      const stage = body.stage === "1d" || body.stage === "paused" ? body.stage : "7d";
+      const stage = body.stage === "1d" || body.stage === "paused" || body.stage === "manual" ? body.stage : "7d";
       const { data: project } = await admin
         .from("projects")
         .select("id, name, client_id")
@@ -444,7 +444,7 @@ Deno.serve(async (req) => {
       if (!project) return fail("not_found");
       const { data: dev } = await admin
         .from("project_development")
-        .select("launch_trial_ends_at")
+        .select("launch_trial_ends_at, pause_client_note")
         .eq("project_id", project.id)
         .maybeSingle();
       const { data: clientRow } = await admin
@@ -473,7 +473,9 @@ Deno.serve(async (req) => {
             timeZone: "UTC",
           })
         : "";
-      const paused = stage === "paused";
+      const manual = stage === "manual";
+      const paused = stage === "paused" || manual;
+      const adminNote = ((dev?.pause_client_note as string | null) ?? "").trim();
       const html = brandedEmail({
         heading: paused
           ? "Your website has been paused."
@@ -483,14 +485,16 @@ Deno.serve(async (req) => {
         company: clientRow?.business_name ?? "your team",
         number: project.name,
         title: paused ? "Website paused" : "Free launch period",
-        summary: paused
+        summary: manual
+          ? `We've paused your website.${adminNote ? ` ${adminNote}` : ""} Get in touch and we'll help you get it back online.`
+          : paused
           ? "Your free 30 days after launch have ended and there is no active Website Care plan, so we've paused your website. Choose a plan and we'll bring it back online."
           : `Your free 30 days after launch end on ${endsOn}. After that your website is paused unless you have a Website Care plan (hosting, updates, and support).`,
         expiresLabel: paused
           ? "Questions, or need more time? Reply to this email and we'll help."
           : "Choosing a plan now means no gap and nothing changes for your visitors.",
-        url: `${origin}/client/plans`,
-        cta: paused ? "Choose a plan to restore it" : "Choose a Website Care plan",
+        url: manual ? `${origin}/client/messages` : `${origin}/client/plans`,
+        cta: manual ? "Message us" : paused ? "Choose a plan to restore it" : "Choose a Website Care plan",
         supportEmail,
       });
       await sendResend(

@@ -103,6 +103,10 @@ export type ClientDeliveryStatus = {
   launchTrialEndsAt: string | null;
   /** When the website was paused (the free period ended with no Care plan), or null if it isn't. */
   pausedAt: string | null;
+  /** Why: "trial_ended" or "manual"; null when not paused. */
+  pauseReason: string | null;
+  /** The note the admin wrote for the client with a manual pause, if any. */
+  pauseNote: string | null;
 };
 
 /**
@@ -123,6 +127,8 @@ export async function fetchClientDeliveryStatus(projectId: string): Promise<Clie
     deployment_status: string;
     launch_trial_ends_at: string | null;
     paused_at: string | null;
+    pause_reason: string | null;
+    pause_note: string | null;
   } | null;
   if (!row) return null;
   return {
@@ -132,6 +138,8 @@ export async function fetchClientDeliveryStatus(projectId: string): Promise<Clie
     deploymentStatus: row.deployment_status,
     launchTrialEndsAt: row.launch_trial_ends_at,
     pausedAt: row.paused_at,
+    pauseReason: row.pause_reason,
+    pauseNote: row.pause_note,
   };
 }
 

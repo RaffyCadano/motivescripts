@@ -78,8 +78,13 @@ export function ProjectWebsitePauseBanner({ project, canManage }: { project: Age
             <p className="mt-1 max-w-2xl text-sm leading-relaxed text-amber-950/80">
               {pausedAt ? (
                 <>
-                  The free launch period ended and there is no active Care plan, so this website was paused on{" "}
-                  {formatProjectDay(pausedAt)}. The client has been told.{" "}
+                  {dev.pauseReason === "manual"
+                    ? `This website was paused by hand on ${formatProjectDay(pausedAt)}. ${
+                        dev.pauseClientVisible
+                          ? "The client has been told" + (dev.pauseClientNote ? ` (note: “${dev.pauseClientNote}”).` : ".")
+                          : "The client has not been told and doesn’t see it as paused."
+                      }`
+                    : `The free launch period ended and there is no active Care plan, so this website was paused on ${formatProjectDay(pausedAt)}. The client has been told.`}{" "}
                   {auto
                     ? "Vercel is asked to pause the site automatically."
                     : "Take the site offline at the host if you haven’t yet; unpausing here doesn’t switch the host back on."}

@@ -119,7 +119,7 @@ export function ClientOverview() {
         <ClientStatusBadge label={onboarding.phaseLabel} tone={onboarding.phaseTone} />
       </header>
 
-      {deliveryStatus?.pausedAt ? <ClientPausedBanner pausedAt={deliveryStatus.pausedAt} /> : null}
+      {deliveryStatus?.pausedAt ? <ClientPausedBanner pausedAt={deliveryStatus.pausedAt} reason={deliveryStatus.pauseReason} note={deliveryStatus.pauseNote} /> : null}
 
       <ClientActionCard action={action} loading={loading} />
 
