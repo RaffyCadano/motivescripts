@@ -8,12 +8,15 @@ import { cn } from "@/lib/cn";
  * project, and that is what changes the portal, so the copy says so.
  */
 export function ScopePackageChooser({
+  staff = false,
   value,
   answered,
   invalid,
   onChange,
   hint,
 }: {
+  /** Staff are choosing for the client, so the wording is about "this client" rather than "me". */
+  staff?: boolean;
   value: ProjectPackage | null;
   /** False until the client has picked something, so "Not sure yet" is not pre-selected for them. */
   answered: boolean;
@@ -24,7 +27,7 @@ export function ScopePackageChooser({
 }) {
   return (
     <fieldset aria-required="true" aria-invalid={invalid || undefined}>
-      <legend className="sr-only">Which package fits you? Required.</legend>
+      <legend className="sr-only">{staff ? "Which package fits this client? Required." : "Which package fits you? Required."}</legend>
 
       <div className="grid gap-3 sm:grid-cols-3">
         {pricingTiers.map((tier) => {
@@ -89,7 +92,7 @@ export function ScopePackageChooser({
           onChange={() => onChange(null)}
           className="size-4 accent-[var(--client-blue)]"
         />
-        Not sure yet. Recommend one for me.
+        {staff ? "Not sure yet. Needs a recommendation." : "Not sure yet. Recommend one for me."}
       </label>
 
       {invalid && !answered ? (

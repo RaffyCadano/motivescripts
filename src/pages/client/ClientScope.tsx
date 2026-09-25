@@ -29,6 +29,7 @@ import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
 import { ScopeRecommendPanel } from "@/components/client/ScopeRecommendPanel";
 import { ScopePackageChooser } from "@/components/client/ScopePackageChooser";
+import { AdminWizardSteps } from "@/components/admin/AdminWizardSteps";
 import { pricingTiers } from "@/data/pricing";
 import { projectPackageLabels } from "@/data/projectPackages";
 import { displayHttpHost, safeHttpHref } from "@/lib/safeUrl";
@@ -88,6 +89,8 @@ export function ScopeFormPage({
   const [dirty, setDirty] = useState(false);
   const [editing, setEditing] = useState(false);
   const [step, setStep] = useState(0);
+  /** The same question, worded for the client ("you") or for staff filling it in for them ("the client"). */
+  const say = (clientText: string, staffText: string) => (staff ? staffText : clientText);
   // The package question must be answered (a package, or "Not sure yet") before the client can leave step 1.
   const [packageAnswered, setPackageAnswered] = useState(false);
   const [packageInvalid, setPackageInvalid] = useState(false);
@@ -354,6 +357,10 @@ export function ScopeFormPage({
         <div className="h-64 animate-pulse rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)]" />
       ) : formOpen ? (
         <form className="space-y-4" onSubmit={onSubmit}>
+          {staff ? (
+            <AdminWizardSteps steps={SCOPE_STEPS} current={step} onGo={goToStep} hint="Takes about 2 minutes" />
+          ) : (
+            <>
           <div className="rounded-[var(--client-radius)] border border-[var(--client-line)] bg-[var(--client-card)] p-5">
           <div className="flex items-center justify-between gap-3">
             <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">
@@ -404,6 +411,8 @@ export function ScopeFormPage({
             })}
           </ol>
         </div>
+            </>
+          )}
 
         {submitted ? (
             <p className="text-sm text-[var(--client-muted)]">
@@ -415,12 +424,16 @@ export function ScopeFormPage({
           <>
           <FormCard
             icon={Package}
-            title="Which package fits you?"
+            title={say("Which package fits you?", "Which package fits this client?")}
             badge="Required"
-            hint="Pick the closest match. We confirm the package and the price in your proposal, so you can change your mind."
+            hint={say(
+              "Pick the closest match. We confirm the package and the price in your proposal, so you can change your mind.",
+              "Pick the closest match. The package and price are confirmed in the proposal, so this can change later.",
+            )}
           >
             <ScopePackageChooser
               value={draft.package}
+              staff={staff}
               answered={packageAnswered}
               invalid={packageInvalid}
               onChange={(next) => {
@@ -449,9 +462,9 @@ export function ScopeFormPage({
           <>
           <FormCard
             icon={LayoutTemplate}
-            title="What pages do you need?"
+            title={say("What pages do you need?", "What pages does the client need?")}
             badge="Required"
-            hint="Select any additional pages you’d like included in the first build."
+            hint={say("Select any additional pages you’d like included in the first build.", "Select any additional pages to include in the first build.")}
           >
             <div className="flex flex-wrap gap-2">
               {catalogPages.map((item) => (
@@ -476,6 +489,7 @@ export function ScopeFormPage({
             ) : null}
             <ScopeRecommendPanel
               kind="pages"
+              staff={staff}
               industry={client?.industry}
               suggestions={recommendedScopePages(client?.industry)}
               selected={draft.pages}
@@ -483,7 +497,12 @@ export function ScopeFormPage({
             />
           </FormCard>
 
-          <FormCard icon={Puzzle} title="What should your website do?" badge="Required" hint="Select the features or functionality you need.">
+          <FormCard
+            icon={Puzzle}
+            title={say("What should your website do?", "What should the website do?")}
+            badge="Required"
+            hint={say("Select the features or functionality you need.", "Select the features or functionality needed.")}
+          >
             <div className="flex flex-wrap gap-2">
               {catalogFeatures.map((item) => (
                 <Chip key={item.id} label={item.name} on={draft.features.includes(item.name)} onClick={() => toggle("features", item.name)} />
@@ -513,6 +532,7 @@ export function ScopeFormPage({
             ) : null}
             <ScopeRecommendPanel
               kind="features"
+              staff={staff}
               industry={client?.industry}
               suggestions={recommendedScopeFeatures(client?.industry)}
               selected={draft.features}
@@ -526,22 +546,28 @@ export function ScopeFormPage({
           <>
           <FormCard
             icon={Target}
-            title="What is your website for?"
+            title={say("What is your website for?", "What is the website for?")}
             badge="Required to submit"
-            hint="Tell us briefly about your business, who the website is for, and what you want visitors to do."
+            hint={say(
+              "Tell us briefly about your business, who the website is for, and what you want visitors to do.",
+              "Briefly: the business, who the website is for, and what visitors should do.",
+            )}
           >
             <textarea
               rows={4}
               maxLength={2000}
-              aria-label="What is your website for?"
+              aria-label={say("What is your website for?", "What is the website for?")}
               value={draft.goal}
               onChange={(event) => patch({ goal: event.target.value })}
               className={cn(fieldClass, "mt-0")}
-              placeholder="We’re a landscaping company serving homeowners in Winston-Salem. We want visitors to learn about our services and request a free quote."
+              placeholder={say(
+                "We’re a landscaping company serving homeowners in Winston-Salem. We want visitors to learn about our services and request a free quote.",
+                "A landscaping company serving homeowners in Winston-Salem. Visitors should learn about the services and request a free quote.",
+              )}
             />
           </FormCard>
 
-          <FormCard icon={Globe} title="Do you currently have a website?" badge="Required to submit">
+          <FormCard icon={Globe} title={say("Do you currently have a website?", "Does the client currently have a website?")} badge="Required to submit">
             <div className="flex flex-wrap gap-2">
               <Chip label="Yes" on={draft.hasExistingWebsite === true} onClick={() => patch({ hasExistingWebsite: true })} />
               <Chip
@@ -571,14 +597,14 @@ export function ScopeFormPage({
                     value={draft.currentWebsiteNotes}
                     onChange={(event) => patch({ currentWebsiteNotes: event.target.value })}
                     className={fieldClass}
-                    placeholder="Tell us what you like, dislike, or want to change about your current website."
+                    placeholder={say("Tell us what you like, dislike, or want to change about your current website.", "What the client likes, dislikes, or wants to change about their current website.")}
                   />
                 </label>
               </div>
             ) : null}
           </FormCard>
 
-          <FormCard icon={Palette} title="What style are you looking for?" hint="You can select more than one.">
+          <FormCard icon={Palette} title={say("What style are you looking for?", "What style is the client looking for?")} hint="You can select more than one.">
             <div className="flex flex-wrap gap-2">
               {SCOPE_STYLE_OPTIONS.map((item) => (
                 <Chip key={item} label={item} on={draft.styles.includes(item)} onClick={() => toggle("styles", item)} />
@@ -599,14 +625,14 @@ export function ScopeFormPage({
 
           <FormCard
             icon={Heart}
-            title="Websites you like"
+            title={say("Websites you like", "Websites the client likes")}
             badge="Optional"
-            hint="Share links to websites whose design or functionality you like."
+            hint={say("Share links to websites whose design or functionality you like.", "Links to websites whose design or functionality the client likes.")}
           >
             <textarea
               rows={2}
               maxLength={1000}
-              aria-label="Websites you like"
+              aria-label={say("Websites you like", "Websites the client likes")}
               value={draft.likedWebsites}
               onChange={(event) => patch({ likedWebsites: event.target.value })}
               className={cn(fieldClass, "mt-0")}
@@ -618,7 +644,7 @@ export function ScopeFormPage({
             icon={StickyNote}
             title="Anything else?"
             badge="Optional"
-            hint="Is there anything else we should know about your website project?"
+            hint={say("Is there anything else we should know about your website project?", "Anything else to know about this website project?")}
           >
             <textarea
               rows={3}
@@ -634,10 +660,12 @@ export function ScopeFormPage({
 
         {step === SCOPE_STEPS.length - 1 ? (
           <>
-          <ScopeSummary draft={draft} />
+          <ScopeSummary draft={draft} staff={staff} />
           <p className="px-1 text-[12px] leading-relaxed text-[var(--client-muted)]">
-            Your selections help us understand your requirements. We’ll review your scope and include the appropriate
-            work in your proposal. Selecting an option does not mean it is already priced or included.
+            {say(
+              "Your selections help us understand your requirements. We’ll review your scope and include the appropriate work in your proposal. Selecting an option does not mean it is already priced or included.",
+              "These selections describe the client’s requirements. The appropriate work is included in the proposal. Selecting an option does not mean it is already priced or included.",
+            )}
           </p>
           </>
         ) : null}
@@ -710,7 +738,7 @@ export function ScopeFormPage({
         
       </form>
       ) : (
-        <ScopeSummary draft={draft} onEdit={() => {
+        <ScopeSummary draft={draft} staff={staff} onEdit={() => {
           setNotice(null);
           setError(null);
           setEditing(true);
@@ -730,7 +758,7 @@ export function ScopeFormPage({
   );
 }
 
-function ScopeSummary({ draft, onEdit }: { draft: ScopeBriefDraft; onEdit?: () => void }) {
+function ScopeSummary({ draft, onEdit, staff = false }: { draft: ScopeBriefDraft; onEdit?: () => void; staff?: boolean }) {
   const tier = draft.package ? pricingTiers.find((item) => item.id === draft.package) : undefined;
   const currentSite = safeHttpHref(draft.currentWebsiteUrl.trim());
   const pages = [
@@ -749,7 +777,7 @@ function ScopeSummary({ draft, onEdit }: { draft: ScopeBriefDraft; onEdit?: () =
   return (
     <div className="space-y-4">
       <div className="grid gap-4 lg:grid-cols-2">
-        <SummaryCard icon={Package} title="Your package">
+        <SummaryCard icon={Package} title={staff ? "Package" : "Your package"}>
           <p className="font-heading text-2xl font-semibold tracking-tight text-[var(--client-ink)]">
             {draft.package ? projectPackageLabels[draft.package] : "Not sure yet"}
           </p>
@@ -758,10 +786,10 @@ function ScopeSummary({ draft, onEdit }: { draft: ScopeBriefDraft; onEdit?: () =
               {tier.price.startsWith("$") ? `Starting at ${tier.price}` : tier.price}
             </p>
           ) : (
-            <p className="mt-1 text-sm text-[var(--client-muted)]">We’ll recommend one that fits.</p>
+            <p className="mt-1 text-sm text-[var(--client-muted)]">{staff ? "Needs a recommendation." : "We’ll recommend one that fits."}</p>
           )}
           <p className="mt-3 text-[12px] leading-relaxed text-[var(--client-muted)]">
-            We confirm the package and the price in your proposal.
+            {staff ? "The package and price are confirmed in the proposal." : "We confirm the package and the price in your proposal."}
           </p>
         </SummaryCard>
 
@@ -777,7 +805,7 @@ function ScopeSummary({ draft, onEdit }: { draft: ScopeBriefDraft; onEdit?: () =
         </SummaryCard>
       </div>
 
-      <SummaryCard icon={Target} title="What your website is for">
+      <SummaryCard icon={Target} title={staff ? "What the website is for" : "What your website is for"}>
         <p className="whitespace-pre-wrap border-l-2 border-[var(--client-blue)] pl-4 text-[15px] leading-relaxed text-[var(--client-ink)]">
           {draft.goal.trim() || "—"}
         </p>
@@ -793,7 +821,7 @@ function ScopeSummary({ draft, onEdit }: { draft: ScopeBriefDraft; onEdit?: () =
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <SummaryCard icon={Globe} title="Your current website">
+        <SummaryCard icon={Globe} title={staff ? "Current website" : "Your current website"}>
           {draft.hasExistingWebsite ? (
             <div className="space-y-2">
               {currentSite ? (
@@ -815,7 +843,7 @@ function ScopeSummary({ draft, onEdit }: { draft: ScopeBriefDraft; onEdit?: () =
             </div>
           ) : (
             <p className="text-sm text-[var(--client-muted)]">
-              {draft.hasExistingWebsite === false ? "No current website. This will be your first." : "Not answered."}
+              {draft.hasExistingWebsite === false ? (staff ? "No current website." : "No current website. This will be your first.") : "Not answered."}
             </p>
           )}
         </SummaryCard>
@@ -826,7 +854,7 @@ function ScopeSummary({ draft, onEdit }: { draft: ScopeBriefDraft; onEdit?: () =
       </div>
 
       {draft.likedWebsites.trim() ? (
-        <SummaryCard icon={Heart} title="Websites you like">
+        <SummaryCard icon={Heart} title={staff ? "Websites the client likes" : "Websites you like"}>
           <p className="whitespace-pre-wrap text-sm leading-relaxed text-[var(--client-ink)]">{draft.likedWebsites}</p>
         </SummaryCard>
       ) : null}

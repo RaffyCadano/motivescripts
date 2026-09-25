@@ -4,12 +4,14 @@ import { cn } from "@/lib/cn";
 type ScopeRecommendPanelProps = {
   kind: "pages" | "features";
   industry: string | null | undefined;
+  /** Staff are filling the scope in for the client, so the copy says "the client", not "you". */
+  staff?: boolean;
   suggestions: string[];
   selected: string[];
   onAdd: (picks: string[]) => void;
 };
 
-export function ScopeRecommendPanel({ kind, industry, suggestions, selected, onAdd }: ScopeRecommendPanelProps) {
+export function ScopeRecommendPanel({ kind, industry, staff = false, suggestions, selected, onAdd }: ScopeRecommendPanelProps) {
   const [open, setOpen] = useState(false);
   const [picks, setPicks] = useState<string[]>(suggestions);
   const already = new Set(selected);
@@ -39,12 +41,22 @@ export function ScopeRecommendPanel({ kind, industry, suggestions, selected, onA
       {!open ? (
         <div className="rounded-xl border border-dashed border-[var(--client-line)] bg-[var(--client-hover)]/40 px-4 py-3">
           <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">
-            {isPages ? "Not sure what pages you need?" : "Not sure which features you need?"}
+            {isPages
+              ? staff
+                ? "Not sure what pages the client needs?"
+                : "Not sure what pages you need?"
+              : staff
+                ? "Not sure which features the client needs?"
+                : "Not sure which features you need?"}
           </p>
           <p className="mt-1 text-[12px] leading-relaxed text-[var(--client-muted)]">
             {isPages
-              ? "That’s okay. We’ll suggest a starting point based on your business."
-              : "We’ll suggest common features that may make sense for your website."}
+              ? staff
+                ? "We’ll suggest a starting point based on their business."
+                : "That’s okay. We’ll suggest a starting point based on your business."
+              : staff
+                ? "We’ll suggest common features that may make sense for the website."
+                : "We’ll suggest common features that may make sense for your website."}
           </p>
           <button
             type="button"
@@ -56,7 +68,7 @@ export function ScopeRecommendPanel({ kind, industry, suggestions, selected, onA
         </div>
       ) : (
         <div className="rounded-xl border border-[rgb(0_80_240_/_0.22)] bg-white px-4 py-4">
-          <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">Recommended for your business</p>
+          <p className="font-heading text-sm font-semibold text-[var(--client-ink)]">{staff ? "Recommended for their business" : "Recommended for your business"}</p>
           <p className="mt-1 text-[12px] leading-relaxed text-[var(--client-muted)]">
             {knownIndustry
               ? `These are a starting point for a ${industry} website. Review them, then add only what you want.`
