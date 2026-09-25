@@ -105,6 +105,11 @@ export type ProjectDevelopmentRow = {
   launch_trial_ends_at: string | null;
   paused_at: string | null;
   pause_exempt: boolean;
+  vercel_project_id: string | null;
+  vercel_team_id: string | null;
+  auto_pause_on_vercel: boolean;
+  host_paused_at: string | null;
+  host_pause_error: string | null;
   updated_at: string;
   updated_by: string | null;
 };
@@ -448,6 +453,7 @@ export type NotificationType =
   | "launch_trial_ending"
   | "website_paused"
   | "website_unpaused"
+  | "host_pause_failed"
   | "lead_submitted";
 
 export type NotificationRow = {
@@ -1635,6 +1641,10 @@ export type Database = {
       };
       unpause_website: {
         Args: { p_project_id: string; p_days?: number | null };
+        Returns: null;
+      };
+      retry_host_site_control: {
+        Args: { p_project_id: string };
         Returns: null;
       };
       client_website_health: {

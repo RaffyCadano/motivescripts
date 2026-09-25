@@ -33,6 +33,16 @@ export type ProjectDevelopment = {
   pausedAt: string;
   /** An admin chose "keep live indefinitely": the sweep never pauses it. Read-only here. */
   pauseExempt: boolean;
+  /** The Vercel project (name or id) behind this website, for automatic pause. "" if none. */
+  vercelProjectId: string;
+  /** Vercel team id (team_...) or slug; "" for a personal account. */
+  vercelTeamId: string;
+  /** Opt-in: pausing / unpausing this website also pauses / unpauses it on Vercel. */
+  autoPauseOnVercel: boolean;
+  /** When Vercel last confirmed the site paused (ISO), or "". Read-only: written by vercel-site-control. */
+  hostPausedAt: string;
+  /** The last automatic pause / unpause failure, or "". Read-only. */
+  hostPauseError: string;
 };
 
 export function emptyProjectDevelopment(): ProjectDevelopment {
@@ -51,6 +61,11 @@ export function emptyProjectDevelopment(): ProjectDevelopment {
     launchTrialEndsAt: "",
     pausedAt: "",
     pauseExempt: false,
+    vercelProjectId: "",
+    vercelTeamId: "",
+    autoPauseOnVercel: false,
+    hostPausedAt: "",
+    hostPauseError: "",
   };
 }
 

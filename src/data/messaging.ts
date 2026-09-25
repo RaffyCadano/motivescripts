@@ -164,6 +164,7 @@ export function notificationHref(item: AppNotification, role: "admin" | "staff" 
     case "website_paused":
     case "website_unpaused":
     case "launch_trial_ending":
+    case "host_pause_failed":
       // Staff go to the project (where Unpause lives); the client to Plans, or their overview once it is live again.
       if (agency) return item.projectId ? `/admin/projects/${item.projectId}` : "/admin/projects";
       return item.type === "website_unpaused" ? "/client" : "/client/plans";

@@ -348,6 +348,50 @@ export function AdminProjectEdit() {
               />
             </label>
           </div>
+          <fieldset className="space-y-3 rounded-lg border border-[var(--admin-line)] p-4">
+            <legend className="px-1 text-sm font-semibold">Automatic pause on Vercel (optional)</legend>
+            <label className="flex items-start gap-2.5 text-sm font-normal">
+              <input
+                type="checkbox"
+                checked={development.autoPauseOnVercel}
+                onChange={(event) => patchDevelopment("autoPauseOnVercel", event.target.checked)}
+                className="mt-1 size-4 accent-[var(--admin-blue)]"
+              />
+              <span>
+                Pause this site on Vercel when its free launch period ends with no Care plan, and unpause it when a plan
+                starts or you press Unpause. Off by default: nothing goes offline unless you turn this on.
+              </span>
+            </label>
+            {development.autoPauseOnVercel ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block text-sm font-semibold">
+                  Vercel project name or ID
+                  <input
+                    value={development.vercelProjectId}
+                    onChange={(event) => patchDevelopment("vercelProjectId", event.target.value.trim())}
+                    className={inputClass}
+                    placeholder="unlistedgarage"
+                    required
+                    autoComplete="off"
+                    pattern="[A-Za-z0-9._\-]{1,100}"
+                    title="Letters, digits, dot, dash and underscore only"
+                  />
+                </label>
+                <label className="block text-sm font-semibold">
+                  Vercel team ID or slug <span className="font-normal text-[var(--admin-muted)]">(if any)</span>
+                  <input
+                    value={development.vercelTeamId}
+                    onChange={(event) => patchDevelopment("vercelTeamId", event.target.value.trim())}
+                    className={inputClass}
+                    placeholder="team_… or my-team"
+                    autoComplete="off"
+                    pattern="[A-Za-z0-9._\-]{1,100}"
+                    title="Letters, digits, dot, dash and underscore only"
+                  />
+                </label>
+              </div>
+            ) : null}
+          </fieldset>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-sm font-semibold">
               Hosting provider

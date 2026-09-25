@@ -246,6 +246,11 @@ export function mapProjectDevelopment(row: ProjectDevelopmentRow): ProjectDevelo
     launchTrialEndsAt: row.launch_trial_ends_at ?? "",
     pausedAt: row.paused_at ?? "",
     pauseExempt: row.pause_exempt ?? false,
+    vercelProjectId: row.vercel_project_id ?? "",
+    vercelTeamId: row.vercel_team_id ?? "",
+    autoPauseOnVercel: row.auto_pause_on_vercel ?? false,
+    hostPausedAt: row.host_paused_at ?? "",
+    hostPauseError: row.host_pause_error ?? "",
   };
 }
 

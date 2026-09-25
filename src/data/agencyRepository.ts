@@ -522,6 +522,9 @@ export async function upsertProjectDevelopment(projectId: string, development: P
       domain_name: emptyToNull(development.domainName),
       domain_status: development.domainStatus,
       hosting_status: development.hostingStatus,
+      vercel_project_id: emptyToNull(development.vercelProjectId),
+      vercel_team_id: emptyToNull(development.vercelTeamId),
+      auto_pause_on_vercel: development.autoPauseOnVercel,
     },
     { onConflict: "project_id" },
   );

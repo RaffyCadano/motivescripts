@@ -12,11 +12,32 @@ a trigger when `deployment_status` first becomes Production). What happens aroun
 | Client gets an active Care/hosting plan | Trigger `service_plans_unpause_on_activation` clears `paused_at`, tells the client, and alerts staff to bring the site back at the host. |
 | Admin presses **Unpause website** | `unpause_website(project, days)`: 7 or 30 more days (reminders start over), or `null` = keep live indefinitely (`pause_exempt`). Needs `projects.manage`. |
 
-## "Paused" is a status, not a switch
+## "Paused" is a status; Vercel pause is opt-in
 
-Hosting is set up by hand with an outside provider (see the Hosting entries in `productionTaskInstructions.ts`), so
-nothing here turns a site off or on. The staff notification is the prompt to do that at the host; Unpause only clears
-the status and tells the client.
+Hosting is set up by hand with an outside provider (see the Hosting entries in `productionTaskInstructions.ts`), so by
+default nothing here turns a site off or on: the staff notification is the prompt to do that at the host, and Unpause
+only clears the status and tells the client.
+
+### Optional: pause the site on Vercel automatically
+
+For a site on Vercel an admin can opt in, per project: **Edit project > Automatic pause on Vercel**, tick the box and give
+the Vercel project name (and team id/slug if it belongs to a team). Off by default, so nothing goes offline until it is
+turned on for that project. When on, the same events that set / clear the status also call Vercel's project pause /
+unpause API through the `vercel-site-control` edge function:
+
+- the daily sweep pausing an expired project -> pause
+- Unpause (admin), or a Care/hosting plan starting -> unpause
+- **Retry on Vercel** (banner on the project page) -> whichever action makes Vercel match the status
+
+Visitors to a paused Vercel project see Vercel's plain "503 DEPLOYMENT_PAUSED" page. The result is stored on the project
+(`host_paused_at` / `host_pause_error`) and shown in the banner; a failure alerts staff (`host_pause_failed`) and never
+blocks the status change. Nothing happens at all until the token secret is set:
+
+```
+supabase secrets set VERCEL_API_TOKEN=... --project-ref <ref>     # do it for Sandbox and Production separately
+```
+
+Use a Vercel access token scoped to the account/team that owns the sites. It lives only in the edge function's secrets.
 
 ## What counts as a plan
 
@@ -25,9 +46,10 @@ the status and tells the client.
 
 ## Moving parts
 
-- Migration `20261104000000_launch_trial_pause_and_reminders.sql`: columns, the sweep, `unpause_website`, the plan trigger,
+- Migrations `20261104000000_launch_trial_pause_and_reminders.sql` and `20261105000000_vercel_auto_pause.sql` (the Vercel columns, `request_host_site_control`, `retry_host_site_control`): columns, the sweep, `unpause_website`, the plan trigger,
   the `launch-trial-sweep` pg_cron job (daily 14:00 UTC), new notification types, and `paused_at` in
   `client_project_delivery_status`.
+- Edge function `vercel-site-control` (service-role only; helper `_shared/vercelSite.ts`, tests `scripts/test-vercel-site.mjs`).
 - Edge function `document-email`, kind `launch_trial` with `stage` `7d` / `1d` / `paused` (service-role only). The sweep
   calls it through `pg_net` using the same Vault secrets as the overdue-invoice reminders (`edge_function_base_url`,
   `service_role_key`); without them the status changes and in-app notifications still happen but no email is sent.
