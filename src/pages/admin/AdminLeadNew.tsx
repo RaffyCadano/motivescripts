@@ -1,7 +1,10 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
-import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
+import { ArrowLeft, ArrowRight, Building2, ClipboardCheck, MessageSquareText, UserRound } from "lucide-react";
+import { adminBlueBtn, adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
+import { AdminFormCard } from "@/components/admin/AdminFormCard";
+import { AdminWizardSteps } from "@/components/admin/AdminWizardSteps";
 import { LeadStatusBadge } from "@/components/admin/leads/LeadStatusBadge";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { useAuth } from "@/auth/AuthProvider";
@@ -14,6 +17,13 @@ type FieldKey = "name" | "businessName" | "email" | "request" | "projectDetails"
 type FieldErrors = Partial<Record<FieldKey, string>>;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const WIZARD_STEPS = ["Contact", "Business", "Inquiry", "Review"] as const;
+/** The required fields on each step; Business has none and Review is only a summary. */
+const STEP_FIELDS: Record<number, FieldKey[]> = {
+  0: ["name", "businessName", "email"],
+  2: ["request", "projectDetails"],
+};
 
 export function AdminLeadNew() {
   const { addLead, notify } = useLeads();
@@ -30,6 +40,7 @@ export function AdminLeadNew() {
   const [projectDetails, setProjectDetails] = useState("");
   const [errors, setErrors] = useState<FieldErrors>({});
   const [busy, setBusy] = useState(false);
+  const [step, setStep] = useState(0);
 
   function clearError(key: FieldKey) {
     setErrors((current) => {
@@ -81,7 +92,61 @@ export function AdminLeadNew() {
     }
   }
 
-  const hasFieldErrors = Object.keys(errors).length > 0;
+  /** The required fields on each step (steps without any are never blocked). */
+  function stepErrors(index: number): FieldErrors {
+    const all = collectErrors();
+    const next: FieldErrors = {};
+    for (const key of STEP_FIELDS[index] ?? []) {
+      if (all[key]) next[key] = all[key];
+    }
+    return next;
+  }
+
+  /** The earliest incomplete step before `target`, or null when the person may go there. */
+  function blockedStep(target: number): number | null {
+    for (let index = 0; index < target; index += 1) {
+      if (Object.keys(stepErrors(index)).length > 0) return index;
+    }
+    return null;
+  }
+
+  function goToStep(target: number) {
+    const blocked = blockedStep(target);
+    if (blocked !== null) {
+      setErrors(stepErrors(blocked));
+      setStep(blocked);
+    } else {
+      setStep(target);
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function onFormSubmit(event: FormEvent) {
+    event.preventDefault();
+    // Enter inside a field on an earlier step means "next", not "add the lead".
+    if (step < WIZARD_STEPS.length - 1) {
+      goToStep(step + 1);
+      return;
+    }
+    void onSubmit(event);
+  }
+
+  const hasFieldErrors = (STEP_FIELDS[step] ?? []).some((key) => errors[key]);
+  const lastStep = step === WIZARD_STEPS.length - 1;
+  const reviewRows: { label: string; value: string; go: number; long?: boolean }[] = [
+    { label: "Name", value: name.trim(), go: 0 },
+    { label: "Business name", value: businessName.trim(), go: 0 },
+    { label: "Email", value: email.trim(), go: 0 },
+    { label: "Phone", value: phone.trim() || "Not provided", go: 0 },
+    { label: "Industry", value: industry, go: 1 },
+    {
+      label: "Heard about us",
+      value: referralSource ? (referralSource === "Other" && referralSourceOther.trim() ? `Other: ${referralSourceOther.trim()}` : referralSource) : "Unknown",
+      go: 1,
+    },
+    { label: "What they need", value: request.trim(), go: 2 },
+    { label: "Project details", value: projectDetails.trim(), go: 2, long: true },
+  ];
 
   return (
     <div className="space-y-5">
@@ -92,19 +157,13 @@ export function AdminLeadNew() {
         title="Add Lead"
         description="Create a lead from a new project inquiry or potential client."
       />
-      <p className="max-w-2xl text-sm leading-6 text-[var(--admin-muted)]">
-        Leads are the starting point for the MotiveScripts sales workflow. Qualify the inquiry before converting it into
-        a client. Creating a lead does not start production or create later records.
-      </p>
 
       {!hasPermission(profile, "leads.manage") ? (
         <p className="text-sm text-[var(--admin-muted)]">You don’t have permission to add leads.</p>
       ) : (
-        <form
-          noValidate
-          className="w-full max-w-2xl space-y-6 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6"
-          onSubmit={onSubmit}
-        >
+        <form noValidate className="grid w-full max-w-3xl gap-4" onSubmit={onFormSubmit}>
+          <AdminWizardSteps steps={WIZARD_STEPS} current={step} onGo={goToStep} hint="Takes about a minute" />
+
           {hasFieldErrors ? (
             <p
               role="alert"
@@ -114,186 +173,224 @@ export function AdminLeadNew() {
             </p>
           ) : null}
 
-          <div className="space-y-4">
-            <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Contact</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                id="lead-name"
-                label="Name"
-                hint="Primary contact for this inquiry."
-                error={errors.name}
-              >
-                <input
-                  id="lead-name"
-                  autoComplete="name"
-                  value={name}
-                  onChange={(event) => {
-                    setName(event.target.value);
-                    clearError("name");
-                  }}
-                  className={fieldClass(errors.name)}
-                  aria-invalid={Boolean(errors.name)}
-                  aria-describedby={errors.name ? "lead-name-error" : "lead-name-hint"}
-                />
-              </FormField>
-              <FormField
-                id="lead-business-name"
-                label="Business name"
-                hint="The business or organization making the inquiry."
-                error={errors.businessName}
-              >
-                <input
+          {step === 0 ? (
+            <AdminFormCard icon={UserRound} title="Contact" description="Who made the inquiry and how to reach them.">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField id="lead-name" label="Name" hint="Primary contact for this inquiry." error={errors.name}>
+                  <input
+                    id="lead-name"
+                    autoComplete="name"
+                    value={name}
+                    onChange={(event) => {
+                      setName(event.target.value);
+                      clearError("name");
+                    }}
+                    className={fieldClass(errors.name)}
+                    aria-invalid={Boolean(errors.name)}
+                    aria-describedby={errors.name ? "lead-name-error" : "lead-name-hint"}
+                  />
+                </FormField>
+                <FormField
                   id="lead-business-name"
-                  autoComplete="organization"
-                  value={businessName}
+                  label="Business name"
+                  hint="The business or organization making the inquiry."
+                  error={errors.businessName}
+                >
+                  <input
+                    id="lead-business-name"
+                    autoComplete="organization"
+                    value={businessName}
+                    onChange={(event) => {
+                      setBusinessName(event.target.value);
+                      clearError("businessName");
+                    }}
+                    className={fieldClass(errors.businessName)}
+                    aria-invalid={Boolean(errors.businessName)}
+                    aria-describedby={errors.businessName ? "lead-business-name-error" : "lead-business-name-hint"}
+                  />
+                </FormField>
+                <FormField id="lead-email" label="Email" hint="Primary email for communicating with this lead." error={errors.email}>
+                  <input
+                    id="lead-email"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
+                      clearError("email");
+                    }}
+                    className={fieldClass(errors.email)}
+                    aria-invalid={Boolean(errors.email)}
+                    aria-describedby={errors.email ? "lead-email-error" : "lead-email-hint"}
+                  />
+                </FormField>
+                <FormField id="lead-phone" label="Phone" optional hint="Optional phone number.">
+                  <input
+                    id="lead-phone"
+                    type="tel"
+                    autoComplete="tel"
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
+                    className={fieldClass()}
+                    aria-describedby="lead-phone-hint"
+                  />
+                </FormField>
+              </div>
+            </AdminFormCard>
+          ) : null}
+
+          {step === 1 ? (
+            <AdminFormCard icon={Building2} title="Business" description="What the business does and where the inquiry came from.">
+              <FormField id="lead-industry" label="Industry" hint="What kind of business is this?">
+                <select
+                  id="lead-industry"
+                  value={industry}
+                  onChange={(event) => setIndustry(event.target.value as LeadIndustry)}
+                  className={fieldClass()}
+                  aria-describedby="lead-industry-hint"
+                >
+                  {leadIndustries.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField id="lead-referral-source" label="How did they hear about us?" optional hint="Marketing attribution for this inquiry.">
+                <select
+                  id="lead-referral-source"
+                  value={referralSource}
+                  onChange={(event) => setReferralSource(event.target.value as ReferralSource | "")}
+                  className={fieldClass()}
+                  aria-describedby="lead-referral-source-hint"
+                >
+                  <option value="">Unknown</option>
+                  {referralSources.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </FormField>
+              {referralSource === "Other" ? (
+                <FormField id="lead-referral-source-other" label="Referral detail" optional hint="Where specifically did they hear about us?">
+                  <input
+                    id="lead-referral-source-other"
+                    value={referralSourceOther}
+                    onChange={(event) => setReferralSourceOther(event.target.value)}
+                    className={fieldClass()}
+                  />
+                </FormField>
+              ) : null}
+            </AdminFormCard>
+          ) : null}
+
+          {step === 2 ? (
+            <AdminFormCard icon={MessageSquareText} title="Project inquiry" description="What the prospect is asking for. This is an inquiry, not an approved scope.">
+              <FormField id="lead-request" label="What do you need?" hint="A short description of what the prospect wants." error={errors.request}>
+                <input
+                  id="lead-request"
+                  value={request}
                   onChange={(event) => {
-                    setBusinessName(event.target.value);
-                    clearError("businessName");
+                    setRequest(event.target.value);
+                    clearError("request");
                   }}
-                  className={fieldClass(errors.businessName)}
-                  aria-invalid={Boolean(errors.businessName)}
-                  aria-describedby={errors.businessName ? "lead-business-name-error" : "lead-business-name-hint"}
+                  className={fieldClass(errors.request)}
+                  aria-invalid={Boolean(errors.request)}
+                  aria-describedby={errors.request ? "lead-request-error" : "lead-request-hint"}
                 />
               </FormField>
               <FormField
-                id="lead-email"
-                label="Email"
-                hint="Primary email for communicating with this lead."
-                error={errors.email}
-              >
-                <input
-                  id="lead-email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => {
-                    setEmail(event.target.value);
-                    clearError("email");
-                  }}
-                  className={fieldClass(errors.email)}
-                  aria-invalid={Boolean(errors.email)}
-                  aria-describedby={errors.email ? "lead-email-error" : "lead-email-hint"}
-                />
-              </FormField>
-              <FormField id="lead-phone" label="Phone" optional hint="Optional phone number.">
-                <input
-                  id="lead-phone"
-                  type="tel"
-                  autoComplete="tel"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  className={fieldClass()}
-                  aria-describedby="lead-phone-hint"
-                />
-              </FormField>
-            </div>
-          </div>
-
-          <div className="space-y-4 border-t border-[var(--admin-line)] pt-6">
-            <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Business</h2>
-            <FormField id="lead-industry" label="Industry" hint="What kind of business is this?">
-              <select
-                id="lead-industry"
-                value={industry}
-                onChange={(event) => setIndustry(event.target.value as LeadIndustry)}
-                className={fieldClass()}
-                aria-describedby="lead-industry-hint"
-              >
-                {leadIndustries.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-            <FormField id="lead-referral-source" label="How did they hear about us?" optional hint="Marketing attribution for this inquiry.">
-              <select
-                id="lead-referral-source"
-                value={referralSource}
-                onChange={(event) => setReferralSource(event.target.value as ReferralSource | "")}
-                className={fieldClass()}
-                aria-describedby="lead-referral-source-hint"
-              >
-                <option value="">Unknown</option>
-                {referralSources.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-            {referralSource === "Other" ? (
-              <FormField id="lead-referral-source-other" label="Referral detail" optional hint="Where specifically did they hear about us?">
-                <input
-                  id="lead-referral-source-other"
-                  value={referralSourceOther}
-                  onChange={(event) => setReferralSourceOther(event.target.value)}
-                  className={fieldClass()}
-                />
-              </FormField>
-            ) : null}
-          </div>
-
-          <div className="space-y-4 border-t border-[var(--admin-line)] pt-6">
-            <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">
-              Project inquiry
-            </h2>
-            <FormField
-              id="lead-request"
-              label="What do you need?"
-              hint="A short description of what the prospect wants."
-              error={errors.request}
-            >
-              <input
-                id="lead-request"
-                value={request}
-                onChange={(event) => {
-                  setRequest(event.target.value);
-                  clearError("request");
-                }}
-                className={fieldClass(errors.request)}
-                aria-invalid={Boolean(errors.request)}
-                aria-describedby={errors.request ? "lead-request-error" : "lead-request-hint"}
-              />
-            </FormField>
-            <FormField
-              id="lead-project-details"
-              label="Project details"
-              hint="Tell us what the prospect is looking for, including goals, requested features, services, or other useful requirements. This is an inquiry, not an approved scope."
-              error={errors.projectDetails}
-            >
-              <textarea
                 id="lead-project-details"
-                rows={5}
-                value={projectDetails}
-                onChange={(event) => {
-                  setProjectDetails(event.target.value);
-                  clearError("projectDetails");
-                }}
-                className={textareaClass(errors.projectDetails)}
-                aria-invalid={Boolean(errors.projectDetails)}
-                aria-describedby={errors.projectDetails ? "lead-project-details-error" : "lead-project-details-hint"}
-              />
-            </FormField>
-          </div>
+                label="Project details"
+                hint="Tell us what the prospect is looking for, including goals, requested features, services, or other useful requirements. This is an inquiry, not an approved scope."
+                error={errors.projectDetails}
+              >
+                <textarea
+                  id="lead-project-details"
+                  rows={5}
+                  value={projectDetails}
+                  onChange={(event) => {
+                    setProjectDetails(event.target.value);
+                    clearError("projectDetails");
+                  }}
+                  className={textareaClass(errors.projectDetails)}
+                  aria-invalid={Boolean(errors.projectDetails)}
+                  aria-describedby={errors.projectDetails ? "lead-project-details-error" : "lead-project-details-hint"}
+                />
+              </FormField>
+            </AdminFormCard>
+          ) : null}
 
-          <div className="rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] px-3 py-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <LeadStatusBadge status="New" />
-              <p className="text-sm text-[var(--admin-ink)]">New leads start with status New.</p>
-            </div>
-            <p className="mt-1 text-xs text-[var(--admin-muted)]">
-              Status is set automatically. You progress the lead later from the lead record.
-            </p>
-          </div>
+          {step === 3 ? (
+            <>
+              <AdminFormCard icon={ClipboardCheck} title="Review and add" description="Check the details. Use Edit to change anything before the lead is created.">
+                <dl className="divide-y divide-[var(--admin-line)] rounded-lg border border-[var(--admin-line)]">
+                  {reviewRows.map((row) => (
+                    <div key={row.label} className="flex items-start justify-between gap-4 px-4 py-3">
+                      <div className="min-w-0">
+                        <dt className="text-[12px] text-[var(--admin-muted)]">{row.label}</dt>
+                        <dd
+                          className={
+                            row.long
+                              ? "mt-0.5 line-clamp-6 whitespace-pre-wrap break-words text-sm text-[var(--admin-ink)]"
+                              : "mt-0.5 break-words text-sm font-semibold text-[var(--admin-ink)]"
+                          }
+                        >
+                          {row.value}
+                        </dd>
+                      </div>
+                      <button
+                        type="button"
+                        className="shrink-0 font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline"
+                        onClick={() => goToStep(row.go)}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  ))}
+                </dl>
+                <div className="rounded-lg border border-[var(--admin-line)] bg-[var(--admin-bg)] px-3 py-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <LeadStatusBadge status="New" />
+                    <p className="text-sm text-[var(--admin-ink)]">New leads start with status New.</p>
+                  </div>
+                  <p className="mt-1 text-xs text-[var(--admin-muted)]">
+                    Status is set automatically. You progress the lead later from the lead record.
+                  </p>
+                </div>
+              </AdminFormCard>
+              <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6">
+                <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">What happens next</h2>
+                <p className="mt-1 text-sm leading-relaxed text-[var(--admin-muted)]">
+                  Leads are the starting point for the MotiveScripts sales workflow. Qualify the inquiry before converting it into a
+                  client. Creating a lead does not start production or create later records.
+                </p>
+              </section>
+            </>
+          ) : null}
 
-          <div className="flex flex-col-reverse gap-2 border-t border-[var(--admin-line)] pt-5 sm:flex-row sm:justify-end">
-            <Link to="/admin/leads" className={`${adminGhostBtn} justify-center`}>
-              Cancel
-            </Link>
-            <button type="submit" disabled={busy} className={`${adminPrimaryBtn} justify-center`}>
-              {busy ? "Creating…" : "Add Lead"}
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {step > 0 ? (
+              <button type="button" disabled={busy} className={adminGhostBtn} onClick={() => goToStep(step - 1)}>
+                <ArrowLeft size={15} aria-hidden="true" className="mr-1.5" />
+                Back
+              </button>
+            ) : (
+              <Link to="/admin/leads" className={adminGhostBtn}>
+                Cancel
+              </Link>
+            )}
+            {lastStep ? (
+              <button type="submit" disabled={busy} className={adminPrimaryBtn}>
+                {busy ? "Creating…" : "Add Lead"}
+              </button>
+            ) : (
+              <button type="submit" className={adminBlueBtn}>
+                Next
+                <ArrowRight size={15} aria-hidden="true" className="ml-1.5" />
+              </button>
+            )}
           </div>
         </form>
       )}
