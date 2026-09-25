@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Compass } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission } from "@/auth/permissions";
@@ -47,12 +48,19 @@ export function ProjectNextAction({
 
   return (
     <>
-      <section className="rounded-[var(--admin-radius)] border border-[rgb(0_80_240_/_0.22)] bg-[rgb(0_80_240_/_0.04)] p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">Next action</p>
-        <h2 className="mt-1 font-heading text-lg font-semibold tracking-tight text-[var(--admin-ink)]">{action.title}</h2>
-        <p className="mt-1 max-w-2xl text-sm text-[var(--admin-muted)]">{action.body}</p>
+      <section className="flex flex-col gap-4 rounded-[var(--admin-radius)] border border-l-4 border-[rgb(0_80_240_/_0.22)] border-l-[var(--admin-blue)] bg-[rgb(0_80_240_/_0.04)] p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[rgb(0_80_240_/_0.1)] text-[var(--admin-blue)]">
+            <Compass size={18} strokeWidth={2} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--admin-muted)]">Next action</p>
+            <h2 className="mt-1 font-heading text-lg font-semibold tracking-tight text-[var(--admin-ink)]">{action.title}</h2>
+            <p className="mt-1 max-w-2xl text-sm text-[var(--admin-muted)]">{action.body}</p>
+          </div>
+        </div>
         {showPrimary || showSecondary ? (
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
             {showPrimary && action.primaryKind === "link" && action.primaryHref ? (
               <Link to={action.primaryHref} className={`${adminPrimaryBtn} justify-center`}>
                 {action.primaryLabel}
