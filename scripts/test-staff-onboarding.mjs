@@ -71,3 +71,13 @@ test("the gate sits inside the staff and admin guard, lets the onboarding page t
   assert.ok(gate.includes('needsOnboarding("staff"'));
   assert.ok(app.includes('path="onboarding"'));
 });
+
+test("an invitation says how long it has left, and when it has run out", async () => {
+  const { inviteExpiryLabel } = await import("../src/data/teamInvite.ts");
+  const now = Date.parse("2026-09-26T12:00:00Z");
+  assert.deepEqual(inviteExpiryLabel("2026-10-03T12:00:00Z", now), { text: "Expires in 7 days", expired: false });
+  assert.deepEqual(inviteExpiryLabel("2026-09-26T20:00:00Z", now), { text: "Expires today", expired: false });
+  assert.deepEqual(inviteExpiryLabel("2026-09-25T20:00:00Z", now), { text: "Expired yesterday", expired: true });
+  assert.deepEqual(inviteExpiryLabel("2026-09-20T12:00:00Z", now), { text: "Expired 6 days ago", expired: true });
+  assert.equal(inviteExpiryLabel("not a date", now).expired, false);
+});
