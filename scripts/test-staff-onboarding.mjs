@@ -81,3 +81,17 @@ test("an invitation says how long it has left, and when it has run out", async (
   assert.deepEqual(inviteExpiryLabel("2026-09-20T12:00:00Z", now), { text: "Expired 6 days ago", expired: true });
   assert.equal(inviteExpiryLabel("not a date", now).expired, false);
 });
+
+test("permissions are grouped into one row per area, View before Manage", async () => {
+  const { groupPermissions } = await import("../src/data/teamPermissions.ts");
+  const groups = groupPermissions([
+    { code: "leads.manage", label: "Manage leads" },
+    { code: "leads.view", label: "View leads" },
+    { code: "activity.view", label: "View activity" },
+    { code: "feedback.manage", label: "Manage feedback" },
+  ]);
+  assert.deepEqual(groups.map((group) => group.title), ["Leads", "Activity", "Feedback"]);
+  assert.deepEqual(groups[0].actions.map((action) => action.label), ["View", "Manage"]);
+  assert.deepEqual(groups[0].actions.map((action) => action.code), ["leads.view", "leads.manage"]);
+  assert.deepEqual(groupPermissions([]), []);
+});
