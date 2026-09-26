@@ -89,6 +89,8 @@
 
   /* Layout */
   --nav-height: 4.5rem;
+  /* The announcement bar above the nav. It slides away once the page scrolls, but its space is kept so content does not jump. */
+  --announce-height: 2.25rem;
   --header-blur: 16px;
 }
 

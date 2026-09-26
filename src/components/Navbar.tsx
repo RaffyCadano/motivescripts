@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { Button } from "@/components/Button";
 import { Logo } from "@/components/Logo";
 import { site } from "@/data/site";
@@ -61,6 +61,24 @@ export function Navbar() {
             : "border-transparent bg-transparent",
         )}
       >
+      {/* A pricing promise above the nav. It slides away when the page scrolls or the mobile menu opens. */}
+      <div
+        inert={scrolled || open ? true : undefined}
+        className={cn(
+          "overflow-hidden bg-[#0b1b3a] text-white transition-[height] duration-[var(--duration-base)] ease-[var(--ease-out)]",
+          scrolled || open ? "h-0" : "h-[var(--announce-height)]",
+        )}
+      >
+        <p className="container-wide flex h-[var(--announce-height)] items-center justify-center gap-x-2 whitespace-nowrap text-center text-[12px] font-medium sm:text-[13px]">
+          <span className="sm:hidden">One-time pricing. Nothing due before we start.</span>
+          <span className="hidden sm:inline">
+            Simple, one-time pricing — the price we quote is the price you pay. Nothing due before we start.
+          </span>
+          <Link to="/pricing" className="hidden font-semibold text-[#8fd0ff] underline-offset-2 hover:underline md:inline">
+            See pricing →
+          </Link>
+        </p>
+      </div>
       <div className="container-wide relative z-50 flex h-[var(--nav-height)] items-center justify-between gap-3 sm:gap-6">
         {/* Larger below lg, where the nav collapses to the menu button and the wordmark is the only text in the bar. */}
         <Logo wordmarkClassName="max-lg:text-[1.2rem]!" />
@@ -123,7 +141,7 @@ export function Navbar() {
         </button>
       </div>
     </header>
-    <div className="h-[var(--nav-height)]" aria-hidden="true" />
+    <div className="h-[calc(var(--nav-height)+var(--announce-height))]" aria-hidden="true" />
 
       <div
         id="mobile-nav"
