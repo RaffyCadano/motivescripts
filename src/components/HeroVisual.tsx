@@ -322,6 +322,16 @@ function ScrollingMock({
   const [scale, setScale] = useState(1);
   const [scrollDistance, setScrollDistance] = useState(0);
   const [viewportHeight, setViewportHeight] = useState(0);
+  // The devices only scroll on a wide screen; below lg (the stacked, responsive layout) they hold still at the top of the page.
+  const [wide, setWide] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches);
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => setWide(media.matches);
+    onChange();
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
 
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
@@ -349,7 +359,12 @@ function ScrollingMock({
   useEffect(() => {
     const viewport = viewportRef.current;
     const track = contentRef.current;
-    if (!viewport || !track || scrollDistance <= 0) return;
+    if (!viewport || !track) return;
+    if (!wide) {
+      track.style.transform = "";
+      return;
+    }
+    if (scrollDistance <= 0) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const startedAt = performance.now() - delaySeconds * 1000;
@@ -368,7 +383,7 @@ function ScrollingMock({
       observer.disconnect();
       cancelAnimationFrame(frame);
     };
-  }, [scrollDistance, delaySeconds]);
+  }, [scrollDistance, delaySeconds, wide]);
 
   return (
     <div ref={viewportRef} className="absolute inset-0 overflow-hidden">
