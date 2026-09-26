@@ -108,3 +108,26 @@ test("the notification badge counts unread notifications beyond the loaded list"
   assert.ok(provider.includes("+ unreadBeyondList"));
   assert.ok(!provider.includes("void fetchNotifications()"), "the realtime refresh must also use the counted loader");
 });
+
+test("background job failures are parsed safely, grouped per job, and only shown when there is a problem", async () => {
+  const { parseBackgroundHealth, hasBackgroundProblems, groupFailures, jobLabel } = await import("../src/data/backgroundHealth.ts");
+  assert.deepEqual(parseBackgroundHealth(null), { failures: [], failedCalls24h: 0 });
+  assert.equal(hasBackgroundProblems(parseBackgroundHealth({ failures: [], failedCalls24h: 0 })), false);
+  const health = parseBackgroundHealth({
+    failures: [
+      { job: "run_scope_reminder_sweep", message: "boom", created_at: "2026-09-25T10:00:00Z" },
+      { job: "run_scope_reminder_sweep", message: "boom again", created_at: "2026-09-26T10:00:00Z" },
+      { job: "notify_task_deadlines", message: "x", created_at: "2026-09-24T10:00:00Z" },
+      { nope: true },
+    ],
+    failedCalls24h: "3",
+  });
+  assert.equal(health.failures.length, 3);
+  assert.equal(health.failedCalls24h, 3);
+  assert.equal(hasBackgroundProblems(health), true);
+  const groups = groupFailures(health.failures);
+  assert.deepEqual(groups.map((g) => [g.job, g.count]), [["run_scope_reminder_sweep", 2], ["notify_task_deadlines", 1]]);
+  assert.equal(groups[0].latest.message, "boom again");
+  assert.equal(jobLabel("run_scope_reminder_sweep"), "Scope reminder emails");
+  assert.equal(jobLabel("some_new_job"), "some new job");
+});

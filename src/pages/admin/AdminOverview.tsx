@@ -1,3 +1,4 @@
+import { BackgroundHealthAlert } from "@/components/admin/BackgroundHealthAlert";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActiveProjects } from "@/components/admin/ActiveProjects";
 import { LiveClock } from "@/components/admin/LiveClock";
@@ -15,7 +16,7 @@ import { RecentActivity } from "@/components/admin/RecentActivity";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { useAuth } from "@/auth/AuthProvider";
-import { hasPermission, type StaffPermissionCode } from "@/auth/permissions";
+import { hasPermission, isActiveAdmin, type StaffPermissionCode } from "@/auth/permissions";
 import {
   buildCumulativeTrend,
   buildOverviewAttention,
@@ -179,6 +180,8 @@ export function AdminOverview() {
         description="What is happening, what needs attention, and what happened recently."
         action={<LiveClock onRefresh={handleRefresh} refreshing={refreshing} />}
       />
+
+      {isActiveAdmin(profile) ? <BackgroundHealthAlert /> : null}
 
       <section aria-label="What is happening">
         <AdminStatGrid columns={5}>
