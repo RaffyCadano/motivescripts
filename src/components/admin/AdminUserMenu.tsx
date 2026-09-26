@@ -1,14 +1,29 @@
+import type { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { LogOut, type LucideIcon } from "lucide-react";
+import { cn } from "@/lib/cn";
 
 export type UserMenuItem = {
   to: string;
   label: string;
   icon: LucideIcon;
+  /** Drawn as a blue call to action (the client portal's Plans & Website Care). */
+  highlight?: boolean;
 };
 
+/** The menu is written with the admin colours; in the client portal it points them at the client ones. */
+const CLIENT_LOOK = {
+  "--admin-line": "var(--client-line)",
+  "--admin-card": "var(--client-card)",
+  "--admin-bg": "var(--client-bg)",
+  "--admin-ink": "var(--client-ink)",
+  "--admin-muted": "var(--client-muted)",
+  "--admin-blue": "var(--client-blue)",
+  "--admin-navy": "var(--client-navy)",
+} as CSSProperties;
+
 /**
- * The dropdown under the avatar in the admin and team headers: who is signed in (avatar, name, email and role),
+ * The dropdown under the avatar in the admin, team and client headers: who is signed in (avatar, name, email and role),
  * the places they can go, then Log out on its own at the bottom.
  */
 export function AdminUserMenu({
@@ -18,6 +33,7 @@ export function AdminUserMenu({
   role,
   email,
   items,
+  tone = "admin",
   onNavigate,
   onLogOut,
 }: {
@@ -27,6 +43,7 @@ export function AdminUserMenu({
   role: string;
   email: string;
   items: UserMenuItem[];
+  tone?: "admin" | "client";
   /** Called when a link is chosen, so the menu can close. */
   onNavigate: () => void;
   onLogOut: () => void;
@@ -35,6 +52,7 @@ export function AdminUserMenu({
     <div
       id={id}
       role="menu"
+      style={tone === "client" ? CLIENT_LOOK : undefined}
       className="absolute right-0 z-50 mt-2 w-64 overflow-hidden rounded-xl border border-[var(--admin-line)] bg-[var(--admin-card)] shadow-[0_16px_40px_rgb(7_17_31_/_0.12)]"
     >
       <div className="flex items-center gap-3 border-b border-[var(--admin-line)] bg-[var(--admin-bg)] px-4 py-3.5">
@@ -62,9 +80,21 @@ export function AdminUserMenu({
               role="menuitem"
               to={item.to}
               onClick={onNavigate}
-              className="group flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium text-[var(--admin-ink)] transition-colors hover:bg-[var(--admin-bg)]"
+              className={cn(
+                "group flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors",
+                item.highlight
+                  ? "bg-[rgb(0_80_240_/_0.06)] font-semibold text-[var(--admin-blue)] hover:bg-[rgb(0_80_240_/_0.1)]"
+                  : "text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]",
+              )}
             >
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--admin-bg)] text-[var(--admin-muted)] transition-colors group-hover:bg-[rgb(0_80_240_/_0.1)] group-hover:text-[var(--admin-blue)]">
+              <span
+                className={cn(
+                  "flex size-7 shrink-0 items-center justify-center rounded-md transition-colors",
+                  item.highlight
+                    ? "bg-[rgb(0_80_240_/_0.12)] text-[var(--admin-blue)]"
+                    : "bg-[var(--admin-bg)] text-[var(--admin-muted)] group-hover:bg-[rgb(0_80_240_/_0.1)] group-hover:text-[var(--admin-blue)]",
+                )}
+              >
                 <Icon size={15} strokeWidth={1.9} aria-hidden="true" />
               </span>
               {item.label}

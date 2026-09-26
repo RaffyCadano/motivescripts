@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, ChevronDown, Globe, LogOut, Menu, PanelLeft, Settings, Sparkles } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Bell, ChevronDown, Globe, Menu, PanelLeft, Settings, Sparkles } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
+import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
 import { ClientConfirmDialog } from "@/components/client/ClientConfirmDialog";
 import { NotificationPanel } from "@/components/messaging/NotificationPanel";
 import { usePortalIdentity } from "@/components/admin/leads/LeadsProvider";
@@ -162,53 +163,25 @@ export function ClientHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenM
           </button>
 
           {menuOpen ? (
-            <div
+            <AdminUserMenu
+              tone="client"
               id={menuId}
-              role="menu"
-              className="absolute right-0 z-50 mt-1.5 w-52 overflow-hidden rounded-xl border border-[var(--client-line)] bg-[var(--client-card)] py-1 shadow-[0_12px_32px_rgb(7_17_31_/_0.08)]"
-            >
-              <Link
-                role="menuitem"
-                to="/client/plans"
-                className="flex items-center gap-2 px-3 py-2 text-[13px] font-semibold text-[var(--client-blue)] hover:bg-[rgb(0_80_240_/_0.06)]"
-                onClick={() => setMenuOpen(false)}
-              >
-                <Sparkles size={15} strokeWidth={1.75} aria-hidden="true" />
-                Plans &amp; Website Care
-              </Link>
-              <div className="my-1 border-t border-[var(--client-line)]" role="separator" />
-              <Link
-                role="menuitem"
-                to="/"
-                className="flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--client-ink)] hover:bg-[var(--client-bg)]"
-                onClick={() => setMenuOpen(false)}
-              >
-                <Globe size={15} strokeWidth={1.75} aria-hidden="true" />
-                View website
-              </Link>
-              <Link
-                role="menuitem"
-                to="/client/settings"
-                className="flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--client-ink)] hover:bg-[var(--client-bg)]"
-                onClick={() => setMenuOpen(false)}
-              >
-                <Settings size={15} strokeWidth={1.75} aria-hidden="true" />
-                Account settings
-              </Link>
-              <button
-                type="button"
-                role="menuitem"
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[var(--client-ink)] hover:bg-[var(--client-bg)]"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setSignOutError(null);
-                  setConfirmSignOut(true);
-                }}
-              >
-                <LogOut size={15} strokeWidth={1.75} aria-hidden="true" />
-                Log out
-              </button>
-            </div>
+              name={identity.name}
+              initials={identity.initials}
+              role={identity.businessName}
+              email={identity.email}
+              items={[
+                { to: "/client/plans", label: "Plans & Website Care", icon: Sparkles, highlight: true },
+                { to: "/", label: "View website", icon: Globe },
+                { to: "/client/settings", label: "Account settings", icon: Settings },
+              ]}
+              onNavigate={() => setMenuOpen(false)}
+              onLogOut={() => {
+                setMenuOpen(false);
+                setSignOutError(null);
+                setConfirmSignOut(true);
+              }}
+            />
           ) : null}
         </div>
       </div>
