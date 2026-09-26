@@ -14,6 +14,8 @@ import {
   totalPaidCents,
   unpaidOwed,
 } from "@/data/staffPayrollOverview";
+import { type StaffOnboarding } from "@/data/staffOnboarding";
+import { fetchStaffOnboarding } from "@/data/staffOnboardingRepository";
 import { sumHours, type TimeEntry } from "@/data/timeEntries";
 import { listMyTimeEntries } from "@/data/timeEntriesRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
@@ -54,6 +56,7 @@ export function StaffPayrollCard({ staffId }: { staffId: string }) {
   const [rate, setRate] = useState<StaffPayRate | null>(null);
   const [overrides, setOverrides] = useState<StaffProjectPayRate[]>([]);
   const [payments, setPayments] = useState<PayrollPayment[]>([]);
+  const [onboarding, setOnboarding] = useState<StaffOnboarding | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,13 +64,14 @@ export function StaffPayrollCard({ staffId }: { staffId: string }) {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    Promise.all([listMyTimeEntries(staffId), listStaffPayRates(), listStaffProjectPayRates(), listPayrollPayments(staffId)])
-      .then(([timeRows, rateRows, overrideRows, paymentRows]) => {
+    Promise.all([listMyTimeEntries(staffId), listStaffPayRates(), listStaffProjectPayRates(), listPayrollPayments(staffId), fetchStaffOnboarding(staffId).catch(() => null)])
+      .then(([timeRows, rateRows, overrideRows, paymentRows, submitted]) => {
         if (cancelled) return;
         setEntries(timeRows);
         setRate(rateRows.find((row) => row.userId === staffId) ?? null);
         setOverrides(overrideRows.filter((row) => row.staffId === staffId));
         setPayments(paymentRows);
+        setOnboarding(submitted);
       })
       .catch((caught) => {
         if (!cancelled) setError(caught instanceof AgencyDbError ? caught.message : "Unable to load payroll and hours.");
@@ -135,8 +139,8 @@ export function StaffPayrollCard({ staffId }: { staffId: string }) {
           <div>
             <h3 className="font-heading text-[13px] font-semibold text-[var(--admin-ink)]">Payout details</h3>
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
-              <ReadOnlyField label="Zelle" value={rate?.zelleContact || "Not set"} />
-              <ReadOnlyField label="PayPal" value={rate?.paypalEmail || "Not set"} />
+              <ReadOnlyField label="Zelle" value={rate?.zelleContact || onboarding?.zelleContact || "Not set"} />
+              <ReadOnlyField label="PayPal" value={rate?.paypalEmail || onboarding?.paypalEmail || "Not set"} />
             </div>
           </div>
 

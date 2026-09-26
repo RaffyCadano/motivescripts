@@ -8,6 +8,7 @@ import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
 import { adminFilterControlState } from "@/components/admin/list/adminListStyles";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
+import { OnboardingPendingPill, OnboardingStatusProvider } from "@/components/admin/team/OnboardingStatus";
 import { TeamStatusBadge } from "@/components/admin/team/TeamStatusBadge";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import {
@@ -290,16 +291,18 @@ export function AdminTeam() {
       ) : (
         <>
           {statusFilter !== "pending" ? (
-            <MemberList
-              rows={visibleMembers}
-              empty={
-                members.length === 0 && pendingInvites.length > 0
-                  ? "No active team members yet. Pending invitations are not part of the team until they are accepted."
-                  : visibleMembers.length === 0
-                    ? "No team members match this status."
-                    : null
-              }
-            />
+            <OnboardingStatusProvider>
+              <MemberList
+                rows={visibleMembers}
+                empty={
+                  members.length === 0 && pendingInvites.length > 0
+                    ? "No active team members yet. Pending invitations are not part of the team until they are accepted."
+                    : visibleMembers.length === 0
+                      ? "No team members match this status."
+                      : null
+                }
+              />
+            </OnboardingStatusProvider>
           ) : null}
 
           {visibleInvites.length > 0 ? (
@@ -381,7 +384,10 @@ function MemberList({ rows, empty }: { rows: Extract<TeamListRow, { kind: "membe
                     <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">{teamRoleSubtitle(row)}</p>
                   </td>
                   <td className="px-5 py-3.5">
-                    <TeamStatusBadge row={row} />
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <TeamStatusBadge row={row} />
+                      <OnboardingPendingPill userId={member.id} role={member.role} />
+                    </div>
                   </td>
                   <td className="px-5 py-3.5">
                     <p
@@ -434,7 +440,10 @@ function MemberCard({ member, row }: { member: TeamMember; row: TeamListRow }) {
           </Link>
           <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{teamRowEmail(row)}</p>
         </div>
-        <TeamStatusBadge row={row} />
+        <div className="flex flex-col items-end gap-1.5">
+          <TeamStatusBadge row={row} />
+          <OnboardingPendingPill userId={member.id} role={member.role} />
+        </div>
       </div>
       <p className="mt-3 font-heading text-sm font-semibold text-[var(--admin-ink)]">{teamRowRole(row)}</p>
       <p className="text-[12px] text-[var(--admin-muted)]">{teamRoleSubtitle(row)}</p>

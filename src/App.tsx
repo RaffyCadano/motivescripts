@@ -99,6 +99,7 @@ const ClientPaymentSuccess = lazy(() => import("@/pages/client/ClientPaymentSucc
 const ClientReview = lazy(() => import("@/pages/client/ClientReview").then((m) => ({ default: m.ClientReview })));
 const ClientSettings = lazy(() => import("@/pages/client/ClientSettings").then((m) => ({ default: m.ClientSettings })));
 const ClientPlans = lazy(() => import("@/pages/client/ClientPlans").then((m) => ({ default: m.ClientPlans })));
+const StaffOnboarding = lazy(() => import("@/pages/StaffOnboarding").then((m) => ({ default: m.StaffOnboarding })));
 const TeamBlocked = lazy(() => import("@/pages/team/TeamBlocked").then((m) => ({ default: m.TeamBlocked })));
 const TeamDashboardHome = lazy(() => import("@/pages/team/TeamDashboardHome").then((m) => ({ default: m.TeamDashboardHome })));
 const TeamDeploymentDetail = lazy(() => import("@/pages/team/TeamDeploymentDetail").then((m) => ({ default: m.TeamDeploymentDetail })));
@@ -253,6 +254,14 @@ export default function App() {
             <Route path="plans" element={<ClientPlans />} />
           </Route>
           </Route>
+          <Route
+            path="onboarding"
+            element={
+              <RequireAdmin>
+                <StaffOnboarding />
+              </RequireAdmin>
+            }
+          />
           <Route element={<Layout />}>
             <Route path="auth/callback" element={<AuthCallbackPage />} />
             <Route index element={<HomePage />} />

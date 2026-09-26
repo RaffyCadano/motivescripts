@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission, isActiveAdmin } from "@/auth/permissions";
 import { StaffEmailLogSection } from "@/components/admin/team/StaffEmailLogSection";
+import { StaffOnboardingSection } from "@/components/admin/team/StaffOnboardingSection";
 import { StaffPayrollCard } from "@/components/admin/team/StaffPayrollCard";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { formatTeamDate, type StaffTemplateKey } from "@/data/team";
@@ -236,6 +237,8 @@ export function AdminTeamDetails() {
             )}
             {message ? <p className="mt-3 text-sm text-[var(--admin-muted)]">{message}</p> : null}
           </section>
+
+          {canManage ? <StaffOnboardingSection userId={member.id} isStaff={member.role === "staff"} /> : null}
 
           {canManage ? <StaffPayrollCard staffId={member.id} /> : null}
 

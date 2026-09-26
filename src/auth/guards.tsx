@@ -3,6 +3,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AuthStatusScreen } from "@/auth/AuthStatusScreen";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAgency } from "@/auth/permissions";
+import { StaffOnboardingGate } from "@/auth/StaffOnboardingGate";
 import { agencyHomePath, isAgencyRole } from "@/auth/roles";
 import {
   acceptMyPendingInvitation,
@@ -203,7 +204,7 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
     return <AccountDeactivated />;
   }
 
-  return children;
+  return <StaffOnboardingGate>{children}</StaffOnboardingGate>;
 }
 
 export function RequireClient({ children }: { children: ReactNode }) {

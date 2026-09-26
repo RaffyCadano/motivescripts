@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { formatUsdFromCents } from "@/data/money";
 import { type StaffPayRate } from "@/data/payroll";
 import { listStaffPayRates } from "@/data/payrollRepository";
+import { type StaffOnboarding } from "@/data/staffOnboarding";
+import { fetchStaffOnboarding } from "@/data/staffOnboardingRepository";
 
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
@@ -30,15 +32,17 @@ export function PayoutInfoSection({
   historyLabel?: string;
 }) {
   const [payRate, setPayRate] = useState<StaffPayRate | null>(null);
+  const [onboarding, setOnboarding] = useState<StaffOnboarding | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const rates = await listStaffPayRates();
+        const [rates, submitted] = await Promise.all([listStaffPayRates(), fetchStaffOnboarding(userId).catch(() => null)]);
         if (cancelled) return;
         setPayRate(rates.find((rate) => rate.userId === userId) ?? null);
+        setOnboarding(submitted);
       } catch {
         // Non-fatal: the rest of the profile page still works if this fails to load.
       } finally {
@@ -70,8 +74,8 @@ export function PayoutInfoSection({
       {loading ? null : (
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <ReadOnlyField label="Pay rate" value={payRate ? `${formatUsdFromCents(payRate.payRateCents)}/hr` : "Not set"} />
-          <ReadOnlyField label="Zelle" value={payRate?.zelleContact || "Not set"} />
-          <ReadOnlyField label="PayPal" value={payRate?.paypalEmail || "Not set"} />
+          <ReadOnlyField label="Zelle" value={payRate?.zelleContact || onboarding?.zelleContact || "Not set"} />
+          <ReadOnlyField label="PayPal" value={payRate?.paypalEmail || onboarding?.paypalEmail || "Not set"} />
         </div>
       )}
     </section>
