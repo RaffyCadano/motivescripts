@@ -24,7 +24,7 @@ export function FaqItem({ question, answer, group }: FaqItemProps) {
         {question}
         <span
           aria-hidden="true"
-          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-line-strong)] bg-white text-muted transition-all duration-[var(--duration-base)] group-hover:border-[rgb(0_80_240_/_0.45)] group-hover:text-blue group-open:rotate-45 group-open:border-transparent group-open:bg-blue group-open:text-white"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-line-strong)] bg-white text-muted transition-all duration-[var(--duration-base)] group-open:rotate-45 group-open:border-transparent group-open:bg-blue group-open:text-white"
         >
           <Plus size={16} strokeWidth={2.2} />
         </span>
