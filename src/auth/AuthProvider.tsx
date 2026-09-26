@@ -20,7 +20,8 @@ type AuthContextValue = {
   configured: boolean;
   signInWithEmail: (email: string, options?: { redirectTo?: string }) => Promise<SignInResult>;
   refreshProfile: () => Promise<void>;
-  signOut: () => Promise<void>;
+  /** Signs out this browser; pass "global" to sign out every device the person is signed in on. */
+  signOut: (scope?: "global") => Promise<void>;
 };
 
 function markStaffActive(profile: AppProfile) {
@@ -218,7 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfileStatus(result.status);
         }
       },
-      async signOut() {
+      async signOut(scope) {
         const supabase = getSupabase();
         loadSeq.current += 1;
         setProfile(null);
@@ -229,7 +230,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setLoading(false);
           return;
         }
-        await supabase.auth.signOut();
+        await supabase.auth.signOut(scope ? { scope } : undefined);
       },
     }),
     [configured, loading, profile, profileStatus, session],
