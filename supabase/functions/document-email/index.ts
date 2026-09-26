@@ -11,6 +11,8 @@ import { validateExtraRecipients } from "../_shared/emailRecipients.ts";
 type RequestBody = {
   kind?: string;
   id?: string;
+  /** client_reminder only: what the reminder is about ("proposal", "contract", "invoice", "invite", "discovery", "review" or "info_request"); id is that item (the project for "review" and "info_request"), stage is "1", "2" or "3". */
+  remind?: string;
   /** scope_reminder only: "1", "2" or "3", which reminder this is (the last one says so). */
   /** launch_trial only: "7d" and "1d" (the free period is about to end), "paused" (it ended and the site is paused) or "manual" (an admin paused it). */
   stage?: string;
@@ -128,6 +130,7 @@ Deno.serve(async (req) => {
       body.kind !== "plan_canceled" &&
       body.kind !== "launch_trial" &&
       body.kind !== "scope_reminder" &&
+      body.kind !== "client_reminder" &&
       body.kind !== "new_message") ||
     !body.id
   ) {
@@ -147,7 +150,7 @@ Deno.serve(async (req) => {
   // is called by the daily overdue-reminder cron job, plan_past_due / plan_canceled
   // are called by the stripe-webhook function reacting to a Stripe event, launch_trial is called by the
   // daily launch-trial sweep (run_launch_trial_sweep), scope_reminder is called by the daily scope-reminder
-  // sweep (run_scope_reminder_sweep), and
+  // sweep (run_scope_reminder_sweep), client_reminder by run_client_reminder_sweep, and
   // new_message is called by the messages_notify_recipients trigger on every new
   // message. All are authenticated with the service role key, never a browser session.
   if (
@@ -157,6 +160,7 @@ Deno.serve(async (req) => {
     body.kind === "plan_canceled" ||
     body.kind === "launch_trial" ||
     body.kind === "scope_reminder" ||
+    body.kind === "client_reminder" ||
     body.kind === "new_message"
   ) {
     if (!isServiceRole) return fail("not_allowed", 403);
@@ -435,6 +439,266 @@ Deno.serve(async (req) => {
         html,
       );
       console.log("document-email sent", { kind: body.kind, id: plan.id });
+      return json({ ok: true });
+    }
+
+    if (body.kind === "client_reminder") {
+      // The daily client-reminder sweep decides what and when; this only finds the item and words the email.
+      const remind = String(body.remind ?? "");
+      const stage = body.stage === "3" ? 3 : body.stage === "2" ? 2 : 1;
+      const fmt = (value: string | null | undefined): string =>
+        value
+          ? new Date(value).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })
+          : "";
+      const pick = (texts: [string, string, string]): string => texts[stage - 1];
+
+      let clientId: string | null = null;
+      let onlyTo: string | null = null;
+      let content: {
+        subject: string;
+        heading: string;
+        number: string;
+        title: string;
+        summary: string;
+        expiresLabel: string;
+        url: string;
+        cta: string;
+      } | null = null;
+
+      if (remind === "proposal") {
+        const { data: proposal } = await admin
+          .from("proposals")
+          .select("id, client_id, proposal_number, published_revision_id")
+          .eq("id", body.id)
+          .maybeSingle();
+        if (!proposal) return fail("not_found");
+        const { data: rev } = await admin
+          .from("proposal_revisions")
+          .select("status, valid_until, title")
+          .eq("id", proposal.published_revision_id)
+          .maybeSingle();
+        if (!rev || (rev.status !== "sent" && rev.status !== "viewed")) return json({ ok: true, skipped: "not_waiting" });
+        clientId = proposal.client_id as string;
+        const until = fmt(rev.valid_until as string | null);
+        content = {
+          subject: stage === 3 ? "Your proposal is about to expire" : "Your proposal is waiting for your review",
+          heading: stage === 3 ? "Your proposal expires soon." : "Your proposal is waiting for you.",
+          number: String(proposal.proposal_number ?? "Proposal"),
+          title: stage === 3 ? "Proposal expiring" : "Proposal",
+          summary: pick([
+            "We sent you a proposal for your website project. Have a look when you can. It takes a couple of minutes to review, and you can accept it right from your portal.",
+            "A quick reminder that your proposal is still waiting. If you have questions about the scope or the price, reply to this email and we'll walk you through it.",
+            until
+              ? `Your proposal is valid until ${until}. Review and accept it before then to keep the scope and price as quoted.`
+              : "Your proposal is still open. Review and accept it to keep your project moving.",
+          ]),
+          expiresLabel: "Questions before you decide? Reply to this email and we'll help.",
+          url: `${origin}/client/proposals/${proposal.id}`,
+          cta: "Review your proposal",
+        };
+      } else if (remind === "contract") {
+        const { data: contract } = await admin
+          .from("contracts")
+          .select("id, client_id, contract_number, published_revision_id")
+          .eq("id", body.id)
+          .maybeSingle();
+        if (!contract) return fail("not_found");
+        const { data: rev } = await admin
+          .from("contract_revisions")
+          .select("status, expires_at")
+          .eq("id", contract.published_revision_id)
+          .maybeSingle();
+        if (!rev || (rev.status !== "sent" && rev.status !== "viewed")) return json({ ok: true, skipped: "not_waiting" });
+        clientId = contract.client_id as string;
+        const until = fmt(rev.expires_at as string | null);
+        content = {
+          subject: stage === 3 ? "Your contract is about to expire" : "Your contract is waiting for your signature",
+          heading: stage === 3 ? "Your contract expires soon." : "Your contract is ready to sign.",
+          number: String(contract.contract_number ?? "Contract"),
+          title: stage === 3 ? "Contract expiring" : "Contract",
+          summary: pick([
+            "Your contract is ready. Read it over and accept it from your portal, and we can move on to the next step.",
+            "A quick reminder that your contract is still waiting for you. If anything needs changing before you sign, reply to this email and we'll sort it out.",
+            until
+              ? `Your contract is open until ${until}. Please review and accept it before then so your project isn't held up.`
+              : "Your contract is still open. Please review and accept it so your project isn't held up.",
+          ]),
+          expiresLabel: "Need a change before you sign? Reply to this email.",
+          url: `${origin}/client/contracts/${contract.id}`,
+          cta: "Review your contract",
+        };
+      } else if (remind === "invoice") {
+        const { data: invoice } = await admin
+          .from("invoices")
+          .select("id, client_id, invoice_number, status, due_date, amount_due_cents")
+          .eq("id", body.id)
+          .maybeSingle();
+        if (!invoice) return fail("not_found");
+        if (!["sent", "viewed", "partially_paid"].includes(String(invoice.status)) || Number(invoice.amount_due_cents) <= 0) {
+          return json({ ok: true, skipped: "not_waiting" });
+        }
+        clientId = invoice.client_id as string;
+        const due = fmt(invoice.due_date as string | null);
+        content = {
+          subject: `Invoice ${invoice.invoice_number} is due soon`,
+          heading: "Your invoice is due soon.",
+          number: String(invoice.invoice_number),
+          title: "Invoice due",
+          summary: `Invoice ${invoice.invoice_number} for ${formatUsdFromCents(Number(invoice.amount_due_cents))} is due on ${due}. You can pay it online from your portal.`,
+          expiresLabel: "Already paid? Thank you, and you can ignore this. Questions? Reply to this email.",
+          url: `${origin}/client/invoices/${invoice.id}`,
+          cta: "View and pay invoice",
+        };
+      } else if (remind === "invite") {
+        const { data: invite } = await admin
+          .from("client_invitations")
+          .select("id, client_id, email, status, expires_at")
+          .eq("id", body.id)
+          .maybeSingle();
+        if (!invite) return fail("not_found");
+        if (invite.status !== "pending" || new Date(invite.expires_at as string).getTime() <= Date.now()) {
+          return json({ ok: true, skipped: "not_waiting" });
+        }
+        clientId = invite.client_id as string;
+        onlyTo = String(invite.email).trim().toLowerCase();
+        const until = fmt(invite.expires_at as string);
+        content = {
+          subject: stage === 2 ? "Your MotiveScripts invitation expires tomorrow" : "Your MotiveScripts invitation is waiting",
+          heading: stage === 2 ? "Your invitation expires tomorrow." : "Your invitation is waiting.",
+          number: "Client portal",
+          title: "Portal invitation",
+          summary: `We invited you to your MotiveScripts client portal, where you'll complete your Website Scope and follow your project. The invitation link in that first email works until ${until}. Open that email and use its button to set up your account.`,
+          expiresLabel: "Can't find it, or the link has expired? Reply to this email and we'll send you a new one.",
+          url: `${origin}/login`,
+          cta: "Go to sign in",
+        };
+      } else if (remind === "discovery") {
+        const { data: intake } = await admin
+          .from("discovery_intakes")
+          .select("id, client_id, project_id, status")
+          .eq("id", body.id)
+          .maybeSingle();
+        if (!intake) return fail("not_found");
+        if (intake.status !== "awaiting_client" && intake.status !== "more_information_needed") {
+          return json({ ok: true, skipped: "not_waiting" });
+        }
+        clientId = intake.client_id as string;
+        const moreInfo = intake.status === "more_information_needed";
+        content = {
+          subject: moreInfo ? "We need a little more information for your project" : "We're waiting on your project details",
+          heading: moreInfo ? "We need a little more from you." : "We're waiting on your project details.",
+          number: "Project discovery",
+          title: "Action needed",
+          summary: moreInfo
+            ? pick([
+                "We reviewed your project details and need a bit more information before we can move ahead. Your portal shows exactly what's missing.",
+                "A quick reminder that we're still waiting on a few details for your project. Adding them lets us keep the work moving.",
+                "We still need a few details to keep your project on schedule. It only takes a few minutes in your portal.",
+              ])
+            : pick([
+                "Your project is set up and the next step is yours: fill in your project details so we can start planning. It only takes a few minutes in your portal.",
+                "A quick reminder that we're waiting on your project details. Once they're in, we can start on your website.",
+                "We can't start your website until we have your project details, so the sooner they're in, the sooner we begin.",
+              ]),
+          expiresLabel: "Prefer to talk it through? Reply to this email and we'll go over it with you.",
+          url: `${origin}/client/project/${intake.project_id}`,
+          cta: "Add your project details",
+        };
+      } else if (remind === "review" || remind === "info_request") {
+        const { data: project } = await admin
+          .from("projects")
+          .select("id, name, client_id")
+          .eq("id", body.id)
+          .maybeSingle();
+        if (!project) return fail("not_found");
+        clientId = project.client_id as string;
+        if (remind === "review") {
+          const { count } = await admin
+            .from("deliverables")
+            .select("id", { count: "exact", head: true })
+            .eq("project_id", project.id)
+            .eq("status", "In Review")
+            .is("archived_at", null);
+          const n = count ?? 0;
+          if (n === 0) return json({ ok: true, skipped: "not_waiting" });
+          const noun = n === 1 ? "file is" : "files are";
+          content = {
+            subject: n === 1 ? "A file is waiting for your review" : `${n} files are waiting for your review`,
+            heading: `${n} ${noun} waiting for your review.`,
+            number: String(project.name),
+            title: "Review needed",
+            summary: pick([
+              `We've shared ${n === 1 ? "a file" : n + " files"} for you to review on ${project.name}. Take a look and approve it, or tell us what to change.`,
+              "A quick reminder that we're waiting on your feedback. Your project can't move to the next stage until it's approved.",
+              "We're still waiting on your review, and it's holding up your project. Approving it, or telling us what to change, gets things moving again.",
+            ]),
+            expiresLabel: "Not sure about something? Leave a comment on the file or reply to this email.",
+            url: `${origin}/client/files`,
+            cta: "Review your files",
+          };
+        } else {
+          const { count } = await admin
+            .from("task_client_requests")
+            .select("id", { count: "exact", head: true })
+            .eq("project_id", project.id)
+            .eq("status", "awaiting_client");
+          const n = count ?? 0;
+          if (n === 0) return json({ ok: true, skipped: "not_waiting" });
+          content = {
+            subject: n === 1 ? "We need a reply from you" : `We need replies on ${n} requests`,
+            heading: n === 1 ? "We need a reply from you." : `We need replies on ${n} requests.`,
+            number: String(project.name),
+            title: "Information needed",
+            summary: pick([
+              `We've asked for some information to keep ${project.name} moving. You can answer in your portal in a few minutes.`,
+              "A quick reminder that we're waiting on the information we asked for. We can't finish that part of your project without it.",
+              "We're still waiting on the information we asked for, and it's holding up your project. Please send it when you can.",
+            ]),
+            expiresLabel: "Don't have it handy? Reply to this email and tell us when you can send it.",
+            url: `${origin}/client/project/${project.id}`,
+            cta: "Reply in your portal",
+          };
+        }
+      } else {
+        return fail("invalid_action");
+      }
+
+      const { data: clientRow } = await admin
+        .from("clients")
+        .select("business_name, email")
+        .eq("id", clientId)
+        .maybeSingle();
+      let emails: string[];
+      if (onlyTo) {
+        emails = [onlyTo];
+      } else {
+        const { data: recipients } = await admin
+          .from("profiles")
+          .select("email")
+          .eq("client_id", clientId)
+          .eq("role", "client");
+        emails = [
+          ...new Set(
+            [...(recipients ?? []).map((row: { email: string | null }) => row.email), clientRow?.email]
+              .map((value) => (value ?? "").trim().toLowerCase())
+              .filter((value) => value.includes("@")),
+          ),
+        ];
+      }
+      if (emails.length === 0) return fail("no_recipient");
+      const html = brandedEmail({
+        heading: content.heading,
+        company: clientRow?.business_name ?? "your team",
+        number: content.number,
+        title: content.title,
+        summary: content.summary,
+        expiresLabel: content.expiresLabel,
+        url: content.url,
+        cta: content.cta,
+        supportEmail,
+      });
+      await sendResend(apiKey, emails, content.subject, html);
+      console.log("document-email sent", { kind: "client_reminder", remind, stage, id: body.id });
       return json({ ok: true });
     }
 
