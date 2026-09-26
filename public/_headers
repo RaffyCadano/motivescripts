@@ -1,0 +1,15 @@
+# Security headers for motivescripts.com.
+#
+# GitHub Pages ignores this file. It is the single source of truth for the values: paste the same headers into
+# Cloudflare (Rules > Transform Rules > Modify Response Header) or keep the file if the site moves to Cloudflare
+# Pages or Netlify, which read it directly.
+#
+# Before turning it on, load the site through the new host with the CSP as Content-Security-Policy-Report-Only,
+# click through /, /login, /client and /admin, and check the browser console for blocked requests.
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://checkout.stripe.com; object-src 'none'
