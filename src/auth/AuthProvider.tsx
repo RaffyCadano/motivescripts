@@ -224,9 +224,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loadSeq.current += 1;
         setProfile(null);
         setProfileStatus("idle");
+        // Clear the session in the same step as the profile. If the session lingered while the profile was gone, the
+        // route guards would show their "account not configured" screen, with a second Sign out button, until the
+        // network call below finished.
+        setSession(null);
         clearSignedUrlCache();
         if (!supabase) {
-          setSession(null);
           setLoading(false);
           return;
         }

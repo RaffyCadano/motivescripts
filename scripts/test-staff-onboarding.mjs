@@ -131,3 +131,11 @@ test("background job failures are parsed safely, grouped per job, and only shown
   assert.equal(jobLabel("run_scope_reminder_sweep"), "Scope reminder emails");
   assert.equal(jobLabel("some_new_job"), "some new job");
 });
+
+test("signing out clears the session together with the profile, so no fallback screen with a second Sign out button appears", () => {
+  const auth = readFileSync("src/auth/AuthProvider.tsx", "utf8");
+  const start = auth.indexOf("async signOut(scope)");
+  const body = auth.slice(start, auth.indexOf("await supabase.auth.signOut", start));
+  assert.ok(body.includes("setProfile(null)") && body.includes("setSession(null)"));
+  assert.ok(body.indexOf("setSession(null)") < auth.indexOf("await supabase.auth.signOut", start));
+});
