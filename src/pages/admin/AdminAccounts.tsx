@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { PowerOff, Trash2 } from "lucide-react";
+import { Building2, ShieldAlert, Trash2, UserRound, Users } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { isActiveAdmin } from "@/auth/permissions";
-import { adminDangerBtn } from "@/components/admin/adminActionStyles";
+import { AdminActionsMenu, type AdminActionsMenuItem } from "@/components/admin/AdminActionsMenu";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
 import { adminFilterControlState, adminStatusChipClass } from "@/components/admin/list/adminListStyles";
@@ -13,10 +13,17 @@ import { accountRoleLabel, type AccountDeletion, type AccountRow } from "@/data/
 import { deleteAccount, listAccountDeletions, listAccounts } from "@/data/accountsRepository";
 import type { AgencyProject } from "@/data/agencyProjects";
 import { formatClientDate } from "@/data/agencyClients";
+import { initialsFromName } from "@/auth/userDisplay";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
 
 type RoleFilter = "all" | "client" | "team";
+
+/** "today", "yesterday", "3 days ago" or "on September 16, 2026", to read after a verb. */
+function whenText(iso: string): string {
+  const text = formatClientDate(iso);
+  return /^(Today|Yesterday|[0-9]+ days ago)$/.test(text) ? text.toLowerCase() : `on ${text}`;
+}
 
 const FILTERS: { key: RoleFilter; label: string }[] = [
   { key: "all", label: "All" },
@@ -75,6 +82,36 @@ export function AdminAccounts() {
     [accounts, filter, term],
   );
 
+  const clientRows = visible.filter((account) => account.role === "client");
+  const teamRows = visible.filter((account) => account.role !== "client");
+  const groups = [
+    { key: "clients", title: "Clients", icon: Users, rows: clientRows },
+    { key: "team", title: "Team", icon: ShieldAlert, rows: teamRows },
+  ].filter((group) => group.rows.length > 0);
+  const totalClients = accounts.filter((account) => account.role === "client").length;
+  const liveSites = useMemo(
+    () =>
+      projects.filter((project) => !project.archived && project.development.deploymentStatus === "Production" && !project.development.pausedAt).length,
+    [projects],
+  );
+
+  function menuItems(account: AccountRow): AdminActionsMenuItem[] {
+    const items: AdminActionsMenuItem[] = [
+      { id: "delete-account", label: "Delete account", icon: Trash2, danger: true, onSelect: () => openDelete(account) },
+    ];
+    if (account.clientId) {
+      items.push({
+        id: "delete-client",
+        label: "Delete client & everything…",
+        icon: Building2,
+        danger: true,
+        href: `/admin/clients/${account.clientId}#overview`,
+        separatorBefore: true,
+      });
+    }
+    return items;
+  }
+
   /** The launched websites of a client account. */
   function sitesFor(account: AccountRow): AgencyProject[] {
     if (!account.clientId) return [];
@@ -123,7 +160,21 @@ export function AdminAccounts() {
         description="Every login in the workspace. Delete an account, or take a client's website down. They are separate actions: deleting a login keeps the client's records and does not take their website offline."
       />
 
-      <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div className="mt-6 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+        {[
+          { label: "Accounts", value: accounts.length },
+          { label: "Clients", value: totalClients },
+          { label: "Team", value: accounts.length - totalClients },
+          { label: "Live websites", value: liveSites },
+        ].map((tile) => (
+          <div key={tile.label} className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-4 py-3">
+            <p className="font-heading text-2xl font-semibold leading-tight text-[var(--admin-ink)]">{loading ? "–" : tile.value}</p>
+            <p className="text-[12px] text-[var(--admin-muted)]">{tile.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
         <label className="min-w-0 flex-1">
           <span className="sr-only">Search accounts</span>
           <input
@@ -152,118 +203,131 @@ export function AdminAccounts() {
           No accounts match.
         </div>
       ) : (
-        <div className="mt-6 overflow-x-auto rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
-          <table className="w-full min-w-[56rem] border-collapse text-sm">
-            <thead>
-              <tr className="bg-[var(--admin-bg)] text-left text-[12px] text-[var(--admin-muted)]">
-                <th className="px-4 py-2.5 font-medium">Account</th>
-                <th className="px-4 py-2.5 font-medium">Role</th>
-                <th className="px-4 py-2.5 font-medium">Created</th>
-                <th className="px-4 py-2.5 font-medium">Last sign-in</th>
-                <th className="px-4 py-2.5 font-medium">Website</th>
-                <th className="px-4 py-2.5 text-right font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--admin-line)]">
-              {visible.map((account) => {
-                const sites = sitesFor(account);
-                return (
-                  <tr key={account.userId} className="align-top">
-                    <td className="px-4 py-3">
-                      <p className="font-semibold text-[var(--admin-ink)]">
-                        {account.fullName || account.email}
-                        {account.isSelf ? (
-                          <span className="ml-2 rounded-full bg-[rgb(0_80_240_/_0.08)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[var(--admin-blue)]">
-                            You
-                          </span>
-                        ) : null}
-                        {!account.isActive ? (
-                          <span className="ml-2 rounded-full bg-[var(--admin-bg)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[var(--admin-muted)]">
-                            Inactive
-                          </span>
-                        ) : null}
-                      </p>
-                      <p className="text-[12px] text-[var(--admin-muted)]">{account.email}</p>
-                      {account.businessName ? (
-                        <p className="text-[12px] text-[var(--admin-muted)]">
-                          {account.clientId ? (
-                            <Link to={`/admin/clients/${account.clientId}`} className="text-[var(--admin-blue)] hover:underline">
-                              {account.businessName}
-                            </Link>
-                          ) : (
-                            account.businessName
+        <div className="mt-6 space-y-6">
+          {groups.map((group) => (
+            <section key={group.key} className="overflow-hidden rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
+              <div className="flex items-center gap-2.5 border-b border-[var(--admin-line)] bg-[var(--admin-bg)] px-4 py-3">
+                <span className="flex size-7 items-center justify-center rounded-lg bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]">
+                  <group.icon size={15} strokeWidth={2} aria-hidden="true" />
+                </span>
+                <h2 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">{group.title}</h2>
+                <span className="rounded-full bg-white px-2 py-0.5 font-heading text-[11px] font-semibold text-[var(--admin-muted)] ring-1 ring-[var(--admin-line)]">
+                  {group.rows.length}
+                </span>
+              </div>
+              <ul className="divide-y divide-[var(--admin-line)]">
+                {group.rows.map((account) => {
+                  const sites = sitesFor(account);
+                  return (
+                    <li key={account.userId} className="relative grid gap-x-4 gap-y-3 px-4 py-3.5 lg:grid-cols-[minmax(0,2.4fr)_minmax(0,1.5fr)_minmax(0,2fr)_auto] lg:items-center">
+                      <div className="flex min-w-0 items-center gap-3 pr-11 lg:pr-0">
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            "flex size-10 shrink-0 items-center justify-center rounded-full font-heading text-[13px] font-semibold",
+                            account.role === "client" ? "bg-[rgb(0_80_240_/_0.1)] text-[var(--admin-blue)]" : "bg-[var(--admin-navy)] text-white",
                           )}
-                        </p>
-                      ) : null}
-                    </td>
-                    <td className="whitespace-nowrap px-4 py-3 text-[var(--admin-ink)]">{accountRoleLabel(account)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-[var(--admin-muted)]">{formatClientDate(account.createdAt)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-[var(--admin-muted)]">
-                      {account.lastSignInAt ? formatClientDate(account.lastSignInAt) : "Never"}
-                    </td>
-                    <td className="px-4 py-3">
-                      {account.role !== "client" ? (
-                        <span className="text-[var(--admin-muted)]">—</span>
-                      ) : sites.length === 0 ? (
-                        <span className="text-[12px] text-[var(--admin-muted)]">No launched website</span>
-                      ) : (
-                        <ul className="space-y-1.5">
-                          {sites.map((site) => {
-                            const paused = Boolean(site.development.pausedAt);
-                            return (
-                              <li key={site.id} className="flex flex-wrap items-center gap-2">
-                                <Link to={`/admin/projects/${site.id}`} className="font-medium text-[var(--admin-blue)] hover:underline">
-                                  {site.name}
+                        >
+                          {initialsFromName(account.fullName || account.email)}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-heading text-sm font-semibold text-[var(--admin-ink)]">
+                            <span className="truncate">{account.fullName || account.email}</span>
+                            {account.isSelf ? (
+                              <span className="rounded-full bg-[rgb(0_80_240_/_0.08)] px-2 py-0.5 text-[11px] font-semibold text-[var(--admin-blue)]">You</span>
+                            ) : null}
+                            {!account.isActive ? (
+                              <span className="rounded-full bg-[var(--admin-bg)] px-2 py-0.5 text-[11px] font-semibold text-[var(--admin-muted)]">Inactive</span>
+                            ) : null}
+                          </p>
+                          <p className="truncate text-[12px] text-[var(--admin-muted)]">{account.email}</p>
+                          {account.businessName ? (
+                            <p className="truncate text-[12px]">
+                              {account.clientId ? (
+                                <Link to={`/admin/clients/${account.clientId}`} className="font-medium text-[var(--admin-blue)] hover:underline">
+                                  {account.businessName}
                                 </Link>
-                                <span
-                                  className={cn(
-                                    "rounded-full px-2 py-0.5 font-heading text-[11px] font-semibold",
-                                    paused ? "bg-amber-100 text-amber-800" : "bg-[rgb(16_185_129_/_0.1)] text-[#0f7a56]",
-                                  )}
-                                >
-                                  {paused ? "Paused" : "Live"}
-                                </span>
-                                {!paused ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => setTakeDown(site)}
-                                    className="inline-flex items-center gap-1 font-heading text-[12px] font-semibold text-[#b42318] hover:underline"
-                                  >
-                                    <PowerOff size={12} strokeWidth={2.4} aria-hidden="true" />
-                                    Take down
-                                  </button>
-                                ) : null}
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {account.isSelf ? (
-                        <span className="text-[12px] text-[var(--admin-muted)]">Your account</span>
-                      ) : (
-                        <div className="flex flex-col items-end gap-1.5">
-                          <button type="button" className={`${adminDangerBtn} h-9 gap-1.5 px-3 text-[12px]`} onClick={() => openDelete(account)}>
-                            <Trash2 size={13} strokeWidth={2.2} aria-hidden="true" />
-                            Delete account
-                          </button>
-                          {account.clientId ? (
-                            <Link
-                              to={`/admin/clients/${account.clientId}#overview`}
-                              className="font-heading text-[12px] font-semibold text-[#b42318] hover:underline"
-                            >
-                              Delete client &amp; everything…
-                            </Link>
+                              ) : (
+                                <span className="text-[var(--admin-muted)]">{account.businessName}</span>
+                              )}
+                            </p>
                           ) : null}
                         </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </div>
+
+                      <div className="min-w-0">
+                        <span
+                          className={cn(
+                            "inline-flex rounded-full px-2.5 py-1 font-heading text-[12px] font-semibold",
+                            account.role === "admin"
+                              ? "bg-[var(--admin-navy)] text-white"
+                              : account.role === "client"
+                                ? "bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]"
+                                : "bg-[var(--admin-bg)] text-[var(--admin-ink)] ring-1 ring-[var(--admin-line)]",
+                          )}
+                        >
+                          {accountRoleLabel(account)}
+                        </span>
+                        <p className="mt-1.5 text-[12px] text-[var(--admin-muted)]">
+                          {account.lastSignInAt ? (
+                            <>
+                              <span className="mr-1.5 inline-block size-1.5 rounded-full bg-emerald-500 align-middle" aria-hidden="true" />
+                              Signed in {whenText(account.lastSignInAt)}
+                            </>
+                          ) : (
+                            <>
+                              <span className="mr-1.5 inline-block size-1.5 rounded-full bg-amber-400 align-middle" aria-hidden="true" />
+                              Never signed in
+                            </>
+                          )}
+                        </p>
+                        <p className="text-[12px] text-[var(--admin-muted)]">Joined {whenText(account.createdAt)}</p>
+                      </div>
+
+                      <div className="min-w-0">
+                        {account.role !== "client" ? null : sites.length === 0 ? (
+                          <span className="text-[12px] text-[var(--admin-muted)]">No launched website</span>
+                        ) : (
+                          <ul className="space-y-1.5">
+                            {sites.map((site) => {
+                              const paused = Boolean(site.development.pausedAt);
+                              return (
+                                <li key={site.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--admin-line)] px-2.5 py-1.5">
+                                  <span
+                                    aria-hidden="true"
+                                    className={cn("size-2 shrink-0 rounded-full", paused ? "bg-amber-400" : "bg-emerald-500")}
+                                  />
+                                  <Link to={`/admin/projects/${site.id}`} className="min-w-0 flex-1 truncate text-[13px] font-medium text-[var(--admin-ink)] hover:text-[var(--admin-blue)]">
+                                    {site.name}
+                                  </Link>
+                                  <span className="text-[11px] font-semibold text-[var(--admin-muted)]">{paused ? "Paused" : "Live"}</span>
+                                  {!paused ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setTakeDown(site)}
+                                      className="rounded-md border border-[rgb(180_35_24_/_0.28)] bg-[rgb(220_38_38_/_0.06)] px-2 py-0.5 font-heading text-[11px] font-semibold text-[#b42318] hover:bg-[rgb(220_38_38_/_0.12)]"
+                                    >
+                                      Take down
+                                    </button>
+                                  ) : null}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
+                      </div>
+
+                      <div className="absolute right-3 top-3 lg:static lg:flex lg:w-10 lg:justify-end">
+                        {account.isSelf ? null : (
+                          <AdminActionsMenu ariaLabel={`Actions for ${account.fullName || account.email}`} iconOnly items={menuItems(account)} />
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
         </div>
       )}
 
@@ -272,18 +336,23 @@ export function AdminAccounts() {
           <h2 className="font-heading text-sm font-semibold text-[var(--admin-ink)]">Recently deleted accounts</h2>
           <ul className="mt-3 divide-y divide-[var(--admin-line)] rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
             {deletions.map((item) => (
-              <li key={item.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2.5 text-sm">
-                <span className="min-w-0">
-                  <span className="font-medium text-[var(--admin-ink)]">{item.fullName || item.email}</span>
-                  <span className="ml-2 text-[12px] text-[var(--admin-muted)]">
-                    {item.email}
-                    {item.businessName ? ` · ${item.businessName}` : ""}
+              <li key={item.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--admin-bg)] text-[var(--admin-muted)]">
+                    <UserRound size={15} strokeWidth={2} aria-hidden="true" />
                   </span>
-                </span>
-                <span className="text-[12px] text-[var(--admin-muted)]">
-                  {formatClientDate(item.createdAt)}
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-[var(--admin-ink)]">{item.fullName || item.email}</p>
+                    <p className="truncate text-[12px] text-[var(--admin-muted)]">
+                      {item.email}
+                      {item.businessName ? ` · ${item.businessName}` : ""}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-[12px] text-[var(--admin-muted)]">
+                  Deleted {whenText(item.createdAt)}
                   {item.deletedByEmail ? ` by ${item.deletedByEmail}` : ""}
-                </span>
+                </p>
               </li>
             ))}
           </ul>
