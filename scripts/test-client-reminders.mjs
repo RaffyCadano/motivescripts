@@ -41,3 +41,15 @@ test("only Active clients, live items and unpaid non-recurring invoices are remi
 test("the email function skips an item that was dealt with after the reminder was queued", () => {
   assert.ok((fn.match(/skipped: "not_waiting"/g) ?? []).length >= 6);
 });
+
+test("every automated client email is logged for staff, with the provider's message id", () => {
+  const log = readFileSync("supabase/migrations/20261111000000_client_email_log.sql", "utf8");
+  assert.ok(log.includes("provider_id text"));
+  assert.ok(log.includes("staff_may_client(client_id, 'clients.view')"));
+  assert.ok(!/grant[^;]*insert[^;]*to authenticated/i.test(log));
+  for (const kind of ["invoice_overdue", "scope_reminder", "launch_trial", "reminder_${remind}"]) {
+    assert.ok(fn.includes(kind), `${kind} is not logged`);
+  }
+  assert.ok((fn.match(/await sendLogged\(/g) ?? []).length >= 6);
+  assert.ok(fn.includes("return typeof sentBody?.id"));
+});

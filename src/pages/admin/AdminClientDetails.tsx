@@ -25,7 +25,9 @@ import {
   ClientMessagesSection,
   ClientProjectsSection,
 } from "@/components/admin/clients/ClientProfileSections";
+import { ClientEmailLogSection } from "@/components/admin/clients/ClientEmailLogSection";
 import { ClientOperationsOverview } from "@/components/admin/clients/ClientOperationsOverview";
+import { ClientScopeBriefSection } from "@/components/admin/clients/ClientScopeBriefSection";
 import { InviteClientDialog } from "@/components/admin/clients/InviteClientDialog";
 import { ClientDocumentsSection } from "@/components/admin/clients/ClientDocumentsSection";
 import { ClientInvoicesSection } from "@/components/admin/clients/ClientInvoicesSection";
@@ -283,12 +285,16 @@ function ClientOverviewTab({
   onAddNote: () => void;
 }) {
   return (
-    <ClientOperationsOverview
-      client={client}
-      canManageProjects={canManageProjects}
-      createHref={`/admin/projects/new?client=${client.id}`}
-      onInvite={onInvite}
-      onAddNote={onAddNote}
-    />
+    <>
+      <ClientOperationsOverview
+        client={client}
+        canManageProjects={canManageProjects}
+        createHref={`/admin/projects/new?client=${client.id}`}
+        onInvite={onInvite}
+        onAddNote={onAddNote}
+      />
+      <ClientScopeBriefSection client={client} />
+      <ClientEmailLogSection client={client} />
+    </>
   );
 }

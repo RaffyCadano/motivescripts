@@ -386,7 +386,14 @@ Deno.serve(async (req) => {
         cta: "Pay invoice",
         supportEmail,
       });
-      await sendResend(apiKey, emails, `Overdue: invoice ${invoice.invoice_number}`, html);
+      await sendLogged(
+        admin,
+        { clientId: invoice.client_id as string, kind: "invoice_overdue", relatedId: invoice.id as string },
+        apiKey,
+        emails,
+        `Overdue: invoice ${invoice.invoice_number}`,
+        html,
+      );
       console.log("document-email sent", { kind: "invoice_overdue", id: invoice.id });
       return json({ ok: true });
     }
@@ -432,7 +439,9 @@ Deno.serve(async (req) => {
         cta: isPastDue ? "Update payment info" : "View your plans",
         supportEmail,
       });
-      await sendResend(
+      await sendLogged(
+        admin,
+        { clientId: plan.client_id as string, kind: String(body.kind), relatedId: plan.id as string },
         apiKey,
         emails,
         isPastDue ? "Action needed: recurring payment failed" : "Your recurring plan was canceled",
@@ -697,7 +706,14 @@ Deno.serve(async (req) => {
         cta: content.cta,
         supportEmail,
       });
-      await sendResend(apiKey, emails, content.subject, html);
+      await sendLogged(
+        admin,
+        { clientId: clientId as string, kind: `reminder_${remind}`, stage, relatedId: body.id as string },
+        apiKey,
+        emails,
+        content.subject,
+        html,
+      );
       console.log("document-email sent", { kind: "client_reminder", remind, stage, id: body.id });
       return json({ ok: true });
     }
@@ -744,7 +760,9 @@ Deno.serve(async (req) => {
         cta: "Complete your scope",
         supportEmail,
       });
-      await sendResend(
+      await sendLogged(
+        admin,
+        { clientId: clientRow.id as string, kind: "scope_reminder", stage },
         apiKey,
         emails,
         stage === 3 ? "Last reminder: complete your Website Scope" : "Complete your Website Scope to get started",
@@ -817,7 +835,9 @@ Deno.serve(async (req) => {
         cta: manual ? "Message us" : paused ? "Choose a plan to restore it" : "Choose a Website Care plan",
         supportEmail,
       });
-      await sendResend(
+      await sendLogged(
+        admin,
+        { clientId: project.client_id as string, kind: "launch_trial", stage, relatedId: project.id as string },
         apiKey,
         emails,
         paused
@@ -1057,5 +1077,37 @@ async function sendResend(
   if (!response.ok) {
     console.error("document-email resend failed", { status: response.status });
     throw new Error("email_failed");
+  }
+  const sentBody = (await response.json().catch(() => null)) as { id?: unknown } | null;
+  return typeof sentBody?.id === "string" ? sentBody.id : null;
+}
+
+/**
+ * Sends the email, then records it in client_email_log (who, what, when, and the provider's message id) so staff
+ * can show a client was reminded. Used for the automated reminders. A failure to write the log never fails or
+ * repeats the send.
+ */
+async function sendLogged(
+  admin: ReturnType<typeof createClient>,
+  meta: { clientId: string; kind: string; stage?: string | number | null; relatedId?: string | null },
+  apiKey: string,
+  to: string[],
+  subject: string,
+  html: string,
+) {
+  const providerId = await sendResend(apiKey, to, subject, html);
+  try {
+    const { error } = await admin.from("client_email_log").insert({
+      client_id: meta.clientId,
+      kind: meta.kind,
+      stage: meta.stage === undefined || meta.stage === null ? null : String(meta.stage),
+      related_id: meta.relatedId ?? null,
+      subject,
+      recipients: to,
+      provider_id: providerId,
+    });
+    if (error) console.error("document-email log failed", { kind: meta.kind, message: error.message });
+  } catch (caught) {
+    console.error("document-email log failed", { kind: meta.kind, message: String(caught) });
   }
 }
