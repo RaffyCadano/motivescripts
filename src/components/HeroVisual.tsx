@@ -63,13 +63,13 @@ export function HeroVisual() {
           </div>
         </Laptop3D>
 
-        <DeviceFrame device={TABLET} className="absolute bottom-0 left-0 w-[38%] sm:w-[36%]">
+        <DeviceFrame device={TABLET} className="absolute bottom-0 left-[6%] w-[38%] sm:w-[36%]">
           <ScrollingMock pageWidth={TABLET_W} delaySeconds={5} overlay={<TabletOverlay />}>
             <TabletSiteMock />
           </ScrollingMock>
         </DeviceFrame>
 
-        <DeviceFrame device={PHONE} className="absolute bottom-0 right-[7%] w-[22%] lg:right-0">
+        <DeviceFrame device={PHONE} className="absolute bottom-0 right-[9%] w-[22%] lg:right-[7%]">
           <ScrollingMock pageWidth={PHONE_W} delaySeconds={9} overlay={<PhoneOverlay />}>
             <PhoneSiteMock />
           </ScrollingMock>
