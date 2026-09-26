@@ -32,7 +32,8 @@ export type AdminIconName =
   | "careRequests"
   | "maintenancePlans"
   | "recurringRevenue"
-  | "websiteMonitoring";
+  | "websiteMonitoring"
+  | "accounts";
 
 export type AdminNavItem = {
   label: string;
@@ -96,6 +97,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     label: "Operations",
     items: [
       { label: "Team", href: "/admin/team", icon: "team" },
+      { label: "Accounts", href: "/admin/accounts", icon: "accounts" },
       { label: "Capacity", href: "/admin/capacity", icon: "capacity" },
       { label: "Activity", href: "/admin/activity", icon: "activity" },
       { label: "Settings", href: "/admin/settings", icon: "settings" },
@@ -168,6 +170,7 @@ function resolveAdminNavPath(pathname: string): string {
   if (pathname === "/admin/reports") return "/admin/reports";
   if (pathname === "/admin/testimonials" || pathname.startsWith("/admin/testimonials/")) return "/admin/testimonials";
   if (pathname === "/admin/team" || pathname.startsWith("/admin/team/")) return "/admin/team";
+  if (pathname === "/admin/accounts") return "/admin/accounts";
   if (pathname === "/admin/settings" || pathname.startsWith("/admin/settings/")) return "/admin/settings";
   if (pathname === "/admin/profile") return "/admin/profile";
   return pathname;
@@ -209,6 +212,7 @@ const navPermission: Record<string, StaffPermissionCode | "admin" | null> = {
   "/admin/capacity": "projects.view",
   "/admin/payroll": "admin",
   "/admin/activity": "activity.view",
+  "/admin/accounts": "admin",
   "/admin/settings": "admin",
   "/admin/profile": null,
 };

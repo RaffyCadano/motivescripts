@@ -45,6 +45,7 @@ const AdminRecurringRevenue = lazy(() =>
 );
 const AdminPayroll = lazy(() => import("@/pages/admin/AdminPayroll").then((m) => ({ default: m.AdminPayroll })));
 const AdminClientDetails = lazy(() => import("@/pages/admin/AdminClientDetails").then((m) => ({ default: m.AdminClientDetails })));
+const AdminAccounts = lazy(() => import("@/pages/admin/AdminAccounts").then((m) => ({ default: m.AdminAccounts })));
 const AdminClientScope = lazy(() => import("@/pages/admin/AdminClientScope").then((m) => ({ default: m.AdminClientScope })));
 const AdminClientNew = lazy(() => import("@/pages/admin/AdminClientNew").then((m) => ({ default: m.AdminClientNew })));
 const AdminClients = lazy(() => import("@/pages/admin/AdminClients").then((m) => ({ default: m.AdminClients })));
@@ -177,6 +178,7 @@ export default function App() {
                 <Route path="testimonials/new" element={<AdminTestimonialForm />} />
                 <Route path="testimonials/:id" element={<AdminTestimonialForm />} />
                 <Route path="payroll" element={<AdminPayroll />} />
+                <Route path="accounts" element={<AdminAccounts />} />
                 <Route path="team" element={<AdminTeam />} />
                 <Route path="team/new" element={<AdminTeamInviteNew />} />
                 <Route path="team/invite/:invitationId" element={<AdminTeamInviteDetails />} />

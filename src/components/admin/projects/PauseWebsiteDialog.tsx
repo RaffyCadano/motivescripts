@@ -12,7 +12,18 @@ const fieldClass =
  * "Pause this website now": a manual pause for reasons the system can't see (an unpaid invoice, a client asking
  * to take it down). Same status as the automatic pause, so Unpause and the plan-starts trigger work unchanged.
  */
-export function PauseWebsiteDialog({ project, open, onClose }: { project: AgencyProject; open: boolean; onClose: () => void }) {
+export function PauseWebsiteDialog({
+  project,
+  open,
+  onClose,
+  takeDown = false,
+}: {
+  project: AgencyProject;
+  open: boolean;
+  onClose: () => void;
+  /** Worded as "Take down" (from the Accounts page) instead of "Pause"; it does exactly the same thing. */
+  takeDown?: boolean;
+}) {
   const { notify, reload } = useLeads();
   const [note, setNote] = useState("");
   const [notifyClient, setNotifyClient] = useState(true);
@@ -40,13 +51,13 @@ export function PauseWebsiteDialog({ project, open, onClose }: { project: Agency
       open={open}
       danger
       busy={busy}
-      title="Pause this website?"
+      title={takeDown ? "Take down this website?" : "Pause this website?"}
       description={
         auto
           ? "The project is marked Paused and the site is paused on Vercel. Visitors will see Vercel’s “paused” page until you unpause it."
           : "The project is marked Paused and your team is alerted to take the site offline at the host. This system can’t switch the host off itself unless Automatic pause on Vercel is turned on for the project."
       }
-      actionLabel="Pause website"
+      actionLabel={takeDown ? "Take down website" : "Pause website"}
       confirmDisabled={note.length > 500}
       onClose={() => {
         if (!busy) onClose();

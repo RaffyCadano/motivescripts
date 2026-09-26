@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { ClientConfirmDialog } from "@/components/client/ClientConfirmDialog";
 import { describeUserAgent, formatSessionTime, type AuthSession } from "@/data/authSessions";
@@ -151,6 +151,23 @@ export function AccountSecuritySection({ audience = "client" }: { audience?: "cl
             A device you log out stays signed in for up to an hour at most, then has to sign in again.
           </p>
         ) : null}
+      </div>
+
+      <div className="mt-6 rounded-[var(--client-radius)] border border-[var(--client-line)] px-4 py-3.5">
+        <p className="text-sm font-semibold text-[var(--client-ink)]">Delete your account</p>
+        {audience === "client" ? (
+          <p className="mt-1 text-sm leading-relaxed text-[var(--client-muted)]">
+            To delete your account, please cancel your MotiveScripts subscription first, or{" "}
+            <Link to="/client/messages" className="font-semibold text-[var(--client-blue)] underline-offset-2 hover:underline">
+              contact MotiveScripts
+            </Link>{" "}
+            to delete your account.
+          </p>
+        ) : (
+          <p className="mt-1 text-sm leading-relaxed text-[var(--client-muted)]">
+            To delete your account, please contact a MotiveScripts administrator. Only an administrator can delete accounts.
+          </p>
+        )}
       </div>
 
       <ClientConfirmDialog
