@@ -243,10 +243,20 @@ export function AdminAccounts() {
                       {account.isSelf ? (
                         <span className="text-[12px] text-[var(--admin-muted)]">Your account</span>
                       ) : (
-                        <button type="button" className={`${adminDangerBtn} h-9 gap-1.5 px-3 text-[12px]`} onClick={() => openDelete(account)}>
-                          <Trash2 size={13} strokeWidth={2.2} aria-hidden="true" />
-                          Delete account
-                        </button>
+                        <div className="flex flex-col items-end gap-1.5">
+                          <button type="button" className={`${adminDangerBtn} h-9 gap-1.5 px-3 text-[12px]`} onClick={() => openDelete(account)}>
+                            <Trash2 size={13} strokeWidth={2.2} aria-hidden="true" />
+                            Delete account
+                          </button>
+                          {account.clientId ? (
+                            <Link
+                              to={`/admin/clients/${account.clientId}#overview`}
+                              className="font-heading text-[12px] font-semibold text-[#b42318] hover:underline"
+                            >
+                              Delete client &amp; everything…
+                            </Link>
+                          ) : null}
+                        </div>
                       )}
                     </td>
                   </tr>

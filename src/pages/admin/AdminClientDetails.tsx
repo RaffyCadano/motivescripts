@@ -25,6 +25,7 @@ import {
   ClientMessagesSection,
   ClientProjectsSection,
 } from "@/components/admin/clients/ClientProfileSections";
+import { ClientDangerZone } from "@/components/admin/clients/ClientDangerZone";
 import { ClientEmailLogSection } from "@/components/admin/clients/ClientEmailLogSection";
 import { ClientOperationsOverview } from "@/components/admin/clients/ClientOperationsOverview";
 import { ClientScopeBriefSection } from "@/components/admin/clients/ClientScopeBriefSection";
@@ -295,6 +296,7 @@ function ClientOverviewTab({
       />
       <ClientScopeBriefSection client={client} />
       <ClientEmailLogSection client={client} />
+      <ClientDangerZone client={client} />
     </>
   );
 }
