@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { BatteryFull, Signal, Wifi } from "lucide-react";
-import { BrandMark } from "@/components/BrandMark";
 import { cn } from "@/lib/cn";
 import houseHero from "@/assets/previews/landscape-stone.webp";
 import phoneImage from "@/assets/devices/phone.webp";
@@ -74,11 +73,6 @@ export function HeroVisual() {
             <PhoneSiteMock />
           </ScrollingMock>
         </DeviceFrame>
-
-        <div className="absolute right-0 top-0 z-30 hidden rounded-[var(--radius-lg)] border border-[#d9dfe8] bg-[var(--ms-white)] px-3 py-2 shadow-[var(--shadow-card)] sm:flex sm:items-center sm:gap-2">
-          <BrandMark className="h-7 w-auto" decorative />
-          <p className="whitespace-nowrap font-heading text-xs font-semibold text-ink">Built by MotiveScripts</p>
-        </div>
       </div>
     </div>
   );
