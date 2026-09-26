@@ -11,6 +11,7 @@ import { validateExtraRecipients } from "../_shared/emailRecipients.ts";
 type RequestBody = {
   kind?: string;
   id?: string;
+  /** scope_reminder only: "1", "2" or "3", which reminder this is (the last one says so). */
   /** launch_trial only: "7d" and "1d" (the free period is about to end), "paused" (it ended and the site is paused) or "manual" (an admin paused it). */
   stage?: string;
   paymentId?: string;
@@ -126,6 +127,7 @@ Deno.serve(async (req) => {
       body.kind !== "plan_past_due" &&
       body.kind !== "plan_canceled" &&
       body.kind !== "launch_trial" &&
+      body.kind !== "scope_reminder" &&
       body.kind !== "new_message") ||
     !body.id
   ) {
@@ -144,7 +146,8 @@ Deno.serve(async (req) => {
   // Same as "payment": no interactive user triggers these either -- invoice_overdue
   // is called by the daily overdue-reminder cron job, plan_past_due / plan_canceled
   // are called by the stripe-webhook function reacting to a Stripe event, launch_trial is called by the
-  // daily launch-trial sweep (run_launch_trial_sweep), and
+  // daily launch-trial sweep (run_launch_trial_sweep), scope_reminder is called by the daily scope-reminder
+  // sweep (run_scope_reminder_sweep), and
   // new_message is called by the messages_notify_recipients trigger on every new
   // message. All are authenticated with the service role key, never a browser session.
   if (
@@ -153,6 +156,7 @@ Deno.serve(async (req) => {
     body.kind === "plan_past_due" ||
     body.kind === "plan_canceled" ||
     body.kind === "launch_trial" ||
+    body.kind === "scope_reminder" ||
     body.kind === "new_message"
   ) {
     if (!isServiceRole) return fail("not_allowed", 403);
@@ -431,6 +435,58 @@ Deno.serve(async (req) => {
         html,
       );
       console.log("document-email sent", { kind: body.kind, id: plan.id });
+      return json({ ok: true });
+    }
+
+    if (body.kind === "scope_reminder") {
+      // body.id is the client. They have a portal login but have not submitted their Website Scope, so the
+      // proposal can't be prepared. Three reminders at most; the sweep decides when, this only words it.
+      const stage = body.stage === "3" ? 3 : body.stage === "2" ? 2 : 1;
+      const { data: clientRow } = await admin
+        .from("clients")
+        .select("id, business_name, contact_name, email")
+        .eq("id", body.id)
+        .maybeSingle();
+      if (!clientRow) return fail("not_found");
+      const { data: recipients } = await admin
+        .from("profiles")
+        .select("email")
+        .eq("client_id", clientRow.id)
+        .eq("role", "client");
+      const emails = [
+        ...new Set(
+          [...(recipients ?? []).map((row: { email: string | null }) => row.email), clientRow.email]
+            .map((value) => (value ?? "").trim().toLowerCase())
+            .filter((value) => value.includes("@")),
+        ),
+      ];
+      if (emails.length === 0) return fail("no_recipient");
+      const html = brandedEmail({
+        heading:
+          stage === 3
+            ? "Last reminder: complete your Website Scope."
+            : "Complete your Website Scope to get started.",
+        company: clientRow.business_name ?? "your team",
+        number: "Website Scope",
+        title: stage === 3 ? "Final reminder" : "Action needed",
+        summary:
+          stage === 1
+            ? "We're ready to get your website project going, but we can't start until we have your Website Scope. It only takes about 2 minutes: choose a package, pick your pages and features, and tell us about your project."
+            : stage === 2
+              ? "A quick reminder: we can't prepare your proposal until your Website Scope is in. It only takes about 2 minutes, and it's the first step to getting your project started."
+              : "This is our last reminder. Your project can't move forward until your Website Scope is complete, so the sooner it's in, the sooner we can send your proposal.",
+        expiresLabel: "Takes about 2 minutes. Prefer to talk it through? Reply to this email and we'll fill it in with you.",
+        url: `${origin}/client/scope`,
+        cta: "Complete your scope",
+        supportEmail,
+      });
+      await sendResend(
+        apiKey,
+        emails,
+        stage === 3 ? "Last reminder: complete your Website Scope" : "Complete your Website Scope to get started",
+        html,
+      );
+      console.log("document-email sent", { kind: "scope_reminder", stage, id: clientRow.id });
       return json({ ok: true });
     }
 
