@@ -4,6 +4,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission, type StaffPermissionCode } from "@/auth/permissions";
 import { displayRoleLabel } from "@/auth/roles";
 import { initialsFromName, userDisplay } from "@/auth/userDisplay";
+import { EmailAlertPreferences } from "@/components/admin/settings/EmailAlertPreferences";
 import { NotificationPreferences } from "@/components/admin/settings/NotificationPreferences";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { PayoutInfoSection } from "@/components/settings/PayoutInfoSection";
@@ -122,6 +123,15 @@ export function AdminProfile() {
           ) : (
             <NotificationPreferences events={notificationEvents} />
           )}
+        </div>
+        <div className="mt-6 border-t border-[var(--admin-line)] pt-5">
+          <h3 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Email alerts</h3>
+          <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
+            Get an email copy of the important alerts, so you see them even when you are not in the app.
+          </p>
+          <div className="mt-4">
+            <EmailAlertPreferences categories={["money", "client_activity", "site_alerts", "team_work"]} />
+          </div>
         </div>
       </section>
 

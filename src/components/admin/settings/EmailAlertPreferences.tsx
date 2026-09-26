@@ -1,37 +1,37 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import {
-  defaultNotificationPreferences,
-  notificationEvents,
-  type NotificationPreferenceMap,
-} from "@/data/notificationPreferences";
-import { fetchMyNotificationPreferences, setMyNotificationPreference } from "@/data/notificationPreferencesRepository";
+  defaultEmailAlertPreferences,
+  emailAlertCategories,
+  type EmailAlertCategory,
+  type EmailAlertPreferenceMap,
+} from "@/data/emailAlertPreferences";
+import { fetchMyEmailAlertPreferences, setMyEmailAlertPreference } from "@/data/emailAlertPreferencesRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
-import type { NotificationEvent } from "@/types/database";
 import { cn } from "@/lib/cn";
 
 /**
- * Personal in-app notification switches. Each change saves immediately; the default for every event is on.
- * Pass `events` to show only the ones that can reach this person (defaults to all of them).
+ * Personal email switches for the staff alerts (the same alerts that appear under the bell). Each change saves
+ * immediately; every group is on by default. Pass `categories` to show only the groups that can reach this person.
  */
-export function NotificationPreferences({ events }: { events?: NotificationEvent[] } = {}) {
+export function EmailAlertPreferences({ categories }: { categories?: EmailAlertCategory[] } = {}) {
   const { profile } = useAuth();
   const userId = profile?.id ?? "";
-  const [prefs, setPrefs] = useState<NotificationPreferenceMap>(defaultNotificationPreferences);
+  const [prefs, setPrefs] = useState<EmailAlertPreferenceMap>(defaultEmailAlertPreferences);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState<NotificationEvent | null>(null);
+  const [saving, setSaving] = useState<EmailAlertCategory | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const shown = events ? notificationEvents.filter((event) => events.includes(event.key)) : notificationEvents;
+  const shown = categories ? emailAlertCategories.filter((item) => categories.includes(item.key)) : emailAlertCategories;
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetchMyNotificationPreferences()
+    fetchMyEmailAlertPreferences()
       .then((loaded) => {
         if (!cancelled) setPrefs(loaded);
       })
       .catch((caught) => {
-        if (!cancelled) setError(caught instanceof AgencyDbError ? caught.message : "Unable to load your notification settings.");
+        if (!cancelled) setError(caught instanceof AgencyDbError ? caught.message : "Unable to load your email settings.");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -41,16 +41,16 @@ export function NotificationPreferences({ events }: { events?: NotificationEvent
     };
   }, []);
 
-  async function toggle(event: NotificationEvent) {
+  async function toggle(category: EmailAlertCategory) {
     if (!userId || saving) return;
-    const next = !prefs[event];
+    const next = !prefs[category];
     setError(null);
-    setSaving(event);
-    setPrefs((current) => ({ ...current, [event]: next })); // optimistic
+    setSaving(category);
+    setPrefs((current) => ({ ...current, [category]: next })); // optimistic
     try {
-      await setMyNotificationPreference(userId, event, next);
+      await setMyEmailAlertPreference(userId, category, next);
     } catch (caught) {
-      setPrefs((current) => ({ ...current, [event]: !next })); // put it back
+      setPrefs((current) => ({ ...current, [category]: !next })); // put it back
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to save that setting.");
     } finally {
       setSaving(null);
@@ -65,21 +65,18 @@ export function NotificationPreferences({ events }: { events?: NotificationEvent
         </p>
       ) : null}
       <ul className="space-y-2">
-        {shown.map((event) => {
-          const on = prefs[event.key];
-          const labelId = `notif-${event.key}-label`;
-          const hintId = `notif-${event.key}-hint`;
+        {shown.map((item) => {
+          const on = prefs[item.key];
+          const labelId = `email-alert-${item.key}-label`;
+          const hintId = `email-alert-${item.key}-hint`;
           return (
-            <li
-              key={event.key}
-              className="flex items-center justify-between gap-4 rounded-lg border border-[var(--admin-line)] px-3 py-2.5"
-            >
+            <li key={item.key} className="flex items-center justify-between gap-4 rounded-lg border border-[var(--admin-line)] px-3 py-2.5">
               <div className="min-w-0">
                 <p id={labelId} className="text-sm font-medium text-[var(--admin-ink)]">
-                  {event.label}
+                  {item.label}
                 </p>
                 <p id={hintId} className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
-                  {event.description}
+                  {item.description}
                 </p>
               </div>
               <button
@@ -88,8 +85,8 @@ export function NotificationPreferences({ events }: { events?: NotificationEvent
                 aria-checked={on}
                 aria-labelledby={labelId}
                 aria-describedby={hintId}
-                disabled={loading || saving === event.key}
-                onClick={() => void toggle(event.key)}
+                disabled={loading || saving === item.key}
+                onClick={() => void toggle(item.key)}
                 className={cn(
                   "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-blue)] disabled:opacity-60",
                   on ? "border-[var(--admin-blue)] bg-[var(--admin-blue)]" : "border-[var(--admin-line)] bg-[#cfd6e0]",
@@ -97,10 +94,7 @@ export function NotificationPreferences({ events }: { events?: NotificationEvent
               >
                 <span
                   aria-hidden="true"
-                  className={cn(
-                    "inline-block size-4 rounded-full bg-white shadow transition-transform",
-                    on ? "translate-x-6" : "translate-x-1",
-                  )}
+                  className={cn("inline-block size-4 rounded-full bg-white shadow transition-transform", on ? "translate-x-6" : "translate-x-1")}
                 />
                 <span className="sr-only">{on ? "On" : "Off"}</span>
               </button>
@@ -109,8 +103,8 @@ export function NotificationPreferences({ events }: { events?: NotificationEvent
         })}
       </ul>
       <p className="mt-4 text-[12px] text-[var(--admin-muted)]">
-        These switches only affect you, and only what appears under the bell. Email alerts are set separately, below.
-        Notifications for tasks, deadlines, payroll, domains, and project updates are always delivered in-app.
+        These emails go to the address on your profile and only cover alerts you would also see under the bell. Repeating reminders (an
+        overdue task, an expired domain or SSL certificate) email once a week per item.
       </p>
     </div>
   );

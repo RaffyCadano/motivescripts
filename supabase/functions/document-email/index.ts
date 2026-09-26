@@ -11,6 +11,7 @@ import { validateExtraRecipients } from "../_shared/emailRecipients.ts";
 type RequestBody = {
   kind?: string;
   id?: string;
+  /** staff_notification only: id is the notification to email (to the person it was created for). */
   /** client_reminder only: what the reminder is about ("proposal", "contract", "invoice", "invite", "discovery", "review" or "info_request"); id is that item (the project for "review" and "info_request"), stage is "1", "2" or "3". */
   remind?: string;
   /** scope_reminder only: "1", "2" or "3", which reminder this is (the last one says so). */
@@ -131,6 +132,7 @@ Deno.serve(async (req) => {
       body.kind !== "launch_trial" &&
       body.kind !== "scope_reminder" &&
       body.kind !== "client_reminder" &&
+      body.kind !== "staff_notification" &&
       body.kind !== "new_message") ||
     !body.id
   ) {
@@ -150,7 +152,8 @@ Deno.serve(async (req) => {
   // is called by the daily overdue-reminder cron job, plan_past_due / plan_canceled
   // are called by the stripe-webhook function reacting to a Stripe event, launch_trial is called by the
   // daily launch-trial sweep (run_launch_trial_sweep), scope_reminder is called by the daily scope-reminder
-  // sweep (run_scope_reminder_sweep), client_reminder by run_client_reminder_sweep, and
+  // sweep (run_scope_reminder_sweep), client_reminder by run_client_reminder_sweep, staff_notification by the
+  // notifications_email_staff trigger, and
   // new_message is called by the messages_notify_recipients trigger on every new
   // message. All are authenticated with the service role key, never a browser session.
   if (
@@ -161,6 +164,7 @@ Deno.serve(async (req) => {
     body.kind === "launch_trial" ||
     body.kind === "scope_reminder" ||
     body.kind === "client_reminder" ||
+    body.kind === "staff_notification" ||
     body.kind === "new_message"
   ) {
     if (!isServiceRole) return fail("not_allowed", 403);
@@ -448,6 +452,108 @@ Deno.serve(async (req) => {
         html,
       );
       console.log("document-email sent", { kind: body.kind, id: plan.id });
+      return json({ ok: true });
+    }
+
+    if (body.kind === "staff_notification") {
+      // An email copy of an in-app alert for a team member. The trigger only queues it for admin/staff
+      // notifications of the emailed types; everything else is checked again here.
+      const { data: n } = await admin
+        .from("notifications")
+        .select("id, user_id, type, title, body, project_id, proposal_id, contract_id, invoice_id, task_id, service_plan_id")
+        .eq("id", body.id)
+        .maybeSingle();
+      if (!n) return json({ ok: true, skipped: "gone" });
+      const { data: category } = await admin.rpc("notification_email_category", { p_type: n.type });
+      if (!category) return json({ ok: true, skipped: "not_emailed" });
+
+      const { data: person } = await admin.from("profiles").select("email, role").eq("id", n.user_id).maybeSingle();
+      const toEmail = String(person?.email ?? "").trim().toLowerCase();
+      if (!person || (person.role !== "admin" && person.role !== "staff") || !toEmail.includes("@")) {
+        return json({ ok: true, skipped: "not_staff" });
+      }
+      let templateKey = "";
+      if (person.role === "staff") {
+        const { data: staff } = await admin
+          .from("staff_profiles")
+          .select("template_key, is_active")
+          .eq("user_id", n.user_id)
+          .maybeSingle();
+        if (!staff?.is_active) return json({ ok: true, skipped: "inactive" });
+        templateKey = String(staff.template_key ?? "");
+      }
+
+      const { data: pref } = await admin
+        .from("staff_email_preferences")
+        .select("enabled")
+        .eq("user_id", n.user_id)
+        .eq("category", category)
+        .maybeSingle();
+      if (pref && pref.enabled === false) return json({ ok: true, skipped: "switched_off" });
+
+      // The reminders that repeat (an overdue task, an expired domain or SSL certificate) email once a week per item.
+      const relatedId = (n.task_id ?? n.service_plan_id ?? null) as string | null;
+      if (["task_overdue", "domain_expired", "ssl_expired"].includes(n.type) && relatedId) {
+        const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        const { count } = await admin
+          .from("staff_email_log")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", n.user_id)
+          .eq("type", n.type)
+          .eq("related_id", relatedId)
+          .gte("created_at", since);
+        if ((count ?? 0) > 0) return json({ ok: true, skipped: "throttled" });
+      }
+
+      const team = ["developer", "designer", "content_writer", "team_member"].includes(templateKey);
+      const projectUrl = n.project_id
+        ? `${origin}/${team ? "team" : "admin"}/projects/${n.project_id}`
+        : `${origin}/${team ? "team/dashboard" : "admin"}`;
+      let url = projectUrl;
+      if (n.type === "proposal_accepted" && n.proposal_id) url = `${origin}/admin/proposals/${n.proposal_id}`;
+      else if (n.type === "contract_accepted" && n.contract_id) url = `${origin}/admin/contracts/${n.contract_id}`;
+      else if (category === "money" && n.invoice_id) url = `${origin}/admin/invoices/${n.invoice_id}`;
+      else if (n.type === "care_request_submitted" && !team) url = `${origin}/admin/care-requests`;
+      else if (n.type.startsWith("domain_") || n.type.startsWith("ssl_")) url = `${origin}/admin/clients`;
+      else if (n.type === "payroll_paid") url = `${origin}/${team ? "team/time" : "admin/payroll"}`;
+      else if (n.type.startsWith("task_") && !n.project_id) url = `${origin}/team/tasks`;
+      else if (n.type.startsWith("task_") && team) url = `${origin}/team/tasks`;
+
+      let company = "MotiveScripts";
+      if (n.project_id) {
+        const { data: project } = await admin.from("projects").select("name").eq("id", n.project_id).maybeSingle();
+        if (project?.name) company = String(project.name);
+      }
+      const groupLabel: Record<string, string> = {
+        money: "Money & paperwork",
+        client_activity: "Client activity",
+        site_alerts: "Site alert",
+        team_work: "Team work",
+      };
+      const html = brandedEmail({
+        heading: String(n.title),
+        company,
+        number: groupLabel[String(category)] ?? "Alert",
+        title: "MotiveScripts alert",
+        summary: String(n.body ?? "").trim() || String(n.title),
+        expiresLabel: "You get this because it is an alert on your MotiveScripts account. You can switch these emails off in your profile settings.",
+        url,
+        cta: "Open in MotiveScripts",
+        supportEmail,
+      });
+      const providerId = await sendResend(apiKey, [toEmail], String(n.title), html);
+      const { error: logError } = await admin.from("staff_email_log").insert({
+        user_id: n.user_id,
+        notification_id: n.id,
+        type: n.type,
+        category,
+        related_id: relatedId,
+        subject: String(n.title),
+        to_email: toEmail,
+        provider_id: providerId,
+      });
+      if (logError) console.error("document-email staff log failed", { message: logError.message });
+      console.log("document-email sent", { kind: "staff_notification", type: n.type, id: n.id });
       return json({ ok: true });
     }
 
