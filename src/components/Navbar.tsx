@@ -81,7 +81,7 @@ export function Navbar() {
       </div>
       <div className="container-wide relative z-50 flex h-[var(--nav-height)] items-center justify-between gap-3 sm:gap-6">
         {/* Larger below lg, where the nav collapses to the menu button and the wordmark is the only text in the bar. */}
-        <Logo wordmarkClassName="max-lg:text-[1.2rem]!" />
+        <Logo className="max-[359px]:gap-2" markClassName="max-[359px]:h-7" wordmarkClassName="max-lg:text-[1.2rem]! max-[359px]:text-[0.95rem]!" />
 
         <nav className="hidden items-center gap-5 xl:gap-7 lg:flex" aria-label="Primary">
           {site.nav.map((item) => (
@@ -110,9 +110,14 @@ export function Navbar() {
           </Button>
         </div>
 
+        {/* Below lg the desktop buttons are gone: Login stays one tap away, next to the menu button. */}
+        <Button to="/login" variant="secondary" size="md" className="ml-auto h-10 px-4 max-[359px]:h-9 max-[359px]:px-3 lg:hidden">
+          Login
+        </Button>
+
         <button
           type="button"
-          className="ml-auto inline-flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink lg:ml-0 lg:hidden"
+          className="inline-flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] text-ink max-[359px]:size-9 lg:hidden"
           aria-expanded={open}
           aria-controls="mobile-nav"
           aria-label={open ? "Close menu" : "Open menu"}
