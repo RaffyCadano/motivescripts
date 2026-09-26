@@ -95,3 +95,16 @@ test("permissions are grouped into one row per area, View before Manage", async 
   assert.deepEqual(groups[0].actions.map((action) => action.code), ["leads.view", "leads.manage"]);
   assert.deepEqual(groupPermissions([]), []);
 });
+
+test("the onboarding page is a private path, so it is never indexed", async () => {
+  const { privatePathPrefixes } = await import("../src/data/seoPages.ts");
+  assert.ok(privatePathPrefixes.includes("/onboarding"));
+});
+
+test("the notification badge counts unread notifications beyond the loaded list", () => {
+  const provider = readFileSync("src/providers/MessagingProvider.tsx", "utf8");
+  const repo = readFileSync("src/data/messagingRepository.ts", "utf8");
+  assert.ok(repo.includes('{ count: "exact", head: true }') && repo.includes('.is("read_at", null)'));
+  assert.ok(provider.includes("+ unreadBeyondList"));
+  assert.ok(!provider.includes("void fetchNotifications()"), "the realtime refresh must also use the counted loader");
+});

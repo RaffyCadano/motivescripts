@@ -5,6 +5,7 @@ import type { AppNotification, ConversationSummary } from "@/data/messaging";
 import {
   fetchConversations,
   fetchNotifications,
+  fetchUnreadNotificationCount,
   markAllNotificationsRead as markAllNotificationsReadRecord,
   markConversationRead as markConversationReadRecord,
   markNotificationRead as markNotificationReadRecord,
@@ -47,6 +48,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
   const { clients, projects, notify } = useLeads();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadBeyondList, setUnreadBeyondList] = useState(0);
   const [loadStatus, setLoadStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [realtimeReady, setRealtimeReady] = useState(false);
@@ -61,25 +63,34 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     [clients, projects],
   );
 
+  // The list holds only the newest notifications, so unread ones older than that would otherwise never be counted.
+  const loadNotifications = useCallback(async (): Promise<AppNotification[]> => {
+    const [list, unreadTotal] = await Promise.all([fetchNotifications(), fetchUnreadNotificationCount().catch(() => null)]);
+    const unreadInList = list.filter((item) => !item.readAt).length;
+    setUnreadBeyondList(unreadTotal === null ? 0 : Math.max(0, unreadTotal - unreadInList));
+    return list;
+  }, []);
+
   const reload = useCallback(async () => {
     const userId = session?.user.id;
     const role = profile?.role;
     if (!userId || (role !== "admin" && role !== "staff" && role !== "client")) {
       setConversations([]);
       setNotifications([]);
+      setUnreadBeyondList(0);
       setLoadStatus("ready");
       setLoadError(null);
       return;
     }
     const [nextConversations, nextNotifications] = await Promise.all([
       fetchConversations(userId, lookupRef.current),
-      fetchNotifications(),
+      loadNotifications(),
     ]);
     setConversations(nextConversations);
     setNotifications(nextNotifications);
     setLoadStatus("ready");
     setLoadError(null);
-  }, [profile?.role, session?.user.id]);
+  }, [loadNotifications, profile?.role, session?.user.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,12 +101,13 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     if (!session || profileStatus !== "ready" || !profile || (profile.role !== "admin" && profile.role !== "staff" && profile.role !== "client")) {
       setConversations([]);
       setNotifications([]);
+      setUnreadBeyondList(0);
       setLoadStatus("ready");
       setLoadError(null);
       return;
     }
     setLoadStatus("loading");
-    Promise.all([fetchConversations(session.user.id, lookupRef.current), fetchNotifications()])
+    Promise.all([fetchConversations(session.user.id, lookupRef.current), loadNotifications()])
       .then(([nextConversations, nextNotifications]) => {
         if (cancelled) return;
         setConversations(nextConversations);
@@ -112,7 +124,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, profile, profileStatus, session]);
+  }, [authLoading, loadNotifications, profile, profileStatus, session]);
 
   useEffect(() => {
     setConversations((current) => {
@@ -148,7 +160,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
         void reload().catch(() => undefined);
       },
       onNotificationsChange: () => {
-        void fetchNotifications()
+        void loadNotifications()
           .then(setNotifications)
           .catch(() => undefined);
       },
@@ -162,7 +174,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       unsubscribe();
       window.removeEventListener("focus", onFocus);
     };
-  }, [profile, profileStatus, reload, session?.user.id]);
+  }, [loadNotifications, profile, profileStatus, reload, session?.user.id]);
 
   const startConversation = useCallback(
     async (input: { subject: string; body: string; projectId?: string | null; clientId?: string | null }) => {
@@ -240,6 +252,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       await markAllNotificationsReadRecord();
       const now = new Date().toISOString();
       setNotifications((current) => current.map((item) => ({ ...item, readAt: item.readAt ?? now })));
+      setUnreadBeyondList(0);
     } catch (error) {
       notify(error instanceof AgencyDbError ? error.message : "Unable to update notifications.");
     }
@@ -261,7 +274,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       loadStatus,
       loadError,
       unreadMessageCount: conversations.reduce((sum, item) => sum + item.unreadCount, 0),
-      unreadNotificationCount: notifications.filter((item) => !item.readAt).length,
+      unreadNotificationCount: notifications.filter((item) => !item.readAt).length + unreadBeyondList,
       realtimeReady,
       reload,
       startConversation,
@@ -281,6 +294,7 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
       markConversationRead,
       markNotificationRead,
       notifications,
+      unreadBeyondList,
       realtimeReady,
       reload,
       sendMessage,

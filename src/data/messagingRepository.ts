@@ -142,6 +142,17 @@ export async function fetchNotifications(): Promise<AppNotification[]> {
   return (data ?? []).map(mapNotificationRow);
 }
 
+/** How many notifications are unread in total, however many the list loads. */
+export async function fetchUnreadNotificationCount(): Promise<number> {
+  const client = db();
+  const { count, error } = await client
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .is("read_at", null);
+  throwIf(error, "count unread notifications", "Unable to load notifications.");
+  return count ?? 0;
+}
+
 export async function startConversation(input: {
   subject: string;
   body: string;

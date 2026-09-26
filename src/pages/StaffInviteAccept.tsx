@@ -17,6 +17,7 @@ import { acceptStaffInvitation, previewStaffInvitation, staffInvitationEmailMatc
 import { AgencyDbError } from "@/lib/dbErrors";
 import { appUrl } from "@/lib/appUrl";
 import { cn } from "@/lib/cn";
+import { usePrivatePageTitle } from "@/lib/usePrivatePageTitle";
 
 type Screen =
   | "loading"
@@ -64,6 +65,7 @@ function previewToScreen(state: InvitationPreviewState): Screen {
 }
 
 export function StaffInviteAcceptPage() {
+  usePrivatePageTitle("Accept your invitation — MotiveScripts Team");
   const { token: rawToken = "" } = useParams();
   const token = rawToken.trim().toLowerCase();
   const navigate = useNavigate();

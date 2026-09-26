@@ -97,7 +97,7 @@ export function seoPage(path: string): SeoPage {
 }
 
 /** Path prefixes for the signed-in areas. They are never indexed. */
-export const privatePathPrefixes = ["/admin", "/client", "/team", "/auth", "/invite", "/staff-invite", "/login"] as const;
+export const privatePathPrefixes = ["/admin", "/client", "/team", "/auth", "/invite", "/staff-invite", "/onboarding", "/login"] as const;
 
 export function isPrivatePath(pathname: string): boolean {
   return privatePathPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
