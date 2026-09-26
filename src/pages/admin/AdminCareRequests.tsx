@@ -49,6 +49,7 @@ export function AdminCareRequests() {
   const [clientId, setClientId] = useState<string | "All">("All");
   const [category, setCategory] = useState<CareRequestCategory | "All">("All");
   const [billingFilter, setBillingFilter] = useState<CareRequestBillingDecision | "All" | "Undecided">("All");
+  const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<Map<string, string>>(new Map());
 
@@ -113,10 +114,25 @@ export function AdminCareRequests() {
     return clients.filter((client) => ids.has(client.id));
   }, [clients, requests]);
 
-  const visible = useMemo(
-    () => sortCareRequests(filterCareRequests(requests, { status, priority, clientId, category, billingDecision: billingFilter })),
-    [requests, status, priority, clientId, category, billingFilter],
-  );
+  const searchTerm = search.trim().toLowerCase();
+  const visible = useMemo(() => {
+    const filtered = filterCareRequests(requests, { status, priority, clientId, category, billingDecision: billingFilter });
+    // The search looks at the request text, the client and project names, and the request type and category.
+    const matching = searchTerm
+      ? filtered.filter((request) =>
+          [
+            request.message,
+            clientsById.get(request.clientId),
+            projectsById.get(request.projectId),
+            CARE_REQUEST_TYPE_LABELS[request.requestType],
+            CARE_REQUEST_CATEGORY_LABELS[request.category],
+          ]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(searchTerm)),
+        )
+      : filtered;
+    return sortCareRequests(matching);
+  }, [requests, status, priority, clientId, category, billingFilter, searchTerm, clientsById, projectsById]);
   const openCount = useMemo(() => requests.filter((request) => request.status !== "Done").length, [requests]);
   const newAdditionOpenCount = useMemo(
     () => requests.filter((request) => request.status !== "Done" && request.category === "new_addition").length,
@@ -164,7 +180,18 @@ export function AdminCareRequests() {
         description={`Website Care asks from clients, oldest and most urgent first. ${openCount} open${newAdditionOpenCount > 0 ? `, ${newAdditionOpenCount} of those a new addition that may need a quote` : ""}.`}
       />
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-5">
+      <label className="mt-6 block">
+        <span className="sr-only">Search care requests</span>
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search requests, clients, or projects"
+          className={adminFilterControlState(Boolean(searchTerm))}
+        />
+      </label>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-5">
         <label className="block">
           <span className="sr-only">Filter by status</span>
           <select
@@ -246,7 +273,7 @@ export function AdminCareRequests() {
         <p className="mt-6 text-sm text-[#b45309]">{loadError}</p>
       ) : visible.length === 0 ? (
         <div className="mt-8 rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-10 text-center text-sm text-[var(--admin-muted)]">
-          Nothing matches these filters.
+          {searchTerm ? "Nothing matches your search and filters." : "Nothing matches these filters."}
         </div>
       ) : (
         <ul className="mt-6 space-y-3">
