@@ -101,7 +101,7 @@ export function AccountSecuritySection({ audience = "client" }: { audience?: "cl
         ) : sessions.length === 0 ? (
           <p className="mt-4 text-sm text-[var(--client-muted)]">No active sessions found.</p>
         ) : (
-          <div className="mt-4 overflow-x-auto rounded-[var(--client-radius)] border border-[var(--client-line)]">
+          <div className="relative mt-4 overflow-x-auto rounded-[var(--client-radius)] border border-[var(--client-line)]">
             <table className="w-full min-w-[40rem] border-collapse text-sm">
               <thead>
                 <tr className="bg-[var(--client-bg)] text-left text-[12px] text-[var(--client-muted)]">
