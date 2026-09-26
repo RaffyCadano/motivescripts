@@ -78,6 +78,7 @@ export function createRecordId(prefix: string): string {
 
 export function formatLeadDate(iso: string): string {
   const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const startOfThatDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
@@ -91,6 +92,7 @@ export function formatLeadDate(iso: string): string {
 
 export function formatLeadTimestamp(iso: string): string {
   const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
   return date.toLocaleString("en-US", {
     month: "short",
     day: "numeric",
@@ -100,7 +102,9 @@ export function formatLeadTimestamp(iso: string): string {
 }
 
 export function formatLeadSubmitted(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
