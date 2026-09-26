@@ -1,9 +1,10 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Bell, ChevronDown, Globe, LayoutDashboard, LogOut, Menu, PanelLeft, UserRound } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Bell, ChevronDown, Globe, LayoutDashboard, Menu, PanelLeft, UserRound } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { teamPortalLabel } from "@/auth/roles";
 import { userDisplay } from "@/auth/userDisplay";
+import { AdminUserMenu } from "@/components/admin/AdminUserMenu";
 import { ConfirmSignOutModal } from "@/components/admin/ConfirmSignOutModal";
 import { NotificationPanel } from "@/components/messaging/NotificationPanel";
 import { canOpenAdminWorkspace, getTeamPageMeta } from "@/data/teamNav";
@@ -21,7 +22,7 @@ export function TeamHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMob
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
-  const display = user ? userDisplay(user, profile) : { name: "Account", initials: "A", role: "User" };
+  const display = user ? userDisplay(user, profile) : { name: "Account", initials: "A", role: "User", email: "" };
   const page = getTeamPageMeta(pathname, profile);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -166,53 +167,23 @@ export function TeamHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMob
           </button>
 
           {menuOpen ? (
-            <div
+            <AdminUserMenu
               id={menuId}
-              role="menu"
-              className="absolute right-0 z-50 mt-1.5 w-48 overflow-hidden rounded-xl border border-[var(--admin-line)] bg-[var(--admin-card)] py-1 shadow-[0_12px_32px_rgb(7_17_31_/_0.08)]"
-            >
-              <Link
-                role="menuitem"
-                to="/team/profile"
-                className="flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-                onClick={() => setMenuOpen(false)}
-              >
-                <UserRound size={15} strokeWidth={1.75} aria-hidden="true" />
-                Profile
-              </Link>
-              {showAdmin ? (
-                <Link
-                  role="menuitem"
-                  to="/admin"
-                  className="flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <LayoutDashboard size={15} strokeWidth={1.75} aria-hidden="true" />
-                  Admin
-                </Link>
-              ) : null}
-              <Link
-                role="menuitem"
-                to="/"
-                className="flex items-center gap-2 px-3 py-2 text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-                onClick={() => setMenuOpen(false)}
-              >
-                <Globe size={15} strokeWidth={1.75} aria-hidden="true" />
-                View website
-              </Link>
-              <button
-                type="button"
-                role="menuitem"
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setConfirmSignOut(true);
-                }}
-              >
-                <LogOut size={15} strokeWidth={1.75} aria-hidden="true" />
-                Log out
-              </button>
-            </div>
+              name={display.name}
+              initials={display.initials}
+              role={display.role}
+              email={display.email}
+              items={[
+                { to: "/team/profile", label: "Profile", icon: UserRound },
+                ...(showAdmin ? [{ to: "/admin", label: "Admin", icon: LayoutDashboard }] : []),
+                { to: "/", label: "View website", icon: Globe },
+              ]}
+              onNavigate={() => setMenuOpen(false)}
+              onLogOut={() => {
+                setMenuOpen(false);
+                setConfirmSignOut(true);
+              }}
+            />
           ) : null}
         </div>
       </div>
