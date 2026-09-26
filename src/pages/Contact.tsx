@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react";
+import { Building2, Mail, MessageSquareText, UserRound, type LucideIcon } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { AnimateIn } from "@/components/AnimateIn";
 import { Button } from "@/components/Button";
@@ -126,28 +127,28 @@ export function ContactPage() {
             </Link>
           </div>
         ) : (
-          <form className="rounded-[var(--radius-lg)] border border-[var(--color-line)] p-6 md:p-8" onSubmit={onSubmit}>
+          <form
+            className="rounded-[var(--radius-xl)] border border-[var(--color-line)] bg-[var(--ms-white)] p-6 shadow-[var(--shadow-card)] md:p-8"
+            onSubmit={onSubmit}
+          >
             <div className="absolute left-[-9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
               <label htmlFor="website">Website</label>
               <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
             </div>
 
-            <FormSection label="About you">
+            <FormSection step={1} icon={UserRound} label="About you" description="So we know who to reply to.">
               <div className="grid gap-5 sm:grid-cols-2">
                 <Field label="Name" name="name" autoComplete="name" required placeholder="Your name" />
                 <Field label="Email" name="email" type="email" autoComplete="email" required placeholder="you@email.com" />
               </div>
             </FormSection>
 
-            <FormSection label="About your business">
+            <FormSection step={2} icon={Building2} label="About your business" description="A little context on the business the website is for.">
               <div className="grid gap-5 sm:grid-cols-2">
                 <Field label="Business name" name="business" autoComplete="organization" required placeholder="Your business" />
                 <Field label="Phone" name="phone" type="tel" autoComplete="tel" placeholder="Phone number" />
                 <div className="sm:col-span-2">
-                  <label className="block font-heading text-sm font-semibold text-ink" htmlFor="industry">
-                    Industry
-                    <span className="ml-2 font-normal text-faint">Required</span>
-                  </label>
+                  <FieldLabel htmlFor="industry" label="Industry" required />
                   <select
                     id="industry"
                     name="industry"
@@ -170,14 +171,11 @@ export function ContactPage() {
               </div>
             </FormSection>
 
-            <FormSection label="Your project" last>
+            <FormSection step={3} icon={MessageSquareText} label="Your project" description="What you want to build. A few sentences is plenty." last>
               <div className="grid gap-5">
                 <div>
-                  <label className="block font-heading text-sm font-semibold text-ink" htmlFor="goal">
-                    What are you looking to build?
-                    <span className="ml-2 font-normal text-faint">Required</span>
-                  </label>
-                  <p className="mt-1 text-xs text-faint">
+                  <FieldLabel htmlFor="goal" label="What are you looking to build?" required />
+                  <p className="mt-1 text-[13px] leading-relaxed text-muted">
                     Tell us about your business, what you need from your website, and anything you'd like us to
                     know.
                   </p>
@@ -195,10 +193,7 @@ export function ContactPage() {
                   />
                 </div>
                 <div>
-                  <label className="block font-heading text-sm font-semibold text-ink" htmlFor="referralSource">
-                    How did you hear about us?
-                    <span className="ml-2 font-normal text-faint">Optional</span>
-                  </label>
+                  <FieldLabel htmlFor="referralSource" label="How did you hear about us?" />
                   <select
                     id="referralSource"
                     name="referralSource"
@@ -216,10 +211,7 @@ export function ContactPage() {
                 </div>
                 {referralSource === "Other" ? (
                   <div>
-                    <label className="block font-heading text-sm font-semibold text-ink" htmlFor="referralSourceOther">
-                      Tell us where
-                      <span className="ml-2 font-normal text-faint">Optional</span>
-                    </label>
+                    <FieldLabel htmlFor="referralSourceOther" label="Tell us where" />
                     <input
                       id="referralSourceOther"
                       name="referralSourceOther"
@@ -241,7 +233,10 @@ export function ContactPage() {
                 ) : null}
               </p>
             ) : null}
-            <div className="mt-7">
+            <div className="mt-8 flex flex-col gap-3 border-t border-[var(--color-line)] pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <p className="max-w-xs text-xs leading-relaxed text-faint">
+                This is only an inquiry. Nothing is due before we start, and we&rsquo;ll follow up with next steps.
+              </p>
               <Button type="submit" size="lg" disabled={sending} className="w-full sm:w-auto">
                 {sending ? "Sending…" : "Start Your Project"}
                 {sending ? null : <span aria-hidden="true" className="icon-arrow">→</span>}
@@ -252,8 +247,11 @@ export function ContactPage() {
         </AnimateIn>
 
         <AnimateIn delay={80}>
-        <aside className="h-fit rounded-[var(--radius-lg)] border border-[var(--color-line)] p-6">
-          <h2 className="text-lg">Prefer email?</h2>
+        <aside className="h-fit rounded-[var(--radius-xl)] border border-[var(--color-line)] bg-[var(--ms-bg-card)] p-6 md:sticky md:top-28">
+          <span className="flex size-11 items-center justify-center rounded-[var(--radius-md)] bg-[rgb(0_80_240_/_0.08)] text-blue">
+            <Mail size={22} strokeWidth={2} aria-hidden="true" />
+          </span>
+          <h2 className="mt-4 text-lg">Prefer email?</h2>
           <p className="mt-3 text-sm text-muted">
             Send a note with the business name, the type of work, and what you want the website to do.
           </p>
@@ -271,14 +269,60 @@ export function ContactPage() {
 }
 
 const inputClass =
-  "mt-2 w-full rounded-[var(--radius-md)] border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-ink outline-none transition-[border-color,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-out)] placeholder:text-faint focus:border-[rgb(0_80_240_/_0.55)] focus:shadow-[0_0_0_3px_rgb(0_80_240_/_0.1)]";
+  "mt-2 w-full rounded-[var(--radius-md)] border border-[var(--color-line-strong)] bg-white px-3.5 py-3 text-sm text-ink outline-none transition-[border-color,box-shadow] duration-[var(--duration-base)] ease-[var(--ease-out)] placeholder:text-faint hover:border-[rgb(0_80_240_/_0.35)] focus:border-[rgb(0_80_240_/_0.55)] focus:shadow-[0_0_0_3px_rgb(0_80_240_/_0.1)]";
 
-function FormSection({ label, children, last = false }: { label: string; children: ReactNode; last?: boolean }) {
+/** A form section: a numbered icon tile, its title, a line of help, then the fields. */
+function FormSection({
+  step,
+  icon: Icon,
+  label,
+  description,
+  children,
+  last = false,
+}: {
+  step: number;
+  icon: LucideIcon;
+  label: string;
+  description: string;
+  children: ReactNode;
+  last?: boolean;
+}) {
   return (
-    <div className={cn("border-b border-[var(--color-line)] pb-6", last ? "border-b-0 pb-0" : "mb-6")}>
-      <h2 className="font-heading text-xs font-bold uppercase tracking-[0.16em] text-faint">{label}</h2>
-      <div className="mt-4">{children}</div>
-    </div>
+    <section className={cn("border-b border-[var(--color-line)] pb-8", last ? "border-b-0 pb-0" : "mb-8")}>
+      <div className="flex items-center gap-3.5">
+        <span className="relative flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-md)] bg-[rgb(0_80_240_/_0.08)] text-blue">
+          <Icon size={20} strokeWidth={2} aria-hidden="true" />
+          <span
+            aria-hidden="true"
+            className="absolute -right-1.5 -top-1.5 flex size-5 items-center justify-center rounded-full bg-blue font-heading text-[11px] font-bold text-white"
+          >
+            {step}
+          </span>
+        </span>
+        <div className="min-w-0">
+          <h2 className="font-heading text-base font-semibold tracking-tight text-ink">{label}</h2>
+          <p className="text-[13px] text-muted">{description}</p>
+        </div>
+      </div>
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+/** The field's name, with "Required" as a small blue tag or "Optional" as a quiet one. */
+function FieldLabel({ htmlFor, label, required = false }: { htmlFor: string; label: string; required?: boolean }) {
+  return (
+    <label className="flex items-center justify-between gap-3 font-heading text-sm font-semibold text-ink" htmlFor={htmlFor}>
+      {label}
+      <span
+        className={cn(
+          "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+          required ? "bg-[rgb(0_80_240_/_0.08)] text-blue" : "bg-[var(--ms-bg-card)] text-faint",
+        )}
+      >
+        {required ? "Required" : "Optional"}
+      </span>
+    </label>
   );
 }
 
@@ -299,10 +343,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block font-heading text-sm font-semibold text-ink" htmlFor={name}>
-        {label}
-        <span className="ml-2 font-normal text-faint">{required ? "Required" : "Optional"}</span>
-      </label>
+      <FieldLabel htmlFor={name} label={label} required={required} />
       <input
         id={name}
         name={name}
