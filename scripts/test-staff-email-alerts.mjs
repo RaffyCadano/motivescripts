@@ -70,3 +70,10 @@ test("the function honours the switch, skips inactive staff, and throttles repea
   for (const t of ["task_overdue", "domain_expired", "ssl_expired"]) assert.ok(branch.includes(`"${t}"`), t);
   assert.ok(branch.includes("7 * 24 * 60 * 60 * 1000"));
 });
+
+test("admins can read the staff email log (and only admins, besides the person themselves)", () => {
+  const policy = readFileSync("supabase/migrations/20261113000000_staff_email_log_admin_read.sql", "utf8");
+  assert.ok(policy.includes("for select to authenticated"));
+  assert.ok(policy.includes("public.is_admin()"));
+  assert.ok(!/for (insert|update|delete|all)/i.test(policy));
+});
