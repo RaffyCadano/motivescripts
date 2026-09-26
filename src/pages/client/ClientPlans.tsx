@@ -22,15 +22,20 @@ const deliveryStatusToneClass: Record<string, string> = {
   "Not configured": "text-[var(--client-muted)]",
 };
 
+/** A date-only value ("2026-10-03") is a calendar day, not a moment: read at noon so no time zone moves it a day back. */
+function parsePlanDate(iso: string): Date {
+  return new Date(iso.includes("T") ? iso : `${iso}T12:00:00`);
+}
+
 function formatShortDate(iso: string): string {
-  const date = new Date(iso);
+  const date = parsePlanDate(iso);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function formatPlanDate(iso: string | null): string {
   if (!iso) return "the end of your current billing period";
-  const date = new Date(iso);
+  const date = parsePlanDate(iso);
   if (Number.isNaN(date.getTime())) return "the end of your current billing period";
   return date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
