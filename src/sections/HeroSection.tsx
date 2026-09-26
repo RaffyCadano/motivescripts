@@ -2,6 +2,13 @@ import { Button } from "@/components/Button";
 import { AnimateIn } from "@/components/AnimateIn";
 import { HeroVisual } from "@/components/HeroVisual";
 
+/** The short trust points under the hero buttons; the dots are the brand blues. */
+const heroPoints = [
+  { label: "Custom-built", dot: "bg-[#0050F0]" },
+  { label: "2–4 week typical launch", dot: "bg-[#00C8FF]" },
+  { label: "Winston-Salem, NC", dot: "bg-[#0b1b3a]" },
+] as const;
+
 export function HeroSection() {
   return (
     <section className="relative pb-16 pt-8 sm:pb-20 sm:pt-12 md:pb-32 md:pt-20 lg:pb-32 lg:pt-20">
@@ -29,6 +36,20 @@ export function HeroSection() {
                 View Our Work
               </Button>
             </div>
+          </AnimateIn>
+          <AnimateIn delay={260}>
+            <ul className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2.5 text-sm text-muted">
+              {heroPoints.map((point) => (
+                <li key={point.label} className="flex items-center gap-2">
+                  <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${point.dot}`} />
+                  {point.label}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 max-w-xl text-sm leading-relaxed text-faint">
+              <span className="font-medium text-muted-strong">Custom web design in Winston-Salem, North Carolina</span>, for
+              small businesses that want more calls, bookings, and customers.
+            </p>
           </AnimateIn>
         </div>
         <AnimateIn delay={220} variant="scale">
