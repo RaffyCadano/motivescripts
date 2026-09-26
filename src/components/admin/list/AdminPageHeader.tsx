@@ -15,7 +15,7 @@ export function AdminPageHeader({
         <h1 className="font-heading text-[1.5rem] font-semibold tracking-tight md:text-[1.65rem]">{title}</h1>
         <p className="mt-1 max-w-2xl text-sm text-[var(--admin-muted)]">{description}</p>
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? <div className="min-w-0 sm:shrink-0">{action}</div> : null}
     </div>
   );
 }
