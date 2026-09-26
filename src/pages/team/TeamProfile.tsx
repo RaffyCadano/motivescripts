@@ -5,6 +5,8 @@ import { hasPermission } from "@/auth/permissions";
 import { isProductionCommunicator } from "@/auth/roles";
 import { initialsFromName, userDisplay } from "@/auth/userDisplay";
 import { EmailAlertPreferences } from "@/components/admin/settings/EmailAlertPreferences";
+import { AccountSecuritySection } from "@/components/settings/AccountSecuritySection";
+import { ADMIN_LOOK } from "@/components/settings/adminLook";
 import { NotificationPreferences } from "@/components/admin/settings/NotificationPreferences";
 import { PayoutInfoSection } from "@/components/settings/PayoutInfoSection";
 import { useTeamWork } from "@/components/team/useTeamWork";
@@ -118,6 +120,10 @@ export function TeamProfile() {
       </section>
 
       <PayoutInfoSection userId={profile?.id ?? ""} historyHref="/team/time" historyLabel="My Time" />
+
+      <div style={ADMIN_LOOK}>
+        <AccountSecuritySection audience="staff" />
+      </div>
 
       <section className="grid gap-3 sm:grid-cols-3">
         <Stat label="Assigned projects" value={myProjects.length} />

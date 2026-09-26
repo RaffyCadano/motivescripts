@@ -5,6 +5,8 @@ import { hasPermission, type StaffPermissionCode } from "@/auth/permissions";
 import { displayRoleLabel } from "@/auth/roles";
 import { initialsFromName, userDisplay } from "@/auth/userDisplay";
 import { EmailAlertPreferences } from "@/components/admin/settings/EmailAlertPreferences";
+import { AccountSecuritySection } from "@/components/settings/AccountSecuritySection";
+import { ADMIN_LOOK } from "@/components/settings/adminLook";
 import { NotificationPreferences } from "@/components/admin/settings/NotificationPreferences";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import { PayoutInfoSection } from "@/components/settings/PayoutInfoSection";
@@ -136,6 +138,10 @@ export function AdminProfile() {
       </section>
 
       {profile?.role === "staff" ? <PayoutInfoSection userId={profile.id} /> : null}
+
+      <div style={ADMIN_LOOK}>
+        <AccountSecuritySection audience="staff" />
+      </div>
 
       <section className="grid gap-6 lg:grid-cols-2">
         <AssignmentList

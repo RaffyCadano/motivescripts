@@ -1,25 +1,11 @@
-import type { CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission } from "@/auth/permissions";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { adminBlueBtn, adminGhostBtn } from "@/components/admin/adminActionStyles";
 import { AdminPageHeader } from "@/components/admin/list/AdminPageHeader";
+import { ADMIN_LOOK } from "@/components/settings/adminLook";
 import { ScopeFormPage } from "@/pages/client/ClientScope";
-
-/** The scope form is written with the client portal's colours; this points them at the admin's, so it looks like the rest of the admin. */
-const ADMIN_LOOK = {
-  "--client-bg": "var(--admin-bg)",
-  "--client-ink": "var(--admin-ink)",
-  "--client-muted": "var(--admin-muted)",
-  "--client-card": "var(--admin-card)",
-  "--client-line": "var(--admin-line)",
-  "--client-hover": "var(--admin-hover)",
-  "--client-blue": "var(--admin-blue)",
-  "--client-bright": "var(--admin-bright)",
-  "--client-navy": "var(--admin-navy)",
-  "--client-radius": "var(--admin-radius)",
-} as CSSProperties;
 
 /**
  * Staff fill in a client's Website Scope for them (a client who has not done it, or a brief taken over the phone).
