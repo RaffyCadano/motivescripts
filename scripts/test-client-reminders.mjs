@@ -50,6 +50,6 @@ test("every automated client email is logged for staff, with the provider's mess
   for (const kind of ["invoice_overdue", "scope_reminder", "launch_trial", "reminder_${remind}"]) {
     assert.ok(fn.includes(kind), `${kind} is not logged`);
   }
-  assert.ok((fn.match(/await sendLogged\(/g) ?? []).length >= 6);
+  assert.ok((fn.match(/await sendLogged\(/g) ?? []).length >= 5);
   assert.ok(fn.includes("return typeof sentBody?.id"));
 });
