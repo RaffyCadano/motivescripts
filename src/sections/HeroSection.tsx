@@ -21,11 +21,11 @@ export function HeroSection() {
             </p>
           </AnimateIn>
           <AnimateIn delay={180}>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button to="/start-a-project" size="lg">
+            <div className="mt-8 flex flex-row items-center gap-3">
+              <Button to="/start-a-project" size="lg" className="whitespace-nowrap max-sm:flex-auto max-sm:px-3! max-sm:text-sm! max-[380px]:px-2! max-[380px]:text-[13px]!">
                 Start Your Project
               </Button>
-              <Button to="/work" variant="secondary" size="lg">
+              <Button to="/work" variant="secondary" size="lg" className="whitespace-nowrap max-sm:flex-auto max-sm:px-3! max-sm:text-sm! max-[380px]:px-2! max-[380px]:text-[13px]!">
                 View Our Work
               </Button>
             </div>
