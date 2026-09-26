@@ -1,4 +1,4 @@
-import { Code2, MapPin, Smartphone, Timer } from "lucide-react";
+import { Code2, Smartphone, Timer } from "lucide-react";
 import { AnimateIn } from "@/components/AnimateIn";
 
 const stats = [
@@ -30,10 +30,6 @@ export function TrustSection() {
                 );
               })}
             </div>
-            <p className="mt-5 flex items-center justify-center gap-1.5 text-xs text-faint">
-              <MapPin size={13} strokeWidth={2.2} aria-hidden="true" />
-              Based in Winston-Salem, North Carolina
-            </p>
           </div>
         </AnimateIn>
       </div>
