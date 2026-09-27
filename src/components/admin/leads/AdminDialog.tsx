@@ -119,7 +119,7 @@ export function AdminDialog({ open, title, description, children, size = "md", i
                 <X size={18} strokeWidth={2} aria-hidden="true" />
               </button>
             </header>
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">{children}</div>
+            {children ? <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">{children}</div> : null}
             <footer className="flex flex-col-reverse gap-2 border-t border-[var(--admin-line)] bg-[var(--admin-bg)] px-5 py-3.5 sm:flex-row sm:justify-end sm:px-6">
               {footer}
             </footer>
