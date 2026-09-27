@@ -2,6 +2,9 @@ import { useMemo, useState } from "react";
 import { projectPackageLabels } from "@/data/projectPackages";
 import {
   Archive,
+  Building2,
+  CalendarDays,
+  FolderKanban,
   MessageSquare,
   Pause,
   PauseCircle,
@@ -12,6 +15,7 @@ import {
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission } from "@/auth/permissions";
+import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
 import { AdminActionsMenu } from "@/components/admin/AdminActionsMenu";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
 import { adminPrimaryBtn } from "@/components/admin/adminActionStyles";
@@ -41,6 +45,7 @@ import { useAgencyProject, useLeads } from "@/components/admin/leads/LeadsProvid
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
 import {
   calculateProjectProgress,
+  formatProjectDay,
   type AgencyMilestone,
   type AgencyMilestoneDraft,
   type AgencyProjectStatus,
@@ -205,28 +210,44 @@ export function AdminProjectDetails() {
         <Link to="/admin/projects" className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
           Projects
         </Link>
-        <div className="mt-2 flex flex-col items-start gap-4 lg:flex-row lg:justify-between">
-          <div>
-            <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">{project.name}</h1>
-            <p className="mt-1 text-sm text-[var(--admin-muted)]">
-              {project.type}
-              {project.package ? ` · ${projectPackageLabels[project.package]} package` : ""}
-              {" · "}
-              {project.status}
-              {" · "}
-              {progress}%
-              {project.archived ? " · Archived" : ""}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {showHeaderAction ? (
-              <Link to={headerAction.primaryHref!} className={`${adminPrimaryBtn} justify-center`}>
-                {headerAction.primaryLabel}
-              </Link>
-            ) : null}
-            <AdminActionsMenu
-            ariaLabel={`Actions for ${project.name}`}
-            items={[
+        <div className="mt-2 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 shadow-[0_1px_2px_rgb(7_17_31_/_0.04)] md:p-6">
+          <div className="flex flex-col items-start gap-4 lg:flex-row lg:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              <span
+                aria-hidden="true"
+                className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[var(--admin-navy)] text-white"
+              >
+                <FolderKanban size={22} strokeWidth={2} aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="truncate font-heading text-[1.5rem] font-semibold tracking-tight md:text-[1.75rem]">
+                    {project.name}
+                  </h1>
+                  <ProjectStatusBadge status={project.status} />
+                  {project.archived ? (
+                    <span className="rounded-full bg-[var(--admin-bg)] px-2 py-0.5 font-heading text-xs font-semibold text-[var(--admin-muted)]">
+                      Archived
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-0.5 text-sm text-[var(--admin-muted)]">
+                  {project.type}
+                  {project.package ? ` · ${projectPackageLabels[project.package]} package` : ""}
+                  {" · "}
+                  {progress}% complete
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {showHeaderAction ? (
+                <Link to={headerAction.primaryHref!} className={`${adminPrimaryBtn} justify-center`}>
+                  {headerAction.primaryLabel}
+                </Link>
+              ) : null}
+              <AdminActionsMenu
+              ariaLabel={`Actions for ${project.name}`}
+              items={[
               { id: "edit", label: "Edit Project", icon: PencilLine, href: `/admin/projects/${project.id}/edit` },
               ...(client
                 ? [
@@ -271,8 +292,44 @@ export function AdminProjectDetails() {
                 onSelect: () => setDeleteOpen(true),
               },
             ]}
-          />
+              />
+            </div>
           </div>
+
+          <dl className="mt-4 grid gap-2.5 sm:grid-cols-3">
+            {client ? (
+              <Link
+                to={`/admin/clients/${client.id}`}
+                className="flex items-center gap-2.5 rounded-lg bg-[var(--admin-bg)] px-3 py-2 hover:bg-[var(--admin-hover)]"
+              >
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]">
+                  <Building2 size={15} strokeWidth={2} aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <dt className="text-[11px] text-[var(--admin-muted)]">Client</dt>
+                  <dd className="truncate font-heading text-[13px] font-semibold text-[var(--admin-blue)]">{client.businessName}</dd>
+                </div>
+              </Link>
+            ) : null}
+            <div className="flex items-center gap-2.5 rounded-lg bg-[var(--admin-bg)] px-3 py-2">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]">
+                <FolderKanban size={15} strokeWidth={2} aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <dt className="text-[11px] text-[var(--admin-muted)]">Type</dt>
+                <dd className="truncate font-heading text-[13px] font-semibold text-[var(--admin-ink)]">{project.type}</dd>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 rounded-lg bg-[var(--admin-bg)] px-3 py-2">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]">
+                <CalendarDays size={15} strokeWidth={2} aria-hidden="true" />
+              </span>
+              <div className="min-w-0">
+                <dt className="text-[11px] text-[var(--admin-muted)]">Target launch</dt>
+                <dd className="truncate font-heading text-[13px] font-semibold text-[var(--admin-ink)]">{formatProjectDay(project.targetLaunchDate)}</dd>
+              </div>
+            </div>
+          </dl>
         </div>
       </div>
 
