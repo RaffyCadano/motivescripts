@@ -205,7 +205,7 @@ export function AdminProjectDetails() {
         <Link to="/admin/projects" className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
           Projects
         </Link>
-        <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="mt-2 flex flex-col items-start gap-4 lg:flex-row lg:justify-between">
           <div>
             <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">{project.name}</h1>
             <p className="mt-1 text-sm text-[var(--admin-muted)]">

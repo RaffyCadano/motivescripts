@@ -345,7 +345,7 @@ export function AdminContractDetails() {
       <Link to="/admin/contracts" className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
         Contracts
       </Link>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="flex flex-col items-start gap-4 lg:flex-row lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight">{detail.contract.contract_number}</h1>

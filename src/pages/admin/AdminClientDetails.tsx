@@ -155,7 +155,7 @@ export function AdminClientDetails() {
         <Link to="/admin/clients" className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline">
           Clients
         </Link>
-        <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="mt-2 flex flex-col items-start gap-4 lg:flex-row lg:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">
