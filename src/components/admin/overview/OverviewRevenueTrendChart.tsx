@@ -69,6 +69,12 @@ export function OverviewRevenueTrendChart({ periods }: { periods: RevenuePeriodT
     setHoverIndex(nearest);
   }
 
+  if (months.length > 0 && months.every((month) => month.totalCents === 0)) {
+    return (
+      <div className="flex h-[120px] items-center justify-center text-sm text-[var(--admin-muted)]">No payments yet.</div>
+    );
+  }
+
   if (points.length < 2) {
     return (
       <div className="flex h-[120px] items-center justify-center text-sm text-[var(--admin-muted)]">

@@ -15,7 +15,7 @@ const rows: { key: keyof OverviewInvoiceTotals; label: string; color: string }[]
 
 const WIDTH = 320;
 const HEIGHT = 190;
-const PAD_LEFT = 24;
+const PAD_LEFT = 36;
 const PAD_RIGHT = 10;
 const PAD_TOP = 16;
 const PAD_BOTTOM = 22;
@@ -116,6 +116,11 @@ export function OverviewInvoices({ totals, period, onPeriodChange }: OverviewInv
         </div>
       </div>
 
+      {values.every((value) => value === 0) ? (
+        <p className="py-12 text-center text-sm text-[var(--admin-muted)]">
+          {period === "all" ? "No invoices yet." : "No invoices in this period."}
+        </p>
+      ) : (
       <svg
         ref={svgRef}
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
@@ -182,6 +187,7 @@ export function OverviewInvoices({ totals, period, onPeriodChange }: OverviewInv
           );
         })}
       </svg>
+      )}
     </section>
   );
 }

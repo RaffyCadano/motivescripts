@@ -64,18 +64,23 @@ export function sumAllCents(payments: PaymentReportRow[]): number {
   return payments.reduce((sum, payment) => sum + payment.amountCents, 0);
 }
 
+/** A local calendar date as YYYY-MM-DD. (toISOString would shift it by the time zone offset.) */
+function localIsoDate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 export function startOfCurrentMonth(): string {
   const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  return localIsoDate(new Date(now.getFullYear(), now.getMonth(), 1));
 }
 
 export function startOfCurrentQuarter(): string {
   const now = new Date();
   const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
-  return new Date(now.getFullYear(), quarterStartMonth, 1).toISOString().slice(0, 10);
+  return localIsoDate(new Date(now.getFullYear(), quarterStartMonth, 1));
 }
 
 export function startOfCurrentYear(): string {
   const now = new Date();
-  return new Date(now.getFullYear(), 0, 1).toISOString().slice(0, 10);
+  return localIsoDate(new Date(now.getFullYear(), 0, 1));
 }

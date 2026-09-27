@@ -208,3 +208,93 @@ test("PM chart numbers: status counts in workflow order, a week of due dates wit
   ]);
   assert.deepEqual(rows.map((r) => [r.name, r.percent]), [["Beta", 0], ["Empty", 0], ["Alpha", 50]]);
 });
+
+test("tile change badges show a plain change when the count started small, and a percent otherwise", async () => {
+  const { trendChange } = await import("../src/data/overviewExtras.ts");
+  assert.equal(trendChange([1]), null);
+  assert.deepEqual(trendChange([1, 1, 7]), { direction: "up", label: "+6" });
+  assert.deepEqual(trendChange([1, 2]), { direction: "up", label: "+1" });
+  assert.deepEqual(trendChange([0, 3]), { direction: "up", label: "+3" });
+  assert.deepEqual(trendChange([4, 2]), { direction: "down", label: "−2" });
+  assert.deepEqual(trendChange([10, 15]), { direction: "up", label: "+50%" });
+  assert.deepEqual(trendChange([20, 15]), { direction: "down", label: "−25%" });
+  assert.deepEqual(trendChange([3, 3]), { direction: "flat", label: "0" });
+});
+
+test("this month's revenue counts only this calendar month", async () => {
+  const { revenueForMonth } = await import("../src/data/overviewExtras.ts");
+  const now = new Date(2026, 8, 26);
+  assert.equal(
+    revenueForMonth(
+      [
+        { amountCents: 10000, paymentDate: "2026-09-01" },
+        { amountCents: 5000, paymentDate: "2026-09-25T10:00:00Z" },
+        { amountCents: 99900, paymentDate: "2026-08-31" },
+        { amountCents: 99900, paymentDate: "2025-09-15" },
+      ],
+      now,
+    ),
+    15000,
+  );
+});
+
+test("waiting on clients lists the longest waits first and only what is really stuck", async () => {
+  const { buildWaitingOnClients } = await import("../src/data/overviewExtras.ts");
+  const now = new Date(2026, 8, 26, 12);
+  const { items, counts } = buildWaitingOnClients(
+    {
+      clients: [
+        { id: "c1", businessName: "Bravo Bakery", status: "Active", createdAt: "2026-09-01T00:00:00Z" },
+        { id: "c2", businessName: "Acme Co", status: "Active", createdAt: "2026-09-20T00:00:00Z" },
+        { id: "c3", businessName: "Old Client", status: "Archived", createdAt: "2026-01-01T00:00:00Z" },
+        { id: "c4", businessName: "Has Project", status: "Active", createdAt: "2026-01-01T00:00:00Z" },
+      ],
+      projects: [{ clientId: "c4" }],
+      briefs: [{ clientId: "c2", submittedAt: null, updatedAt: "2026-09-22T12:00:00" }],
+      proposals: [
+        { id: "p1", clientId: "c1", number: "P-1", effectiveStatus: "sent", sentAt: "2026-09-10T12:00:00", createdAt: "2026-09-09T00:00:00Z" },
+        { id: "p2", clientId: "c1", number: "P-2", effectiveStatus: "accepted", sentAt: "2026-09-01T12:00:00", createdAt: "2026-09-01T00:00:00Z" },
+        { id: "p3", clientId: "c1", number: "P-3", effectiveStatus: "draft", sentAt: null, createdAt: "2026-09-01T00:00:00Z" },
+      ],
+      contracts: [{ id: "k1", clientId: "c4", number: "C-1", effectiveStatus: "viewed", sentAt: null, createdAt: "2026-09-24T12:00:00" }],
+      invoices: [
+        { id: "i1", clientId: "c1", number: "INV-1", effectiveStatus: "overdue", issueDate: "2026-08-20", createdAt: "2026-08-20T00:00:00Z" },
+        { id: "i2", clientId: "c1", number: "INV-2", effectiveStatus: "paid", issueDate: "2026-08-01", createdAt: "2026-08-01T00:00:00Z" },
+      ],
+    },
+    now,
+  );
+  assert.deepEqual(counts, { proposal: 1, contract: 1, invoice: 1, scope: 2 });
+  assert.deepEqual(items.map((i) => [i.label, i.clientName, i.days]), [
+    ["Invoice INV-1", "Bravo Bakery", 37],
+    ["Scope form not started", "Bravo Bakery", 25],
+    ["Proposal P-1", "Bravo Bakery", 16],
+    ["Scope form started, not finished", "Acme Co", 4],
+    ["Contract C-1", "Has Project", 2],
+  ]);
+  assert.equal(items[0].href, "/admin/invoices/i1");
+});
+
+test("website overview separates paused sites and ranks the ones with problems", async () => {
+  const { websiteOverview, upcomingRenewals } = await import("../src/data/overviewExtras.ts");
+  const o = websiteOverview([
+    { id: "a", name: "Alpha", clientName: "A", paused: false, state: "healthy" },
+    { id: "b", name: "Bravo", clientName: "B", paused: false, state: "degraded" },
+    { id: "c", name: "Charlie", clientName: "C", paused: false, state: "down" },
+    { id: "d", name: "Delta", clientName: "D", paused: true, state: "down" },
+    { id: "e", name: "Echo", clientName: "E", paused: false, state: "unknown" },
+  ]);
+  assert.deepEqual([o.total, o.healthy, o.degraded, o.down, o.unknown, o.paused], [5, 1, 1, 1, 1, 1]);
+  assert.deepEqual(o.issues.map((s) => s.name), ["Charlie", "Bravo"]);
+
+  const r = upcomingRenewals(
+    [
+      { id: "1", domain: "soon.com", status: "active", domainExpiresAt: "2026-10-03", sslExpiresAt: "2027-01-01" },
+      { id: "2", domain: "late.com", status: "past_due", domainExpiresAt: "2026-09-20", sslExpiresAt: null },
+      { id: "3", domain: "gone.com", status: "canceled", domainExpiresAt: "2026-09-30", sslExpiresAt: null },
+      { id: "4", domain: "far.com", status: "active", domainExpiresAt: "2027-06-01", sslExpiresAt: "2026-10-20" },
+    ],
+    new Date(2026, 8, 26, 9),
+  );
+  assert.deepEqual(r.map((x) => [x.domain, x.kind, x.daysLeft]), [["late.com", "Domain", -6], ["soon.com", "Domain", 7], ["far.com", "SSL", 24]]);
+});

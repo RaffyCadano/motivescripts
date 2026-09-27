@@ -9,6 +9,9 @@ import { OverviewInvoices } from "@/components/admin/OverviewInvoices";
 import { OverviewDiscoveryAttention } from "@/components/admin/OverviewDiscoveryAttention";
 import { OverviewWorkflow } from "@/components/admin/OverviewWorkflow";
 import { LeadPipelineChart } from "@/components/admin/overview/LeadPipelineChart";
+import { OverviewMoney } from "@/components/admin/overview/OverviewMoney";
+import { OverviewWaiting } from "@/components/admin/overview/OverviewWaiting";
+import { OverviewWebsites } from "@/components/admin/overview/OverviewWebsites";
 import { OverviewRevenueTrendChart } from "@/components/admin/overview/OverviewRevenueTrendChart";
 import { ProjectStatusChart } from "@/components/admin/overview/ProjectStatusChart";
 import { StaffWorkloadChart } from "@/components/admin/overview/StaffWorkloadChart";
@@ -31,6 +34,7 @@ import { fetchContractSummaries, fetchProposalSummaries, type ContractSummary, t
 import { buildRevenueReport, type PaymentReportRow } from "@/data/financialReports";
 import { fetchAllPayments } from "@/data/financialReportsRepository";
 import { fetchInvoiceSummaries, type InvoiceSummary } from "@/data/invoicesRepository";
+import { buildWaitingOnClients } from "@/data/overviewExtras";
 import { fetchScopeBriefs } from "@/data/scopeBriefsRepository";
 import type { ClientScopeBrief } from "@/data/scopeBriefs";
 import { useMessaging } from "@/providers/MessagingProvider";
@@ -173,6 +177,20 @@ export function AdminOverview() {
 
   const revenueTrend = useMemo(() => buildRevenueReport(records.payments, "month"), [records.payments]);
 
+  const waiting = useMemo(
+    () =>
+      buildWaitingOnClients({
+        clients,
+        projects,
+        briefs: records.briefs,
+        proposals: records.proposals,
+        contracts: records.contracts,
+        invoices: records.invoices,
+      }),
+    [clients, projects, records],
+  );
+  const showWaiting = can("proposals.view") || can("contracts.view") || can("invoices.view") || can("clients.view");
+
   return (
     <div className="space-y-5">
       <AdminPageHeader
@@ -214,6 +232,15 @@ export function AdminOverview() {
         </AdminStatGrid>
       </section>
 
+      {can("invoices.view") ? <OverviewMoney invoices={records.invoices} payments={records.payments} /> : null}
+
+      {showWaiting || can("projects.view") ? (
+        <section aria-label="Waiting on clients and websites" className="grid items-start gap-4 lg:grid-cols-2">
+          {showWaiting ? <OverviewWaiting items={waiting.items} counts={waiting.counts} /> : null}
+          {can("projects.view") ? <OverviewWebsites /> : null}
+        </section>
+      ) : null}
+
       {can("projects.view") ? <OverviewDiscoveryAttention /> : null}
 
       {can("leads.view") || can("projects.view") ? (
@@ -238,7 +265,7 @@ export function AdminOverview() {
       ) : null}
 
       <div className="grid items-start gap-5 xl:grid-cols-[1.65fr_1fr]">
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           {can("invoices.view") ? (
             <OverviewInvoices totals={invoiceTotals} period={invoicePeriod} onPeriodChange={setInvoicePeriod} />
           ) : null}
@@ -252,7 +279,7 @@ export function AdminOverview() {
           ) : null}
           {can("projects.view") && activeProjects.length > 0 ? <ActiveProjects /> : null}
         </div>
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           <NeedsAttention items={attention} />
           <OverviewWorkflow counts={pipeline} />
           {can("team.view") ? (
