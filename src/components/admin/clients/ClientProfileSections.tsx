@@ -1,4 +1,4 @@
-import { FileText, FolderKanban, RefreshCw, StickyNote, UserCheck, UserPlus } from "lucide-react";
+import { Briefcase, CalendarDays, FileText, FolderKanban, RefreshCw, StickyNote, UserCheck, UserPlus, UserRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useClientDeliverables, useClientProjects } from "@/components/admin/leads/LeadsProvider";
 import { ClientProjectsTable } from "@/components/admin/clients/ClientProjectsTable";
@@ -335,21 +335,26 @@ function websiteHref(url: string) {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
+const headerMetaItems = [
+  { key: "contact", icon: UserRound, label: "Primary contact", value: (client: AgencyClient) => client.contactName },
+  { key: "industry", icon: Briefcase, label: "Industry", value: (client: AgencyClient) => client.industry },
+  { key: "since", icon: CalendarDays, label: "Client since", value: (client: AgencyClient) => formatClientSince(client.createdAt) },
+] as const;
+
 export function ClientHeaderMeta({ client }: { client: AgencyClient }) {
   return (
-    <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
-      <div>
-        <dt className="text-[12px] text-[var(--admin-muted)]">Primary contact</dt>
-        <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{client.contactName}</dd>
-      </div>
-      <div>
-        <dt className="text-[12px] text-[var(--admin-muted)]">Industry</dt>
-        <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{client.industry}</dd>
-      </div>
-      <div>
-        <dt className="text-[12px] text-[var(--admin-muted)]">Client since</dt>
-        <dd className="mt-0.5 font-medium text-[var(--admin-ink)]">{formatClientSince(client.createdAt)}</dd>
-      </div>
+    <dl className="mt-4 grid gap-2.5 sm:grid-cols-3">
+      {headerMetaItems.map((item) => (
+        <div key={item.key} className="flex items-center gap-2.5 rounded-lg bg-[var(--admin-bg)] px-3 py-2">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]">
+            <item.icon size={15} strokeWidth={2} aria-hidden="true" />
+          </span>
+          <div className="min-w-0">
+            <dt className="text-[11px] text-[var(--admin-muted)]">{item.label}</dt>
+            <dd className="truncate font-heading text-[13px] font-semibold text-[var(--admin-ink)]">{item.value(client)}</dd>
+          </div>
+        </div>
+      ))}
     </dl>
   );
 }
