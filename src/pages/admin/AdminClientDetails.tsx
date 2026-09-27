@@ -156,8 +156,8 @@ export function AdminClientDetails() {
           Clients
         </Link>
         <div className="mt-2 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 shadow-[0_1px_2px_rgb(7_17_31_/_0.04)] md:p-6">
-          <div className="flex flex-col items-start gap-4 lg:flex-row lg:justify-between">
-            <div className="flex w-full min-w-0 items-center gap-4 lg:w-auto">
+          <div className="flex flex-col-reverse gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex min-w-0 flex-1 items-center gap-4">
               <span
                 aria-hidden="true"
                 className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[var(--admin-navy)] font-heading text-lg font-semibold text-white"
@@ -173,7 +173,9 @@ export function AdminClientDetails() {
                 </div>
               </div>
             </div>
-            <AdminActionsMenu ariaLabel={`Actions for ${client.businessName}`} items={clientActions} />
+            <div className="flex justify-end lg:contents">
+              <AdminActionsMenu ariaLabel={`Actions for ${client.businessName}`} items={clientActions} />
+            </div>
           </div>
           <ClientHeaderMeta client={client} />
         </div>

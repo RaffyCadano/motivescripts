@@ -143,8 +143,8 @@ export function AdminTeamDetails() {
       </nav>
 
       <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex w-full min-w-0 items-center gap-4 lg:w-auto">
+        <div className="flex flex-col-reverse gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex min-w-0 flex-1 items-center gap-4">
             <span
               aria-hidden="true"
               className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[var(--admin-navy)] font-heading text-lg font-semibold text-white"
@@ -180,7 +180,7 @@ export function AdminTeamDetails() {
             </div>
           </div>
           {canManage && !editingSelf ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-end gap-2 lg:contents">
               {member.isActive ? (
                 <button type="button" disabled={busy} className={adminDangerBtn} onClick={() => void save({ isActive: false })}>
                   Deactivate
