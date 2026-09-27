@@ -7,8 +7,8 @@ export function PmProjectHealth({ items }: { items: PmProjectHealthItem[] }) {
   if (attention.length === 0) return null;
 
   return (
-    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-      <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Project Health</h2>
+    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] shadow-[0_1px_2px_rgb(7_17_31_/_0.04)] p-5">
+      <h2 className="font-heading text-[15px] font-semibold tracking-tight text-[var(--admin-ink)]">Project Health</h2>
       <ul className="mt-4 divide-y divide-[var(--admin-line)]">
         {attention.map((item) => (
           <li key={item.projectId} className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { AlarmClock, ArrowLeft, CalendarClock, CalendarRange, Eye, FolderKanban, PencilLine } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { firstNameFrom } from "@/auth/userDisplay";
-import { adminIcons } from "@/components/admin/adminIcons";
 import { OverviewAssignedProjects } from "@/components/admin/pm/OverviewAssignedProjects";
+import { MetricTile, SectionLabel } from "@/components/admin/overview/kit";
 import { PmAttentionQueue } from "@/components/admin/pm/PmAttentionQueue";
 import { PmCharts } from "@/components/admin/pm/PmCharts";
 import { PmBlockedSection } from "@/components/admin/pm/PmBlockedSection";
@@ -169,55 +169,6 @@ export function PmOverview() {
     }
   }
 
-  const kpis: {
-    id: string;
-    value: number;
-    label: string;
-    caption: string;
-    href: string;
-    icon: keyof typeof adminIcons;
-  }[] = [
-    {
-      id: "active-projects",
-      value: activeProjects.length,
-      label: "Active Projects",
-      caption: "in progress",
-      href: "/admin/projects",
-      icon: "projects",
-    },
-    {
-      id: "due-today",
-      value: taskStats.dueToday,
-      label: "Due Today",
-      caption: "tasks due today",
-      href: "#today-work",
-      icon: "time",
-    },
-    {
-      id: "overdue",
-      value: taskStats.overdue,
-      label: "Overdue",
-      caption: "past due date",
-      href: "#overdue",
-      icon: "overdue",
-    },
-    {
-      id: "needs-changes",
-      value: needsChangesCount,
-      label: "Needs Changes",
-      caption: "deliverables to revise",
-      href: "#reviews",
-      icon: "needsChanges",
-    },
-    {
-      id: "in-review",
-      value: inReviewCount,
-      label: "In Review",
-      caption: "awaiting review",
-      href: "#reviews",
-      icon: "activity",
-    },
-  ];
 
   const taskModal = openTask ? (
       <TeamTaskDetail
@@ -265,6 +216,7 @@ export function PmOverview() {
           <>
             <PmTaskListSection
               id="today-work"
+              icon={CalendarClock}
               title="Today's Work"
               tasks={dueTodayTasks}
               emptyTitle="Nothing due today"
@@ -274,6 +226,7 @@ export function PmOverview() {
             />
             <PmTaskListSection
               id="upcoming"
+              icon={CalendarRange}
               title="Due This Week"
               tasks={dueThisWeek}
               emptyTitle="Nothing else due this week"
@@ -287,6 +240,7 @@ export function PmOverview() {
         {focus.key === "overdue" ? (
           <PmTaskListSection
             id="overdue"
+            icon={AlarmClock}
             title="Overdue"
             tasks={overdueTasks}
             emptyTitle="Nothing overdue"
@@ -305,70 +259,71 @@ export function PmOverview() {
     );
   }
 
+  const attentionCount = attentionItems.length;
+  const todayLabel = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const summary =
+    (attentionCount === 0
+      ? "You’re all caught up. Nothing needs you right now."
+      : `${attentionCount} ${attentionCount === 1 ? "thing needs" : "things need"} your attention.`) +
+    (myProjects.length === 0 ? " No projects are assigned to you yet." : "");
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">
+    <div className="space-y-6">
+      <header className="min-w-0">
+        <p className="text-[12px] font-medium text-[var(--admin-muted)]">{todayLabel}</p>
+        <h1 className="mt-1 font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">
           {greetingFor()}, {firstName}
         </h1>
-        <p className="mt-1 text-sm text-[var(--admin-muted)]">
-          Here&apos;s what needs your attention across your projects.
-        </p>
-      </div>
+        <p className="mt-1 text-sm text-[var(--admin-muted)]">{summary}</p>
+      </header>
 
       {assignmentError ? <p className="text-sm text-[#b45309]">{assignmentError}</p> : null}
 
+      {attentionCount > 0 ? <PmAttentionQueue items={attentionItems} /> : null}
+
       <section aria-label="PM key metrics">
+        <SectionLabel>Today</SectionLabel>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-          {kpis.map((item) => {
-            const Icon = adminIcons[item.icon];
-            const content = (
-              <>
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--admin-muted)]">
-                    {item.label}
-                  </p>
-                  <Icon
-                    size={16}
-                    strokeWidth={2}
-                    className="shrink-0 text-[var(--admin-muted)] transition-colors group-hover:text-[var(--admin-blue)]"
-                    aria-hidden="true"
-                  />
-                </div>
-                <p className="mt-2 font-heading text-[2.25rem] leading-none font-bold tracking-tight text-[var(--admin-ink)]">
-                  {item.value}
-                </p>
-                <p className="mt-1.5 text-[12px] text-[var(--admin-muted)]">{item.caption}</p>
-              </>
-            );
-            const cardClass =
-              "group block rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-4 py-4 transition-all hover:border-[var(--admin-blue)] hover:shadow-[0_2px_10px_rgb(7_17_31_/_0.06)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--admin-blue)]";
-            return item.href.startsWith("#") ? (
-              <a key={item.id} href={item.href} className={cardClass}>
-                {content}
-              </a>
-            ) : (
-              <Link key={item.id} to={item.href} className={cardClass}>
-                {content}
-              </Link>
-            );
-          })}
+          <MetricTile icon={FolderKanban} label="Active projects" value={activeProjects.length} href="/admin/projects" caption="In progress" />
+          <MetricTile icon={CalendarClock} label="Due today" value={taskStats.dueToday} href="#today-work" caption="Tasks due today" tone={taskStats.dueToday > 0 ? "warn" : "neutral"} />
+          <MetricTile
+            icon={AlarmClock}
+            label="Overdue"
+            value={taskStats.overdue}
+            href="#overdue"
+            caption="Past their due date"
+            tone={taskStats.overdue > 0 ? "danger" : "neutral"}
+            valueTone={taskStats.overdue > 0 ? "danger" : undefined}
+          />
+          <MetricTile icon={PencilLine} label="Needs changes" value={needsChangesCount} href="#reviews" caption="Deliverables to revise" tone={needsChangesCount > 0 ? "warn" : "neutral"} />
+          <MetricTile icon={Eye} label="In review" value={inReviewCount} href="#reviews" caption="Awaiting review" />
         </div>
       </section>
 
       <PmCharts projects={myProjects} />
 
-      <PmAttentionQueue items={attentionItems} />
-
-      <PmTaskListSection
-        id="today-work"
-        title="Today's Work"
-        tasks={dueTodayTasks}
-        emptyTitle="Nothing due today"
-        emptyBody="Nothing on your task list is due today."
-        onOpen={setOpenTask}
-        viewAllHref="/admin/my-tasks"
-      />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <PmTaskListSection
+          id="today-work"
+          icon={CalendarClock}
+          title="Today's Work"
+          tasks={dueTodayTasks}
+          emptyTitle="Nothing due today"
+          emptyBody="Nothing on your task list is due today."
+          onOpen={setOpenTask}
+          viewAllHref="/admin/my-tasks"
+        />
+        <PmTaskListSection
+          id="upcoming"
+          icon={CalendarRange}
+          title="Due This Week"
+          tasks={dueThisWeek}
+          emptyTitle="Nothing else this week"
+          emptyBody="Nothing else on your task list is due in the next few days."
+          onOpen={setOpenTask}
+          viewAllHref="/admin/my-tasks"
+        />
+      </div>
 
       <OverviewAssignedProjects
         projects={myProjects}
@@ -383,27 +338,19 @@ export function PmOverview() {
 
       <PmReviewsSection deliverables={deliverables} projectIds={projectIds} projectsById={projectsById} />
 
-      <PmTaskListSection
-        id="upcoming"
-        title="Due This Week"
-        tasks={dueThisWeek}
-        emptyTitle="Nothing else due this week"
-        emptyBody="Nothing else on your task list is due in the next few days."
-        onOpen={setOpenTask}
-        viewAllHref="/admin/my-tasks"
-      />
-
-      <PmTaskListSection
-        id="overdue"
-        title="Overdue"
-        tasks={overdueTasks}
-        emptyTitle="Nothing overdue"
-        emptyBody="You're all caught up — nothing is overdue."
-        onOpen={setOpenTask}
-        viewAllHref="/admin/my-tasks"
-      />
-
-      <PmBlockedSection tasks={blocked} onOpen={setOpenTask} />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <PmTaskListSection
+          id="overdue"
+          icon={AlarmClock}
+          title="Overdue"
+          tasks={overdueTasks}
+          emptyTitle="Nothing overdue"
+          emptyBody="You're all caught up — nothing is overdue."
+          onOpen={setOpenTask}
+          viewAllHref="/admin/my-tasks"
+        />
+        <PmBlockedSection tasks={blocked} onOpen={setOpenTask} />
+      </div>
 
       <PmTeamMembers members={teamMembers} />
 

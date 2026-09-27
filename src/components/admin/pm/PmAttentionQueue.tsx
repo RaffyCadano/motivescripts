@@ -1,4 +1,6 @@
+import { BellRing, CircleCheck } from "lucide-react";
 import { Link } from "react-router-dom";
+import { OverviewEmpty } from "@/components/admin/overview/kit";
 import type { PmAttentionItem, PmAttentionKind } from "@/data/pmOverview";
 import { cn } from "@/lib/cn";
 
@@ -20,33 +22,49 @@ const kindTone: Record<PmAttentionKind, string> = {
   unassigned: "bg-[var(--admin-bg)] text-[var(--admin-muted)]",
 };
 
-/** "Needs My Attention" -- a single, prioritized triage queue merging existing attention signals (see buildPmAttentionQueue). */
+/** "Needs my attention": one prioritised list merging the existing attention signals (see buildPmAttentionQueue). */
 export function PmAttentionQueue({ items }: { items: PmAttentionItem[] }) {
   return (
-    <section id="needs-attention" className="scroll-mt-20 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-      <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Needs My Attention</h2>
+    <section
+      id="needs-attention"
+      aria-label="Needs my attention"
+      className={cn(
+        "scroll-mt-20 rounded-[var(--admin-radius)] border bg-[var(--admin-card)] p-5 shadow-[0_1px_2px_rgb(7_17_31_/_0.04)]",
+        items.length > 0 ? "border-[rgb(245_158_11_/_0.35)]" : "border-[var(--admin-line)]",
+      )}
+    >
+      <div className="flex items-start gap-2.5">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(245_158_11_/_0.14)] text-[#b45309]">
+          <BellRing size={16} strokeWidth={2} aria-hidden="true" />
+        </span>
+        <div>
+          <h2 className="font-heading text-[15px] font-semibold tracking-tight text-[var(--admin-ink)]">Needs my attention</h2>
+          <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">The most urgent things across your projects, in order.</p>
+        </div>
+        {items.length > 0 ? (
+          <span className="ml-auto rounded-full bg-[rgb(245_158_11_/_0.14)] px-2 py-0.5 text-xs font-semibold text-[#b45309]">{items.length}</span>
+        ) : null}
+      </div>
       {items.length === 0 ? (
-        <p className="mt-3 text-sm text-[var(--admin-muted)]">You&apos;re all caught up — nothing needs your attention right now.</p>
+        <div className="mt-3">
+          <OverviewEmpty compact icon={CircleCheck} title="You’re all caught up" body="Nothing needs your attention right now." />
+        </div>
       ) : (
         <ul className="mt-4 divide-y divide-[var(--admin-line)]">
           {items.map((item) => (
-            <li key={item.id} className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.08em]",
-                      kindTone[item.kind],
-                    )}
-                  >
-                    {kindLabel[item.kind]}
-                  </span>
-                  <Link to={item.href} className="font-heading text-sm font-semibold text-[var(--admin-ink)] hover:text-[var(--admin-blue)]">
-                    {item.label}
-                  </Link>
+            <li key={item.id} className="py-3 first:pt-0 last:pb-0">
+              <Link to={item.href} className="group flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-[0.08em]", kindTone[item.kind])}>
+                      {kindLabel[item.kind]}
+                    </span>
+                    <span className="font-heading text-sm font-semibold text-[var(--admin-ink)] group-hover:text-[var(--admin-blue)]">{item.label}</span>
+                  </div>
+                  <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{item.body}</p>
                 </div>
-                <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{item.body}</p>
-              </div>
+                <span className="shrink-0 font-heading text-[12px] font-semibold text-[var(--admin-blue)] opacity-0 transition-opacity group-hover:opacity-100 max-sm:opacity-100">Open</span>
+              </Link>
             </li>
           ))}
         </ul>

@@ -32,7 +32,7 @@ export function workloadByDay(tasks: { status: AgencyTaskStatus; dueDate: string
   const open = tasks.filter((task) => task.status !== "Completed" && task.dueDate);
   const today = isoDay(now);
   const bars: WorkloadBar[] = [
-    { key: "overdue", label: "Overdue", title: "Overdue", count: open.filter((task) => task.dueDate.slice(0, 10) < today).length, kind: "overdue" },
+    { key: "overdue", label: "Late", title: "Overdue", count: open.filter((task) => task.dueDate.slice(0, 10) < today).length, kind: "overdue" },
   ];
   for (let offset = 0; offset < days; offset++) {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);

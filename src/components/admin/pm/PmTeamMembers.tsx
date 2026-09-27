@@ -52,9 +52,9 @@ export function PmTeamMembers({ members }: { members: PmTeamMember[] }) {
   if (members.length === 0) return null;
 
   return (
-    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-4">
+    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] shadow-[0_1px_2px_rgb(7_17_31_/_0.04)] px-5 py-4">
       <div>
-        <h2 className="font-heading text-sm font-semibold tracking-tight">Team on My Projects</h2>
+        <h2 className="font-heading text-[15px] font-semibold tracking-tight">Team on My Projects</h2>
         <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
           People assigned to your projects and clients, and their open work on those projects.
         </p>

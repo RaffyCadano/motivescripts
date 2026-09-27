@@ -19,8 +19,8 @@ export function PmDiscoveryActionCenter({ items }: { items: DiscoveryAttentionIt
   for (const item of items) byStatus.get(item.status)?.push(item);
 
   return (
-    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-      <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Discovery Action Center</h2>
+    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] shadow-[0_1px_2px_rgb(7_17_31_/_0.04)] p-5">
+      <h2 className="font-heading text-[15px] font-semibold tracking-tight text-[var(--admin-ink)]">Discovery Action Center</h2>
       <p className="mt-1 text-[12px] text-[var(--admin-muted)]">
         Discovery status across every project assigned to you.
       </p>

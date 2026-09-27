@@ -16,6 +16,8 @@ export function OverviewCard({
   action,
   children,
   className,
+  id,
+  count,
 }: {
   title: string;
   description?: string;
@@ -23,9 +25,13 @@ export function OverviewCard({
   action?: { label: string; to: string };
   children: ReactNode;
   className?: string;
+  /** Anchor for links such as #overdue. */
+  id?: string;
+  /** A small number next to the title, shown only when above zero. */
+  count?: number;
 }) {
   return (
-    <section className={cn(overviewCardClass, "p-5", className)}>
+    <section id={id} className={cn(overviewCardClass, "p-5", id && "scroll-mt-20", className)}>
       <header className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2.5">
           {Icon ? (
@@ -34,7 +40,12 @@ export function OverviewCard({
             </span>
           ) : null}
           <div className="min-w-0">
-            <h2 className="font-heading text-[15px] font-semibold tracking-tight text-[var(--admin-ink)]">{title}</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-heading text-[15px] font-semibold tracking-tight text-[var(--admin-ink)]">{title}</h2>
+              {count && count > 0 ? (
+                <span className="rounded-full bg-[var(--admin-bg)] px-1.5 py-0.5 font-heading text-xs font-semibold tabular-nums text-[var(--admin-muted)]">{count}</span>
+              ) : null}
+            </div>
             {description ? <p className="mt-0.5 text-[12px] leading-snug text-[var(--admin-muted)]">{description}</p> : null}
           </div>
         </div>
@@ -55,16 +66,19 @@ export function OverviewEmpty({
   title,
   body,
   action,
+  compact = false,
 }: {
   icon: LucideIcon;
   title: string;
   body: string;
   action?: { label: string; to: string };
+  /** Less padding, for empty lists inside a card that also holds other content. */
+  compact?: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center px-4 py-8 text-center">
-      <span className="flex size-11 items-center justify-center rounded-full bg-[var(--admin-bg)] text-[var(--admin-muted)]">
-        <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
+    <div className={cn("flex flex-col items-center px-4 text-center", compact ? "py-5" : "py-8")}>
+      <span className={cn("flex items-center justify-center rounded-full bg-[var(--admin-bg)] text-[var(--admin-muted)]", compact ? "size-9" : "size-11")}>
+        <Icon size={compact ? 17 : 20} strokeWidth={1.75} aria-hidden="true" />
       </span>
       <p className="mt-3 font-heading text-sm font-semibold text-[var(--admin-ink)]">{title}</p>
       <p className="mt-1 max-w-xs text-[13px] leading-snug text-[var(--admin-muted)]">{body}</p>

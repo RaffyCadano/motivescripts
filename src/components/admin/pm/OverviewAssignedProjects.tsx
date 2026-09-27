@@ -1,4 +1,6 @@
+import { FolderKanban } from "lucide-react";
 import { Link } from "react-router-dom";
+import { OverviewEmpty } from "@/components/admin/overview/kit";
 import { ProgressBar } from "@/components/admin/ProgressBar";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
 import { currentMilestone, formatProjectDay } from "@/data/agencyProjects";
@@ -28,16 +30,24 @@ export function OverviewAssignedProjects({
   const rows = projects.filter((project) => !project.archived);
 
   return (
-    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
+    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] shadow-[0_1px_2px_rgb(7_17_31_/_0.04)]">
       <div className="flex items-center justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
-        <h2 className="font-heading text-sm font-semibold tracking-tight">My Projects</h2>
-        <Link className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline" to="/admin/projects">
+        <div className="flex items-start gap-2.5">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(0_80_240_/_0.08)] text-[var(--admin-blue)]">
+            <FolderKanban size={16} strokeWidth={2} aria-hidden="true" />
+          </span>
+          <div>
+            <h2 className="font-heading text-[15px] font-semibold tracking-tight">My projects</h2>
+            <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">Projects assigned to you, with what to do next</p>
+          </div>
+        </div>
+        <Link className="shrink-0 whitespace-nowrap text-[12px] font-medium text-[var(--admin-blue)] hover:underline" to="/admin/projects">
           View all
         </Link>
       </div>
 
       {rows.length === 0 ? (
-        <p className="px-5 py-8 text-sm text-[var(--admin-muted)]">No projects assigned to you yet.</p>
+        <OverviewEmpty icon={FolderKanban} title="No projects assigned to you yet" body="When an admin assigns you to a project, it appears here with its progress and next steps." action={{ label: "Browse all projects", to: "/admin/projects" }} />
       ) : (
         <>
           <div className="hidden md:block">

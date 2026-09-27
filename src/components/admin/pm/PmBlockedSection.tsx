@@ -1,20 +1,19 @@
+import { CircleCheck, OctagonAlert } from "lucide-react";
 import { Link } from "react-router-dom";
+import { OverviewCard, OverviewEmpty } from "@/components/admin/overview/kit";
 import { blockedReason } from "@/data/developerOverview";
 import { adminProjectTasksHref, type TeamWorkTask } from "@/data/teamWorkspace";
 
 /** Full-detail Blocked list -- shows the real blocker reason, or an honest "no reason provided" instead of inventing one. */
 export function PmBlockedSection({ tasks, onOpen }: { tasks: TeamWorkTask[]; onOpen: (task: TeamWorkTask) => void }) {
   return (
-    <section id="blocked" className="scroll-mt-20 space-y-3">
-      <h2 className="font-heading text-sm font-semibold tracking-tight">Blocked</h2>
+    <OverviewCard id="blocked" icon={OctagonAlert} title="Blocked" count={tasks.length} description="Tasks stuck until something is sorted out">
       {tasks.length === 0 ? (
-        <p className="rounded-[var(--admin-radius)] border border-dashed border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-8 text-sm text-[var(--admin-muted)]">
-          Nothing is blocked right now.
-        </p>
+        <OverviewEmpty compact icon={CircleCheck} title="Nothing is blocked" body="Every task is free to move." />
       ) : (
-        <ul className="divide-y divide-[var(--admin-line)] rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
+        <ul className="divide-y divide-[var(--admin-line)]">
           {tasks.map((task) => (
-            <li key={task.id} className="flex flex-wrap items-start justify-between gap-3 px-4 py-3">
+            <li key={task.id} className="flex flex-wrap items-start justify-between gap-3 py-3 first:pt-0 last:pb-0">
               <div className="min-w-0">
                 <button
                   type="button"
@@ -38,6 +37,6 @@ export function PmBlockedSection({ tasks, onOpen }: { tasks: TeamWorkTask[]; onO
           ))}
         </ul>
       )}
-    </section>
+    </OverviewCard>
   );
 }

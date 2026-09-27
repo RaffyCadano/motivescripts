@@ -194,7 +194,7 @@ test("PM chart numbers: status counts in workflow order, a week of due dates wit
     now,
   );
   assert.equal(bars.length, 8);
-  assert.deepEqual(bars.map((b) => b.label), ["Overdue", "Today", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
+  assert.deepEqual(bars.map((b) => b.label), ["Late", "Today", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
   assert.deepEqual(bars.map((b) => b.count), [2, 2, 0, 1, 0, 0, 0, 0]);
   assert.equal(bars[1].kind, "today");
   assert.equal(bars[0].kind, "overdue");

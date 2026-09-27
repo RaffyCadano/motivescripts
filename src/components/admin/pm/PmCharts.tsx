@@ -1,5 +1,7 @@
 import { useMemo } from "react";
+import { BarChart3, CalendarRange, CircleCheck, Gauge, FolderKanban } from "lucide-react";
 import { Link } from "react-router-dom";
+import { OverviewCard, OverviewEmpty } from "@/components/admin/overview/kit";
 import { OverviewBarList, type OverviewBarListItem } from "@/components/admin/overview/OverviewBarList";
 import type { AgencyProject, AgencyTaskStatus } from "@/data/agencyProjects";
 import { projectProgressRows, taskStatusCounts, workloadByDay, type WorkloadBar } from "@/data/pmCharts";
@@ -21,16 +23,6 @@ const OVERDUE = "#c0392b";
 const BRAND = "#0050f0";
 const BRAND_SOFT = "rgb(0 80 240 / 0.3)";
 
-function Card({ title, caption, children, className }: { title: string; caption: string; children: React.ReactNode; className?: string }) {
-  return (
-    <section className={cn("rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5", className)}>
-      <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">{title}</h2>
-      <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">{caption}</p>
-      <div className="mt-4">{children}</div>
-    </section>
-  );
-}
-
 function barColor(bar: WorkloadBar): string {
   if (bar.kind === "overdue") return OVERDUE;
   return bar.kind === "today" ? BRAND : BRAND_SOFT;
@@ -41,7 +33,7 @@ function WorkloadChart({ bars }: { bars: WorkloadBar[] }) {
   const max = Math.max(1, ...bars.map((bar) => bar.count));
   const total = bars.reduce((sum, bar) => sum + bar.count, 0);
   if (total === 0) {
-    return <p className="py-10 text-center text-sm text-[var(--admin-muted)]">No open tasks are due in the next week.</p>;
+    return <OverviewEmpty compact icon={CircleCheck} title="A clear week" body="No open task is due in the next seven days." />;
   }
   const summary = bars.map((bar) => `${bar.title}: ${bar.count}`).join(", ");
 
@@ -120,7 +112,7 @@ function WorkloadChart({ bars }: { bars: WorkloadBar[] }) {
 function ProgressList({ projects }: { projects: AgencyProject[] }) {
   const rows = projectProgressRows(projects);
   if (rows.length === 0) {
-    return <p className="py-10 text-center text-sm text-[var(--admin-muted)]">No active projects yet.</p>;
+    return <OverviewEmpty compact icon={FolderKanban} title="No active projects" body="Progress shows here once you have a project with tasks." />;
   }
   return (
     <ul className="space-y-3">
@@ -169,15 +161,19 @@ export function PmCharts({ projects }: { projects: AgencyProject[] }) {
 
   return (
     <section aria-label="Charts" className="grid gap-4 lg:grid-cols-6">
-      <Card title="Tasks by status" caption="All tasks in your active projects" className="lg:col-span-2">
-        <OverviewBarList items={statusItems} emptyLabel="No tasks yet." />
-      </Card>
-      <Card title="Workload this week" caption="Open tasks in your active projects, by due date" className="lg:col-span-2">
+      <OverviewCard icon={BarChart3} title="Tasks by status" description="All tasks in your active projects" className="lg:col-span-2">
+        {tasks.length === 0 ? (
+          <OverviewEmpty compact icon={BarChart3} title="No tasks yet" body="Tasks in your projects are counted here." />
+        ) : (
+          <OverviewBarList items={statusItems} emptyLabel="No tasks yet." />
+        )}
+      </OverviewCard>
+      <OverviewCard icon={CalendarRange} title="Workload this week" description="Open tasks in your active projects, by due date" className="lg:col-span-2">
         <WorkloadChart bars={bars} />
-      </Card>
-      <Card title="Project progress" caption="Share of tasks done, least finished first" className="lg:col-span-2">
+      </OverviewCard>
+      <OverviewCard icon={Gauge} title="Project progress" description="Share of tasks done, least finished first" className="lg:col-span-2">
         <ProgressList projects={projects} />
-      </Card>
+      </OverviewCard>
     </section>
   );
 }
