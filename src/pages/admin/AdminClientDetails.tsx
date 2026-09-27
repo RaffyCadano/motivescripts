@@ -88,7 +88,6 @@ export function AdminClientDetails() {
     );
   }
 
-  const statusLabel = client.status === "Active" ? "Active Client" : `${client.status} Client`;
   const portalLinked = portalAccounts.some((account) => account.clientId === client.id && account.role === "client");
   const canManageClient = hasPermission(profile, "clients.manage");
   const canManageProjects = hasPermission(profile, "projects.manage");
@@ -172,7 +171,6 @@ export function AdminClientDetails() {
                   </h1>
                   <ClientStatusBadge status={client.status} />
                 </div>
-                <p className="mt-0.5 text-sm text-[var(--admin-muted)]">{statusLabel}</p>
               </div>
             </div>
             <AdminActionsMenu ariaLabel={`Actions for ${client.businessName}`} items={clientActions} />
