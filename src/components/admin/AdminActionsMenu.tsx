@@ -3,6 +3,9 @@ import { createPortal } from "react-dom";
 import { ChevronDown, MoreHorizontal, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
+// Matches the menu's own w-56 class -- kept as a number so the position math below can use it directly.
+const MENU_WIDTH = 224;
+
 export type AdminActionsMenuItem = {
   id: string;
   label: string;
@@ -28,7 +31,7 @@ export function AdminActionsMenu({
   iconOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const [position, setPosition] = useState<{ top: number; right: number } | null>(null);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -40,7 +43,14 @@ export function AdminActionsMenu({
   useLayoutEffect(() => {
     if (!open || !triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
-    setPosition({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    // Right-align the menu to the trigger by default (its usual spot, top-right of a card or row), then
+    // slide it back onscreen if that would run it past either edge -- a narrow trigger near the left edge
+    // (e.g. a phone header's "Actions" button) would otherwise anchor a menu wider than the trigger well
+    // past the left edge of the viewport.
+    const margin = 8;
+    const idealLeft = rect.right - MENU_WIDTH;
+    const left = Math.min(Math.max(idealLeft, margin), window.innerWidth - MENU_WIDTH - margin);
+    setPosition({ top: rect.bottom + 4, left });
   }, [open]);
 
   useEffect(() => {
@@ -129,7 +139,7 @@ export function AdminActionsMenu({
               ref={menuRef}
               id={menuId}
               role="menu"
-              style={{ top: position.top, right: position.right }}
+              style={{ top: position.top, left: position.left }}
               className="admin-theme fixed z-[70] w-56 overflow-hidden rounded-lg border border-[var(--admin-line)] bg-[var(--admin-card)] py-1 shadow-[0_12px_32px_rgb(7_17_31_/_0.08)]"
             >
               {visible.map((item) => (
