@@ -1,5 +1,15 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { FilePlus, FileText, Tags, Upload } from "lucide-react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
+import {
+  DialogActions,
+  DialogField,
+  DialogSection,
+  DialogSelect,
+  dialogInputClass,
+  dialogTextareaClass,
+} from "@/components/admin/dialog/formKit";
+
 import {
   deliverableCategories,
   designCheckpointLabel,
@@ -15,9 +25,8 @@ import {
   type ReviewStatus,
 } from "@/data/files";
 import { MAX_FILE_SIZE_LABEL, validateUploadFile } from "@/data/fileUploadConfig";
+import { cn } from "@/lib/cn";
 
-const fieldClass =
-  "mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]";
 
 const emptyDraft: DeliverableDraft = {
   name: "",
@@ -36,6 +45,7 @@ type DeliverableFormModalProps = {
 
 export function DeliverableFormModal({ open, deliverable, onClose, onSubmit }: DeliverableFormModalProps) {
   const [draft, setDraft] = useState<DeliverableDraft>(emptyDraft);
+  const formId = useId();
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -89,6 +99,7 @@ export function DeliverableFormModal({ open, deliverable, onClose, onSubmit }: D
     <AdminDialog
       open={open}
       busy={uploading}
+      icon={FilePlus}
       title={editing ? "Edit Deliverable" : "New Deliverable"}
       description={
         editing
@@ -97,104 +108,131 @@ export function DeliverableFormModal({ open, deliverable, onClose, onSubmit }: D
       }
       size="xl"
       onClose={onClose}
+      footer={
+        <DialogActions
+          formId={formId}
+          submitLabel={uploading ? "Saving…" : editing ? "Save changes" : "Create Deliverable"}
+          onCancel={onClose}
+          busy={uploading}
+          disabled={Boolean(error)}
+        />
+      }
     >
-      <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>
-        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-          Deliverable name
-          <input
-            required
-            value={draft.name}
-            onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
-            className={fieldClass}
-          />
-        </label>
-        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-          Description
-          <textarea
-            value={draft.description}
-            onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
-            rows={3}
-            className="mt-1.5 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 py-2 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-          />
-        </label>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className={editing ? "block text-[13px] font-medium text-[var(--admin-ink)] sm:col-span-2" : "block text-[13px] font-medium text-[var(--admin-ink)]"}>
-            Category
-            <select
-              value={draft.category}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, category: event.target.value as DeliverableCategory }))
-              }
-              className={fieldClass}
+      <form id={formId} className="space-y-6" onSubmit={(event) => void handleSubmit(event)}>
+        <DialogSection title="Deliverable" icon={FileText}>
+          <div className="space-y-4">
+            <DialogField label="Deliverable name" required>
+              <input
+                required
+                value={draft.name}
+                onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
+                className={dialogInputClass}
+                placeholder="For example, Homepage design"
+              />
+            </DialogField>
+            <DialogField label="Description">
+              <textarea
+                value={draft.description}
+                onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
+                rows={3}
+                className={dialogTextareaClass}
+              />
+            </DialogField>
+          </div>
+        </DialogSection>
+
+        <DialogSection title="Details" icon={Tags}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <DialogField label="Category" className={editing ? "sm:col-span-2" : undefined}>
+              <DialogSelect
+                value={draft.category}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, category: event.target.value as DeliverableCategory }))
+                }
+              >
+                {deliverableCategories.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </DialogSelect>
+            </DialogField>
+            {editing ? null : (
+              <DialogField label="Initial status">
+                <DialogSelect
+                  value={draft.status}
+                  onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value as ReviewStatus }))}
+                >
+                  {reviewStatuses.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </DialogSelect>
+              </DialogField>
+            )}
+            <DialogField
+              label="Design checkpoint"
+              className="sm:col-span-2"
+              hint="Only set this for the deliverable that IS one of the three design approval checkpoints."
             >
-              {deliverableCategories.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
-          {editing ? null : (
-          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-            Initial status
-            <select
-              value={draft.status}
-              onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value as ReviewStatus }))}
-              className={fieldClass}
-            >
-              {reviewStatuses.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </label>
-          )}
-        </div>
-        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-          Design checkpoint
-          <select
-            value={draft.designCheckpoint ?? ""}
-            onChange={(event) =>
-              setDraft((current) => ({
-                ...current,
-                designCheckpoint: (event.target.value || null) as DesignCheckpoint | null,
-              }))
-            }
-            className={fieldClass}
-          >
-            <option value="">Not a checkpoint</option>
-            {designCheckpoints.map((item) => (
-              <option key={item} value={item}>
-                {designCheckpointLabel(item)}
-              </option>
-            ))}
-          </select>
-          <span className="mt-1 block text-[12px] font-normal text-[var(--admin-muted)]">
-            Only set this for the deliverable that IS one of the three design approval checkpoints.
-          </span>
-        </label>
+              <DialogSelect
+                value={draft.designCheckpoint ?? ""}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    designCheckpoint: (event.target.value || null) as DesignCheckpoint | null,
+                  }))
+                }
+              >
+                <option value="">Not a checkpoint</option>
+                {designCheckpoints.map((item) => (
+                  <option key={item} value={item}>
+                    {designCheckpointLabel(item)}
+                  </option>
+                ))}
+              </DialogSelect>
+            </DialogField>
+          </div>
+        </DialogSection>
+
         {editing ? null : (
-        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-          Initial file
-          <input
-            type="file"
-            accept={fileInputAccept}
-            disabled={uploading}
-            className="mt-1.5 block w-full text-sm text-[var(--admin-ink)] file:mr-3 file:rounded-lg file:border file:border-[var(--admin-line)] file:bg-white file:px-3 file:py-1.5 file:font-heading file:text-[12px] file:font-semibold"
-            onChange={(event) => chooseFile(event.target.files?.[0] ?? null)}
-          />
-          <span className="mt-1 block text-[12px] font-normal text-[var(--admin-muted)]">
-            Optional. Uploaded to private Storage. Maximum {MAX_FILE_SIZE_LABEL}.
-          </span>
-        </label>
+          <DialogSection title="First version" icon={Upload} description="Optional. You can also add versions later.">
+            <label
+              className={cn(
+                "flex cursor-pointer items-center gap-4 rounded-[var(--admin-radius)] border border-dashed px-4 py-4 transition-colors",
+                error ? "border-[#e8a39b] bg-[rgb(220_38_38_/_0.04)]" : "border-[#c7d0dd] bg-[var(--admin-bg)] hover:border-[rgb(0_80_240_/_0.45)] hover:bg-[rgb(0_80_240_/_0.03)]",
+                uploading && "pointer-events-none opacity-60",
+              )}
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-[var(--admin-blue)] ring-1 ring-[var(--admin-line)]">
+                <Upload size={18} strokeWidth={2} aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-[var(--admin-ink)]">
+                  {file ? file.name : "Choose a file to upload"}
+                </span>
+                <span className="mt-0.5 block text-[12px] text-[var(--admin-muted)]">
+                  {file
+                    ? `${fileTypeFromName(file.name, file.type)} · ${formatFileSize(file.size)}`
+                    : `Stored privately. Maximum ${MAX_FILE_SIZE_LABEL}.`}
+                </span>
+              </span>
+              <span className="hidden shrink-0 rounded-lg border border-[var(--admin-line)] bg-white px-3 py-1.5 font-heading text-[12px] font-semibold text-[var(--admin-ink)] sm:inline-flex">
+                {file ? "Change" : "Browse"}
+              </span>
+              <input
+                type="file"
+                accept={fileInputAccept}
+                disabled={uploading}
+                className="sr-only"
+                onChange={(event) => chooseFile(event.target.files?.[0] ?? null)}
+              />
+            </label>
+            {error ? <p className="text-[13px] font-medium text-[#b42318]">{error}</p> : null}
+          </DialogSection>
         )}
-        {error ? <p className="text-sm text-[#b42318]">{error}</p> : null}
-        {file ? (
-          <p className="text-[12px] text-[var(--admin-muted)]">
-            {file.name} · {fileTypeFromName(file.name, file.type)} · {formatFileSize(file.size)}
-          </p>
-        ) : null}
+
         {uploading ? (
           <div>
             <p className="text-sm font-medium text-[var(--admin-ink)]">Uploading…</p>
@@ -203,23 +241,6 @@ export function DeliverableFormModal({ open, deliverable, onClose, onSubmit }: D
             </div>
           </div>
         ) : null}
-        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            disabled={uploading}
-            className="inline-flex h-10 items-center justify-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-50"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={uploading || Boolean(error)}
-            className="inline-flex h-10 items-center justify-center rounded-[var(--admin-radius)] bg-[var(--admin-navy)] px-4 font-heading text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {uploading ? "Saving…" : editing ? "Save changes" : "Create Deliverable"}
-          </button>
-        </div>
       </form>
     </AdminDialog>
   );

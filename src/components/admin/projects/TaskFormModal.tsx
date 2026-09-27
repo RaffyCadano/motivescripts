@@ -1,5 +1,15 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { CalendarClock, FileText, ListChecks } from "lucide-react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { AdminDialog } from "@/components/admin/leads/AdminDialog";
+import {
+  DialogActions,
+  DialogField,
+  DialogSection,
+  DialogSelect,
+  dialogInputClass,
+  dialogTextareaClass,
+} from "@/components/admin/dialog/formKit";
+
 import {
   taskPriorities,
   taskStatuses,
@@ -18,9 +28,8 @@ import {
 } from "@/data/taskRecommendedRoles";
 import { effectiveTaskType, TASK_TYPES, taskTypeLabel, type TaskType } from "@/data/taskTypes";
 import { estimatedHoursForTitle } from "@/data/productionTaskInstructions";
+import { cn } from "@/lib/cn";
 
-const fieldClass =
-  "mt-1.5 h-10 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]";
 
 const emptyDraft: AgencyTaskDraft = {
   title: "",
@@ -67,6 +76,7 @@ export function TaskFormModal({
   onSubmit,
 }: TaskFormModalProps) {
   const [draft, setDraft] = useState<AgencyTaskDraft>(emptyDraft);
+  const formId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -120,194 +130,169 @@ export function TaskFormModal({
   return (
     <AdminDialog
       open={open}
+      icon={ListChecks}
       title={task ? "Edit Task" : "Add Task"}
       description="Tasks drive project progress. Completing a task updates the percentage immediately."
       size="xl"
       onClose={onClose}
+      footer={<DialogActions formId={formId} submitLabel={task ? "Save changes" : "Add Task"} onCancel={onClose} />}
     >
-      <form className="space-y-3" onSubmit={handleSubmit}>
-        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-          Task name
-          <input
-            required
-            value={draft.title}
-            onChange={(event) => handleTitleChange(event.target.value)}
-            className={fieldClass}
-          />
-        </label>
-        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-          Description
-          <textarea
-            rows={8}
-            value={draft.description}
-            onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
-            className="mt-1.5 w-full whitespace-pre-wrap rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 py-2 text-sm leading-relaxed text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
-          />
-        </label>
-        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-          Reference link
-          <input
-            type="url"
-            value={draft.referenceUrl}
-            onChange={(event) => setDraft((current) => ({ ...current, referenceUrl: event.target.value }))}
-            className={fieldClass}
-            placeholder="https://figma.com/… or https://github.com/…"
-          />
-        </label>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-            Phase
-            <select
-              className={fieldClass}
-              value={draft.milestoneId}
-              onChange={(event) => handleMilestoneChange(event.target.value)}
-            >
-              <option value="">Ungrouped</option>
-              {milestones.map((milestone) => (
-                <option key={milestone.id} value={milestone.id}>
-                  {displayMilestoneName(milestone.name)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-            Status
-            <select
-              required
-              className={fieldClass}
-              value={draft.status}
-              onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value as AgencyTaskStatus }))}
-            >
-              {taskStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-            Priority
-            <select
-              required
-              className={fieldClass}
-              value={draft.priority}
-              onChange={(event) =>
-                setDraft((current) => ({ ...current, priority: event.target.value as AgencyTaskPriority }))
-              }
-            >
-              {taskPriorities.map((priority) => (
-                <option key={priority} value={priority}>
-                  {priority}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-            Recommended role
-            <select
-              className={fieldClass}
-              value={draft.recommendedRole ?? ""}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  recommendedRole: (event.target.value || null) as TaskRecommendedRoleId | null,
-                }))
-              }
-            >
-              <option value="">None</option>
-              {TASK_RECOMMENDED_ROLE_OPTIONS.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-            Task type
-            <select
-              className={fieldClass}
-              value={draft.taskType ?? "internal"}
-              onChange={(event) => setDraft((current) => ({ ...current, taskType: event.target.value as TaskType }))}
-            >
-              {TASK_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {taskTypeLabel(type)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-            Estimated hours
-            <input
-              type="number"
-              min="0"
-              step="0.5"
-              value={draft.estimatedHours ?? ""}
-              onChange={(event) =>
-                setDraft((current) => ({
-                  ...current,
-                  estimatedHours: event.target.value === "" ? null : Number(event.target.value),
-                }))
-              }
-              className={fieldClass}
-              placeholder="Optional"
-            />
-          </label>
-          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-            Assignee
-            {assignees.length > 0 ? (
-              <select
-                className={fieldClass}
-                value={draft.assignedTo}
-                onChange={(event) => {
-                  const assignedTo = event.target.value;
-                  const name = assignees.find((item) => item.id === assignedTo)?.name ?? "";
-                  setDraft((current) => ({ ...current, assignedTo, assignee: name }));
-                }}
-              >
-                <option value="">Unassigned</option>
-                {assignees.map((person) => (
-                  <option key={person.id} value={person.id}>
-                    {assigneeOptionLabel(person)}
+      <form id={formId} className="space-y-6" onSubmit={handleSubmit}>
+        <DialogSection title="Task" icon={FileText}>
+          <div className="space-y-4">
+            <DialogField label="Task name" required>
+              <input
+                required
+                value={draft.title}
+                onChange={(event) => handleTitleChange(event.target.value)}
+                className={dialogInputClass}
+                placeholder="What needs to be done?"
+              />
+            </DialogField>
+            <DialogField label="Description" hint="Steps, context and anything the person doing it needs to know.">
+              <textarea
+                rows={5}
+                value={draft.description}
+                onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
+                className={cn(dialogTextareaClass, "whitespace-pre-wrap")}
+              />
+            </DialogField>
+            <DialogField label="Reference link" hint="A Figma file, GitHub page or any link that helps.">
+              <input
+                type="url"
+                value={draft.referenceUrl}
+                onChange={(event) => setDraft((current) => ({ ...current, referenceUrl: event.target.value }))}
+                className={dialogInputClass}
+                placeholder="https://figma.com/… or https://github.com/…"
+              />
+            </DialogField>
+          </div>
+        </DialogSection>
+
+        <DialogSection title="Planning" icon={CalendarClock}>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <DialogField label="Phase">
+              <DialogSelect value={draft.milestoneId} onChange={(event) => handleMilestoneChange(event.target.value)}>
+                <option value="">Ungrouped</option>
+                {milestones.map((milestone) => (
+                  <option key={milestone.id} value={milestone.id}>
+                    {displayMilestoneName(milestone.name)}
                   </option>
                 ))}
-              </select>
-            ) : (
-              <input
-                value={draft.assignee}
+              </DialogSelect>
+            </DialogField>
+            <DialogField label="Status" required>
+              <DialogSelect
+                required
+                value={draft.status}
+                onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value as AgencyTaskStatus }))}
+              >
+                {taskStatuses.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </DialogSelect>
+            </DialogField>
+            <DialogField label="Priority" required>
+              <DialogSelect
+                required
+                value={draft.priority}
                 onChange={(event) =>
-                  setDraft((current) => ({ ...current, assignee: event.target.value, assignedTo: "" }))
+                  setDraft((current) => ({ ...current, priority: event.target.value as AgencyTaskPriority }))
                 }
-                className={fieldClass}
+              >
+                {taskPriorities.map((priority) => (
+                  <option key={priority} value={priority}>
+                    {priority}
+                  </option>
+                ))}
+              </DialogSelect>
+            </DialogField>
+            <DialogField label="Task type">
+              <DialogSelect
+                value={draft.taskType ?? "internal"}
+                onChange={(event) => setDraft((current) => ({ ...current, taskType: event.target.value as TaskType }))}
+              >
+                {TASK_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {taskTypeLabel(type)}
+                  </option>
+                ))}
+              </DialogSelect>
+            </DialogField>
+            <DialogField label="Recommended role">
+              <DialogSelect
+                value={draft.recommendedRole ?? ""}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    recommendedRole: (event.target.value || null) as TaskRecommendedRoleId | null,
+                  }))
+                }
+              >
+                <option value="">None</option>
+                {TASK_RECOMMENDED_ROLE_OPTIONS.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.label}
+                  </option>
+                ))}
+              </DialogSelect>
+            </DialogField>
+            <DialogField label="Assignee">
+              {assignees.length > 0 ? (
+                <DialogSelect
+                  value={draft.assignedTo}
+                  onChange={(event) => {
+                    const assignedTo = event.target.value;
+                    const name = assignees.find((item) => item.id === assignedTo)?.name ?? "";
+                    setDraft((current) => ({ ...current, assignedTo, assignee: name }));
+                  }}
+                >
+                  <option value="">Unassigned</option>
+                  {assignees.map((person) => (
+                    <option key={person.id} value={person.id}>
+                      {assigneeOptionLabel(person)}
+                    </option>
+                  ))}
+                </DialogSelect>
+              ) : (
+                <input
+                  value={draft.assignee}
+                  onChange={(event) =>
+                    setDraft((current) => ({ ...current, assignee: event.target.value, assignedTo: "" }))
+                  }
+                  className={dialogInputClass}
+                  placeholder="Optional"
+                />
+              )}
+            </DialogField>
+            <DialogField label="Estimated hours">
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={draft.estimatedHours ?? ""}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    estimatedHours: event.target.value === "" ? null : Number(event.target.value),
+                  }))
+                }
+                className={dialogInputClass}
                 placeholder="Optional"
               />
-            )}
-          </label>
-          <label className="block text-[13px] font-medium text-[var(--admin-ink)] sm:col-span-2">
-            Due date
-            <input
-              type="date"
-              value={draft.dueDate}
-              onChange={(event) => setDraft((current) => ({ ...current, dueDate: event.target.value }))}
-              className={fieldClass}
-            />
-          </label>
-        </div>
-        <div className="flex justify-end gap-2 pt-2">
-          <button
-            type="button"
-            className="inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)]"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="inline-flex h-10 items-center rounded-[var(--admin-radius)] bg-[var(--admin-blue)] px-4 font-heading text-sm font-semibold text-white"
-          >
-            {task ? "Save changes" : "Add Task"}
-          </button>
-        </div>
+            </DialogField>
+            <DialogField label="Due date" className="sm:col-span-2 lg:col-span-2">
+              <input
+                type="date"
+                value={draft.dueDate}
+                onChange={(event) => setDraft((current) => ({ ...current, dueDate: event.target.value }))}
+                className={dialogInputClass}
+              />
+            </DialogField>
+          </div>
+        </DialogSection>
       </form>
     </AdminDialog>
   );
