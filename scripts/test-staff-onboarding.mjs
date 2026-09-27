@@ -173,3 +173,38 @@ test("the Project Manager menu's four work items each open their own focused vie
   const nav = readFileSync("src/data/adminNav.ts", "utf8");
   for (const key of ["needs-attention", "today-work", "overdue", "reviews"]) assert.ok(nav.includes(`/admin#${key}`), key);
 });
+
+test("PM chart numbers: status counts in workflow order, a week of due dates with overdue first, and least-finished projects on top", async () => {
+  const { taskStatusCounts, workloadByDay, projectProgressRows } = await import("../src/data/pmCharts.ts");
+  const counts = taskStatusCounts([{ status: "Todo" }, { status: "Todo" }, { status: "Completed" }, { status: "Blocked" }]);
+  assert.deepEqual(counts.map((c) => [c.status, c.count]), [["Todo", 2], ["In Progress", 0], ["In Review", 0], ["Completed", 1], ["Blocked", 1]]);
+
+  const now = new Date(2026, 8, 28, 15, 0); // Mon Sep 28, 2026, mid-afternoon
+  const bars = workloadByDay(
+    [
+      { status: "Todo", dueDate: "2026-09-20" },        // overdue
+      { status: "In Progress", dueDate: "2026-09-27" },  // overdue
+      { status: "Completed", dueDate: "2026-09-10" },    // finished, ignored
+      { status: "Todo", dueDate: "2026-09-28" },         // today
+      { status: "Todo", dueDate: "2026-09-28" },
+      { status: "Blocked", dueDate: "2026-09-30" },
+      { status: "Todo", dueDate: "2026-10-05" },         // beyond the week
+      { status: "Todo", dueDate: "" },                   // no date, ignored
+    ],
+    now,
+  );
+  assert.equal(bars.length, 8);
+  assert.deepEqual(bars.map((b) => b.label), ["Overdue", "Today", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
+  assert.deepEqual(bars.map((b) => b.count), [2, 2, 0, 1, 0, 0, 0, 0]);
+  assert.equal(bars[1].kind, "today");
+  assert.equal(bars[0].kind, "overdue");
+
+  const rows = projectProgressRows([
+    { id: "a", name: "Alpha", status: "In Development", tasks: [{ status: "Completed" }, { status: "Todo" }] },
+    { id: "b", name: "Beta", status: "In Development", tasks: [{ status: "Todo" }] },
+    { id: "c", name: "Done", status: "Completed", tasks: [{ status: "Completed" }] },
+    { id: "d", name: "Old", status: "In Development", archived: true, tasks: [] },
+    { id: "e", name: "Empty", status: "Planning", tasks: [] },
+  ]);
+  assert.deepEqual(rows.map((r) => [r.name, r.percent]), [["Beta", 0], ["Empty", 0], ["Alpha", 50]]);
+});

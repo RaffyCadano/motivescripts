@@ -6,6 +6,7 @@ import { firstNameFrom } from "@/auth/userDisplay";
 import { adminIcons } from "@/components/admin/adminIcons";
 import { OverviewAssignedProjects } from "@/components/admin/pm/OverviewAssignedProjects";
 import { PmAttentionQueue } from "@/components/admin/pm/PmAttentionQueue";
+import { PmCharts } from "@/components/admin/pm/PmCharts";
 import { PmBlockedSection } from "@/components/admin/pm/PmBlockedSection";
 import { PmDiscoveryActionCenter } from "@/components/admin/pm/PmDiscoveryActionCenter";
 import { PmProjectHealth } from "@/components/admin/pm/PmProjectHealth";
@@ -354,6 +355,8 @@ export function PmOverview() {
           })}
         </div>
       </section>
+
+      <PmCharts projects={myProjects} />
 
       <PmAttentionQueue items={attentionItems} />
 
