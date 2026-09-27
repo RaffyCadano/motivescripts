@@ -27,6 +27,7 @@ import { ProjectFeedbackPanel } from "@/components/admin/projects/ProjectFeedbac
 import { ProjectFilesPanel } from "@/components/admin/projects/ProjectFilesPanel";
 import { ProjectTimePanel } from "@/components/admin/projects/ProjectTimePanel";
 import { ProjectVersionsPanel } from "@/components/admin/projects/ProjectVersionsPanel";
+import { ProjectAccessPanel } from "@/components/admin/projects/ProjectAccessPanel";
 import { ProjectMilestonesPanel } from "@/components/admin/projects/ProjectMilestonesPanel";
 import { ProjectOverview } from "@/components/admin/projects/ProjectOverview";
 import { ProjectSectionNav } from "@/components/admin/projects/ProjectSectionNav";
@@ -368,6 +369,7 @@ export function AdminProjectDetails() {
           ) : null}
           {tab === "time" ? <ProjectTimePanel project={project} /> : null}
           {tab === "versions" ? <ProjectVersionsPanel project={project} /> : null}
+          {tab === "access" ? <ProjectAccessPanel project={project} /> : null}
           {tab === "feedback" ? <ProjectFeedbackPanel project={project} /> : null}
           {tab === "approvals" ? <ProjectApprovalsPanel project={project} /> : null}
           {tab === "activity" ? <ProjectActivityPanel project={project} /> : null}

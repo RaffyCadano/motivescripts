@@ -6,6 +6,7 @@ import {
   Clock,
   Flag,
   History,
+  KeyRound,
   LayoutDashboard,
   MessageSquare,
   Paperclip,
@@ -18,6 +19,7 @@ export const projectSectionTabs = [
   { id: "files", label: "Files", icon: Paperclip },
   { id: "time", label: "Time", icon: Clock },
   { id: "versions", label: "Versions", icon: History },
+  { id: "access", label: "Client access", icon: KeyRound },
   { id: "feedback", label: "Feedback", icon: MessageSquare },
   { id: "approvals", label: "Approvals", icon: BadgeCheck },
   { id: "activity", label: "Activity", icon: Activity },
@@ -45,7 +47,7 @@ export const projectSectionNavGroups: ProjectSectionNavGroup[] = [
   },
   {
     label: "Delivery",
-    items: [tabById.get("milestones")!, tabById.get("files")!, tabById.get("time")!, tabById.get("versions")!],
+    items: [tabById.get("milestones")!, tabById.get("files")!, tabById.get("time")!, tabById.get("versions")!, tabById.get("access")!],
   },
   {
     label: "Communication",
