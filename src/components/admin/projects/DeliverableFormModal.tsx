@@ -95,6 +95,7 @@ export function DeliverableFormModal({ open, deliverable, onClose, onSubmit }: D
           ? "Update the deliverable name, description, or category. Review status stays the same."
           : "Create a project deliverable. Upload a first version now, or add versions later."
       }
+      size="xl"
       onClose={onClose}
     >
       <form className="space-y-3" onSubmit={(event) => void handleSubmit(event)}>
@@ -116,22 +117,40 @@ export function DeliverableFormModal({ open, deliverable, onClose, onSubmit }: D
             className="mt-1.5 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 py-2 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
           />
         </label>
-        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-          Category
-          <select
-            value={draft.category}
-            onChange={(event) =>
-              setDraft((current) => ({ ...current, category: event.target.value as DeliverableCategory }))
-            }
-            className={fieldClass}
-          >
-            {deliverableCategories.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className={editing ? "block text-[13px] font-medium text-[var(--admin-ink)] sm:col-span-2" : "block text-[13px] font-medium text-[var(--admin-ink)]"}>
+            Category
+            <select
+              value={draft.category}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, category: event.target.value as DeliverableCategory }))
+              }
+              className={fieldClass}
+            >
+              {deliverableCategories.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+          {editing ? null : (
+          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+            Initial status
+            <select
+              value={draft.status}
+              onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value as ReviewStatus }))}
+              className={fieldClass}
+            >
+              {reviewStatuses.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </label>
+          )}
+        </div>
         <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
           Design checkpoint
           <select
@@ -155,22 +174,6 @@ export function DeliverableFormModal({ open, deliverable, onClose, onSubmit }: D
             Only set this for the deliverable that IS one of the three design approval checkpoints.
           </span>
         </label>
-        {editing ? null : (
-        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-          Initial status
-          <select
-            value={draft.status}
-            onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value as ReviewStatus }))}
-            className={fieldClass}
-          >
-            {reviewStatuses.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
-        )}
         {editing ? null : (
         <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
           Initial file

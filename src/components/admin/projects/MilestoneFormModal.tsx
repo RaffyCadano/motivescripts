@@ -54,6 +54,7 @@ export function MilestoneFormModal({ open, milestone, onClose, onSubmit }: Miles
       open={open}
       title={milestone ? "Edit Milestone" : "Add Milestone"}
       description="Milestones organize website delivery from discovery through launch."
+      size="xl"
       onClose={onClose}
     >
       <form className="space-y-3" onSubmit={handleSubmit}>
@@ -75,24 +76,24 @@ export function MilestoneFormModal({ open, milestone, onClose, onSubmit }: Miles
             className="mt-1.5 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 py-2 text-sm text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
           />
         </label>
-        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-          Status
-          <select
-            required
-            className={fieldClass}
-            value={draft.status}
-            onChange={(event) =>
-              setDraft((current) => ({ ...current, status: event.target.value as AgencyMilestoneStatus }))
-            }
-          >
-            {milestoneStatuses.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+            Status
+            <select
+              required
+              className={fieldClass}
+              value={draft.status}
+              onChange={(event) =>
+                setDraft((current) => ({ ...current, status: event.target.value as AgencyMilestoneStatus }))
+              }
+            >
+              {milestoneStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
             Start date
             <input
