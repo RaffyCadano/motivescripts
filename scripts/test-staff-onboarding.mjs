@@ -139,3 +139,24 @@ test("signing out clears the session together with the profile, so no fallback s
   assert.ok(body.includes("setProfile(null)") && body.includes("setSession(null)"));
   assert.ok(body.indexOf("setSession(null)") < auth.indexOf("await supabase.auth.signOut", start));
 });
+
+test("stale-file errors are recognised and only trigger one automatic reload per 30 seconds", async () => {
+  const { isChunkLoadError, canAutoReload } = await import("../src/lib/chunkReload.ts");
+  assert.equal(isChunkLoadError(new TypeError("Failed to fetch dynamically imported module: https://x/assets/Foo-abc.js")), true);
+  assert.equal(isChunkLoadError(new Error("error loading dynamically imported module")), true);
+  assert.equal(isChunkLoadError("Importing a module script failed."), true);
+  assert.equal(isChunkLoadError(new Error("Expected a JavaScript module script but the server responded with a MIME type of text/html")), true);
+  assert.equal(isChunkLoadError(new Error("Cannot read properties of undefined (reading 'map')")), false);
+  assert.equal(isChunkLoadError(null), false);
+  assert.equal(canAutoReload(1000, null), true);
+  assert.equal(canAutoReload(100_000, 90_000), false);
+  assert.equal(canAutoReload(100_000, 60_000), true);
+  assert.equal(canAutoReload(100_000, NaN), true);
+});
+
+test("the app is wrapped in an error boundary, and the auth start-up cannot wait forever", () => {
+  const main = readFileSync("src/main.tsx", "utf8");
+  const auth = readFileSync("src/auth/AuthProvider.tsx", "utf8");
+  assert.ok(main.includes("<AppErrorBoundary>") && main.includes("vite:preloadError"));
+  assert.ok(auth.includes("window.setTimeout(() => {") && auth.includes("12000") && auth.includes("clearTimeout(watchdog)"));
+});

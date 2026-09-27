@@ -1,8 +1,15 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "@/App";
+import { AppErrorBoundary } from "@/components/AppErrorBoundary";
 import { DevEnvironmentBadge } from "@/components/DevEnvironmentBadge";
+import { reloadForNewVersion } from "@/lib/chunkReload";
 import "@/styles/global.css";
+
+// Vite tells us when a page's code file cannot be fetched (a new release removed it). Load the new version once.
+window.addEventListener("vite:preloadError", () => {
+  reloadForNewVersion();
+});
 
 // The signed-in areas must not run inside another site's frame (clickjacking). GitHub Pages cannot send an
 // X-Frame-Options or frame-ancestors header, so the app refuses to start when framed on those paths.
@@ -14,7 +21,9 @@ if (framed && signedInArea) {
 } else {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
-      <App />
+      <AppErrorBoundary>
+        <App />
+      </AppErrorBoundary>
       <DevEnvironmentBadge />
     </StrictMode>,
   );

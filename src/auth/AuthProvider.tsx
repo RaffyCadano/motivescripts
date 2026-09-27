@@ -93,6 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadSeq = useRef(0);
   const profileRef = useRef<AppProfile | null>(null);
   profileRef.current = profile;
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
 
   useEffect(() => {
     const supabase = getSupabase();
@@ -156,6 +158,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.setTimeout(() => applySession(nextSession), 0);
     });
 
+    // A phone that put the tab to sleep can leave the session lookup or the profile request waiting forever, which
+    // shows a spinner (or nothing) with no way out. After 12 seconds, stop waiting: the guards then offer "Try again".
+    const watchdog = window.setTimeout(() => {
+      if (!loadingRef.current) return;
+      // loadSeq is left alone: if the slow request does finish later, its result is still applied.
+      setLoading(false);
+      setProfileStatus((status) => (status === "loading" || status === "idle" ? "error" : status));
+    }, 12000);
+
     // The client only emits INITIAL_SESSION to the first subscriber. Strict Mode and
     // HMR remount this provider, so read the stored session on every mount.
     void supabase.auth
@@ -164,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => applySession(null));
 
     return () => {
+      window.clearTimeout(watchdog);
       loadSeq.current += 1;
       subscription.unsubscribe();
     };
