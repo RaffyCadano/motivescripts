@@ -24,7 +24,7 @@ export function ClientSidebar({ collapsed, mobileOpen, inertWhenClosed, onNaviga
       inert={inertWhenClosed ? true : undefined}
       aria-hidden={inertWhenClosed ? true : undefined}
       className={cn(
-        "flex h-svh flex-col border-r border-[var(--client-line)] bg-[var(--client-card)]",
+        "flex h-dvh flex-col border-r border-[var(--client-line)] bg-[var(--client-card)]",
         "fixed inset-y-0 left-0 z-40",
         "transition-transform duration-[var(--duration-base)] ease-[var(--ease-out)] lg:translate-x-0 lg:transition-[width]",
         collapsed ? "lg:w-[var(--client-sidebar-collapsed)]" : "lg:w-[var(--client-sidebar)]",

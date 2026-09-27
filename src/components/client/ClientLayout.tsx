@@ -104,7 +104,7 @@ export function ClientLayout() {
         />
         <main
           id="client-main"
-          className="min-h-0 w-full min-w-0 flex-1 overflow-auto px-4 py-6 md:px-6 md:py-8 lg:px-8 lg:py-9"
+          className="min-h-0 w-full min-w-0 flex-1 overflow-auto px-4 pb-20 pt-6 md:px-6 md:py-8 lg:px-8 lg:py-9"
         >
           {loadStatus === "ready" ? (
             <Outlet />

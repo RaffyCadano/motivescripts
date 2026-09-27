@@ -21,7 +21,7 @@ export function AdminSidebar({ collapsed, mobileOpen, inertWhenClosed, onNavigat
       id="admin-sidebar"
       aria-hidden={inertWhenClosed ? true : undefined}
       className={cn(
-        "pointer-events-auto flex h-svh flex-col border-r border-[var(--admin-line)] bg-[var(--admin-card)]",
+        "pointer-events-auto flex h-dvh flex-col border-r border-[var(--admin-line)] bg-[var(--admin-card)]",
         "fixed inset-y-0 left-0 z-50",
         "transition-transform duration-[var(--duration-base)] ease-[var(--ease-out)] lg:translate-x-0 lg:transition-[width]",
         collapsed ? "lg:w-[var(--admin-sidebar-collapsed)]" : "lg:w-[var(--admin-sidebar)]",

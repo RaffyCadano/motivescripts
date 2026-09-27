@@ -93,7 +93,7 @@ export function AdminLayout() {
 
   return (
     <TeamDirectoryProvider>
-    <div className="admin-app h-svh overflow-hidden">
+    <div className="admin-app h-dvh overflow-hidden">
       <a className="skip-link" href="#admin-main">
         Skip to content
       </a>
@@ -126,7 +126,7 @@ export function AdminLayout() {
           onToggleCollapsed={() => setCollapsed((value) => !value)}
           onOpenMobile={() => setMobileOpen(true)}
         />
-        <main id="admin-main" className="pointer-events-auto min-h-0 flex-1 overflow-auto p-4 md:p-6 lg:px-8 lg:py-7">
+        <main id="admin-main" className="pointer-events-auto min-h-0 flex-1 overflow-auto p-4 pb-20 md:p-6 lg:px-8 lg:py-7">
           <Outlet />
         </main>
       </div>

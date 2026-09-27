@@ -21,6 +21,7 @@
   background: var(--client-bg);
   color: var(--client-muted);
   min-height: 100svh;
+  min-height: 100dvh;
   height: 100%;
   overflow: hidden;
 }
@@ -33,6 +34,7 @@
 
 html.client-shell,
 html.client-shell body {
+  background: #f7f9fc;
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
