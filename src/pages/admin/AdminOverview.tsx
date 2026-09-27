@@ -194,7 +194,6 @@ export function AdminOverview() {
   const showWaiting = can("proposals.view") || can("contracts.view") || can("invoices.view") || can("clients.view");
 
   const firstName = firstNameFrom(profile?.fullName || "there");
-  const todayLabel = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const attentionCount = attention.length;
   const openProjects = projects.filter((item) => !item.archived);
 
@@ -202,8 +201,7 @@ export function AdminOverview() {
     <div className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <p className="text-[12px] font-medium text-[var(--admin-muted)]">{todayLabel}</p>
-          <h1 className="mt-1 font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">
+          <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">
             {greetingFor()}, {firstName}
           </h1>
           <p className="mt-1 text-sm text-[var(--admin-muted)]">
