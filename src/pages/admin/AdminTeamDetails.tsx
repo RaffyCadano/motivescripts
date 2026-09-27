@@ -144,7 +144,7 @@ export function AdminTeamDetails() {
 
       <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
+          <div className="flex w-full min-w-0 items-center gap-4 lg:w-auto">
             <span
               aria-hidden="true"
               className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[var(--admin-navy)] font-heading text-lg font-semibold text-white"
@@ -153,7 +153,7 @@ export function AdminTeamDetails() {
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="truncate font-heading text-[1.5rem] font-semibold tracking-tight md:text-[1.75rem]">
+                <h1 className="min-w-0 truncate font-heading text-[1.5rem] font-semibold tracking-tight md:text-[1.75rem]">
                   {member.fullName || member.email}
                 </h1>
                 <span
