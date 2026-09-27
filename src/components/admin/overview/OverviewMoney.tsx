@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { AdminStatCard, AdminStatGrid } from "@/components/admin/list/AdminStatCard";
+import { AlarmClock, CalendarClock, TrendingUp, Wallet } from "lucide-react";
+import { MetricTile, SectionLabel } from "@/components/admin/overview/kit";
 import { buildOverviewInvoiceTotals } from "@/data/adminOverview";
 import type { PaymentReportRow } from "@/data/financialReports";
 import type { InvoiceSummary } from "@/data/invoicesRepository";
@@ -11,8 +12,10 @@ export function OverviewMoney({ invoices, payments }: { invoices: InvoiceSummary
   const figures = useMemo(() => {
     const totals = buildOverviewInvoiceTotals(invoices);
     const open = invoices.filter((invoice) => invoice.effectiveStatus !== "cancelled" && invoice.effectiveStatus !== "draft" && invoice.amountDueCents > 0);
+    const now = new Date();
     return {
-      revenue: revenueForMonth(payments),
+      revenue: revenueForMonth(payments, now),
+      lastMonth: revenueForMonth(payments, new Date(now.getFullYear(), now.getMonth() - 1, 15)),
       outstanding: totals.outstanding,
       overdue: totals.overdue,
       dueSoon: totals.dueSoon,
@@ -25,23 +28,41 @@ export function OverviewMoney({ invoices, payments }: { invoices: InvoiceSummary
 
   return (
     <section aria-label="Money">
-      <AdminStatGrid columns={4}>
-        <AdminStatCard label="Revenue this month" value={formatMoneyFromCents(figures.revenue)} href="/admin/reports" caption="Payments received" />
-        <AdminStatCard
+      <SectionLabel>Money</SectionLabel>
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <MetricTile
+          icon={TrendingUp}
+          tone="good"
+          label="Revenue this month"
+          value={formatMoneyFromCents(figures.revenue)}
+          href="/admin/reports"
+          caption={figures.lastMonth > 0 ? `${formatMoneyFromCents(figures.lastMonth)} last month` : "Payments received"}
+        />
+        <MetricTile
+          icon={Wallet}
           label="Money owed to you"
           value={formatMoneyFromCents(figures.outstanding)}
           href="/admin/invoices"
           caption={figures.outstandingCount === 0 ? "Nothing unpaid" : count(figures.outstandingCount)}
         />
-        <AdminStatCard
+        <MetricTile
+          icon={AlarmClock}
+          tone={figures.overdue > 0 ? "danger" : "neutral"}
+          valueTone={figures.overdue > 0 ? "danger" : undefined}
           label="Overdue"
           value={formatMoneyFromCents(figures.overdue)}
           href="/admin/invoices"
-          tone={figures.overdue > 0 ? "danger" : undefined}
           caption={figures.overdueCount === 0 ? "Nothing late" : `${count(figures.overdueCount)} past due`}
         />
-        <AdminStatCard label="Due in 7 days" value={formatMoneyFromCents(figures.dueSoon)} href="/admin/invoices" caption="Not yet late" />
-      </AdminStatGrid>
+        <MetricTile
+          icon={CalendarClock}
+          tone={figures.dueSoon > 0 ? "warn" : "neutral"}
+          label="Due in 7 days"
+          value={formatMoneyFromCents(figures.dueSoon)}
+          href="/admin/invoices"
+          caption="Not yet late"
+        />
+      </div>
     </section>
   );
 }

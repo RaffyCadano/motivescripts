@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CircleCheck } from "lucide-react";
+import { CircleCheck, Globe } from "lucide-react";
+import { OverviewCard, OverviewEmpty } from "@/components/admin/overview/kit";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { developerDeploymentRows } from "@/data/developerOverview";
 import { upcomingRenewals, websiteOverview, type SiteHealthState, type SiteRow } from "@/data/overviewExtras";
@@ -82,19 +83,17 @@ export function OverviewWebsites() {
   const renewals = useMemo(() => upcomingRenewals(plans).slice(0, 4), [plans]);
 
   return (
-    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="font-heading text-sm font-semibold tracking-tight">Websites</h2>
-        <Link to="/admin/website-monitoring" className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
-          Monitoring
-        </Link>
-      </div>
-
+    <OverviewCard
+      icon={Globe}
+      title="Websites"
+      description={overview.total === 0 ? "Sites you launch show up here." : "Live sites and their health"}
+      action={{ label: "Monitoring", to: "/admin/website-monitoring" }}
+    >
       {overview.total === 0 ? (
-        <p className="mt-3 py-6 text-center text-sm text-[var(--admin-muted)]">No websites are live yet.</p>
+        <OverviewEmpty icon={Globe} title="No websites are live yet" body="Once a project is launched, its uptime and renewals are tracked here." />
       ) : (
         <>
-          <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             <Tile label="Healthy" value={overview.healthy} />
             <Tile label="Slow" value={overview.degraded} tone="warn" />
             <Tile label="Down" value={overview.down} tone="bad" />
@@ -141,6 +140,6 @@ export function OverviewWebsites() {
           </ul>
         </div>
       ) : null}
-    </section>
+    </OverviewCard>
   );
 }

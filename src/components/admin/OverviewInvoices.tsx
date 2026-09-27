@@ -92,9 +92,9 @@ export function OverviewInvoices({ totals, period, onPeriodChange }: OverviewInv
   const categoryLabelSize = CATEGORY_LABEL_PX * unitsPerPixel;
 
   return (
-    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
+    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] shadow-[0_1px_2px_rgb(7_17_31_/_0.04)] p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h2 className="font-heading text-sm font-semibold tracking-tight">Invoices</h2>
+        <h2 className="font-heading text-[15px] font-semibold tracking-tight">Invoices</h2>
         <div className="flex items-center gap-3">
           <Link to="/admin/invoices" className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline">
             View invoices

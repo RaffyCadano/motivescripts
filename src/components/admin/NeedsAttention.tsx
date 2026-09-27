@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClipboardList, Eye, FileSignature, FileText, FolderKanban, Inbox, MessageCircle, Receipt } from "lucide-react";
+import { BellRing, ClipboardList, Eye, FileSignature, FileText, FolderKanban, Inbox, MessageCircle, Receipt } from "lucide-react";
 import { Link } from "react-router-dom";
 import { adminSoftBtn } from "@/components/admin/adminActionStyles";
 import type { OverviewAttentionItem } from "@/data/adminOverview";
@@ -29,10 +29,16 @@ export function NeedsAttention({ items }: NeedsAttentionProps) {
   const hasMore = items.length > VISIBLE_LIMIT;
 
   return (
-    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] px-5 py-4">
-      <div>
-        <h2 className="font-heading text-sm font-semibold tracking-tight">Needs Your Attention</h2>
-        <p className="mt-1 text-xs text-[var(--admin-muted)]">Actionable items from live records. Nothing here is created automatically.</p>
+    <section aria-label="Needs your attention" className="rounded-[var(--admin-radius)] border border-[rgb(245_158_11_/_0.35)] bg-[var(--admin-card)] px-5 py-4 shadow-[0_1px_2px_rgb(7_17_31_/_0.04)]">
+      <div className="flex items-start gap-2.5">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[rgb(245_158_11_/_0.14)] text-[#b45309]">
+          <BellRing size={16} strokeWidth={2} aria-hidden="true" />
+        </span>
+        <div>
+          <h2 className="font-heading text-[15px] font-semibold tracking-tight">Needs your attention</h2>
+          <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">Your next steps across leads, clients and projects.</p>
+        </div>
+        <span className="ml-auto rounded-full bg-[rgb(245_158_11_/_0.14)] px-2 py-0.5 text-xs font-semibold text-[#b45309]">{items.length}</span>
       </div>
       <ul className="mt-3 divide-y divide-[var(--admin-line)]">
         {visible.map((item) => {

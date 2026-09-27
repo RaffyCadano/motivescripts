@@ -53,7 +53,7 @@ export function RecentActivity() {
   return (
     <section className="flex max-h-[22rem] min-h-0 flex-col overflow-hidden rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
       <div className="shrink-0 border-b border-[var(--admin-line)] px-5 py-4">
-        <h2 className="font-heading text-sm font-semibold tracking-tight">Recent Activity</h2>
+        <h2 className="font-heading text-[15px] font-semibold tracking-tight">Recent Activity</h2>
       </div>
       {rows.length === 0 ? (
         <p className="px-5 py-8 text-sm text-[var(--admin-muted)]">No activity yet.</p>

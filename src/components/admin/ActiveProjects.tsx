@@ -12,9 +12,9 @@ export function ActiveProjects() {
   const rows = projects.filter((item) => !item.archived && item.status !== "Completed").slice(0, 4);
 
   return (
-    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)]">
+    <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] shadow-[0_1px_2px_rgb(7_17_31_/_0.04)]">
       <div className="flex items-center justify-between gap-3 border-b border-[var(--admin-line)] px-5 py-4">
-        <h2 className="font-heading text-sm font-semibold tracking-tight">Active Projects</h2>
+        <h2 className="font-heading text-[15px] font-semibold tracking-tight">Active Projects</h2>
         <Link className="text-[12px] font-medium text-[var(--admin-blue)] hover:underline" to="/admin/projects">
           View all
         </Link>
