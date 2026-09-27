@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { BadgeCheck, BellRing, CircleCheck, CircleDollarSign, FileSignature, Hourglass, Inbox, TrendingUp, Users } from "lucide-react";
 import { adminBlueBtn, adminGhostBtn } from "@/components/admin/adminActionStyles";
 import { MetricTile, OverviewCard, OverviewEmpty, SectionLabel } from "@/components/admin/overview/kit";
+import { LiveClock } from "@/components/admin/LiveClock";
 import { RecentActivity } from "@/components/admin/RecentActivity";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { CategoryBarChart, ValueLineChart } from "@/components/team/DashboardCharts";
@@ -54,7 +55,7 @@ function waitingLabel(days: number): string {
 
 export function SalesOverview() {
   const { profile } = useAuth();
-  const { leads, clients } = useLeads();
+  const { leads, clients, reload: reloadLeads } = useLeads();
   const [proposals, setProposals] = useState<ProposalSummary[]>([]);
   const [contracts, setContracts] = useState<ContractSummary[]>([]);
   const can = (code: StaffPermissionCode) => hasPermission(profile, code);
@@ -63,20 +64,29 @@ export function SalesOverview() {
   const canContracts = can("contracts.view");
   const firstName = firstNameFrom(profile?.fullName || "there");
 
-  useEffect(() => {
-    let cancelled = false;
-    void Promise.all([
+  const loadRecords = useCallback(async () => {
+    const [proposalRows, contractRows] = await Promise.all([
       canProposals ? fetchProposalSummaries().catch(() => []) : Promise.resolve([]),
       canContracts ? fetchContractSummaries().catch(() => []) : Promise.resolve([]),
-    ]).then(([proposalRows, contractRows]) => {
-      if (cancelled) return;
-      setProposals(proposalRows);
-      setContracts(contractRows);
-    });
-    return () => {
-      cancelled = true;
-    };
+    ]);
+    setProposals(proposalRows);
+    setContracts(contractRows);
   }, [canProposals, canContracts]);
+
+  useEffect(() => {
+    void loadRecords();
+  }, [loadRecords]);
+
+  const [refreshing, setRefreshing] = useState(false);
+  async function handleRefresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([reloadLeads(), loadRecords()]);
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   const clientName = useMemo(() => {
     const byId = new Map(clients.map((client) => [client.id, client.businessName]));
@@ -147,7 +157,6 @@ export function SalesOverview() {
 
   const [showAllNext, setShowAllNext] = useState(false);
   const nextVisible = showAllNext ? nextUp : nextUp.slice(0, 5);
-  const todayLabel = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const summary =
     nextUp.length === 0
       ? "You’re all caught up. Nothing in your pipeline needs you right now."
@@ -167,21 +176,23 @@ export function SalesOverview() {
     <div className="space-y-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <p className="text-[12px] font-medium text-[var(--admin-muted)]">{todayLabel}</p>
-          <h1 className="mt-1 font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">
+          <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">
             {greetingFor()}, {firstName}
           </h1>
           <p className="mt-1 text-sm text-[var(--admin-muted)]">{summary}</p>
         </div>
-        {headerActions.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col items-stretch gap-3 sm:items-end">
+          <LiveClock onRefresh={() => void handleRefresh()} refreshing={refreshing} />
+          {headerActions.length > 0 ? (
+          <div className="flex flex-wrap gap-2 sm:justify-end">
             {headerActions.map((item) => (
               <Link key={item.to} to={item.to} className={item.primary ? adminBlueBtn : adminGhostBtn}>
                 {item.label}
               </Link>
             ))}
           </div>
-        ) : null}
+          ) : null}
+        </div>
       </header>
 
       {nextUp.length > 0 ? (

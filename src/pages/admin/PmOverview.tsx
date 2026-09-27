@@ -4,6 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { firstNameFrom } from "@/auth/userDisplay";
 import { OverviewAssignedProjects } from "@/components/admin/pm/OverviewAssignedProjects";
+import { LiveClock } from "@/components/admin/LiveClock";
 import { MetricTile, SectionLabel } from "@/components/admin/overview/kit";
 import { PmAttentionQueue } from "@/components/admin/pm/PmAttentionQueue";
 import { PmCharts } from "@/components/admin/pm/PmCharts";
@@ -36,11 +37,12 @@ export function PmOverview() {
   const { profile } = useAuth();
   const { hash } = useLocation();
   const focus = pmFocusFromHash(hash);
-  const { deliverables, feedback } = useLeads();
+  const { deliverables, feedback, reload: reloadLeads } = useLeads();
   const { clientsById, tasks, myProjects, assignmentError, changeTaskStatus } = useTeamWork();
   const { conversations } = useMessaging();
   const team = useTeamDirectory();
   const [intakes, setIntakes] = useState<Awaited<ReturnType<typeof fetchDiscoveryIntakes>>>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [openTask, setOpenTask] = useState<TeamWorkTask | null>(null);
   const [busy, setBusy] = useState(false);
@@ -260,7 +262,15 @@ export function PmOverview() {
   }
 
   const attentionCount = attentionItems.length;
-  const todayLabel = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  async function handleRefresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      await Promise.all([reloadLeads(), team.reload(), fetchDiscoveryIntakes().then(setIntakes).catch(() => undefined)]);
+    } finally {
+      setRefreshing(false);
+    }
+  }
   const summary =
     (attentionCount === 0
       ? "You’re all caught up. Nothing needs you right now."
@@ -269,12 +279,14 @@ export function PmOverview() {
 
   return (
     <div className="space-y-6">
-      <header className="min-w-0">
-        <p className="text-[12px] font-medium text-[var(--admin-muted)]">{todayLabel}</p>
-        <h1 className="mt-1 font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">
-          {greetingFor()}, {firstName}
-        </h1>
-        <p className="mt-1 text-sm text-[var(--admin-muted)]">{summary}</p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">
+            {greetingFor()}, {firstName}
+          </h1>
+          <p className="mt-1 text-sm text-[var(--admin-muted)]">{summary}</p>
+        </div>
+        <LiveClock onRefresh={() => void handleRefresh()} refreshing={refreshing} />
       </header>
 
       {assignmentError ? <p className="text-sm text-[#b45309]">{assignmentError}</p> : null}
