@@ -122,6 +122,7 @@ export function TaskFormModal({
       open={open}
       title={task ? "Edit Task" : "Add Task"}
       description="Tasks drive project progress. Completing a task updates the percentage immediately."
+      size="xl"
       onClose={onClose}
     >
       <form className="space-y-3" onSubmit={handleSubmit}>
@@ -137,7 +138,7 @@ export function TaskFormModal({
         <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
           Description
           <textarea
-            rows={12}
+            rows={8}
             value={draft.description}
             onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))}
             className="mt-1.5 w-full whitespace-pre-wrap rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 py-2 text-sm leading-relaxed text-[var(--admin-ink)] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
@@ -153,22 +154,22 @@ export function TaskFormModal({
             placeholder="https://figma.com/… or https://github.com/…"
           />
         </label>
-        <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
-          Phase
-          <select
-            className={fieldClass}
-            value={draft.milestoneId}
-            onChange={(event) => handleMilestoneChange(event.target.value)}
-          >
-            <option value="">Ungrouped</option>
-            {milestones.map((milestone) => (
-              <option key={milestone.id} value={milestone.id}>
-                {displayMilestoneName(milestone.name)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+            Phase
+            <select
+              className={fieldClass}
+              value={draft.milestoneId}
+              onChange={(event) => handleMilestoneChange(event.target.value)}
+            >
+              <option value="">Ungrouped</option>
+              {milestones.map((milestone) => (
+                <option key={milestone.id} value={milestone.id}>
+                  {displayMilestoneName(milestone.name)}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
             Status
             <select
