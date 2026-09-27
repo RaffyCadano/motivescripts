@@ -23,12 +23,17 @@ export function AdminActionsMenu({
   disabled,
   items,
   iconOnly = false,
+  compactOnMobile = false,
 }: {
   label?: string;
   ariaLabel?: string;
   disabled?: boolean;
   items: AdminActionsMenuItem[];
   iconOnly?: boolean;
+  /** Renders as an icon-only button below the `lg` breakpoint, then expands to the labeled
+   * button + chevron at `lg` and up -- lets the trigger share a row with a name/title on
+   * phones without the label text competing with it for width. Ignored when `iconOnly` is set. */
+  compactOnMobile?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
@@ -115,7 +120,9 @@ export function AdminActionsMenu({
         className={
           iconOnly
             ? "inline-flex h-10 w-10 items-center justify-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60"
-            : "inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60"
+            : compactOnMobile
+              ? "inline-flex h-10 w-10 items-center justify-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60 lg:w-auto lg:justify-start lg:px-4"
+              : "inline-flex h-10 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-4 font-heading text-sm font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-60"
         }
         aria-label={ariaLabel ?? label}
         aria-expanded={open}
@@ -126,6 +133,12 @@ export function AdminActionsMenu({
       >
         {iconOnly ? (
           <MoreHorizontal size={18} strokeWidth={1.75} aria-hidden="true" />
+        ) : compactOnMobile ? (
+          <>
+            <MoreHorizontal size={18} strokeWidth={1.75} className="lg:hidden" aria-hidden="true" />
+            <span className="hidden font-heading text-sm font-semibold lg:inline">{label}</span>
+            <ChevronDown size={16} strokeWidth={1.75} className="ml-2 hidden lg:inline" aria-hidden="true" />
+          </>
         ) : (
           <>
             {label}

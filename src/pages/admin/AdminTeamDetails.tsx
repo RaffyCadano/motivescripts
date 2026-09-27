@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Check, ShieldCheck } from "lucide-react";
+import { Check, ShieldCheck, UserCheck, UserX } from "lucide-react";
 import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission, isActiveAdmin } from "@/auth/permissions";
 import { initialsFromName } from "@/auth/userDisplay";
-import { adminDangerBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
+import { adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { OnboardingPendingPill, OnboardingStatusProvider } from "@/components/admin/team/OnboardingStatus";
 import { StaffEmailLogSection } from "@/components/admin/team/StaffEmailLogSection";
 import { StaffOnboardingSection } from "@/components/admin/team/StaffOnboardingSection";
@@ -143,17 +143,17 @@ export function AdminTeamDetails() {
       </nav>
 
       <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 md:p-6">
-        <div className="flex flex-col-reverse gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex min-w-0 flex-1 items-center gap-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
             <span
               aria-hidden="true"
-              className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[var(--admin-navy)] font-heading text-lg font-semibold text-white"
+              className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--admin-navy)] font-heading text-sm font-semibold text-white sm:size-14 sm:text-lg"
             >
               {initialsFromName(member.fullName || member.email)}
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="min-w-0 truncate font-heading text-[1.5rem] font-semibold tracking-tight md:text-[1.75rem]">
+                <h1 className="min-w-0 truncate font-heading text-lg font-semibold tracking-tight sm:text-[1.5rem] md:text-[1.75rem]">
                   {member.fullName || member.email}
                 </h1>
                 <span
@@ -180,14 +180,28 @@ export function AdminTeamDetails() {
             </div>
           </div>
           {canManage && !editingSelf ? (
-            <div className="flex flex-wrap justify-end gap-2 lg:contents">
+            <div className="flex shrink-0 items-center gap-2">
               {member.isActive ? (
-                <button type="button" disabled={busy} className={adminDangerBtn} onClick={() => void save({ isActive: false })}>
-                  Deactivate
+                <button
+                  type="button"
+                  disabled={busy}
+                  aria-label="Deactivate"
+                  className="inline-flex h-10 w-10 items-center justify-center gap-2 rounded-[var(--admin-radius)] border border-[rgb(180_35_24_/_0.28)] bg-[rgb(220_38_38_/_0.07)] font-heading text-sm font-semibold text-[#b42318] transition-colors hover:bg-[rgb(220_38_38_/_0.12)] disabled:opacity-60 lg:w-auto lg:px-4"
+                  onClick={() => void save({ isActive: false })}
+                >
+                  <UserX size={16} strokeWidth={1.75} className="lg:hidden" aria-hidden="true" />
+                  <span className="hidden lg:inline">Deactivate</span>
                 </button>
               ) : (
-                <button type="button" disabled={busy} className={adminPrimaryBtn} onClick={() => void save({ isActive: true })}>
-                  Activate
+                <button
+                  type="button"
+                  disabled={busy}
+                  aria-label="Activate"
+                  className="inline-flex h-10 w-10 items-center justify-center gap-2 rounded-[var(--admin-radius)] bg-[var(--admin-navy)] font-heading text-sm font-semibold text-white transition-colors hover:bg-[#001a4d] disabled:opacity-60 lg:w-auto lg:px-4"
+                  onClick={() => void save({ isActive: true })}
+                >
+                  <UserCheck size={16} strokeWidth={1.75} className="lg:hidden" aria-hidden="true" />
+                  <span className="hidden lg:inline">Activate</span>
                 </button>
               )}
             </div>

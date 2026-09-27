@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { projectPackageLabels } from "@/data/projectPackages";
 import {
   Archive,
+  ArrowRight,
   Building2,
   CalendarDays,
   FolderKanban,
@@ -18,7 +19,6 @@ import { hasPermission } from "@/auth/permissions";
 import { ProjectStatusBadge } from "@/components/admin/projects/ProjectStatusBadge";
 import { AdminActionsMenu } from "@/components/admin/AdminActionsMenu";
 import { Breadcrumbs } from "@/components/admin/Breadcrumbs";
-import { adminPrimaryBtn } from "@/components/admin/adminActionStyles";
 import { canInviteClient, workflowPrimaryAllowed } from "@/components/admin/projects/workflowPermissions";
 import { useProjectWorkflowState } from "@/components/admin/projects/useProjectWorkflowState";
 import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
@@ -215,17 +215,18 @@ export function AdminProjectDetails() {
           Projects
         </Link>
         <div className="mt-2 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 shadow-[0_1px_2px_rgb(7_17_31_/_0.04)] md:p-6">
-          <div className="flex flex-col-reverse gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex min-w-0 flex-1 items-center gap-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
               <span
                 aria-hidden="true"
-                className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[var(--admin-navy)] text-white"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--admin-navy)] text-white sm:size-14"
               >
-                <FolderKanban size={22} strokeWidth={2} aria-hidden="true" />
+                <FolderKanban size={18} strokeWidth={2} className="sm:hidden" aria-hidden="true" />
+                <FolderKanban size={22} strokeWidth={2} className="hidden sm:block" aria-hidden="true" />
               </span>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <h1 className="min-w-0 truncate font-heading text-[1.5rem] font-semibold tracking-tight md:text-[1.75rem]">
+                  <h1 className="min-w-0 truncate font-heading text-lg font-semibold tracking-tight sm:text-[1.5rem] md:text-[1.75rem]">
                     {project.name}
                   </h1>
                   <ProjectStatusBadge status={project.status} />
@@ -243,14 +244,20 @@ export function AdminProjectDetails() {
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center justify-end gap-2 lg:contents">
+            <div className="flex shrink-0 items-center gap-2">
               {showHeaderAction ? (
-                <Link to={headerAction.primaryHref!} className={`${adminPrimaryBtn} justify-center`}>
-                  {headerAction.primaryLabel}
+                <Link
+                  to={headerAction.primaryHref!}
+                  aria-label={headerAction.primaryLabel ?? undefined}
+                  className="inline-flex h-10 w-10 items-center justify-center gap-2 rounded-[var(--admin-radius)] bg-[var(--admin-navy)] font-heading text-sm font-semibold text-white transition-colors hover:bg-[#001a4d] lg:w-auto lg:px-4"
+                >
+                  <ArrowRight size={18} strokeWidth={1.75} className="lg:hidden" aria-hidden="true" />
+                  <span className="hidden lg:inline">{headerAction.primaryLabel}</span>
                 </Link>
               ) : null}
               <AdminActionsMenu
               ariaLabel={`Actions for ${project.name}`}
+              compactOnMobile
               items={[
               { id: "edit", label: "Edit Project", icon: PencilLine, href: `/admin/projects/${project.id}/edit` },
               ...(client

@@ -156,26 +156,24 @@ export function AdminClientDetails() {
           Clients
         </Link>
         <div className="mt-2 rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5 shadow-[0_1px_2px_rgb(7_17_31_/_0.04)] md:p-6">
-          <div className="flex flex-col-reverse gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex min-w-0 flex-1 items-center gap-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
               <span
                 aria-hidden="true"
-                className="flex size-14 shrink-0 items-center justify-center rounded-full bg-[var(--admin-navy)] font-heading text-lg font-semibold text-white"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--admin-navy)] font-heading text-sm font-semibold text-white sm:size-14 sm:text-lg"
               >
                 {initialsFromName(client.businessName)}
               </span>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <h1 className="min-w-0 truncate font-heading text-[1.5rem] font-semibold tracking-tight md:text-[1.75rem]">
+                  <h1 className="min-w-0 truncate font-heading text-lg font-semibold tracking-tight sm:text-[1.5rem] md:text-[1.75rem]">
                     {client.businessName}
                   </h1>
                   <ClientStatusBadge status={client.status} />
                 </div>
               </div>
             </div>
-            <div className="flex justify-end lg:contents">
-              <AdminActionsMenu ariaLabel={`Actions for ${client.businessName}`} items={clientActions} />
-            </div>
+            <AdminActionsMenu ariaLabel={`Actions for ${client.businessName}`} items={clientActions} compactOnMobile />
           </div>
           <ClientHeaderMeta client={client} />
         </div>
