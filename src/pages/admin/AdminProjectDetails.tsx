@@ -6,6 +6,7 @@ import {
   Building2,
   CalendarDays,
   FolderKanban,
+  Mail,
   MessageSquare,
   Pause,
   PauseCircle,
@@ -267,6 +268,12 @@ export function AdminProjectDetails() {
                       label: "Open conversation",
                       icon: MessageSquare,
                       href: `/admin/messages?client=${client.id}&project=${project.id}`,
+                    },
+                    {
+                      id: "email-client",
+                      label: "Email Client",
+                      icon: Mail,
+                      href: `mailto:${client.email}`,
                     },
                   ]
                 : []),
