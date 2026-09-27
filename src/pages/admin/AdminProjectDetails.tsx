@@ -202,6 +202,10 @@ export function AdminProjectDetails() {
     headerAction.primaryKind === "link" &&
     headerAction.primaryLabel &&
     headerAction.primaryHref &&
+    // This same action also drives the "Next step" nudge on the client's own page, where "Open
+    // Project" correctly jumps here. Shown on the project's own header, that link points at the
+    // page already open, so it is dropped rather than offered as a no-op button.
+    headerAction.primaryHref !== `/admin/projects/${project.id}` &&
     workflowPrimaryAllowed(headerAction, profile, canInviteClient(profile));
 
   return (
