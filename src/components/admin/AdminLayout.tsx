@@ -15,7 +15,7 @@ export function AdminLayout() {
   const { profile } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  usePrivatePageTitle(`${getAdminPageMeta(pathname).label} — MotiveScripts Admin`);
+  usePrivatePageTitle(`${getAdminPageMeta(pathname, hash).label} — MotiveScripts Admin`);
   const [collapsed, setCollapsed] = useState(false);
   const [isLg, setIsLg] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : false,

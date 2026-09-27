@@ -20,11 +20,11 @@ type AdminHeaderProps = {
 };
 
 export function AdminHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMobile }: AdminHeaderProps) {
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
   const display = user ? userDisplay(user, profile) : { name: "Account", initials: "A", role: "User", email: "" };
-  const page = getAdminPageMeta(pathname);
+  const page = getAdminPageMeta(pathname, hash);
   const [menuOpen, setMenuOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);

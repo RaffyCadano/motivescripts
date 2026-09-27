@@ -1,6 +1,7 @@
 import type { AppProfile } from "@/auth/loadProfile";
 import { hasPermission, isActiveAdmin, type StaffPermissionCode } from "@/auth/permissions";
 import { isProjectManager } from "@/auth/roles";
+import { pmFocusFromHash } from "@/data/pmFocusViews";
 
 export type AdminIconName =
   | "overview"
@@ -176,7 +177,10 @@ function resolveAdminNavPath(pathname: string): string {
   return pathname;
 }
 
-export function getAdminPageMeta(pathname: string) {
+export function getAdminPageMeta(pathname: string, hash = "") {
+  // The Project Manager's Needs Attention, Due Today, Overdue and Reviews pages are the overview with a #anchor.
+  const focus = pathname === "/admin" ? pmFocusFromHash(hash) : null;
+  if (focus) return { label: focus.title, href: `/admin#${focus.key}`, icon: "activity" as const };
   const unavailable = adminUnavailablePages[pathname];
   if (unavailable) {
     return { label: unavailable.label, href: pathname, icon: unavailable.icon };

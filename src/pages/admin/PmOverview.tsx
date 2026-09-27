@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { firstNameFrom } from "@/auth/userDisplay";
 import { adminIcons } from "@/components/admin/adminIcons";
@@ -26,11 +27,14 @@ import {
 } from "@/data/pmOverview";
 import { awaitingReview, needsAttention } from "@/data/review";
 import { dueBucket, greetingFor, isTaskOverdue, myTasksSummaryStats, type TeamWorkTask } from "@/data/teamWorkspace";
+import { pmFocusFromHash } from "@/data/pmFocusViews";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { useMessaging } from "@/providers/MessagingProvider";
 
 export function PmOverview() {
   const { profile } = useAuth();
+  const { hash } = useLocation();
+  const focus = pmFocusFromHash(hash);
   const { deliverables, feedback } = useLeads();
   const { clientsById, tasks, myProjects, assignmentError, changeTaskStatus } = useTeamWork();
   const { conversations } = useMessaging();
@@ -214,6 +218,92 @@ export function PmOverview() {
     },
   ];
 
+  const taskModal = openTask ? (
+      <TeamTaskDetail
+        task={openTask}
+        files={deliverables.filter((item) => item.projectId === openTask.projectId)}
+        workspace="admin"
+        canUpdateStatus
+        busy={busy}
+        error={error}
+        onClose={() => {
+          setOpenTask(null);
+          setError(null);
+        }}
+        onStatusChange={(status, blockedReason, qaResult, qaFailNote) =>
+          void onStatusChange(status, blockedReason, qaResult, qaFailNote)
+        }
+      />
+    ) : null;
+
+  if (focus) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Link
+            to="/admin"
+            className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--admin-blue)] hover:underline"
+          >
+            <ArrowLeft size={13} strokeWidth={2.2} aria-hidden="true" />
+            Overview
+          </Link>
+          <h1 className="mt-2 font-heading text-[1.65rem] font-semibold tracking-tight md:text-3xl">{focus.title}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-[var(--admin-muted)]">{focus.description}</p>
+        </div>
+
+        {assignmentError ? <p className="text-sm text-[#b45309]">{assignmentError}</p> : null}
+
+        {focus.key === "needs-attention" ? (
+          <>
+            <PmAttentionQueue items={attentionItems} />
+            <PmBlockedSection tasks={blocked} onOpen={setOpenTask} />
+          </>
+        ) : null}
+
+        {focus.key === "today-work" ? (
+          <>
+            <PmTaskListSection
+              id="today-work"
+              title="Today's Work"
+              tasks={dueTodayTasks}
+              emptyTitle="Nothing due today"
+              emptyBody="Nothing on your task list is due today."
+              onOpen={setOpenTask}
+              viewAllHref="/admin/my-tasks"
+            />
+            <PmTaskListSection
+              id="upcoming"
+              title="Due This Week"
+              tasks={dueThisWeek}
+              emptyTitle="Nothing else due this week"
+              emptyBody="Nothing else on your task list is due in the next few days."
+              onOpen={setOpenTask}
+              viewAllHref="/admin/my-tasks"
+            />
+          </>
+        ) : null}
+
+        {focus.key === "overdue" ? (
+          <PmTaskListSection
+            id="overdue"
+            title="Overdue"
+            tasks={overdueTasks}
+            emptyTitle="Nothing overdue"
+            emptyBody="You're all caught up — nothing is overdue."
+            onOpen={setOpenTask}
+            viewAllHref="/admin/my-tasks"
+          />
+        ) : null}
+
+        {focus.key === "reviews" ? (
+          <PmReviewsSection deliverables={deliverables} projectIds={projectIds} projectsById={projectsById} />
+        ) : null}
+
+        {taskModal}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div>
@@ -316,23 +406,7 @@ export function PmOverview() {
 
       <PmDiscoveryActionCenter items={discoveryBoard} />
 
-      {openTask ? (
-        <TeamTaskDetail
-          task={openTask}
-          files={deliverables.filter((item) => item.projectId === openTask.projectId)}
-          workspace="admin"
-          canUpdateStatus
-          busy={busy}
-          error={error}
-          onClose={() => {
-            setOpenTask(null);
-            setError(null);
-          }}
-          onStatusChange={(status, blockedReason, qaResult, qaFailNote) =>
-            void onStatusChange(status, blockedReason, qaResult, qaFailNote)
-          }
-        />
-      ) : null}
+      {taskModal}
     </div>
   );
 }

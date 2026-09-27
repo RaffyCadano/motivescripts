@@ -160,3 +160,16 @@ test("the app is wrapped in an error boundary, and the auth start-up cannot wait
   assert.ok(main.includes("<AppErrorBoundary>") && main.includes("vite:preloadError"));
   assert.ok(auth.includes("window.setTimeout(() => {") && auth.includes("12000") && auth.includes("clearTimeout(watchdog)"));
 });
+
+test("the Project Manager menu's four work items each open their own focused view", async () => {
+  const { pmFocusFromHash, PM_FOCUS_VIEWS } = await import("../src/data/pmFocusViews.ts");
+  for (const key of ["needs-attention", "today-work", "overdue", "reviews"]) {
+    assert.equal(pmFocusFromHash(`#${key}`)?.key, key);
+    assert.ok(PM_FOCUS_VIEWS[key].title && PM_FOCUS_VIEWS[key].description);
+  }
+  assert.equal(pmFocusFromHash(""), null);
+  assert.equal(pmFocusFromHash("#upcoming"), null);
+  assert.equal(pmFocusFromHash("#toString"), null);
+  const nav = readFileSync("src/data/adminNav.ts", "utf8");
+  for (const key of ["needs-attention", "today-work", "overdue", "reviews"]) assert.ok(nav.includes(`/admin#${key}`), key);
+});
