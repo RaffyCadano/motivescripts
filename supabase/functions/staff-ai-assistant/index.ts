@@ -4,9 +4,9 @@ import { corsHeadersForRequest } from "../_shared/cors.ts";
 import { AI_LIMITS, cleanText, createRateLimiter, parseMessages, stripMarkdown, type ChatMessage } from "../_shared/aiChat.ts";
 import { staffKnowledgeForRole } from "../_shared/staffAiKnowledge.ts";
 
-// Staff AI assistant (pilot: developer, project_manager -- see isStaffAiPilotTemplate in
-// src/data/staffAiContext.ts, which this must stay in sync with). Answers "what needs to be
-// done" and "how do I do this job" for one logged-in staff member, inside their own workspace.
+// Staff AI assistant -- see isStaffAiTemplate in src/data/staffAiContext.ts for the covered
+// templates, which this must stay in sync with. Answers "what needs to be done" and "how do I do
+// this job" for one logged-in staff member, inside their own workspace.
 //
 // Unlike motivescripts-ai (the public site bot), the caller must be an authenticated, active
 // staff member: verify_jwt is off at the platform level (same as every other function here --
@@ -19,7 +19,6 @@ import { staffKnowledgeForRole } from "../_shared/staffAiKnowledge.ts";
 const DEFAULT_MODEL = "claude-opus-5";
 const MAX_OUTPUT_TOKENS = 500;
 const MAX_CONTEXT_CHARS = 4_000;
-const MAX_ROLE_CHARS = 40;
 
 function supportsEffort(model: string): boolean {
   return /^claude-(opus|sonnet|fable|mythos)-/.test(model);
@@ -108,9 +107,15 @@ Deno.serve(async (req) => {
   const context = Array.isArray(staffContext) ? staffContext[0] : staffContext;
   if (!context || context.is_active !== true) return respond({ ok: false, error: "not_allowed" }, 403);
 
+  // template_key doubles as the role to answer as for real staff (update_staff_member keeps
+  // profiles.role and staff_profiles.template_key in lockstep on every promotion). But an admin
+  // with no staff_profiles row of their own -- confirmed to actually happen, e.g. an account
+  // created directly rather than through the invite flow -- gets template_key: null here, so
+  // is_admin() (not client-suppliable) is checked and takes priority whenever it's true.
   const { data: isAdminRaw } = await userClient.rpc("is_admin");
-  const isAdmin = isAdminRaw === true;
-  const templateKey = String(context.template_key ?? "");
+  const role = isAdminRaw === true ? "admin" : String(context.template_key ?? "");
+  const knowledge = staffKnowledgeForRole(role);
+  if (!knowledge) return respond({ ok: false, error: "not_allowed" }, 403);
 
   const limit = limiter.check(user.id);
   if ("retryAfterSeconds" in limit) {
@@ -124,15 +129,7 @@ Deno.serve(async (req) => {
     return respond({ ok: false, error: "invalid_request" }, 400);
   }
   if (!payload || typeof payload !== "object") return respond({ ok: false, error: "invalid_request" }, 400);
-  const body = payload as { role?: unknown; contextSummary?: unknown; messages?: unknown };
-
-  // The role the assistant answers as comes from the caller's OWN staff profile, not whatever the
-  // client claims -- admins may pilot either role's knowledge (there's no "admin" knowledge yet),
-  // everyone else is pinned to their own template.
-  const requestedRole = typeof body.role === "string" ? body.role.trim().slice(0, MAX_ROLE_CHARS) : "";
-  const role = isAdmin ? requestedRole : templateKey;
-  const knowledge = staffKnowledgeForRole(role);
-  if (!knowledge) return respond({ ok: false, error: "invalid_request" }, 400);
+  const body = payload as { contextSummary?: unknown; messages?: unknown };
 
   if (typeof body.contextSummary !== "string") return respond({ ok: false, error: "invalid_request" }, 400);
   const contextSummary = cleanText(body.contextSummary).slice(0, MAX_CONTEXT_CHARS);

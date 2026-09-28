@@ -89,9 +89,195 @@ export function buildStaffTaskContext(tasks: StaffAiTaskInput[], projectNames: s
   return lines.join("\n");
 }
 
-export const STAFF_AI_PILOT_TEMPLATES = ["developer", "project_manager"] as const;
-export type StaffAiPilotTemplate = (typeof STAFF_AI_PILOT_TEMPLATES)[number];
+function usd(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
 
-export function isStaffAiPilotTemplate(value: string | null | undefined): value is StaffAiPilotTemplate {
-  return (STAFF_AI_PILOT_TEMPLATES as readonly string[]).includes(value ?? "");
+/** Keeps a section from running away on someone with a very long backlog; the model gets told
+ * how many were left out rather than the list just silently stopping. */
+function capped<T>(items: T[], limit: number, render: (item: T) => string): string[] {
+  const lines = items.slice(0, limit).map(render);
+  const remaining = items.length - limit;
+  if (remaining > 0) lines.push(`…and ${remaining} more.`);
+  return lines;
+}
+
+// ---- Sales --------------------------------------------------------------------------------------------------
+
+export type StaffAiLeadInput = { id: string; clientLabel: string; status: string; createdAt: string; convertedClientId: string | null };
+export type StaffAiProposalInput = {
+  id: string;
+  number: string;
+  clientName: string;
+  effectiveStatus: string;
+  sentAt: string | null;
+  validUntil: string | null;
+  createdAt: string;
+};
+export type StaffAiContractInput = {
+  id: string;
+  number: string;
+  clientName: string;
+  effectiveStatus: string;
+  agencySigned: boolean;
+  sentAt: string | null;
+  acceptedAt: string | null;
+  createdAt: string;
+};
+
+/** Signed days from `value` to `now`: positive when `value` is in the past, negative when it's
+ * still ahead. Callers that only ever mean "how long ago" clamp it themselves -- this stays
+ * unclamped because buildAccountingAiContext's "days until due" needs the future (negative) case
+ * intact, not flattened to 0 before it gets negated back to a positive countdown. */
+function daysDiff(value: string, now: Date): number {
+  const date = new Date(value.includes("T") ? value : `${value}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return 0;
+  const start = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return Math.round((start(now) - start(date)) / 86_400_000);
+}
+
+function daysBetween(value: string, now: Date): number {
+  return Math.max(0, daysDiff(value, now));
+}
+
+/** Sent, viewed: the client has it and hasn't answered yet. */
+function awaitingClient(status: string): boolean {
+  return status === "sent" || status === "viewed";
+}
+
+/**
+ * Leads waiting for a first response, proposals and contracts the client has that we're waiting
+ * on (or that need our own signature), oldest/most-at-risk first. Mirrors salesOverview.ts's
+ * leadsToFollowUp/proposalsAwaitingResponse/contractsNeedingAction, kept as small local
+ * reimplementations rather than imports so this file stays runtime-import-free and unit-testable.
+ */
+export function buildSalesAiContext(
+  input: { leads: StaffAiLeadInput[]; proposals: StaffAiProposalInput[]; contracts: StaffAiContractInput[] },
+  now = new Date(),
+): string {
+  const followUpLeads = input.leads
+    .filter((lead) => lead.status === "New" && !lead.convertedClientId)
+    .map((lead) => ({ ...lead, ageDays: daysBetween(lead.createdAt, now) }))
+    .sort((a, b) => b.ageDays - a.ageDays);
+
+  const openProposals = input.proposals
+    .filter((proposal) => awaitingClient(proposal.effectiveStatus))
+    .map((proposal) => ({ ...proposal, ageDays: daysBetween(proposal.sentAt ?? proposal.createdAt, now) }))
+    .sort((a, b) => b.ageDays - a.ageDays);
+
+  const needsSignature = input.contracts.filter(
+    (contract) => contract.effectiveStatus === "accepted" && !contract.agencySigned,
+  );
+  const awaitingContracts = input.contracts
+    .filter((contract) => awaitingClient(contract.effectiveStatus))
+    .map((contract) => ({ ...contract, ageDays: daysBetween(contract.sentAt ?? contract.createdAt, now) }))
+    .sort((a, b) => b.ageDays - a.ageDays);
+
+  const lines: string[] = [];
+  if (followUpLeads.length > 0) {
+    lines.push(
+      `${followUpLeads.length} lead(s) waiting for a first response:`,
+      ...capped(followUpLeads, 8, (lead) => `- ${lead.clientLabel}, waiting ${lead.ageDays} day${lead.ageDays === 1 ? "" : "s"}`),
+    );
+  } else {
+    lines.push("No new leads waiting for a first response.");
+  }
+  if (openProposals.length > 0) {
+    lines.push(
+      `${openProposals.length} proposal(s) sent, awaiting the client:`,
+      ...capped(openProposals, 8, (p) => `- ${p.number} (${p.clientName}), sent ${p.ageDays} day${p.ageDays === 1 ? "" : "s"} ago`),
+    );
+  }
+  if (needsSignature.length > 0) {
+    lines.push(
+      `${needsSignature.length} contract(s) the client accepted, waiting on our signature:`,
+      ...capped(needsSignature, 8, (c) => `- ${c.number} (${c.clientName})`),
+    );
+  }
+  if (awaitingContracts.length > 0) {
+    lines.push(
+      `${awaitingContracts.length} contract(s) sent, awaiting the client:`,
+      ...capped(awaitingContracts, 8, (c) => `- ${c.number} (${c.clientName}), sent ${c.ageDays} day${c.ageDays === 1 ? "" : "s"} ago`),
+    );
+  }
+  if (openProposals.length === 0 && needsSignature.length === 0 && awaitingContracts.length === 0) {
+    lines.push("No proposals or contracts currently awaiting anyone.");
+  }
+  return lines.join("\n");
+}
+
+// ---- Accounting -----------------------------------------------------------------------------------------------
+
+export type StaffAiInvoiceInput = {
+  id: string;
+  number: string;
+  clientName: string;
+  effectiveStatus: string;
+  amountDueCents: number;
+  dueDate: string;
+  createdAt: string;
+};
+
+/** Sent, viewed, part-paid, or overdue: money the client still owes and has been asked for. */
+function awaitingPayment(status: string): boolean {
+  return status === "sent" || status === "viewed" || status === "partially_paid" || status === "overdue";
+}
+
+/**
+ * Overdue invoices, invoices due within the next 7 days, and drafts never sent -- mirrors
+ * accountingOverview.ts's overdueInvoices/invoicesDueSoon/draftInvoices, kept as small local
+ * reimplementations for the same reason as buildSalesAiContext.
+ */
+export function buildAccountingAiContext(invoices: StaffAiInvoiceInput[], now = new Date()): string {
+  const overdue = invoices
+    .filter((invoice) => invoice.effectiveStatus === "overdue")
+    .map((invoice) => ({ ...invoice, daysOverdue: Math.max(1, daysBetween(invoice.dueDate, now)) }))
+    .sort((a, b) => b.daysOverdue - a.daysOverdue);
+
+  const dueSoon = invoices
+    .filter((invoice) => invoice.effectiveStatus !== "overdue" && awaitingPayment(invoice.effectiveStatus) && invoice.dueDate)
+    .map((invoice) => ({ ...invoice, daysUntilDue: -daysDiff(invoice.dueDate, now) }))
+    .filter((invoice) => invoice.daysUntilDue >= 0 && invoice.daysUntilDue < 7)
+    .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+
+  const drafts = invoices
+    .filter((invoice) => invoice.effectiveStatus === "draft")
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+  const lines: string[] = [];
+  if (overdue.length > 0) {
+    const totalOverdueCents = overdue.reduce((sum, invoice) => sum + invoice.amountDueCents, 0);
+    lines.push(
+      `${overdue.length} overdue invoice(s), ${usd(totalOverdueCents)} total:`,
+      ...capped(overdue, 8, (inv) => `- ${inv.number} (${inv.clientName}), ${usd(inv.amountDueCents)}, ${inv.daysOverdue} day(s) overdue`),
+    );
+  } else {
+    lines.push("No overdue invoices.");
+  }
+  if (dueSoon.length > 0) {
+    lines.push(
+      `${dueSoon.length} invoice(s) due within 7 days:`,
+      ...capped(dueSoon, 8, (inv) => `- ${inv.number} (${inv.clientName}), ${usd(inv.amountDueCents)}, due in ${inv.daysUntilDue} day(s)`),
+    );
+  }
+  if (drafts.length > 0) {
+    lines.push(`${drafts.length} draft invoice(s) never sent:`, ...capped(drafts, 8, (inv) => `- ${inv.number} (${inv.clientName})`));
+  }
+  return lines.join("\n");
+}
+
+export const STAFF_AI_TEMPLATES = [
+  "developer",
+  "designer",
+  "content_writer",
+  "team_member",
+  "project_manager",
+  "sales",
+  "accounting",
+  "admin",
+] as const;
+export type StaffAiTemplate = (typeof STAFF_AI_TEMPLATES)[number];
+
+export function isStaffAiTemplate(value: string | null | undefined): value is StaffAiTemplate {
+  return (STAFF_AI_TEMPLATES as readonly string[]).includes(value ?? "");
 }

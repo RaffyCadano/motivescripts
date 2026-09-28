@@ -3,7 +3,13 @@
 //   node --test scripts/test-staff-ai-context.mjs
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildStaffTaskContext, isStaffAiPilotTemplate, STAFF_AI_PILOT_TEMPLATES } from "../src/data/staffAiContext.ts";
+import {
+  buildAccountingAiContext,
+  buildSalesAiContext,
+  buildStaffTaskContext,
+  isStaffAiTemplate,
+  STAFF_AI_TEMPLATES,
+} from "../src/data/staffAiContext.ts";
 
 const NOW = new Date(2026, 8, 28, 12, 0, 0); // Sep 28 2026, local
 
@@ -85,11 +91,151 @@ test("an all-clear message appears only when nothing is blocked, overdue, due so
   assert.ok(!notClear.includes("Nothing blocked"));
 });
 
-test("the pilot template allowlist matches what it claims to allow", () => {
-  assert.deepEqual(STAFF_AI_PILOT_TEMPLATES, ["developer", "project_manager"]);
-  assert.equal(isStaffAiPilotTemplate("developer"), true);
-  assert.equal(isStaffAiPilotTemplate("project_manager"), true);
-  assert.equal(isStaffAiPilotTemplate("designer"), false);
-  assert.equal(isStaffAiPilotTemplate(null), false);
-  assert.equal(isStaffAiPilotTemplate(undefined), false);
+test("the template allowlist matches what it claims to cover", () => {
+  assert.deepEqual(STAFF_AI_TEMPLATES, [
+    "developer",
+    "designer",
+    "content_writer",
+    "team_member",
+    "project_manager",
+    "sales",
+    "accounting",
+    "admin",
+  ]);
+  for (const key of STAFF_AI_TEMPLATES) assert.equal(isStaffAiTemplate(key), true, key);
+  assert.equal(isStaffAiTemplate("staff"), false);
+  assert.equal(isStaffAiTemplate(null), false);
+  assert.equal(isStaffAiTemplate(undefined), false);
+});
+
+// ---- Sales ---------------------------------------------------------------------------------------------------
+
+const lead = (over) => ({ id: "l1", clientLabel: "Acme Co", status: "New", createdAt: "2026-09-01", convertedClientId: null, ...over });
+const proposal = (over) => ({
+  id: "p1",
+  number: "MS-PRO-001",
+  clientName: "Acme Co",
+  effectiveStatus: "sent",
+  sentAt: "2026-09-20",
+  validUntil: "2026-10-20",
+  createdAt: "2026-09-01",
+  ...over,
+});
+const contract = (over) => ({
+  id: "c1",
+  number: "MS-CON-001",
+  clientName: "Acme Co",
+  effectiveStatus: "accepted",
+  agencySigned: false,
+  sentAt: null,
+  acceptedAt: "2026-09-25",
+  createdAt: "2026-09-01",
+  ...over,
+});
+
+test("sales: a converted or non-new lead is never a follow-up, oldest new lead sorts first", () => {
+  const summary = buildSalesAiContext(
+    {
+      leads: [
+        lead({ id: "old", clientLabel: "Old Co", createdAt: "2026-09-01" }), // 27 days old
+        lead({ id: "new", clientLabel: "New Co", createdAt: "2026-09-25" }), // 3 days old
+        lead({ id: "converted", clientLabel: "Won Co", convertedClientId: "client-1" }),
+        lead({ id: "contacted", clientLabel: "Contacted Co", status: "Contacted" }),
+      ],
+      proposals: [],
+      contracts: [],
+    },
+    NOW,
+  );
+  assert.match(summary, /2 lead\(s\) waiting for a first response/);
+  const oldIndex = summary.indexOf("Old Co");
+  const newIndex = summary.indexOf("New Co");
+  assert.ok(oldIndex > -1 && newIndex > -1 && oldIndex < newIndex, "oldest lead should be listed first");
+  assert.ok(!summary.includes("Won Co"));
+  assert.ok(!summary.includes("Contacted Co"));
+});
+
+test("sales: proposals only count as awaiting while sent/viewed, not once accepted or declined", () => {
+  const summary = buildSalesAiContext(
+    { leads: [], proposals: [proposal({ effectiveStatus: "viewed" }), proposal({ id: "p2", effectiveStatus: "accepted" })], contracts: [] },
+    NOW,
+  );
+  assert.match(summary, /1 proposal\(s\) sent, awaiting the client/);
+  assert.match(summary, /MS-PRO-001 \(Acme Co\), sent \d+ days? ago/);
+});
+
+test("sales: distinguishes a contract needing our own signature from one awaiting the client", () => {
+  const summary = buildSalesAiContext(
+    {
+      leads: [],
+      proposals: [],
+      contracts: [contract({ effectiveStatus: "accepted", agencySigned: false }), contract({ id: "c2", effectiveStatus: "sent", agencySigned: false })],
+    },
+    NOW,
+  );
+  assert.match(summary, /1 contract\(s\) the client accepted, waiting on our signature/);
+  assert.match(summary, /1 contract\(s\) sent, awaiting the client/);
+});
+
+test("sales: an all-clear message appears only when nothing is open", () => {
+  const clear = buildSalesAiContext({ leads: [], proposals: [], contracts: [] }, NOW);
+  assert.ok(clear.includes("No new leads waiting for a first response."));
+  assert.ok(clear.includes("No proposals or contracts currently awaiting anyone."));
+});
+
+test("sales: a long list is capped with a remaining count rather than growing unbounded", () => {
+  const manyLeads = Array.from({ length: 12 }, (_, i) => lead({ id: `l${i}`, clientLabel: `Co ${i}` }));
+  const summary = buildSalesAiContext({ leads: manyLeads, proposals: [], contracts: [] }, NOW);
+  assert.match(summary, /…and 4 more\./);
+});
+
+// ---- Accounting -----------------------------------------------------------------------------------------------
+
+const invoice = (over) => ({
+  id: "i1",
+  number: "MS-INV-001",
+  clientName: "Acme Co",
+  effectiveStatus: "overdue",
+  amountDueCents: 50_000,
+  dueDate: "2026-09-10",
+  createdAt: "2026-09-01",
+  ...over,
+});
+
+test("accounting: overdue invoices are totalled and sorted most-overdue first", () => {
+  const summary = buildAccountingAiContext(
+    [
+      invoice({ id: "a", dueDate: "2026-09-20", amountDueCents: 10_000 }), // 8 days overdue
+      invoice({ id: "b", dueDate: "2026-09-01", amountDueCents: 20_000 }), // 27 days overdue
+    ],
+    NOW,
+  );
+  assert.match(summary, /2 overdue invoice\(s\), \$300\.00 total/);
+  const firstLine = summary.split("\n").find((line) => line.startsWith("-"));
+  assert.match(firstLine, /^- MS-INV-001 \(Acme Co\), \$200\.00, 27 day\(s\) overdue/);
+});
+
+test("accounting: due-soon excludes anything already overdue and anything more than 7 days out", () => {
+  const summary = buildAccountingAiContext(
+    [
+      invoice({ id: "a", effectiveStatus: "sent", dueDate: "2026-10-02" }), // 4 days out
+      invoice({ id: "b", effectiveStatus: "sent", dueDate: "2026-10-20" }), // far out
+    ],
+    NOW,
+  );
+  assert.match(summary, /1 invoice\(s\) due within 7 days/);
+  assert.ok(!summary.includes("2026-10-20"));
+});
+
+test("accounting: draft invoices never sent are called out, oldest first", () => {
+  const summary = buildAccountingAiContext(
+    [invoice({ id: "a", effectiveStatus: "draft", createdAt: "2026-09-05" }), invoice({ id: "b", effectiveStatus: "draft", createdAt: "2026-09-01" })],
+    NOW,
+  );
+  assert.match(summary, /2 draft invoice\(s\) never sent/);
+});
+
+test("accounting: no overdue invoices says so explicitly rather than staying silent", () => {
+  const summary = buildAccountingAiContext([invoice({ effectiveStatus: "paid" })], NOW);
+  assert.ok(summary.includes("No overdue invoices."));
 });
