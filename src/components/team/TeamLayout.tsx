@@ -120,7 +120,7 @@ export function TeamLayout() {
 
         <div
           className={cn(
-            "relative z-0 flex h-full min-h-0 flex-col pt-[var(--admin-header)] pointer-events-none transition-[margin] duration-[var(--duration-base)] ease-[var(--ease-out)]",
+            "relative z-0 flex h-full min-h-0 flex-col pointer-events-none transition-[margin] duration-[var(--duration-base)] ease-[var(--ease-out)]",
             dockCollapsed ? "lg:ml-[var(--admin-sidebar-collapsed)]" : "lg:ml-[var(--admin-sidebar)]",
           )}
         >

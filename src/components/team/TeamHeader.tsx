@@ -63,13 +63,7 @@ export function TeamHeader({ collapsed, mobileOpen, onToggleCollapsed, onOpenMob
   }, [menuOpen, notesOpen]);
 
   return (
-    <header
-      className={cn(
-        "pointer-events-auto fixed top-0 right-0 z-20 flex h-[var(--admin-header)] items-center justify-between gap-3 border-b border-[var(--admin-line)] bg-[var(--admin-card)] px-4 lg:px-6",
-        "left-0 transition-[left] duration-[var(--duration-base)] ease-[var(--ease-out)]",
-        collapsed ? "lg:left-[var(--admin-sidebar-collapsed)]" : "lg:left-[var(--admin-sidebar)]",
-      )}
-    >
+    <header className="pointer-events-auto sticky top-0 z-20 flex h-[var(--admin-header)] shrink-0 items-center justify-between gap-3 border-b border-[var(--admin-line)] bg-[var(--admin-card)] px-4 lg:px-6">
       <div className="flex min-w-0 items-center gap-2">
         <button
           type="button"
