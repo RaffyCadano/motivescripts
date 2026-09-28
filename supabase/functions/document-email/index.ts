@@ -518,6 +518,10 @@ Deno.serve(async (req) => {
       else if (n.type === "payroll_paid") url = `${origin}/${team ? "team/time" : "admin/payroll"}`;
       else if (n.type.startsWith("task_") && !n.project_id) url = `${origin}/team/tasks`;
       else if (n.type.startsWith("task_") && team) url = `${origin}/team/tasks`;
+      // Unlike project_assigned, the recipient no longer has access to this specific project by
+      // the time they read the email -- send them to their own list instead of a project page
+      // they'd be blocked from opening.
+      else if (n.type === "project_unassigned") url = `${origin}/${team ? "team/projects" : "admin/projects"}`;
 
       let company = "MotiveScripts";
       if (n.project_id) {

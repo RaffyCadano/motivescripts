@@ -10,13 +10,17 @@ import { emailAlertCategories, applyEmailAlertRows, defaultEmailAlertPreferences
 const sql = readFileSync("supabase/migrations/20261112000000_staff_email_alerts.sql", "utf8");
 const fn = readFileSync("supabase/functions/document-email/index.ts", "utf8");
 
-const mapping = [...sql.matchAll(/when '([a-z_]+)' then '([a-z_]+)'/g)].map((m) => ({ type: m[1], category: m[2] }));
-
 const dir = "supabase/migrations";
-const latestTypeSql = readdirSync(dir)
-  .filter((n) => n.endsWith(".sql"))
-  .sort()
-  .reverse()
+const migrationFiles = readdirSync(dir).filter((n) => n.endsWith(".sql")).sort().reverse();
+// notification_email_category() is `create or replace`d again whenever a new type joins a group
+// (most recently to add project_assigned/project_unassigned) -- read the latest definition, not
+// the original file, so this test tracks additions instead of going stale against them.
+const latestCategorySql = migrationFiles
+  .map((n) => readFileSync(`${dir}/${n}`, "utf8"))
+  .find((s) => /create or replace function public\.notification_email_category/i.test(s));
+const mapping = [...latestCategorySql.matchAll(/when '([a-z_]+)' then '([a-z_]+)'/g)].map((m) => ({ type: m[1], category: m[2] }));
+
+const latestTypeSql = migrationFiles
   .map((n) => readFileSync(`${dir}/${n}`, "utf8"))
   .find((s) => /add constraint notifications_type_check/i.test(s));
 const allowedTypes = new Set([...latestTypeSql.slice(latestTypeSql.search(/add constraint notifications_type_check/i)).split("]));")[0].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]));
@@ -38,6 +42,7 @@ test("the requested alerts are all emailed", () => {
     "feedback_received", "changes_requested", "version_approved", "care_request_submitted", "task_response_submitted",
     "website_down", "website_slow", "backup_failed", "website_paused", "domain_expiring_soon", "domain_expired", "ssl_expiring_soon", "ssl_expired",
     "task_assigned", "task_due_soon", "task_overdue", "qa_failed", "qa_passed", "payroll_paid",
+    "project_assigned", "project_unassigned",
   ]) {
     assert.ok(emailed.has(type), `${type} is not emailed`);
   }

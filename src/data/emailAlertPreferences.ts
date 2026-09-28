@@ -24,7 +24,7 @@ export const emailAlertCategories: { key: EmailAlertCategory; label: string; des
   {
     key: "team_work",
     label: "Team work",
-    description: "A task is assigned to you or due or overdue, QA results, and payroll payments.",
+    description: "A task or project is assigned to or removed from you, it's due or overdue, QA results, and payroll payments.",
   },
 ];
 
