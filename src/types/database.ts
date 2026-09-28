@@ -436,6 +436,7 @@ export type NotificationType =
   | "task_assigned"
   | "task_status_changed"
   | "project_assigned"
+  | "project_unassigned"
   | "milestone_updated"
   | "task_info_requested"
   | "task_response_submitted"

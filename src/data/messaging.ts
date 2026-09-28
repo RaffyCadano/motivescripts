@@ -198,6 +198,11 @@ export function notificationHref(item: AppNotification, role: "admin" | "staff" 
         return item.projectId ? `/admin/projects/${item.projectId}` : staff ? "/team/projects" : "/admin/projects";
       }
       return item.projectId ? `/client/project/${item.projectId}` : "/client/project";
+    case "project_unassigned":
+      // Unlike project_assigned, the recipient no longer has access to this specific project by
+      // the time they read this -- send them to their own list instead of a project page they'd
+      // be blocked from opening.
+      return staff ? "/team/projects" : "/admin/projects";
     case "client_review_ready":
     case "launch_completed":
       if (agency) {
