@@ -136,3 +136,22 @@
     scroll-margin-top: calc(var(--nav-height) + 1.25rem);
   }
 }
+
+/*
+ * iOS Safari zooms the whole page in when a focused text input's font-size is under 16px.
+ * Several admin/dialog inputs use Tailwind's text-sm (14px) for a denser desktop look, which
+ * triggers that zoom on phones. Left un-layered (outside @layer base) so, per the CSS cascade
+ * layers spec, it wins over any Tailwind utility class (text-sm, text-xs, ...) regardless of
+ * specificity, without needing !important -- no need to hunt down every input's className.
+ * Checkbox/radio/range/color/file/image/submit/button controls are excluded since font-size
+ * isn't what the zoom bug cares about there, and this only applies below the md breakpoint.
+ */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not(
+      [type="file"]
+    ):not([type="image"]):not([type="submit"]):not([type="button"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
