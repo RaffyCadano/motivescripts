@@ -93,7 +93,7 @@ export function AdminLayout() {
 
   return (
     <TeamDirectoryProvider>
-    <div className="admin-app h-dvh overflow-hidden">
+    <div className="admin-app h-svh overflow-hidden">
       <a className="skip-link" href="#admin-main">
         Skip to content
       </a>

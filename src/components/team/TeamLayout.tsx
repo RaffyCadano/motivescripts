@@ -97,7 +97,7 @@ export function TeamLayout() {
 
   return (
     <TeamDirectoryProvider>
-      <div className="admin-app h-dvh overflow-hidden">
+      <div className="admin-app h-svh overflow-hidden">
         <a className="skip-link" href="#team-main">
           Skip to content
         </a>
