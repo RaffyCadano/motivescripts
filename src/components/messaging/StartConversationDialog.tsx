@@ -86,13 +86,16 @@ export function StartConversationDialog({
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!valid || busy) return;
-    const ok = await onSubmit({
+    // On success, onSubmit is responsible for closing the dialog itself (and navigating to the
+    // result) -- it does not call onClose here, since onClose also strips leftover ?compose/
+    // client/project params via a relative navigate that can race with, and stomp, that
+    // navigation. On failure, onSubmit returns false and the dialog is simply left open as-is.
+    await onSubmit({
       subject: subject.trim(),
       body: body.trim(),
       clientId,
       projectId,
     });
-    if (ok) onClose();
   }
 
   const fields = (

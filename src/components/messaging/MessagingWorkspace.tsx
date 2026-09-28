@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ConversationList } from "@/components/messaging/ConversationList";
 import { ConversationThread } from "@/components/messaging/ConversationThread";
@@ -36,6 +36,13 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
   const [isLg, setIsLg] = useState(() =>
     typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : false,
   );
+  // After a successful send navigates away from a `?compose=new` (or `?client=`/`?project=`) URL,
+  // the effect below still fires one more time with a stale read of the old search params (a
+  // transient render where the route's params have updated but this hook's search string
+  // hasn't caught up yet) -- without this guard, that stale read re-opens the dialog right after
+  // it was closed. Set to true right before navigating away on success; consumed (and reset)
+  // by the very next run of that effect, whether or not it was the stale one.
+  const suppressAutoOpenRef = useRef(false);
 
   const queryClientId = searchParams.get("client") ?? "";
   const queryProjectId = searchParams.get("project") ?? "";
@@ -50,6 +57,10 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
   }, []);
 
   useEffect(() => {
+    if (suppressAutoOpenRef.current) {
+      suppressAutoOpenRef.current = false;
+      return;
+    }
     if (messaging.loadStatus !== "ready") return;
     if (conversationId) return;
 
@@ -321,6 +332,12 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
             if (existing) {
               const sent = await messaging.sendMessage(existing.id, draft.body);
               if (!sent) return false;
+              // Close directly (skip onClose's search-param cleanup) -- that cleanup does a
+              // relative `setSearchParams` navigate which races with this navigate below and
+              // can stomp it, bouncing the user back to the bare list. The target path here has
+              // no query string anyway, so there's nothing left to strip.
+              suppressAutoOpenRef.current = true;
+              setComposeOpen(false);
               navigate(`${basePath}/${existing.id}`);
               return true;
             }
@@ -331,6 +348,8 @@ export function MessagingWorkspace({ tone, basePath, showHeading = true }: Messa
               clientId: canPickClient ? draft.clientId : undefined,
             });
             if (!id) return false;
+            suppressAutoOpenRef.current = true;
+            setComposeOpen(false);
             navigate(`${basePath}/${id}`);
             return true;
           } finally {
