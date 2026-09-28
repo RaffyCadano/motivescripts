@@ -129,6 +129,7 @@ export function ProjectOverview({ project, client, workflow, onOpenTab }: Projec
           members={team.data.members}
           projectId={project.id}
           clientId={project.clientId}
+          tasks={project.tasks}
           assignedLabels={assignedLabels}
           onChanged={() => void team.reload()}
         />

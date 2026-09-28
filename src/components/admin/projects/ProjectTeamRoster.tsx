@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { useAuth } from "@/auth/AuthProvider";
 import { canCoordinateAssignedWork, isActiveAdmin } from "@/auth/permissions";
 import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
+import { OrphanedTasksPanel } from "@/components/admin/projects/OrphanedTasksPanel";
+import type { AgencyTask } from "@/data/agencyProjects";
 import { PRODUCTION_PROJECT_SLOT_IDS, projectTeamSlots } from "@/data/projectWorkspace";
 import {
   assignedProjectMembers,
@@ -16,6 +18,7 @@ type ProjectTeamRosterProps = {
   members: TeamMember[];
   projectId: string;
   clientId?: string;
+  tasks: AgencyTask[];
   assignedLabels: Record<string, string>;
   onChanged?: () => void;
   onOpenTasks?: () => void;
@@ -25,6 +28,7 @@ export function ProjectTeamRoster({
   members,
   projectId,
   clientId,
+  tasks,
   assignedLabels,
   onChanged,
   onOpenTasks,
@@ -41,6 +45,7 @@ export function ProjectTeamRoster({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [orphaned, setOrphaned] = useState<{ member: TeamMember; tasks: AgencyTask[] } | null>(null);
 
   const eligible = useMemo(
     () => projectTeamCandidates(members, assigned.map((member) => member.id), clientId),
@@ -62,12 +67,14 @@ export function ProjectTeamRoster({
     }
   }
 
-  async function remove(userId: string) {
+  async function remove(member: TeamMember) {
     if (!canManage || busyId) return;
-    setBusyId(userId);
+    setBusyId(member.id);
     setError(null);
     try {
-      await unassignStaffFromProject(projectId, userId);
+      await unassignStaffFromProject(projectId, member.id);
+      const openTasks = tasks.filter((task) => task.assignedTo === member.id && task.status !== "Completed");
+      setOrphaned(openTasks.length > 0 ? { member, tasks: openTasks } : null);
       onChanged?.();
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to remove this team member.");
@@ -131,7 +138,7 @@ export function ProjectTeamRoster({
                         type="button"
                         disabled={Boolean(busyId)}
                         className="font-heading text-[12px] font-semibold text-[var(--admin-blue)] hover:underline disabled:opacity-50"
-                        onClick={() => void remove(member.id)}
+                        onClick={() => void remove(member)}
                       >
                         {busyId === member.id ? "Removing…" : "Remove"}
                       </button>
@@ -148,6 +155,18 @@ export function ProjectTeamRoster({
           ) : null}
         </div>
       )}
+
+      {orphaned ? (
+        <div className="mt-4">
+          <OrphanedTasksPanel
+            removedMemberName={orphaned.member.fullName || orphaned.member.email}
+            projectId={projectId}
+            tasks={orphaned.tasks}
+            candidates={projectTeamCandidates(members, [], clientId)}
+            onClose={() => setOrphaned(null)}
+          />
+        </div>
+      ) : null}
 
       {canManage && pickerOpen ? (
         <div className="mt-4 border-t border-[var(--admin-line)] pt-4">

@@ -786,6 +786,26 @@ export async function setTaskDeliverable(taskId: string, deliverableId: string |
   throwIf(error, "link task to deliverable", "Unable to update the linked deliverable.");
 }
 
+/**
+ * Hands a task to someone else -- used right after removing its current assignee from the
+ * project, so their open work doesn't just sit pointed at someone no longer on it. A plain
+ * assigned_to update: tasks_notify_assignment already emails/alerts the new assignee, and
+ * tasks_ensure_assignee_project_assignment already adds them to the project team if they weren't
+ * on it yet, so nothing else needs to happen here.
+ */
+export async function reassignTask(
+  projectId: string,
+  taskId: string,
+  title: string,
+  userId: string,
+  assigneeName: string,
+): Promise<void> {
+  const client = db();
+  const { error } = await client.from("tasks").update({ assigned_to: userId, assignee: assigneeName }).eq("id", taskId);
+  throwIf(error, "reassign task", "Unable to reassign this task.");
+  await addActivity(projectId, "task_updated", `Task “${title}” reassigned to ${assigneeName}`, "task");
+}
+
 export async function insertDeliverable(
   projectId: string,
   draft: DeliverableDraft,

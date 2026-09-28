@@ -22,6 +22,7 @@ import {
   insertTask,
   linkClientAccount,
   quietUpdateMilestoneStatus,
+  reassignTask as reassignTaskRecord,
   resolveFeedbackRecord,
   setCurrentVersionRecord,
   setDeliverableStatus,
@@ -100,6 +101,7 @@ type LeadsContextValue = {
   addTask: (projectId: string, draft: AgencyTaskDraft) => Promise<void>;
   updateTask: (projectId: string, taskId: string, draft: AgencyTaskDraft) => Promise<void>;
   toggleTaskComplete: (projectId: string, taskId: string) => Promise<void>;
+  reassignTask: (projectId: string, taskId: string, userId: string, assigneeName: string) => Promise<void>;
   addDeliverable: (projectId: string, draft: DeliverableDraft, file: File | null) => Promise<boolean>;
   updateDeliverable: (deliverableId: string, draft: DeliverableDraft) => Promise<boolean>;
   addVersion: (deliverableId: string, file: File, description: string) => Promise<boolean>;
@@ -505,6 +507,20 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
             await persistMilestoneSync(project, { ...project, tasks });
           }
         }, complete ? "Task completed." : "Task reopened.");
+      },
+      async reassignTask(projectId, taskId, userId, assigneeName) {
+        const project = snapshotRef.current.projects.find((item) => item.id === projectId);
+        const current = project?.tasks.find((item) => item.id === taskId);
+        if (!current) return;
+        await run(async () => {
+          await reassignTaskRecord(projectId, taskId, current.title, userId, assigneeName);
+          if (project) {
+            const tasks = project.tasks.map((item) =>
+              item.id === taskId ? { ...item, assignedTo: userId, assignee: assigneeName } : item,
+            );
+            await persistMilestoneSync(project, { ...project, tasks });
+          }
+        }, "Task reassigned.");
       },
       async addDeliverable(projectId, draft, file) {
         if (file) {

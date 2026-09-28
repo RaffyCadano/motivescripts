@@ -3,6 +3,8 @@ import { Briefcase, Code, Palette, PenLine, Plus, ShieldCheck, UserPlus, UsersRo
 import { useAuth } from "@/auth/AuthProvider";
 import { canCoordinateAssignedWork, hasPermission } from "@/auth/permissions";
 import { adminGhostBtn, adminPrimaryBtn } from "@/components/admin/adminActionStyles";
+import { OrphanedTasksPanel } from "@/components/admin/projects/OrphanedTasksPanel";
+import type { AgencyTask } from "@/data/agencyProjects";
 import { PROJECT_TEAM_SLOTS, projectTeamSlots } from "@/data/projectWorkspace";
 import {
   clientProjectManagerCandidates,
@@ -17,12 +19,14 @@ export function ProjectOverviewTeam({
   members,
   projectId,
   clientId,
+  tasks,
   assignedLabels,
   onChanged,
 }: {
   members: TeamMember[];
   projectId: string;
   clientId?: string;
+  tasks: AgencyTask[];
   assignedLabels: Record<string, string>;
   onChanged: () => void;
 }) {
@@ -54,6 +58,7 @@ export function ProjectOverviewTeam({
   const [projectUserId, setProjectUserId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orphaned, setOrphaned] = useState<{ member: TeamMember; tasks: AgencyTask[] } | null>(null);
 
   const pmCandidates = useMemo(
     () => clientProjectManagerCandidates(members, pmAssigned.map((member) => member.id)),
@@ -113,12 +118,14 @@ export function ProjectOverviewTeam({
     }
   }
 
-  async function removeProduction(userId: string) {
+  async function removeProduction(member: TeamMember) {
     if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      await unassignStaffFromProject(projectId, userId);
+      await unassignStaffFromProject(projectId, member.id);
+      const openTasks = tasks.filter((task) => task.assignedTo === member.id && task.status !== "Completed");
+      setOrphaned(openTasks.length > 0 ? { member, tasks: openTasks } : null);
       onChanged();
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to remove this team member.");
@@ -174,12 +181,24 @@ export function ProjectOverviewTeam({
               label={slot.label}
               names={slot.names}
               canManage={canManageProject && Boolean(member)}
-              onRemove={member ? () => void removeProduction(member.id) : undefined}
+              onRemove={member ? () => void removeProduction(member) : undefined}
               busy={busy}
             />
           );
         })}
       </ul>
+
+      {orphaned ? (
+        <div className="mt-4">
+          <OrphanedTasksPanel
+            removedMemberName={orphaned.member.fullName || orphaned.member.email}
+            projectId={projectId}
+            tasks={orphaned.tasks}
+            candidates={projectTeamCandidates(members, [], clientId)}
+            onClose={() => setOrphaned(null)}
+          />
+        </div>
+      ) : null}
 
       {canManageClient && pmPickerOpen && clientId ? (
         <div className="mt-4 flex flex-col gap-2 border-t border-[var(--admin-line)] pt-4 sm:flex-row sm:items-center">
