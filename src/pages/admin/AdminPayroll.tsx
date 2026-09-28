@@ -106,13 +106,15 @@ export function AdminPayroll() {
   }
 
   async function onSaveRate(userId: string) {
-    const draft = rateDrafts.get(userId) ?? "";
+    const rate = rates.get(userId);
+    // Falls back to the already-saved rate (not "") so this is safe to call from the payout-
+    // contact Save button too, without forcing the admin to also touch the rate field.
+    const draft = rateDrafts.has(userId) ? rateDrafts.get(userId)! : centsInputValue(rate?.payRateCents ?? 0);
     const cents = parseDollarsToCents(draft);
     if (cents === null || cents < 0) {
       setRowError((current) => new Map(current).set(userId, "Enter a valid pay rate."));
       return;
     }
-    const rate = rates.get(userId);
     const zelleContact = zelleDrafts.has(userId) ? zelleDrafts.get(userId)! : rate?.zelleContact ?? "";
     const paypalEmail = paypalDrafts.has(userId) ? paypalDrafts.get(userId)! : rate?.paypalEmail ?? "";
     setBusyId(userId);
@@ -385,7 +387,13 @@ export function AdminPayroll() {
                       </div>
                     </td>
                     <td className="px-3 py-2.5">
-                      <div className="flex flex-col gap-1.5">
+                      <form
+                        className="flex flex-col gap-1.5"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void onSaveRate(member.id);
+                        }}
+                      >
                         <input
                           placeholder="Zelle phone/email"
                           aria-label={`Zelle contact for ${member.fullName}`}
@@ -406,7 +414,14 @@ export function AdminPayroll() {
                           }
                           className="h-8 w-44 rounded-lg border border-[var(--admin-line)] bg-white px-2 text-[12px] outline-none focus:border-[rgb(0_80_240_/_0.45)]"
                         />
-                      </div>
+                        <button
+                          type="submit"
+                          disabled={busy}
+                          className="h-7 self-start rounded-lg border border-[var(--admin-line)] px-2 font-heading text-[11px] font-semibold text-[var(--admin-ink)] hover:bg-[var(--admin-bg)] disabled:opacity-50"
+                        >
+                          Save
+                        </button>
+                      </form>
                     </td>
                     <td className="px-3 py-2.5 text-sm text-[var(--admin-ink)]">{unpaidHours}h</td>
                     <td className="px-3 py-2.5 text-sm font-semibold text-[var(--admin-ink)]">
