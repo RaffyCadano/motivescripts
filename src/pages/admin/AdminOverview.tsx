@@ -14,6 +14,7 @@ import { OverviewWaiting } from "@/components/admin/overview/OverviewWaiting";
 import { OverviewWebsites } from "@/components/admin/overview/OverviewWebsites";
 import { OverviewRevenueTrendChart } from "@/components/admin/overview/OverviewRevenueTrendChart";
 import { ProjectStatusChart } from "@/components/admin/overview/ProjectStatusChart";
+import { StaffPerformancePanel } from "@/components/admin/overview/StaffPerformancePanel";
 import { StaffWorkloadChart } from "@/components/admin/overview/StaffWorkloadChart";
 import { RecentActivity } from "@/components/admin/RecentActivity";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
@@ -36,6 +37,7 @@ import { buildRevenueReport, type PaymentReportRow } from "@/data/financialRepor
 import { fetchAllPayments } from "@/data/financialReportsRepository";
 import { fetchInvoiceSummaries, type InvoiceSummary } from "@/data/invoicesRepository";
 import { buildWaitingOnClients } from "@/data/overviewExtras";
+import { buildStaffPerformance } from "@/data/staffPerformance";
 import { greetingFor } from "@/data/teamWorkspace";
 import { fetchScopeBriefs } from "@/data/scopeBriefsRepository";
 import type { ClientScopeBrief } from "@/data/scopeBriefs";
@@ -193,6 +195,11 @@ export function AdminOverview() {
   );
   const showWaiting = can("proposals.view") || can("contracts.view") || can("invoices.view") || can("clients.view");
 
+  const staffPerformance = useMemo(
+    () => buildStaffPerformance(projects, team.data?.members ?? []),
+    [projects, team.data],
+  );
+
   const firstName = firstNameFrom(profile?.fullName || "there");
   const attentionCount = attention.length;
   const openProjects = projects.filter((item) => !item.archived);
@@ -309,6 +316,8 @@ export function AdminOverview() {
           </OverviewCard>
         ) : null}
       </section>
+
+      {can("team.manage") ? <StaffPerformancePanel rows={staffPerformance} /> : null}
 
       <RecentActivity />
     </div>
