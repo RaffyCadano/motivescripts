@@ -24,9 +24,11 @@ function supportsEffort(model: string): boolean {
   return /^claude-(opus|sonnet|fable|mythos)-/.test(model);
 }
 
-// Per-instance, best-effort limits -- same shape as motivescripts-ai's limiter, keyed by user id
-// instead of IP so it actually tracks a person across requests.
-const limiter = createRateLimiter({ windowMs: 5 * 60 * 1000, maxPerKey: 20, maxGlobal: 300 });
+// Per-instance, best-effort limits -- same numbers as motivescripts-ai's own limiter (12 per
+// person per 5 minutes), keyed by user id instead of IP so it actually tracks a person across
+// requests. This slows a steady, non-stop back-and-forth; it isn't a total spend cap -- that's
+// set on the Anthropic API key itself, outside this app.
+const limiter = createRateLimiter({ windowMs: 5 * 60 * 1000, maxPerKey: 12, maxGlobal: 240 });
 
 async function generate(
   role: string,
