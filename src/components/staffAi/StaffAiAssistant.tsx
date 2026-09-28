@@ -360,7 +360,11 @@ export function StaffAiAssistant() {
             <Sparkles size={17} strokeWidth={2.2} aria-hidden="true" />
           </span>
           <div className="min-w-0 flex-1">
-            <h2 id={titleId} className="font-heading text-[0.95rem] font-bold leading-tight tracking-tight text-white">
+            {/* text-white! (important): admin.css has an unlayered ".admin-app h1/h2/h3 { color:
+                var(--admin-ink) }" rule for ordinary dark headings on a light card, which -- being
+                unlayered -- otherwise beats any Tailwind utility class here regardless of
+                specificity, since this h2 sits on the navy header instead. */}
+            <h2 id={titleId} className="font-heading text-[0.95rem] font-bold leading-tight tracking-tight text-white!">
               Staff assistant
             </h2>
             <p className="mt-0.5 flex items-center gap-1.5 text-xs text-white/70">
