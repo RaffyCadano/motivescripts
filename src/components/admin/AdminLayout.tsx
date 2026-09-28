@@ -4,6 +4,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { adminPathToTeamPath, usesTeamWorkspace } from "@/auth/roles";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { StaffAiAssistant } from "@/components/staffAi/StaffAiAssistant";
 import { TeamDirectoryProvider } from "@/components/admin/team/useTeamDirectory";
 import { getAdminPageMeta } from "@/data/adminNav";
 import { cn } from "@/lib/cn";
@@ -130,6 +131,7 @@ export function AdminLayout() {
           <Outlet />
         </main>
       </div>
+      <StaffAiAssistant />
     </div>
     </TeamDirectoryProvider>
   );

@@ -7,6 +7,7 @@ import { LeadToast } from "@/components/admin/leads/LeadToast";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import { TeamDirectoryProvider } from "@/components/admin/team/useTeamDirectory";
 import { TeamHeader } from "@/components/team/TeamHeader";
+import { StaffAiAssistant } from "@/components/staffAi/StaffAiAssistant";
 import { TeamSidebar } from "@/components/team/TeamSidebar";
 import { getTeamPageMeta } from "@/data/teamNav";
 import { cn } from "@/lib/cn";
@@ -152,6 +153,7 @@ export function TeamLayout() {
             <LeadToast />
           </main>
         </div>
+        <StaffAiAssistant />
       </div>
     </TeamDirectoryProvider>
   );

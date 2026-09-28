@@ -48,6 +48,13 @@ verify_jwt = false
 [functions.motivescripts-ai]
 verify_jwt = false
 
+# Staff AI assistant (pilot: developer, project_manager). verify_jwt is off like every other
+# function here; it authenticates the caller and requires active staff/admin itself, then only
+# ever answers from the context the browser already had under RLS -- no other database access.
+# Needs the ANTHROPIC_API_KEY secret.
+[functions.staff-ai-assistant]
+verify_jwt = false
+
 # Admin-only Stripe refund. Authenticates the user and requires is_admin() inside the function.
 [functions.refund-stripe-payment]
 verify_jwt = false
