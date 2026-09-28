@@ -267,7 +267,11 @@ test("waiting on clients lists the longest waits first and only what is really s
   assert.deepEqual(counts, { proposal: 1, contract: 1, invoice: 1, scope: 2 });
   assert.deepEqual(items.map((i) => [i.label, i.clientName, i.days]), [
     ["Invoice INV-1", "Bravo Bakery", 37],
-    ["Scope form not started", "Bravo Bakery", 25],
+    // c1's createdAt ("2026-09-01T00:00:00Z") is Aug 31, 8pm America/New_York -- one calendar day
+    // earlier locally than its UTC date -- so the correct count from local midnight to local
+    // midnight is 26, not 25 (25 was the old, buggy raw-elapsed-time count from before daysSince
+    // was fixed to compare local calendar days instead of full 24-hour periods).
+    ["Scope form not started", "Bravo Bakery", 26],
     ["Proposal P-1", "Bravo Bakery", 16],
     ["Scope form started, not finished", "Acme Co", 4],
     ["Contract C-1", "Has Project", 2],

@@ -35,12 +35,24 @@ export function parseCalendarDay(value: string): Date {
   return new Date(value.includes("T") ? value : `${value}T12:00:00`);
 }
 
-/** Whole days between an ISO timestamp or date and now; never negative. */
+function startOfDay(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+/**
+ * Whole calendar days between an ISO timestamp or date and now; never negative. Counts midnight
+ * crossings, not full 24-hour periods -- a task completed yesterday at 11pm is "1 day ago" first
+ * thing this morning, not "0 days ago" until 23 hours have actually elapsed. Comparing raw elapsed
+ * milliseconds instead (as this used to) makes the count tick over at the original event's time of
+ * day instead of at midnight, so the same unchanged record silently reads as a different number of
+ * days depending only on what time you happen to check -- which once flipped a staff member's
+ * inactivity flag on the Staff Performance panel mid-afternoon with nothing having changed.
+ */
 export function daysSince(value: string | null | undefined, now: Date = new Date()): number {
   if (!value) return 0;
   const then = parseCalendarDay(value);
   if (Number.isNaN(then.getTime())) return 0;
-  return Math.max(0, Math.floor((now.getTime() - then.getTime()) / 86_400_000));
+  return Math.max(0, Math.round((startOfDay(now) - startOfDay(then)) / 86_400_000));
 }
 
 // ---- money ------------------------------------------------------------------------------------------------------
