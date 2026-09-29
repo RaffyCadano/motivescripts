@@ -906,6 +906,14 @@ export type StaffProfileRow = {
   created_by: string | null;
 };
 
+export type StaffNoteRow = {
+  id: string;
+  user_id: string;
+  body: string;
+  author: string;
+  created_at: string;
+};
+
 export type StaffGrantRow = {
   user_id: string;
   permission_code: string;
@@ -1196,6 +1204,7 @@ export type Database = {
         { event_id: string; event_type: string }
       >;
       staff_profiles: Table<StaffProfileRow>;
+      staff_notes: Table<StaffNoteRow, { user_id: string; body: string }>;
       staff_grants: Table<StaffGrantRow>;
       staff_invitations: Table<StaffInvitationRow>;
       client_staff_assignments: Table<ClientStaffAssignmentRow>;

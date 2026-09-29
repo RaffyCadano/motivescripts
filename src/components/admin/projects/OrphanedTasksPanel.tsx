@@ -14,12 +14,17 @@ import { AgencyDbError } from "@/lib/dbErrors";
 export function OrphanedTasksPanel({
   removedMemberName,
   projectId,
+  projectName,
   tasks,
   candidates,
   onClose,
 }: {
   removedMemberName: string;
   projectId: string;
+  /** Shown as "in {projectName}" instead of "here" -- pass this when the panel isn't rendered
+   * directly on that project's own page (e.g. deactivating someone account-wide, where their open
+   * tasks can span several projects at once and "here" would no longer mean anything specific). */
+  projectName?: string;
   tasks: AgencyTask[];
   candidates: TeamMember[];
   onClose: () => void;
@@ -57,7 +62,8 @@ export function OrphanedTasksPanel({
           <AlertTriangle size={18} strokeWidth={2} className="mt-0.5 shrink-0 text-[#b45309]" aria-hidden="true" />
           <div className="min-w-0">
             <p className="font-heading text-sm font-semibold text-[var(--admin-ink)]">
-              {removedMemberName} had {remaining.length} open {remaining.length === 1 ? "task" : "tasks"} here
+              {removedMemberName} had {remaining.length} open {remaining.length === 1 ? "task" : "tasks"}{" "}
+              {projectName ? `in ${projectName}` : "here"}
             </p>
             <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">
               Reassign each one now, or come back to it later from the Tasks tab — they’ll stay assigned to{" "}

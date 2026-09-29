@@ -5,13 +5,19 @@ import { useAuth } from "@/auth/AuthProvider";
 import { hasPermission, isActiveAdmin } from "@/auth/permissions";
 import { initialsFromName } from "@/auth/userDisplay";
 import { adminPrimaryBtn } from "@/components/admin/adminActionStyles";
+import { useLeads } from "@/components/admin/leads/LeadsProvider";
+import { OrphanedTasksPanel } from "@/components/admin/projects/OrphanedTasksPanel";
 import { OnboardingPendingPill, OnboardingStatusProvider } from "@/components/admin/team/OnboardingStatus";
 import { StaffEmailLogSection } from "@/components/admin/team/StaffEmailLogSection";
+import { StaffNoteModal } from "@/components/admin/team/StaffNoteModal";
+import { StaffNotesSection } from "@/components/admin/team/StaffNotesSection";
 import { StaffOnboardingSection } from "@/components/admin/team/StaffOnboardingSection";
 import { StaffPayrollCard } from "@/components/admin/team/StaffPayrollCard";
 import { useTeamDirectory } from "@/components/admin/team/useTeamDirectory";
-import { formatTeamDate, type StaffTemplateKey } from "@/data/team";
-import { fetchMemberActivity, updateStaffMember } from "@/data/teamRepository";
+import { ConfirmDocumentModal } from "@/components/documents/ConfirmDocumentModal";
+import type { AgencyTask } from "@/data/agencyProjects";
+import { formatTeamDate, projectTeamCandidates, type StaffNote, type StaffTemplateKey } from "@/data/team";
+import { addStaffNote, fetchMemberActivity, fetchStaffNotes, updateStaffMember } from "@/data/teamRepository";
 import { groupPermissions } from "@/data/teamPermissions";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { cn } from "@/lib/cn";
@@ -19,10 +25,13 @@ import { cn } from "@/lib/cn";
 type DetailTab = "overview" | "payroll" | "onboarding" | "emails";
 const DETAIL_TABS: DetailTab[] = ["overview", "payroll", "onboarding", "emails"];
 
+type OrphanedGroup = { projectId: string; projectName: string; tasks: AgencyTask[] };
+
 export function AdminTeamDetails() {
   const { id = "" } = useParams();
   const { profile } = useAuth();
   const { data, status, reload } = useTeamDirectory();
+  const { projects } = useLeads();
   const [activity, setActivity] = useState<{ id: string; message: string; createdAt: string }[]>([]);
   const [fullName, setFullName] = useState("");
   const [jobTitle, setJobTitle] = useState("");
@@ -34,6 +43,11 @@ export function AdminTeamDetails() {
     const fromHash = typeof window === "undefined" ? "" : window.location.hash.slice(1);
     return DETAIL_TABS.find((item) => item === fromHash) ?? "overview";
   });
+  const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [orphaned, setOrphaned] = useState<OrphanedGroup[]>([]);
+  const [notes, setNotes] = useState<StaffNote[]>([]);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
   const canManage = isActiveAdmin(profile);
   const canView = hasPermission(profile, "team.view");
 
@@ -41,6 +55,24 @@ export function AdminTeamDetails() {
   const visiblePerms = (data?.catalog.permissions ?? []).filter(
     (item) => item.code !== "team.view" && item.code !== "team.manage",
   );
+
+  // Every open task still assigned to this person, across every non-archived project -- shown
+  // before deactivating (so the admin knows what they're about to leave behind) and used again
+  // right after to drive the reassignment panels. Deactivating never touches task assignment by
+  // itself, unlike removing someone from one project's team, which already prompts this.
+  function openWorkFor(userId: string): OrphanedGroup[] {
+    return projects
+      .filter((project) => !project.archived)
+      .map((project) => ({
+        projectId: project.id,
+        projectName: project.name,
+        tasks: project.tasks.filter((task) => task.assignedTo === userId && task.status !== "Completed"),
+      }))
+      .filter((group) => group.tasks.length > 0);
+  }
+
+  const pendingOpenWork = useMemo(() => (member ? openWorkFor(member.id) : []), [member, projects]);
+  const pendingTaskCount = pendingOpenWork.reduce((sum, group) => sum + group.tasks.length, 0);
 
   useEffect(() => {
     if (!member) return;
@@ -50,6 +82,25 @@ export function AdminTeamDetails() {
     setSelected(member.permissions);
     void fetchMemberActivity(member.id).then(setActivity);
   }, [member]);
+
+  const editingSelfForNotes = member?.id === profile?.id;
+  useEffect(() => {
+    if (!member || !canManage || editingSelfForNotes) {
+      setNotes([]);
+      return;
+    }
+    let active = true;
+    void fetchStaffNotes(member.id)
+      .then((rows) => {
+        if (active) setNotes(rows);
+      })
+      .catch(() => {
+        if (active) setNotes([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [member, canManage, editingSelfForNotes]);
 
   const permissionGroups = useMemo(() => groupPermissions(visiblePerms), [visiblePerms]);
 
@@ -87,8 +138,8 @@ export function AdminTeamDetails() {
     );
   }
 
-  async function save(next?: { isActive?: boolean; templateKey?: StaffTemplateKey; permissionCodes?: string[] }) {
-    if (!member || busy) return;
+  async function save(next?: { isActive?: boolean; templateKey?: StaffTemplateKey; permissionCodes?: string[] }): Promise<boolean> {
+    if (!member || busy) return false;
     setBusy(true);
     setMessage(null);
     try {
@@ -105,10 +156,33 @@ export function AdminTeamDetails() {
       });
       await reload();
       setMessage("Saved.");
+      return true;
     } catch (caught) {
       setMessage(caught instanceof AgencyDbError ? caught.message : "This team member could not be updated.");
+      return false;
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function confirmDeactivate() {
+    if (!member) return;
+    const workBeforeDeactivating = openWorkFor(member.id);
+    const ok = await save({ isActive: false });
+    if (ok) {
+      setDeactivateOpen(false);
+      setOrphaned(workBeforeDeactivating);
+    }
+  }
+
+  async function onAddNote(body: string) {
+    if (!member) return;
+    setNoteError(null);
+    try {
+      await addStaffNote(member.id, body);
+      setNotes(await fetchStaffNotes(member.id));
+    } catch (caught) {
+      setNoteError(caught instanceof AgencyDbError ? caught.message : "Unable to add this note.");
     }
   }
 
@@ -187,7 +261,7 @@ export function AdminTeamDetails() {
                   disabled={busy}
                   aria-label="Deactivate"
                   className="inline-flex h-10 w-10 items-center justify-center gap-2 rounded-[var(--admin-radius)] border border-[rgb(180_35_24_/_0.28)] bg-[rgb(220_38_38_/_0.07)] font-heading text-sm font-semibold text-[#b42318] transition-colors hover:bg-[rgb(220_38_38_/_0.12)] disabled:opacity-60 lg:w-auto lg:px-4"
-                  onClick={() => void save({ isActive: false })}
+                  onClick={() => setDeactivateOpen(true)}
                 >
                   <UserX size={16} strokeWidth={1.75} className="lg:hidden" aria-hidden="true" />
                   <span className="hidden lg:inline">Deactivate</span>
@@ -217,6 +291,26 @@ export function AdminTeamDetails() {
           ))}
         </dl>
       </section>
+
+      {orphaned.length > 0 ? (
+        <div className="space-y-3">
+          {orphaned.map((group) => (
+            <OrphanedTasksPanel
+              key={group.projectId}
+              removedMemberName={member.fullName || member.email}
+              projectId={group.projectId}
+              projectName={group.projectName}
+              tasks={group.tasks}
+              candidates={projectTeamCandidates(
+                data?.members ?? [],
+                [],
+                projects.find((project) => project.id === group.projectId)?.clientId,
+              )}
+              onClose={() => setOrphaned((current) => current.filter((item) => item.projectId !== group.projectId))}
+            />
+          ))}
+        </div>
+      ) : null}
 
       {tabs.length > 1 ? (
         <div role="tablist" aria-label="Team member sections" className="flex gap-1 overflow-x-auto border-b border-[var(--admin-line)]">
@@ -402,6 +496,13 @@ export function AdminTeamDetails() {
               )}
             </section>
 
+            {canManage && !editingSelf ? (
+              <>
+                <StaffNotesSection notes={notes} onAddNote={() => setNoteOpen(true)} />
+                {noteError ? <p className="text-sm text-[#b45309]">{noteError}</p> : null}
+              </>
+            ) : null}
+
             <section className="rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-[var(--admin-card)] p-5">
               <h2 className="font-heading text-sm font-semibold tracking-tight text-[var(--admin-ink)]">Recent activity</h2>
               {activity.length === 0 ? (
@@ -423,6 +524,34 @@ export function AdminTeamDetails() {
           </div>
         </div>
       ) : null}
+
+      <ConfirmDocumentModal
+        open={deactivateOpen}
+        danger
+        busy={busy}
+        title={`Deactivate ${member.fullName || member.email}?`}
+        description={
+          pendingTaskCount > 0 ? (
+            <>
+              They&rsquo;ll no longer be able to sign in. They currently have{" "}
+              <strong>
+                {pendingTaskCount} open {pendingTaskCount === 1 ? "task" : "tasks"}
+              </strong>{" "}
+              across {pendingOpenWork.length} {pendingOpenWork.length === 1 ? "project" : "projects"} — you&rsquo;ll
+              be asked to reassign each one right after. They can be reactivated anytime.
+            </>
+          ) : (
+            "They’ll no longer be able to sign in. They can be reactivated anytime."
+          )
+        }
+        actionLabel="Deactivate"
+        onClose={() => {
+          if (!busy) setDeactivateOpen(false);
+        }}
+        onConfirm={() => void confirmDeactivate()}
+      />
+
+      <StaffNoteModal open={noteOpen} onClose={() => setNoteOpen(false)} onSave={(body) => void onAddNote(body)} />
     </div>
   );
 }

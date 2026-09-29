@@ -5,6 +5,7 @@ import {
   isStaffTemplateKey,
   previewStaffState,
   staffInvitationErrorMessage,
+  type StaffNote,
   type StaffPermissionOption,
   type StaffTemplateKey,
   type StaffTemplateOption,
@@ -18,6 +19,7 @@ import type {
   StaffGrantRow,
   StaffInvitationPreviewRow,
   StaffInvitationRow,
+  StaffNoteRow,
   StaffPermissionCatalogRow,
   StaffProfileRow,
   StaffTemplatePermissionRow,
@@ -48,6 +50,10 @@ export type TeamDirectory = {
 
 function templateLabel(templates: StaffTemplateRow[], key: string): string {
   return templates.find((item) => item.key === key)?.label ?? key;
+}
+
+function mapStaffNote(row: StaffNoteRow): StaffNote {
+  return { id: row.id, body: row.body, author: row.author, createdAt: row.created_at };
 }
 
 function adminStaffFallback(profile: { id: string; created_at: string }): StaffProfileRow {
@@ -317,6 +323,28 @@ export async function updateStaffMember(input: {
     }
     fail("update staff", error, "This team member could not be updated.");
   }
+}
+
+/**
+ * Admin-only (staff_notes' own RLS), like every other staff management write. Author and
+ * timestamp are computed server-side by a trigger, never trusted from the caller.
+ */
+export async function addStaffNote(userId: string, body: string): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.from("staff_notes").insert({ user_id: userId, body });
+  if (error) fail("add staff note", error, "Unable to add this note.");
+}
+
+/** Admin-only (staff_notes' own RLS) -- neither the person themselves nor a team.view-holding coworker can read these. */
+export async function fetchStaffNotes(userId: string): Promise<StaffNote[]> {
+  const client = requireClient();
+  const { data, error } = await client
+    .from("staff_notes")
+    .select("id, user_id, body, author, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) fail("load staff notes", error, "Unable to load notes for this team member.");
+  return ((data ?? []) as StaffNoteRow[]).map(mapStaffNote);
 }
 
 export async function assignStaffToClient(clientId: string, userId: string, label = ""): Promise<void> {

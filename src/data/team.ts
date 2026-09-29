@@ -1,8 +1,10 @@
 import type { InvitationPreviewState } from "@/data/invitation";
 import { isProductionTeamTemplate } from "@/auth/roles";
+import { formatLeadTimestamp } from "@/data/leads";
 import type { StaffInvitationStatus } from "@/types/database";
 
 export { isProductionTeamTemplate };
+export const formatTeamTimestamp = formatLeadTimestamp;
 
 export const STAFF_TEMPLATE_KEYS = [
   "admin",
@@ -26,6 +28,14 @@ export type TeamAssignment = {
   entityName: string;
   userId: string;
   label: string;
+};
+
+/** An internal note about a staff member (agency only). Written only through add_staff_note. */
+export type StaffNote = {
+  id: string;
+  body: string;
+  author: string;
+  createdAt: string;
 };
 
 export type TeamMember = {
