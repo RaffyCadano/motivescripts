@@ -38,7 +38,7 @@ export function PmOverview() {
   const { hash } = useLocation();
   const focus = pmFocusFromHash(hash);
   const { deliverables, feedback, reload: reloadLeads } = useLeads();
-  const { clientsById, tasks, myProjects, assignmentError, changeTaskStatus } = useTeamWork();
+  const { clientsById, tasks, myProjects, assignmentError, changeTaskStatus, acceptTask, declineTask } = useTeamWork();
   const { conversations } = useMessaging();
   const team = useTeamDirectory();
   const [intakes, setIntakes] = useState<Awaited<ReturnType<typeof fetchDiscoveryIntakes>>>([]);
@@ -171,6 +171,33 @@ export function PmOverview() {
     }
   }
 
+  async function onAccept() {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await acceptTask(openTask);
+      setOpenTask((current) => (current ? { ...current, assignmentStatus: "accepted" } : current));
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to accept this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDecline(reason?: string | null) {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await declineTask(openTask, reason);
+      setOpenTask(null);
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to decline this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const taskModal = openTask ? (
       <TeamTaskDetail
@@ -187,6 +214,8 @@ export function PmOverview() {
         onStatusChange={(status, blockedReason, qaResult, qaFailNote) =>
           void onStatusChange(status, blockedReason, qaResult, qaFailNote)
         }
+        onAccept={() => void onAccept()}
+        onDecline={(reason) => void onDecline(reason)}
       />
     ) : null;
 

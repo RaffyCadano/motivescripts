@@ -6,6 +6,7 @@ import {
   type AgencyTask,
   type AgencyTaskPriority,
   type AgencyTaskStatus,
+  type TaskAssignmentStatus,
   type TaskBlockedReason,
   type TaskOrigin,
   type TaskQaResult,
@@ -26,6 +27,7 @@ export type TeamWorkTask = {
   priority: AgencyTaskPriority;
   assignee: string;
   assignedTo: string;
+  assignmentStatus: TaskAssignmentStatus | null;
   dueDate: string;
   createdAt: string;
   completedAt: string | null;
@@ -114,12 +116,17 @@ export function dueLabel(dueDate: string): string {
   return `Due ${formatProjectDayShort(dueDate)}`;
 }
 
-export function isTaskOverdue(task: Pick<TeamWorkTask, "status" | "dueDate">): boolean {
-  return task.status !== "Completed" && dueBucket(task.dueDate) === "overdue";
+/** Still waiting on the assignee to accept or decline it -- not really "theirs" yet. */
+export function isAwaitingAcceptance(task: Pick<TeamWorkTask, "assignmentStatus">): boolean {
+  return task.assignmentStatus === "pending";
 }
 
-export function isDueSoon(task: Pick<TeamWorkTask, "status" | "dueDate">, now = new Date()): boolean {
-  if (task.status === "Completed") return false;
+export function isTaskOverdue(task: Pick<TeamWorkTask, "status" | "dueDate" | "assignmentStatus">): boolean {
+  return task.status !== "Completed" && !isAwaitingAcceptance(task) && dueBucket(task.dueDate) === "overdue";
+}
+
+export function isDueSoon(task: Pick<TeamWorkTask, "status" | "dueDate" | "assignmentStatus">, now = new Date()): boolean {
+  if (task.status === "Completed" || isAwaitingAcceptance(task)) return false;
   const bucket = dueBucket(task.dueDate, now);
   if (bucket === "today" || bucket === "tomorrow") return true;
   if (bucket !== "upcoming") return false;
@@ -173,6 +180,7 @@ export function collectAssignedTasks(
         priority: task.priority,
         assignee: task.assignee,
         assignedTo: task.assignedTo,
+        assignmentStatus: task.assignmentStatus,
         dueDate: task.dueDate,
         createdAt: task.createdAt,
         completedAt: task.completedAt,
@@ -221,7 +229,7 @@ export function sortUpcomingTasks(tasks: TeamWorkTask[]): TeamWorkTask[] {
     none: 4,
   };
   return [...tasks]
-    .filter((task) => task.status !== "Completed")
+    .filter((task) => task.status !== "Completed" && !isAwaitingAcceptance(task))
     .sort((a, b) => {
       const bucketDiff = rank[dueBucket(a.dueDate)] - rank[dueBucket(b.dueDate)];
       if (bucketDiff !== 0) return bucketDiff;
@@ -251,12 +259,14 @@ export function filterTeamTasks(
 
 export function myWorkStats(tasks: TeamWorkTask[]) {
   return {
-    dueToday: tasks.filter((task) => task.status !== "Completed" && dueBucket(task.dueDate) === "today").length,
+    dueToday: tasks.filter((task) => task.status !== "Completed" && !isAwaitingAcceptance(task) && dueBucket(task.dueDate) === "today").length,
     dueSoon: tasks.filter((task) => isDueSoon(task)).length,
     inProgress: tasks.filter((task) => task.status === "In Progress").length,
     completed: tasks.filter((task) => task.status === "Completed").length,
     overdue: tasks.filter((task) => isTaskOverdue(task)).length,
-    open: tasks.filter((task) => task.status !== "Completed").length,
+    open: tasks.filter((task) => task.status !== "Completed" && !isAwaitingAcceptance(task)).length,
+    /** Not counted in any of the above -- these are shown in their own "awaiting your acceptance" section instead. */
+    awaitingAcceptance: tasks.filter((task) => isAwaitingAcceptance(task)).length,
   };
 }
 

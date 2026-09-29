@@ -96,6 +96,9 @@ export type AgencyMilestone = {
 
 export type TaskOrigin = "agency" | "client";
 
+/** null when unassigned; "pending" until the assignee accepts (or declines) it, "accepted" once they have. */
+export type TaskAssignmentStatus = "pending" | "accepted";
+
 export type AgencyTask = {
   id: string;
   milestoneId: string;
@@ -105,6 +108,7 @@ export type AgencyTask = {
   priority: AgencyTaskPriority;
   assignee: string;
   assignedTo: string;
+  assignmentStatus: TaskAssignmentStatus | null;
   dueDate: string;
   createdAt: string;
   completedAt: string | null;

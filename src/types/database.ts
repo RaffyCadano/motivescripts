@@ -163,6 +163,8 @@ export type TaskRow = {
   priority: string;
   assignee: string;
   assigned_to: string | null;
+  assignment_status: string | null;
+  assigned_by: string | null;
   position: number;
   due_date: string | null;
   completed_at: string | null;
@@ -466,6 +468,7 @@ export type NotificationType =
   | "website_paused"
   | "website_unpaused"
   | "host_pause_failed"
+  | "task_assignment_declined"
   | "lead_submitted";
 
 export type NotificationRow = {
@@ -1817,6 +1820,14 @@ export type Database = {
           p_qa_result?: string | null;
           p_qa_fail_note?: string | null;
         };
+        Returns: null;
+      };
+      accept_task_assignment: {
+        Args: { p_task_id: string };
+        Returns: null;
+      };
+      decline_task_assignment: {
+        Args: { p_task_id: string; p_reason?: string | null };
         Returns: null;
       };
       set_task_deliverable: {

@@ -516,6 +516,10 @@ Deno.serve(async (req) => {
       else if (n.type === "care_request_submitted" && !team) url = `${origin}/admin/care-requests`;
       else if (n.type.startsWith("domain_") || n.type.startsWith("ssl_")) url = `${origin}/admin/clients`;
       else if (n.type === "payroll_paid") url = `${origin}/${team ? "team/time" : "admin/payroll"}`;
+      // Unlike the other task_ types below, the recipient here is whoever assigned the task, not
+      // the assignee -- they need the project (already the default `projectUrl` above) to reassign
+      // it, not their own task list.
+      else if (n.type === "task_assignment_declined") { /* keep the default projectUrl */ }
       else if (n.type.startsWith("task_") && !n.project_id) url = `${origin}/team/tasks`;
       else if (n.type.startsWith("task_") && team) url = `${origin}/team/tasks`;
       // Unlike project_assigned, the recipient no longer has access to this specific project by

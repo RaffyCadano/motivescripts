@@ -163,7 +163,7 @@ export async function fetchTeamDirectory(): Promise<TeamDirectory> {
     client.from("staff_template_permissions").select("*"),
     client.from("clients").select("id, business_name"),
     client.from("projects").select("id, name"),
-    client.from("tasks").select("assigned_to, status"),
+    client.from("tasks").select("assigned_to, status, assignment_status"),
   ]);
 
   if (profilesRes.error) fail("load team", profilesRes.error, "Unable to load the team.");
@@ -196,7 +196,9 @@ export async function fetchTeamDirectory(): Promise<TeamDirectory> {
   }[];
   const taskCounts = new Map<string, { active: number; completed: number }>();
   for (const row of tasksRes.data ?? []) {
-    if (!row.assigned_to) continue;
+    // Awaiting acceptance -- not really this person's work yet, so it doesn't count for or
+    // against them until they've accepted (or declined) it.
+    if (!row.assigned_to || row.assignment_status === "pending") continue;
     const current = taskCounts.get(row.assigned_to) ?? { active: 0, completed: 0 };
     if (row.status === "Completed") current.completed += 1;
     else current.active += 1;
@@ -281,6 +283,20 @@ export async function updateMyTaskStatus(
     p_qa_fail_note: qaFailNote ?? null,
   });
   if (error) fail("update task", error, "Unable to update this task.");
+}
+
+/** Accepts a task still awaiting your acceptance -- lets its normal status controls unlock. */
+export async function acceptMyTask(taskId: string): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.rpc("accept_task_assignment", { p_task_id: taskId });
+  if (error) fail("accept task", error, "Unable to accept this task.");
+}
+
+/** Declines a task still awaiting your acceptance -- it goes back to unassigned, and whoever assigned it is notified. */
+export async function declineMyTask(taskId: string, reason?: string | null): Promise<void> {
+  const client = requireClient();
+  const { error } = await client.rpc("decline_task_assignment", { p_task_id: taskId, p_reason: reason ?? null });
+  if (error) fail("decline task", error, "Unable to decline this task.");
 }
 
 export async function fetchMemberActivity(userId: string): Promise<{ id: string; message: string; createdAt: string }[]> {

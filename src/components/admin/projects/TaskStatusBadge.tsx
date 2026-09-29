@@ -1,5 +1,5 @@
-import { Circle, CircleAlert, CircleDot, LoaderCircle } from "lucide-react";
-import { taskStatusLabel, type AgencyTaskStatus } from "@/data/agencyProjects";
+import { Circle, CircleAlert, CircleDot, Hourglass, LoaderCircle } from "lucide-react";
+import { taskStatusLabel, type AgencyTaskStatus, type TaskAssignmentStatus } from "@/data/agencyProjects";
 import { cn } from "@/lib/cn";
 
 const styles: Record<AgencyTaskStatus, string> = {
@@ -18,7 +18,23 @@ const icons = {
   Blocked: CircleAlert,
 } as const;
 
-export function TaskStatusBadge({ status }: { status: AgencyTaskStatus }) {
+export function TaskStatusBadge({
+  status,
+  assignmentStatus,
+}: {
+  status: AgencyTaskStatus;
+  /** Pass this wherever it's known -- "pending" overrides the badge to "Awaiting acceptance" instead of the
+   * underlying status, since that status (always "Todo" while pending) isn't the useful thing to show yet. */
+  assignmentStatus?: TaskAssignmentStatus | null;
+}) {
+  if (assignmentStatus === "pending") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-[rgb(0_80_240_/_0.08)] px-2 py-0.5 font-heading text-xs font-semibold tracking-tight text-[var(--admin-blue)]">
+        <Hourglass size={11} strokeWidth={2.2} aria-hidden="true" />
+        Awaiting acceptance
+      </span>
+    );
+  }
   const Icon = icons[status];
   return (
     <span

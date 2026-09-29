@@ -28,7 +28,7 @@ export function TeamTaskCard({ task, onOpen }: TeamTaskCardProps) {
           <p className="mt-0.5 text-[12px] text-[var(--admin-muted)]">{task.projectName}</p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <TaskStatusBadge status={task.status} />
+          <TaskStatusBadge status={task.status} assignmentStatus={task.assignmentStatus} />
           {task.origin === "client" ? <TaskOriginBadge /> : null}
           <TaskPriorityBadge priority={task.priority} />
         </div>

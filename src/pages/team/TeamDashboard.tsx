@@ -26,8 +26,19 @@ import { useMessaging } from "@/providers/MessagingProvider";
 
 export function TeamDashboard() {
   const navigate = useNavigate();
-  const { profile, clientsById, tasks, myProjects, deliverables, stats, upcoming, assignmentError, changeTaskStatus } =
-    useTeamWork();
+  const {
+    profile,
+    clientsById,
+    tasks,
+    myProjects,
+    deliverables,
+    stats,
+    upcoming,
+    assignmentError,
+    changeTaskStatus,
+    acceptTask,
+    declineTask,
+  } = useTeamWork();
   const { unreadMessageCount, conversations } = useMessaging();
   const [openTask, setOpenTask] = useState<TeamWorkTask | null>(null);
   const [busy, setBusy] = useState(false);
@@ -66,6 +77,34 @@ export function TeamDashboard() {
       );
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onAccept() {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await acceptTask(openTask);
+      setOpenTask((current) => (current ? { ...current, assignmentStatus: "accepted" } : current));
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to accept this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDecline(reason?: string | null) {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await declineTask(openTask, reason);
+      setOpenTask(null);
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to decline this task.");
     } finally {
       setBusy(false);
     }
@@ -291,6 +330,8 @@ export function TeamDashboard() {
           onStatusChange={(status, blockedReason, qaResult, qaFailNote) =>
             void onStatusChange(status, blockedReason, qaResult, qaFailNote)
           }
+          onAccept={() => void onAccept()}
+          onDecline={(reason) => void onDecline(reason)}
         />
       ) : null}
     </div>

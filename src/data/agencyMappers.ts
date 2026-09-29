@@ -185,6 +185,7 @@ export function mapTask(row: TaskRow): AgencyTask {
     priority: row.priority as AgencyTaskPriority,
     assignee: row.assignee ?? "",
     assignedTo: row.assigned_to ?? "",
+    assignmentStatus: row.assignment_status === "pending" || row.assignment_status === "accepted" ? row.assignment_status : null,
     dueDate: dateField(row.due_date),
     createdAt: row.created_at,
     completedAt: row.completed_at,

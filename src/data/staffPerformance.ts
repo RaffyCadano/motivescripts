@@ -55,7 +55,9 @@ export function buildStaffPerformance(
   const tasksByMember = new Map<string, AgencyProject["tasks"]>();
   for (const project of projects) {
     for (const task of project.tasks) {
-      if (!task.assignedTo) continue;
+      // Still awaiting the assignee's acceptance -- not really theirs yet, so it isn't fair to
+      // judge their on-time rate or inactivity against it (or count it as currently overdue).
+      if (!task.assignedTo || task.assignmentStatus === "pending") continue;
       const list = tasksByMember.get(task.assignedTo);
       if (list) list.push(task);
       else tasksByMember.set(task.assignedTo, [task]);

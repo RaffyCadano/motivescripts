@@ -4,7 +4,7 @@ import { hasPermission } from "@/auth/permissions";
 import { usesTeamWorkspace } from "@/auth/roles";
 import { useLeads } from "@/components/admin/leads/LeadsProvider";
 import type { AgencyTaskDraft, AgencyTaskStatus } from "@/data/agencyProjects";
-import { fetchMyClientAssignmentIds, fetchMyProjectAssignmentIds, updateMyTaskStatus } from "@/data/teamRepository";
+import { acceptMyTask, declineMyTask, fetchMyClientAssignmentIds, fetchMyProjectAssignmentIds, updateMyTaskStatus } from "@/data/teamRepository";
 import {
   collectAssignedTasks,
   collectMyProjects,
@@ -99,6 +99,16 @@ export function useTeamWork() {
     await reload();
   }
 
+  async function acceptTask(task: TeamWorkTask) {
+    await acceptMyTask(task.id);
+    await reload();
+  }
+
+  async function declineTask(task: TeamWorkTask, reason?: string | null) {
+    await declineMyTask(task.id, reason);
+    await reload();
+  }
+
   return {
     profile,
     clientsById,
@@ -112,6 +122,8 @@ export function useTeamWork() {
     loadStatus,
     canManageTasks,
     changeTaskStatus,
+    acceptTask,
+    declineTask,
     reload,
   };
 }

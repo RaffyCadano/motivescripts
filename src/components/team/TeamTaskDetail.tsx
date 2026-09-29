@@ -84,6 +84,9 @@ type TeamTaskDetailProps = {
     qaResult?: string | null,
     qaFailNote?: string | null,
   ) => void;
+  /** Only meaningful while task.assignmentStatus is "pending" -- omit where accepting/declining doesn't apply. */
+  onAccept?: () => void;
+  onDecline?: (reason?: string | null) => void;
 };
 
 export function TeamTaskDetail({
@@ -100,6 +103,8 @@ export function TeamTaskDetail({
   wipCount,
   onClose,
   onStatusChange,
+  onAccept,
+  onDecline,
 }: TeamTaskDetailProps) {
   const { profile } = useAuth();
   const displayLabel = profile?.fullName?.trim() || "Team";
@@ -109,7 +114,13 @@ export function TeamTaskDetail({
   const [showQaPicker, setShowQaPicker] = useState(false);
   const [pendingQaResult, setPendingQaResult] = useState<TaskQaResult | "">("");
   const [pendingQaFailNote, setPendingQaFailNote] = useState("");
+  const [showDeclinePicker, setShowDeclinePicker] = useState(false);
+  const [pendingDeclineReason, setPendingDeclineReason] = useState("");
   const isQaTask = effectiveTaskType(task) === "qa";
+  // canUpdateStatus is looser than this -- TaskWorkspace passes it unconditionally true for any
+  // task an admin opens, not only their own. Accepting/declining is only ever the real assignee's
+  // call, so check that directly rather than trusting canUpdateStatus for it.
+  const awaitingAcceptance = task.assignedTo === profile?.id && task.assignmentStatus === "pending";
   const closeRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   const busyRef = useRef(busy);
@@ -160,7 +171,7 @@ export function TeamTaskDetail({
           {task.title}
         </h2>
         <div className="mt-3 flex flex-wrap items-center gap-2.5">
-          <TaskStatusBadge status={task.status} />
+          <TaskStatusBadge status={task.status} assignmentStatus={task.assignmentStatus} />
           <TaskPriorityBadge priority={task.priority} />
           <span className="text-[12px] font-medium text-[var(--admin-muted)]">{dueLabel(task.dueDate)}</span>
         </div>
@@ -232,7 +243,58 @@ export function TeamTaskDetail({
               ) : null}
             </dl>
 
-            {canUpdateStatus ? (
+            {awaitingAcceptance ? (
+              <div className="mt-4 space-y-3 border-t border-[rgb(0_80_240_/_0.25)] pt-4">
+                <p className="rounded-lg bg-[rgb(0_80_240_/_0.06)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--admin-ink)]">
+                  This task is waiting for you to accept it -- you can&rsquo;t start work until you do. Decline it
+                  instead if it shouldn&rsquo;t be yours; it goes back to unassigned so it can be handed to someone
+                  else.
+                </p>
+                {showDeclinePicker ? (
+                  <div className="rounded-lg border border-[rgb(180_83_9_/_0.3)] bg-[rgb(180_83_9_/_0.06)] p-3">
+                    <label className="block text-[13px] font-medium text-[var(--admin-ink)]">
+                      Why are you declining? (optional, shared with whoever assigned it)
+                      <textarea
+                        rows={2}
+                        value={pendingDeclineReason}
+                        onChange={(event) => setPendingDeclineReason(event.target.value)}
+                        className="mt-1.5 w-full rounded-[var(--admin-radius)] border border-[var(--admin-line)] bg-white px-3 py-2 text-sm outline-none focus:border-[rgb(0_80_240_/_0.45)]"
+                      />
+                    </label>
+                    <div className="mt-3 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        className="inline-flex h-9 items-center rounded-[var(--admin-radius)] border border-[var(--admin-line)] px-3 font-heading text-[12px] font-semibold text-[var(--admin-ink)] hover:bg-white"
+                        onClick={() => setShowDeclinePicker(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className="inline-flex h-9 items-center rounded-[var(--admin-radius)] bg-[#b45309] px-3 font-heading text-[12px] font-semibold text-white disabled:opacity-50"
+                        onClick={() => {
+                          onDecline?.(pendingDeclineReason.trim() || null);
+                          setShowDeclinePicker(false);
+                          setPendingDeclineReason("");
+                        }}
+                      >
+                        Decline task
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    <QuickActionButton onClick={() => onAccept?.()} disabled={busy}>
+                      Accept task
+                    </QuickActionButton>
+                    <QuickActionButton tone="warn" onClick={() => setShowDeclinePicker(true)} disabled={busy}>
+                      Decline
+                    </QuickActionButton>
+                  </div>
+                )}
+              </div>
+            ) : canUpdateStatus ? (
               <div className="mt-4 space-y-3 border-t border-[var(--admin-line)] pt-4">
                 <div className="flex flex-wrap gap-2">
                   {task.status === "Todo" ? (

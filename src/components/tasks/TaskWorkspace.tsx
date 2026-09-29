@@ -37,6 +37,8 @@ type TaskWorkspaceProps = {
     qaResult?: string | null,
     qaFailNote?: string | null,
   ) => void;
+  onAccept?: () => void;
+  onDecline?: (reason?: string | null) => void;
   onOpenDiscovery: () => void;
   onOpenFiles: () => void;
 };
@@ -59,6 +61,8 @@ export function TaskWorkspace({
   breadcrumb,
   onClose,
   onStatusChange,
+  onAccept,
+  onDecline,
   onOpenDiscovery,
   onOpenFiles,
 }: TaskWorkspaceProps) {
@@ -77,6 +81,7 @@ export function TaskWorkspace({
     priority: task.priority,
     assignee: task.assignee,
     assignedTo: task.assignedTo,
+    assignmentStatus: task.assignmentStatus,
     dueDate: task.dueDate,
     createdAt: task.createdAt,
     completedAt: task.completedAt,
@@ -123,6 +128,8 @@ export function TaskWorkspace({
       wipCount={wipCount}
       onClose={onClose}
       onStatusChange={onStatusChange}
+      onAccept={onAccept}
+      onDecline={onDecline}
     />
   );
 }

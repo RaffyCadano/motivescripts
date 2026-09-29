@@ -111,3 +111,28 @@ test("sorts inactive staff first, then most currently-overdue, then lowest on-ti
   const rows = buildStaffPerformance(projects, members, NOW);
   assert.deepEqual(rows.map((row) => row.userId), ["u3", "u2", "u1"]);
 });
+
+test("a task still awaiting acceptance doesn't count for or against the assignee at all", () => {
+  // Overdue and unaccepted: should not count as currently-overdue, and shouldn't make an
+  // otherwise-taskless person show up in the panel at all -- it isn't really their work yet.
+  const rows = buildStaffPerformance(
+    [project([task({ status: "Todo", dueDate: "2026-09-01", completedAt: null, assignmentStatus: "pending" })])],
+    [member()],
+    NOW,
+  );
+  assert.deepEqual(rows, []);
+
+  // Mixed with a real, accepted task: the pending one is simply excluded, not counted anywhere.
+  const mixed = buildStaffPerformance(
+    [
+      project([
+        task({ id: "a", status: "Todo", dueDate: "2026-09-01", completedAt: null, assignmentStatus: "pending" }),
+        task({ id: "b", dueDate: "2026-09-25", completedAt: "2026-09-25T12:00:00Z", assignmentStatus: "accepted" }),
+      ]),
+    ],
+    [member()],
+    NOW,
+  );
+  assert.equal(mixed[0].totalAssigned, 1);
+  assert.equal(mixed[0].overdueNow, 0);
+});

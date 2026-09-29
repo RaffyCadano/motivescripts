@@ -30,7 +30,7 @@ const filters: { id: TeamTaskFilter; label: string }[] = [
 export function TeamTasks() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { profile, tasks, myProjects, deliverables, changeTaskStatus } = useTeamWork();
+  const { profile, tasks, myProjects, deliverables, changeTaskStatus, acceptTask, declineTask } = useTeamWork();
   const [filter, setFilter] = useState<TeamTaskFilter>("all");
   const [projectId, setProjectId] = useState<string | "All">("All");
   const [priority, setPriority] = useState<AgencyTaskPriority | "All">("All");
@@ -65,6 +65,33 @@ export function TeamTasks() {
       await changeTaskStatus(openTask, status, blockedReason, qaResult, qaFailNote);
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onAccept() {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await acceptTask(openTask);
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to accept this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDecline(reason?: string | null) {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await declineTask(openTask, reason);
+      setOpenTask(null);
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to decline this task.");
     } finally {
       setBusy(false);
     }
@@ -189,6 +216,8 @@ export function TeamTasks() {
           onStatusChange={(status, blockedReason, qaResult, qaFailNote) =>
             void onStatusChange(status, blockedReason, qaResult, qaFailNote)
           }
+          onAccept={() => void onAccept()}
+          onDecline={(reason) => void onDecline(reason)}
         />
       ) : null}
     </div>

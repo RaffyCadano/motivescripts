@@ -88,7 +88,7 @@ export function TeamProjectDetails() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const match = useAgencyProject(id);
-  const { profile, tasks, deliverables, changeTaskStatus, reload } = useTeamWork();
+  const { profile, tasks, deliverables, changeTaskStatus, acceptTask, declineTask, reload } = useTeamWork();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const tabParam = searchParams.get("tab");
@@ -167,6 +167,7 @@ export function TeamProjectDetails() {
         priority: openProjectTask.priority,
         assignee: openProjectTask.assignee,
         assignedTo: openProjectTask.assignedTo,
+        assignmentStatus: openProjectTask.assignmentStatus,
         dueDate: openProjectTask.dueDate,
         createdAt: openProjectTask.createdAt,
         completedAt: openProjectTask.completedAt,
@@ -208,6 +209,33 @@ export function TeamProjectDetails() {
       await changeTaskStatus(openTask, status, blockedReason, qaResult, qaFailNote);
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onAccept() {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await acceptTask(openTask);
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to accept this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDecline(reason?: string | null) {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await declineTask(openTask, reason);
+      setOpenTask(null);
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to decline this task.");
     } finally {
       setBusy(false);
     }
@@ -410,6 +438,8 @@ export function TeamProjectDetails() {
               onStatusChange={(status, blockedReason, qaResult, qaFailNote) =>
                 void onStatusChange(status, blockedReason, qaResult, qaFailNote)
               }
+              onAccept={() => void onAccept()}
+              onDecline={(reason) => void onDecline(reason)}
             />
           ) : null}
         </div>
@@ -657,7 +687,7 @@ function TeamProjectTasks({
                           </p>
                           {preview ? <p className="mt-1 text-[12px] text-[var(--admin-muted)]">{preview}</p> : null}
                           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <TaskStatusBadge status={task.status} />
+                            <TaskStatusBadge status={task.status} assignmentStatus={task.assignmentStatus} />
                             <TaskPriorityBadge priority={task.priority} />
                             <span className="text-[12px] text-[var(--admin-muted)]">
                               {mine ? "Assigned to you" : task.assignee.trim() || "Unassigned"}

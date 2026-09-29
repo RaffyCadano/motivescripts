@@ -86,7 +86,7 @@ function MyTaskTableRow({ task, onOpen, projectHref }: MyTaskRowProps) {
       </td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap items-center gap-1.5">
-          <TaskStatusBadge status={task.status} />
+          <TaskStatusBadge status={task.status} assignmentStatus={task.assignmentStatus} />
           {task.origin === "client" ? <TaskOriginBadge /> : null}
         </div>
       </td>
@@ -146,7 +146,7 @@ function MyTaskMobileCard({ task, onOpen, projectHref }: MyTaskRowProps) {
           {task.dueDate ? formatProjectDay(task.dueDate) : "No due date"}
         </span>
         <div className="flex flex-wrap items-center gap-1.5">
-          <TaskStatusBadge status={task.status} />
+          <TaskStatusBadge status={task.status} assignmentStatus={task.assignmentStatus} />
           {task.origin === "client" ? <TaskOriginBadge /> : null}
         </div>
       </div>

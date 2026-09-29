@@ -26,7 +26,7 @@ const statusFilters: { id: MyTasksStatusFilter; label: string }[] = [
 
 export function AdminMyTasks() {
   const navigate = useNavigate();
-  const { profile, tasks, myProjects, deliverables, changeTaskStatus } = useTeamWork();
+  const { profile, tasks, myProjects, deliverables, changeTaskStatus, acceptTask, declineTask } = useTeamWork();
   const [status, setStatus] = useState<MyTasksStatusFilter>("all");
   const [projectId, setProjectId] = useState<string | "All">("All");
   const [priority, setPriority] = useState<AgencyTaskPriority | "All">("All");
@@ -81,6 +81,34 @@ export function AdminMyTasks() {
       );
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onAccept() {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await acceptTask(openTask);
+      setOpenTask((current) => (current ? { ...current, assignmentStatus: "accepted" } : current));
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to accept this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDecline(reason?: string | null) {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await declineTask(openTask, reason);
+      setOpenTask(null);
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to decline this task.");
     } finally {
       setBusy(false);
     }
@@ -202,6 +230,8 @@ export function AdminMyTasks() {
           onStatusChange={(next, blockedReason, qaResult, qaFailNote) =>
             void onStatusChange(next, blockedReason, qaResult, qaFailNote)
           }
+          onAccept={() => void onAccept()}
+          onDecline={(reason) => void onDecline(reason)}
           onOpenDiscovery={() => {
             setOpenTask(null);
             navigate(`${adminProjectHref(openProject.id)}#project-discovery`);

@@ -438,6 +438,9 @@ export function LeadsProvider({ children }: { children: ReactNode }) {
               priority: draft.priority,
               assignee: draft.assignee,
               assignedTo: draft.assignedTo,
+              // Optimistic guess, same as the real trigger's own rule -- reload() replaces this
+              // with the real row moments later regardless.
+              assignmentStatus: !draft.assignedTo ? null : draft.assignedTo === profile?.id ? "accepted" : "pending",
               dueDate: draft.dueDate,
               recommendedRole: draft.recommendedRole,
               taskType: draft.taskType,

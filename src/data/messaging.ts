@@ -154,7 +154,10 @@ export function notificationHref(item: AppNotification, role: "admin" | "staff" 
     case "website_slow":
     case "website_speed_recovered":
     case "backup_failed":
+    case "task_assignment_declined":
       // Staff-only alerts about one project (the team workspace redirects /admin/projects/:id to its own page).
+      // The recipient here is whoever assigned the task, not the assignee -- they need the project to
+      // reassign it, not their own task list.
       return item.projectId ? `/admin/projects/${item.projectId}` : "/admin/projects";
     case "care_request_submitted":
       // Care requests live on their own admin page; production roles do not see it, so they go to the project.

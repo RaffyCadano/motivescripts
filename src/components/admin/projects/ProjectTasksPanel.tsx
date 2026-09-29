@@ -230,7 +230,7 @@ function TaskRow({
           </button>
           {preview ? <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-[var(--admin-muted)]">{preview}</p> : null}
           <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <TaskStatusBadge status={task.status} />
+            <TaskStatusBadge status={task.status} assignmentStatus={task.assignmentStatus} />
             {task.origin === "client" ? <TaskOriginBadge /> : null}
             <TaskPriorityBadge priority={task.priority} />
             <TaskRecommendedRoleNote role={recommendedRole} />

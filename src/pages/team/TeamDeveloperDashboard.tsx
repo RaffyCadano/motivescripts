@@ -51,7 +51,7 @@ const healthTone: Record<WebsiteHealthCheck["status"] | "unknown", string> = {
 
 export function TeamDeveloperDashboard() {
   const navigate = useNavigate();
-  const { profile, clientsById, tasks, myProjects, deliverables, feedback, changeTaskStatus } = useTeamWork();
+  const { profile, clientsById, tasks, myProjects, deliverables, feedback, changeTaskStatus, acceptTask, declineTask } = useTeamWork();
   const [openTask, setOpenTask] = useState<TeamWorkTask | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,6 +184,34 @@ export function TeamDeveloperDashboard() {
       );
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onAccept() {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await acceptTask(openTask);
+      setOpenTask((current) => (current ? { ...current, assignmentStatus: "accepted" } : current));
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to accept this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDecline(reason?: string | null) {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await declineTask(openTask, reason);
+      setOpenTask(null);
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to decline this task.");
     } finally {
       setBusy(false);
     }
@@ -554,6 +582,8 @@ export function TeamDeveloperDashboard() {
           onStatusChange={(status, blockedReason, qaResult, qaFailNote) =>
             void onStatusChange(status, blockedReason, qaResult, qaFailNote)
           }
+          onAccept={() => void onAccept()}
+          onDecline={(reason) => void onDecline(reason)}
         />
       ) : null}
     </div>

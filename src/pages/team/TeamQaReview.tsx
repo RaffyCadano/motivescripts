@@ -29,7 +29,7 @@ function filterTasks(
 
 export function TeamQaReview() {
   const navigate = useNavigate();
-  const { profile, tasks, myProjects, deliverables, changeTaskStatus } = useTeamWork();
+  const { profile, tasks, myProjects, deliverables, changeTaskStatus, acceptTask, declineTask } = useTeamWork();
   const [openTask, setOpenTask] = useState<TeamWorkTask | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +76,34 @@ export function TeamQaReview() {
       );
     } catch (caught) {
       setError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onAccept() {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await acceptTask(openTask);
+      setOpenTask((current) => (current ? { ...current, assignmentStatus: "accepted" } : current));
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to accept this task.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDecline(reason?: string | null) {
+    if (!openTask) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await declineTask(openTask, reason);
+      setOpenTask(null);
+    } catch (caught) {
+      setError(caught instanceof AgencyDbError ? caught.message : "Unable to decline this task.");
     } finally {
       setBusy(false);
     }
@@ -214,6 +242,8 @@ export function TeamQaReview() {
           onStatusChange={(status, blockedReason, qaResult, qaFailNote) =>
             void onStatusChange(status, blockedReason, qaResult, qaFailNote)
           }
+          onAccept={() => void onAccept()}
+          onDecline={(reason) => void onDecline(reason)}
         />
       ) : null}
     </div>
@@ -271,7 +301,7 @@ function QaReviewTable({
                   {task.dueDate ? formatProjectDay(task.dueDate) : "Not set"}
                 </td>
                 <td className="px-4 py-3">
-                  <TaskStatusBadge status={task.status} />
+                  <TaskStatusBadge status={task.status} assignmentStatus={task.assignmentStatus} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">

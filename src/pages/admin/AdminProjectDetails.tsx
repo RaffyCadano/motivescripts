@@ -53,6 +53,7 @@ import {
   type AgencyTask,
   type AgencyTaskStatus,
 } from "@/data/agencyProjects";
+import { acceptMyTask, declineMyTask } from "@/data/teamRepository";
 import { AgencyDbError } from "@/lib/dbErrors";
 import { isProjectSectionTabId, projectOpenTaskCount, type ProjectSectionTabId } from "@/data/projectSectionNav";
 import { productionTaskAssigneeOptions } from "@/data/team";
@@ -76,6 +77,7 @@ export function AdminProjectDetails() {
     toggleTaskComplete,
     portalAccounts,
     deliverables,
+    reload,
   } = useLeads();
   const { profile } = useAuth();
   const { data: teamData } = useTeamDirectory();
@@ -161,6 +163,33 @@ export function AdminProjectDetails() {
       });
     } catch (caught) {
       setWorkspaceError(caught instanceof AgencyDbError ? caught.message : "Unable to update this task.");
+    } finally {
+      setWorkspaceBusy(false);
+    }
+  }
+
+  async function handleWorkspaceAccept(task: AgencyTask) {
+    setWorkspaceBusy(true);
+    setWorkspaceError(null);
+    try {
+      await acceptMyTask(task.id);
+      await reload();
+    } catch (caught) {
+      setWorkspaceError(caught instanceof AgencyDbError ? caught.message : "Unable to accept this task.");
+    } finally {
+      setWorkspaceBusy(false);
+    }
+  }
+
+  async function handleWorkspaceDecline(task: AgencyTask, reason?: string | null) {
+    setWorkspaceBusy(true);
+    setWorkspaceError(null);
+    try {
+      await declineMyTask(task.id, reason);
+      closeWorkspace();
+      await reload();
+    } catch (caught) {
+      setWorkspaceError(caught instanceof AgencyDbError ? caught.message : "Unable to decline this task.");
     } finally {
       setWorkspaceBusy(false);
     }
@@ -380,6 +409,8 @@ export function AdminProjectDetails() {
               }
               onClose={closeWorkspace}
               onStatusChange={(status) => void handleWorkspaceStatusChange(openTask, status)}
+              onAccept={() => void handleWorkspaceAccept(openTask)}
+              onDecline={(reason) => void handleWorkspaceDecline(openTask, reason)}
               onOpenDiscovery={openDiscoveryFromWorkspace}
               onOpenFiles={openFilesFromWorkspace}
             />
